@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Popup Thông Tin Sinh Viên — PU-SV-01 (Design System thật EduOne)</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* Ghi chú: mở rộng nhỏ ngoài _styles.css gốc, chỉ để dựng khung trang demo quanh popup thật */
+  .hint-note{font-size:12px;color:var(--text-3);margin-top:10px;text-align:center}
+  .link-mssv{font-family:monospace;font-size:12px;color:var(--text-2)}
+  code.src-tag{background:#fafafa;border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;color:var(--text-2)}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ SIDEBAR (đúng _sidebar.html / _styles.css gốc) ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Giảng viên</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">GV</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">TS. Nguyễn Minh Tuấn</div>
+        <div style="font-size:11px;color:var(--text-3)">Khoa CNTT</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li class="active">
+        <span class="mn-group">📋&nbsp; Đề tài &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">DS đề tài của tôi</a></li>
+          <li class="active"><a href="#">DS nguyện vọng đề tài</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">👨‍🏫&nbsp; Hướng dẫn &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">QL DS thực tập</a></li>
+          <li><a href="#">Quản lý ĐATN &amp; KLTN</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <header class="app-header">
+      <span class="h-breadcrumb">Đề tài &gt; Nguyện vọng đề tài</span>
+      <div class="h-right">
+        <div class="bw"><button class="btn btn-link" style="font-size:18px">🔔</button><span class="bc">3</span></div>
+        <div class="av">GV</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="card">
+        <div class="card-hd">
+          <h3 class="card-title">Nguyện vọng hướng dẫn đề tài</h3>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:110px">Mã số SV</th>
+                <th style="width:170px">Họ và tên</th>
+                <th style="width:110px">Lớp học phần</th>
+                <th style="width:100px">Đơn vị</th>
+                <th style="width:130px">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="link-mssv">B22DCCN001</td>
+                <td><span style="font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="openSVDetail(1)" title="Xem thông tin sinh viên">Nguyễn Văn An</span></td>
+                <td style="font-size:12px;color:var(--text-2)">INT3110_1</td>
+                <td style="font-size:12px;color:var(--text-2)">Khoa CNTT</td>
+                <td><span class="tag tag-warning">Chờ GV duyệt</span></td>
+              </tr>
+              <tr>
+                <td class="link-mssv">B22DCCN033</td>
+                <td><span style="font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="openSVDetail(2)" title="Xem thông tin sinh viên">Lê Quốc Cường</span></td>
+                <td style="font-size:12px;color:var(--text-2)">INT3110_2</td>
+                <td style="font-size:12px;color:var(--text-2)">Khoa CNTT</td>
+                <td><span class="tag tag-success">Đã duyệt</span></td>
+              </tr>
+              <tr>
+                <td class="link-mssv">B22DCCN071</td>
+                <td><span style="font-size:13px;font-weight:600;color:var(--primary);cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="openSVDetail(3)" title="Xem thông tin sinh viên">Vũ Thanh Long</span></td>
+                <td style="font-size:12px;color:var(--text-2)">INT3110_1</td>
+                <td style="font-size:12px;color:var(--text-2)">Khoa CNTT</td>
+                <td><span class="tag tag-error">Từ chối</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint-note">Click vào <b>Họ và tên</b> để mở popup <code class="src-tag">openSVDetail()</code> — đúng hàm thật trong <code class="src-tag">MH-GV-05_TopicWishes.html</code></p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODAL: THÔNG TIN SINH VIÊN — nguyên bản thật từ MH-GV-05
+════════════════════════════════════════════ -->
+<div class="overlay hidden" id="m-sv">
+  <div class="modal-box w600">
+    <div class="modal-hd">
+      <h4 class="modal-title" id="sv-title">Thông tin sinh viên</h4>
+      <button class="modal-close" data-close="m-sv">✕</button>
+    </div>
+    <div class="modal-bd">
+      <table class="desc-tbl"><tbody id="sv-body"></tbody></table>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="m-sv">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* Dữ liệu mẫu + hàm openSVDetail giữ đúng logic gốc từ MH-GV-05_TopicWishes.html */
+  const CTDT_MAP = { 'KTPM':'Kỹ thuật phần mềm','KHMT':'Khoa học máy tính','HTTT':'Hệ thống thông tin','CNTT':'Công nghệ thông tin','KHDL':'Khoa học dữ liệu' };
+  const NV_CLR = { 'Chờ GV duyệt':'tag-warning', 'Chờ Khoa duyệt':'tag-default', 'Đã duyệt':'tag-success', 'Từ chối':'tag-error' };
+
+  const wishes = [
+    { id:1, maSV:'B22DCCN001', tenSV:'Nguyễn Văn An', lop:'INT3110_1', gpa:3.2, ctdt:'KTPM', donVi:'Khoa CNTT',
+      dot:'HK1 2025-2026', ngayDK:'05/06/2026', status:'Chờ GV duyệt',
+      lydo:'Em có kiến thức tốt về Python & ML, muốn nghiên cứu về recommender systems.' },
+    { id:2, maSV:'B22DCCN033', tenSV:'Lê Quốc Cường', lop:'INT3110_2', gpa:2.8, ctdt:'KHMT', donVi:'Khoa CNTT',
+      dot:'HK1 2025-2026', ngayDK:'05/06/2026', status:'Đã duyệt',
+      lydo:'Em quan tâm đến NLP và muốn áp dụng vào bài toán thực tế.' },
+    { id:3, maSV:'B22DCCN071', tenSV:'Vũ Thanh Long', lop:'INT3110_1', gpa:2.6, ctdt:'KHMT', donVi:'Khoa CNTT',
+      dot:'HK1 2025-2026', ngayDK:'04/06/2026', status:'Từ chối',
+      lydo:'Em rất quan tâm đến NLP và phân tích dữ liệu người dùng.' },
+  ];
+
+  function openSVDetail(wishId) {
+    const w = wishes.find(x => x.id === wishId);
+    document.getElementById('sv-title').textContent = `Thông tin sinh viên — ${w.tenSV}`;
+
+    const gpaColor = w.gpa >= 3.0 ? 'var(--success)' : w.gpa >= 2.5 ? 'var(--text-1)' : 'var(--error)';
+    const gpaLabel = w.gpa >= 3.6 ? 'Xuất sắc' : w.gpa >= 3.2 ? 'Giỏi' : w.gpa >= 2.5 ? 'Khá' : 'Trung bình';
+
+    document.getElementById('sv-body').innerHTML = `
+      <tr><th style="width:140px">Mã số SV</th>
+          <td><span style="font-family:monospace;font-size:13px;font-weight:700">${w.maSV}</span></td></tr>
+      <tr><th>Họ và tên</th>
+          <td style="font-weight:600">${w.tenSV}</td></tr>
+      <tr><th>Lớp học phần</th>
+          <td>${w.lop}</td></tr>
+      <tr><th>CTĐT</th>
+          <td>${CTDT_MAP[w.ctdt] || w.ctdt}</td></tr>
+      <tr><th>Đơn vị</th>
+          <td>${w.donVi}</td></tr>
+      <tr><th>GPA</th>
+          <td><span style="font-size:15px;font-weight:700;color:${gpaColor}">${w.gpa.toFixed(2)}</span>
+              <span style="font-size:12px;color:var(--text-3);margin-left:6px">${gpaLabel}</span></td></tr>
+      <tr><th>Đợt thực tập</th>
+          <td>${w.dot}</td></tr>
+      <tr><th>Ngày đăng ký NV</th>
+          <td>${w.ngayDK}</td></tr>
+      <tr><th>Lý do đăng ký</th>
+          <td style="font-size:13px;line-height:1.6;font-style:italic;color:var(--text-2)">${w.lydo || '—'}</td></tr>
+      <tr><th>Trạng thái NV</th>
+          <td><span class="tag ${NV_CLR[w.status]}">${w.status}</span></td></tr>`;
+
+    openModal('m-sv');
+  }
+
+  /* openModal/closeModal tối giản (bản đầy đủ nằm trong _utils.js gốc) */
+  function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+  document.addEventListener('click', function(e){
+    if (e.target.matches('[data-close]')) closeModal(e.target.getAttribute('data-close'));
+    if (e.target.classList.contains('overlay')) closeModal(e.target.id);
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') document.querySelectorAll('.overlay:not(.hidden)').forEach(o => closeModal(o.id));
+  });
+</script>
+</body>
+</html>

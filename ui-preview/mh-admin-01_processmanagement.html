@@ -1,0 +1,2163 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý Quy trình | Khoa CNTT</title>
+  <link rel="stylesheet" href="_styles.css">
+  <style>
+    /* ========== Page-specific: quy trình động (MH-ADMIN-01) ========== */
+
+    /* Dropdown thông báo (chuông) — mở khi bấm icon 🔔 trên header */
+    .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+    .notif-menu.open{display:block}
+    .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+    .notif-menu-list{max-height:320px;overflow-y:auto}
+    .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item:hover{background:#fafafa}
+    .notif-item.unread{background:var(--primary-light)}
+    .notif-item.unread:hover{background:#ffefd1}
+    .notif-item-ico{font-size:16px;flex-shrink:0}
+    .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+    .notif-item-time{font-size:11.5px;color:var(--text-3)}
+    .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+    /* Process table — nền trắng, riêng title cột xám đậm hơn */
+    #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+    #view-list table.tbl th{background:#f0f0f0}
+    .proc-id{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+    .proc-name-cell{font-size:13.5px;font-weight:400;color:var(--text-1)}
+    .proc-steps-list{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);min-width:220px}
+    .proc-steps-list li{margin-bottom:2px}
+    .proc-steps-list li:last-child{margin-bottom:0}
+    .proc-steps-list li.proc-steps-more{list-style:none;margin-left:-18px;color:var(--text-3);letter-spacing:1px}
+    tr.proc-row{cursor:pointer}
+    tr.proc-row:hover td{background:var(--primary-light)}
+
+    /* Unit search combobox */
+    .unit-combo{position:relative}
+    .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+    .unit-combo-menu.open{display:block}
+    .unit-combo-group{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px 4px}
+    .unit-combo-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+    .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+    .unit-combo-item .lvl-badge{font-size:10px;color:var(--text-3);background:#f5f5f5;padding:0 6px;border-radius:8px;flex-shrink:0}
+    .unit-combo-item:hover .lvl-badge,.unit-combo-item.hl .lvl-badge{background:#fff;color:var(--primary)}
+    .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+    .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+
+    /* Workflow builder — hiển thị trong modal to, mọi thứ sửa inline bên trong */
+    .wf-canvas{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+    /* Bỏ scroll ngang riêng cho bảng bước — để dropdown mini-combo không bị cắt bởi vùng cuộn */
+    .wf-canvas .tbl-wrap{overflow:visible}
+    /* Modal cấu hình quy trình cần rộng hơn modal thường để chứa đủ bảng bước + rẽ nhánh */
+    .modal-builder-box{width:min(1680px, 98vw);max-height:94vh}
+    .modal-builder-box .modal-hd{align-items:flex-start}
+
+    /* Step table */
+    table.step-tbl{width:100%;border-collapse:collapse;font-size:13px}
+    table.step-tbl th{background:#f0f0f0;padding:9px 12px;text-align:left;font-weight:500;color:var(--text-1);border-bottom:1px solid var(--border);white-space:nowrap}
+    table.step-tbl td{padding:9px 12px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+    tr.step-row td{vertical-align:middle}
+    .step-order-input{width:44px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;text-align:center;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;color:var(--text-1)}
+    .step-order-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(250,140,22,.2);outline:none}
+    /* Ẩn viền/nền mặc định, chỉ hiện affordance chỉnh sửa khi hover/focus vào ô */
+    .reveal-edit{border-color:transparent;background:transparent}
+    .reveal-edit:hover,.reveal-edit:focus{border-color:var(--border);background:#fff}
+    .step-title-input{width:100%;min-width:180px;padding:5px 8px;border:1px solid transparent;border-radius:4px;font-size:13px;font-weight:400;color:var(--text-1);background:transparent}
+    .step-title-input:hover{border-color:var(--border);background:#fafafa}
+    .step-title-input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 2px rgba(250,140,22,.2);outline:none}
+
+    /* Bảng "Nút hành động" trong phần mở rộng — nhất quán với bảng bước chính nhưng nhỏ gọn hơn */
+    table.action-tbl{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    table.action-tbl th{background:#f0f0f0;padding:7px 10px;text-align:left;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px}
+    table.action-tbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+    table.action-tbl tr:last-child td{border-bottom:none}
+    /* Đồng bộ chiều cao input/select/button trong bảng bước & bảng rẽ nhánh để các dòng thẳng hàng */
+    table.step-tbl tr.step-row td .fc,
+    table.step-tbl tr.step-row td .step-title-input,
+    table.action-tbl td .fc,
+    table.action-tbl td .step-title-input{height:32px;box-sizing:border-box}
+    table.action-tbl td .branch-count-badge,
+    table.action-tbl td .step-del-btn,
+    table.action-tbl td .icon-btn{height:28px;box-sizing:border-box}
+    table.action-tbl td .icon-btn.open{background:var(--primary-light);border-color:#ffd591;color:var(--primary)}
+    table.action-tbl td .icon-btn .notify-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--success)}
+    /* Ẩn icon mũi tên dropdown mặc định của input có gợi ý datalist (Tên nút / Trạng thái yêu cầu) */
+    table.action-tbl input[list]::-webkit-calendar-picker-indicator{display:none !important}
+    table.action-tbl input[list]{-moz-appearance:none}
+    /* Ô chỉ có text trơn (VD: STT) — bọc trong div cùng chiều cao 32px để căn giữa khớp với các control khác trong dòng */
+    .row-cell-center{height:32px;display:flex;align-items:center}
+
+    .step-badge{width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .step-badge.submit{background:var(--blue)}
+    .flow-edge-tag{font-size:10px;padding:1px 7px;border-radius:8px;font-weight:600;white-space:nowrap;margin-left:4px;background:#f5f5f5;color:var(--text-3)}
+    .approver-pills{display:flex;flex-wrap:wrap;gap:4px;max-width:230px;align-items:center}
+    .approver-text{font-size:13px;color:var(--text-1);cursor:pointer;white-space:nowrap;border-bottom:1px dashed transparent}
+    .approver-text:hover{border-bottom-color:var(--primary);color:var(--primary)}
+    .mini-combo-trigger{font-size:11px;padding:2px 8px;border:1px dashed var(--border);border-radius:10px;background:#fff;color:var(--text-3);cursor:pointer;font-family:inherit;white-space:nowrap}
+    .mini-combo-trigger:hover{border-color:var(--primary);color:var(--primary)}
+    /* Ô Đơn vị duyệt trống: ẩn nút "+ Thêm", chỉ hiện khi hover/focus vào ô */
+    .approver-pills.reveal-on-hover{min-height:22px}
+    .approver-pills.reveal-on-hover .mini-combo-trigger{opacity:0;pointer-events:none}
+    .approver-pills.reveal-on-hover:hover .mini-combo-trigger,
+    .approver-pills.reveal-on-hover:focus-within .mini-combo-trigger{opacity:1;pointer-events:auto}
+
+    /* Mini search combobox — dùng trong ô Đơn vị/Vai trò/Người duyệt của bảng bước */
+    .mini-combo{position:relative;display:inline-block}
+    .mini-combo-input{font-size:11px;padding:2px 6px;border:1px dashed var(--border);border-radius:10px;background:#fff;color:var(--text-3);cursor:pointer;width:88px}
+    .mini-combo-input:focus{border-style:solid;border-color:var(--primary);color:var(--text-1);outline:none;box-shadow:0 0 0 2px rgba(250,140,22,.15)}
+    .mini-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:200px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;z-index:60;padding:4px}
+    .mini-combo-menu.open{display:block}
+    .mini-combo-item{padding:6px 9px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--text-1);white-space:nowrap}
+    .mini-combo-item:hover,.mini-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+    .mini-combo-empty{padding:10px 9px;text-align:center;color:var(--text-3);font-size:12px}
+    .mini-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+    .pass-min-tag{font-size:10.5px;color:var(--primary);margin-top:3px}
+    .step-del-btn{width:26px;height:26px;border-radius:4px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--text-3);display:inline-flex;align-items:center;justify-content:center}
+    .step-del-btn:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
+
+    /* Cột "Nút hành động" — 1 badge tổng hợp hiển thị số nhánh rẽ, bấm để mở rộng chi tiết */
+    .branch-count-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:14px;font-size:12.5px;font-weight:600;color:var(--primary);background:var(--primary-light);border:1px solid #ffd591;cursor:pointer;font-family:inherit}
+    .branch-count-badge:hover{background:#ffe7ba}
+    .branch-count-badge .chev{font-size:10px;transition:transform .15s}
+    .branch-count-badge.open .chev{transform:rotate(180deg)}
+
+    /* Expand row — mở ngay dưới hàng bước khi bấm 1 nút hành động */
+    tr.step-expand-row td{background:#fafafa;padding:14px 16px 16px 52px;border-bottom:2px solid var(--border)}
+    .expand-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+
+    .step-action-arrow{color:var(--text-3);flex-shrink:0}
+    .step-action-arrow.back{color:var(--warning)}
+    .step-action-back-tag{font-size:10px;color:var(--warning);border:1px solid #ffe58f;background:#fffbe6;padding:0 6px;border-radius:8px;flex-shrink:0}
+
+    .action-fields-label{font-size:11px;color:var(--text-3);margin-bottom:6px}
+    .dfield-row-inline{display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid #ececec}
+    .dfield-row-inline:last-child{border-bottom:none}
+    .dfield-row-inline .fname{flex:1;font-weight:500}
+
+    /* Cấu hình thông báo theo nút hành động */
+    .notify-card{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+    .notify-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+    .notify-card-head .head-label{display:flex;align-items:center;gap:8px}
+    .notify-card-head .ico{font-size:16px}
+    .notify-card .fi{margin-bottom:0}
+    .notify-card .fi.disabled{opacity:.5;pointer-events:none}
+    .notify-card .fi label{font-size:14px}
+    .notify-card .fi .fc{font-size:14px}
+    .notify-card .fi input.fc{height:38px}
+    .notify-card .fi textarea.fc{min-height:90px}
+    .notify-channels{display:flex;gap:20px}
+    .notify-channels label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:400;cursor:pointer}
+    .switch{width:40px;height:24px}
+    .switch .track::before{width:20px;height:20px}
+    .switch input:checked + .track::before{transform:translateX(16px)}
+
+    /* Toggle switch nhỏ dùng chung cho bật/tắt gửi thông báo — hành vi vẫn là checkbox thường */
+    .switch{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0;cursor:pointer}
+    .switch input{opacity:0;width:0;height:0}
+    .switch .track{position:absolute;inset:0;background:#d9d9d9;border-radius:20px;transition:.15s}
+    .switch .track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+    .switch input:checked + .track{background:var(--primary)}
+    .switch input:checked + .track::before{transform:translateX(14px)}
+
+    /* Add step button */
+    .add-step-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:1px dashed var(--border);border-radius:6px;background:#fff;color:var(--text-3);font-size:12.5px;cursor:pointer;transition:all .15s;margin-top:10px}
+    .add-step-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+
+    /* Copy process — multi-select list */
+    .copy-source-list{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px}
+    .copy-source-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+    .copy-source-item:hover{background:#fafafa}
+    .copy-source-item input[type=checkbox]{flex-shrink:0}
+    .copy-source-item .csi-name{flex:1}
+    .copy-source-item .csi-id{color:var(--text-3);font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:11.5px}
+
+    /* Pass rule radio cards */
+    .rule-cards{display:flex;gap:8px}
+    .rule-card{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:10px 12px;cursor:pointer;transition:all .15s}
+    .rule-card.active{border-color:var(--primary);background:var(--primary-light)}
+    .rule-card-title{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+    .rule-card-desc{font-size:11px;color:var(--text-3);margin-top:3px}
+
+    /* Modal Cấu hình Deadline — nhóm nội dung thành từng khối rõ ràng */
+    .dl-block{border:1px solid var(--border);border-radius:8px;background:#fafafa;padding:14px;margin-bottom:12px}
+    .dl-block-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+    .dl-check-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;margin-bottom:10px}
+    .dl-email-template{margin:2px 0 10px 24px;padding:12px;border:1px dashed var(--border);border-radius:6px;background:#fff}
+
+    .dl-type-pills{display:flex;gap:8px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px}
+    .dl-type-pill{flex:1;padding:8px 12px;border:none;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+    .dl-type-pill:hover{background:#f5f5f5}
+    .dl-type-pill.active{background:var(--primary);color:#fff}
+
+    /* Rich text editor cho Nội dung email — giữ định dạng đậm/nghiêng khi paste từ Word/Gmail */
+    .rte-body{min-height:140px;padding:8px 10px;overflow-y:auto;line-height:1.5;cursor:text}
+    .rte-body:empty::before{content:attr(data-placeholder);color:var(--text-3)}
+
+    /* Ghi chú kỹ thuật cho dev — chỉ xuất hiện trong file thiết kế, không phải text sản phẩm thật */
+    .dev-note{font-size:11px;color:#ad6800;background:#fffbe6;border:1px dashed #ffe58f;border-radius:4px;padding:6px 8px;margin-bottom:6px}
+
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">📋&nbsp; Đề tài &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">DS đề tài</a></li></ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Cấu hình hệ thống / <b style="color:var(--text-1)">Quản lý Quy trình</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW 1 — DANH SÁCH QUY TRÌNH (MH-ADMIN-01, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0 0 4px;font-size:18px">Quản lý Quy trình</h2>
+          </div>
+          <button class="btn btn-primary" id="btn-new-process" onclick="openModal('modal-new-process')">＋ Tạo mới</button>
+          <button class="btn btn-primary" id="btn-copy-process" style="display:none" onclick="openCopyModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Sao chép
+          </button>
+        </div>
+
+        <!-- Bộ lọc: Đơn vị (search combobox) + Chức năng/Phân hệ + Tìm tên quy trình -->
+        <div class="filter-bar">
+          <div class="unit-combo" id="unit-combo">
+            <input class="fc" id="unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="width:280px">
+            <div class="unit-combo-menu" id="unit-combo-menu"></div>
+          </div>
+          <select class="fc" id="func-select" style="width:220px">
+            <option value="all">Tất cả chức năng</option>
+            <option value="qdsv">Quyết định sinh viên</option>
+            <option value="khenthuong">Khen thưởng</option>
+            <option value="kyluat">Kỷ luật sinh viên</option>
+            <option value="bieumau">Biểu mẫu</option>
+          </select>
+          <input class="fc" id="proc-name-search" type="text" placeholder="🔍 Tìm tên quy trình…" autocomplete="off" style="width:260px">
+        </div>
+
+        <div class="alert alert-info" id="unit-copy-alert" style="display:none">
+          <span class="alert-ico">📋</span>
+          <div class="alert-body">
+            <div class="alert-title" id="unit-copy-title"></div>
+            <div class="alert-desc" id="unit-copy-desc"></div>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:70px">ID</th>
+                <th>Tên quy trình</th>
+                <th>Chức năng</th>
+                <th>Các bước</th>
+                <th>Trạng thái</th>
+                <th>Cập nhật</th>
+                <th style="width:80px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="proc-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="proc-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình quy trình (MH-ADMIN-01, view: builder) ═══ -->
+<div class="overlay hidden" id="modal-builder">
+  <div class="modal-box modal-builder-box">
+    <div class="modal-hd">
+      <div>
+        <div class="flex items-center gap-8">
+          <h3 class="modal-title" id="builder-title">Quy trình xét kỷ luật sinh viên</h3>
+          <span class="tag tag-success" style="display:none">Active</span>
+        </div>
+        <p class="text-muted text-sm" style="display:none;margin:6px 0 0 0" id="builder-sub">Kỷ luật sinh viên · 4 bước · Cập nhật 12/07/2026</p>
+      </div>
+      <button class="modal-close" onclick="backToList()">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <!-- Canvas — bảng danh sách bước, sửa inline, không panel/modal riêng -->
+      <div class="wf-canvas">
+        <div class="tbl-wrap">
+          <table class="step-tbl">
+            <thead>
+              <tr>
+                <th style="width:56px">STT</th>
+                <th>Tên bước</th>
+                <th>Đơn vị duyệt</th>
+                <th>Loại ĐV</th>
+                <th>Vai trò duyệt</th>
+                <th>Người duyệt</th>
+                <th>Deadline</th>
+                <th>Rẽ nhánh</th>
+                <th style="width:56px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="wf-track"><!-- rendered by JS --></tbody>
+          </table>
+        </div>
+        <datalist id="status-suggest-list"><!-- gợi ý trạng thái yêu cầu, cập nhật động bởi JS --></datalist>
+        <datalist id="action-label-suggest-list">
+          <option value="Nộp">
+          <option value="Đồng ý">
+          <option value="Từ chối">
+          <option value="Yêu cầu chỉnh sửa">
+        </datalist>
+        <button class="btn btn-default btn-sm mt-8" onclick="doAddStep()">＋ Thêm bước</button>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" onclick="backToList()">Đóng</button>
+      <button class="btn btn-primary" onclick="saveBuilder()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tạo quy trình mới ═══ -->
+<div class="overlay hidden" id="modal-new-process">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Tạo quy trình mới</h3>
+      <button class="modal-close" data-close="modal-new-process">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Chức năng<span class="req">*</span></label>
+        <select class="fc" id="new-proc-func">
+          <option value="" selected disabled>— Chọn chức năng —</option>
+          <option value="qdsv">Quyết định sinh viên</option>
+          <option value="khenthuong">Khen thưởng</option>
+          <option value="kyluat">Kỷ luật sinh viên</option>
+          <option value="bieumau">Biểu mẫu</option>
+        </select>
+      </div>
+      <div class="fi">
+        <label>Tên quy trình<span class="req">*</span></label>
+        <input class="fc" id="new-proc-name" placeholder="VD: Quy trình xét kỷ luật mức cảnh cáo">
+      </div>
+      <div class="fi">
+        <label>Trạng thái</label>
+        <select class="fc" id="new-proc-status"><option value="inactive">Inactive</option><option value="active">Active</option></select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-new-process">Huỷ</button>
+      <button class="btn btn-primary" onclick="doCreateProcess()">Tạo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Sao chép quy trình về đơn vị ═══ -->
+<div class="overlay hidden" id="modal-copy-process">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Sao chép quy trình về đơn vị</h3>
+      <button class="modal-close" data-close="modal-copy-process">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Sao chép về đơn vị<span class="req">*</span></label>
+        <select class="fc" id="copy-target-unit"></select>
+      </div>
+      <div class="fi">
+        <div class="flex justify-between items-center" style="margin-bottom:6px">
+          <label style="margin:0">Chọn quy trình nguồn (Cấp 1)<span class="req">*</span></label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="copy-select-all" onchange="toggleAllCopySources(this.checked)"> Chọn tất cả
+          </label>
+        </div>
+        <input class="fc" id="copy-source-search" type="text" placeholder="🔍 Tìm quy trình…" autocomplete="off" style="margin-bottom:6px">
+        <div class="copy-source-list" id="copy-source-list"></div>
+      </div>
+      <div class="f-hint">Bản sao giữ nguyên toàn bộ bước, người phê duyệt và trường thông tin — bạn chỉnh sửa lại sau khi sao chép xong.</div>
+    </div>
+    <div class="modal-ft">
+      <span class="text-sm text-muted" id="copy-count-label" style="margin-right:auto"></span>
+      <button class="btn btn-default" data-close="modal-copy-process">Huỷ</button>
+      <button class="btn btn-primary" onclick="doCopyProcess()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chọn người duyệt ═══ -->
+<div class="overlay hidden" id="modal-select-persons">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Chọn người duyệt</h3>
+      <button class="modal-close" data-close="modal-select-persons">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <input class="fc" id="person-picker-search" type="text" placeholder="🔍 Tìm bằng email, tên cán bộ…" autocomplete="off" style="margin-bottom:6px">
+        <div class="copy-source-list" id="person-picker-list"></div>
+      </div>
+      <div class="fi" id="person-picker-pass-wrap">
+        <label>Quy tắc pass</label>
+        <div class="flex items-center gap-8">
+          <span class="text-sm">Pass nếu ≥</span>
+          <input class="fc" id="person-picker-pass-min" type="number" min="1" style="width:64px;text-align:center">
+          <span class="text-sm" id="person-picker-pass-total">/ 0 người đồng ý</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <span class="text-sm text-muted" id="person-picker-count" style="margin-right:auto"></span>
+      <button class="btn btn-default" data-close="modal-select-persons">Huỷ</button>
+      <button class="btn btn-primary" onclick="savePersonPicker()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình Deadline ═══ -->
+<div class="overlay hidden" id="modal-deadline">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Cấu hình thời hạn xử lý</h3>
+      <button class="modal-close" data-close="modal-deadline">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="dl-block">
+        <div class="dl-block-title">Thời hạn xử lý</div>
+        <div class="dl-type-pills" id="deadline-type-pills">
+          <button type="button" class="dl-type-pill active" data-dltype="hour" onclick="pickDeadlineType(this)">Số giờ</button>
+          <button type="button" class="dl-type-pill" data-dltype="day" onclick="pickDeadlineType(this)">Số ngày</button>
+          <button type="button" class="dl-type-pill" data-dltype="absolute" onclick="pickDeadlineType(this)">Ngày cụ thể</button>
+        </div>
+
+        <div class="flex items-center gap-8" id="deadline-relative-wrap" style="margin-top:12px">
+          <span class="text-sm">Xử lý xong trong vòng</span>
+          <input class="fc" id="deadline-relative-value" type="number" min="1" value="48" style="width:80px;text-align:center">
+          <span class="text-sm" id="deadline-relative-unit-label">giờ</span>
+        </div>
+
+        <div class="flex items-center gap-8" id="deadline-absolute-wrap" style="margin-top:12px;display:none">
+          <span class="text-sm">Hạn chót</span>
+          <input class="fc" id="deadline-absolute-value" type="datetime-local" style="width:220px">
+        </div>
+      </div>
+
+      <div class="dl-block">
+        <div class="dl-block-title">Cảnh báo nếu muộn</div>
+        <label class="dl-check-row">
+          <input type="checkbox" id="deadline-alert-email" onchange="toggleDeadlineEmailTemplate(this.checked)"> 📧 Gửi email
+        </label>
+
+        <div class="dl-email-template" id="deadline-email-template-wrap" style="display:none">
+          <div class="fi" style="margin-bottom:8px">
+            <label class="text-sm">Tiêu đề email</label>
+            <input class="fc" id="deadline-email-subject" placeholder="VD: [Cảnh báo trễ hạn] #StepName">
+          </div>
+          <div class="fi" style="margin-bottom:0">
+            <label class="text-sm">Nội dung email</label>
+            <div class="dev-note">[Note dev] Ô này là div contenteditable (không phải textarea) — khi người dùng dán (paste) nội dung đã in đậm/nghiêng sẵn từ Word, Gmail… thì định dạng sẽ được giữ nguyên.</div>
+            <div class="fc rte-body" id="deadline-email-body" contenteditable="true" data-placeholder="VD: Yêu cầu đã quá hạn xử lý ở bước #StepName."></div>
+            <div class="f-hint">Biến khả dụng: #ModuleName, #WorkflowName, #StepName, #mssv, #hovaten, #lophcn</div>
+          </div>
+        </div>
+
+        <label class="dl-check-row">
+          <input type="checkbox" id="deadline-alert-highlight"> 🖍️ Highlight dòng trong bảng
+        </label>
+        <label class="dl-check-row" style="margin-bottom:0">
+          <input type="checkbox" id="deadline-alert-bell"> 🔔 Thông báo trên chuông
+        </label>
+      </div>
+
+      <div class="dl-block" style="margin-bottom:0">
+        <label class="dl-check-row" style="margin-bottom:0">
+          <input type="checkbox" id="deadline-repeat-enabled" onchange="toggleDeadlineRepeat(this.checked)"> Lặp lại cảnh báo cho đến khi xử lý xong
+        </label>
+        <div class="flex items-center gap-8" id="deadline-repeat-wrap" style="display:none;margin-top:10px">
+          <span class="text-sm">Nhắc lại mỗi</span>
+          <input class="fc" id="deadline-repeat-hours" type="number" min="1" value="12" style="width:80px;text-align:center">
+          <span class="text-sm">giờ</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-deadline">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveDeadline()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình Thông báo (áp dụng chung toàn quy trình) ═══ -->
+<div class="overlay hidden" id="modal-notify">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Cấu hình thông báo</h3>
+      <button class="modal-close" data-close="modal-notify">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="f-hint" style="margin-bottom:14px">Áp dụng chung cho toàn bộ quy trình — không cần bật/tắt riêng từng bước hay từng nút.</div>
+
+      <div class="dl-block">
+        <label class="dl-check-row" style="margin-bottom:10px">
+          <input type="checkbox" id="notify-approver-enabled" onchange="toggleNotifyChannels('notify-approver')">
+          Báo cho người duyệt khi có yêu cầu mới đến bước
+        </label>
+        <div id="notify-approver-channels" style="display:none;margin-left:24px">
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+            <input type="checkbox" id="notify-approver-email"> 📧 Email
+          </label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="notify-approver-bell"> 🔔 Thông báo trên chuông
+          </label>
+        </div>
+      </div>
+
+      <div class="dl-block" style="margin-bottom:0">
+        <label class="dl-check-row" style="margin-bottom:10px">
+          <input type="checkbox" id="notify-submitter-enabled" onchange="toggleNotifyChannels('notify-submitter')">
+          Báo cho người nộp khi yêu cầu bị Từ chối / cần chỉnh sửa
+        </label>
+        <div id="notify-submitter-channels" style="display:none;margin-left:24px">
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+            <input type="checkbox" id="notify-submitter-email"> 📧 Email
+          </label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="notify-submitter-bell"> 🔔 Thông báo trên chuông
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-notify">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveNotifyConfig()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — cây đơn vị 3 cấp
+   Cấp 1: đơn vị quản lý toàn trường (sở hữu quy trình gốc)
+   Cấp 2: Trường con / Khoa — được PHÉP sao chép quy trình từ Cấp 1
+   Cấp 3: Khoa con / Bộ môn — KHÔNG có quy trình riêng, luôn dùng
+          chung quy trình hiệu lực của Cấp 2 quản lý nó
+   ============================================================ */
+const UNITS = [
+  { id:'u-dh', level:1, parent:null, name:'Đại học' },
+  { id:'u-ctsv', level:1, parent:null, name:'Ban Công tác Sinh viên' },
+  { id:'u-daotao', level:1, parent:null, name:'Ban Đào tạo' },
+  { id:'u-sdh', level:1, parent:null, name:'Phòng Sau đại học' },
+  { id:'u-khcn', level:1, parent:null, name:'Phòng Khoa học Công nghệ' },
+  { id:'u-thanhtra', level:1, parent:null, name:'Ban Thanh tra Pháp chế' },
+
+  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
+  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
+  { id:'u-truongxd', level:2, parent:'u-dh', name:'Trường Xây dựng' },
+  { id:'u-ngoaingu', level:2, parent:'u-dh', name:'Khoa Ngoại ngữ' },
+  { id:'u-yduoc', level:2, parent:'u-dh', name:'Trường Y Dược' },
+  { id:'u-cokhi', level:2, parent:'u-dh', name:'Khoa Cơ khí' },
+  { id:'u-dienlanh', level:2, parent:'u-dh', name:'Khoa Điện – Điện lạnh' },
+
+  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
+  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
+  { id:'u-cntt-mangmt', level:3, parent:'u-cntt', name:'Bộ môn Mạng máy tính' },
+  { id:'u-kt-qtkd', level:3, parent:'u-kt', name:'Khoa con Quản trị Kinh doanh' },
+  { id:'u-kt-ketoan', level:3, parent:'u-kt', name:'Bộ môn Kế toán' },
+  { id:'u-xd-cauduongtb', level:3, parent:'u-truongxd', name:'Khoa con Cầu đường' },
+];
+
+function unitById(id){ return UNITS.find(u => u.id === id); }
+const LEVEL_LABEL = { 1:'Cấp 1', 2:'Cấp 2', 3:'Cấp 3' };
+
+/* Đơn vị đang chọn qua combobox tìm kiếm — mặc định Đại học (Cấp 1) */
+let selectedUnitId = 'u-dh';
+
+/* ============================================================
+   DATA — mô phỏng danh sách quy trình theo chức năng
+   Mỗi quy trình gắn với 1 đơn vị SỞ HỮU (ownerUnit).
+   originId = null → quy trình gốc. originId = 'pX' → bản sao,
+   giữ tham chiếu tới quy trình gốc đã sao chép (không tự đồng bộ).
+   ============================================================ */
+const PROCESSES = [
+  // Quy trình gốc — sở hữu bởi Cấp 1 (Đại học)
+  { id:'p1', itemId:1, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình xét học vụ (cảnh báo học vụ)', status:'active', stepCount:5, updated:'02/07/2026', originId:null },
+  { id:'p2', itemId:2, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình công nhận tốt nghiệp', status:'active', stepCount:4, updated:'28/06/2026', originId:null },
+  { id:'p3', itemId:3, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình bảo lưu kết quả học tập', status:'inactive', stepCount:3, updated:'10/07/2026', originId:null },
+  { id:'p4', itemId:4, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng học kỳ (Sinh viên 5 tốt)', status:'active', stepCount:4, updated:'20/06/2026', originId:null },
+  { id:'p5', itemId:5, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng đột xuất (NCKH, cuộc thi)', status:'active', stepCount:3, updated:'05/07/2026', originId:null },
+  { id:'p6', itemId:6, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên', status:'active', stepCount:4, updated:'12/07/2026', originId:null, featured:true },
+  { id:'p7', itemId:7, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xử lý vi phạm thi cử', status:'inactive', stepCount:4, updated:'01/07/2026', originId:null },
+
+  // Bản sao — Khoa CNTT (Cấp 2) đã sao chép từ Đại học rồi tùy chỉnh riêng
+  { id:'p6-cntt', itemId:8, ownerUnit:'u-cntt', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên (Khoa CNTT)', status:'active', stepCount:4, updated:'12/07/2026', originId:'p6' },
+];
+
+const FUNC_LABEL = { qdsv:'Quyết định sinh viên', khenthuong:'Khen thưởng', kyluat:'Kỷ luật sinh viên', bieumau:'Biểu mẫu' };
+
+/* Sinh steps[] placeholder cho các quy trình chưa có dữ liệu builder chi tiết.
+   Giữ đúng shape mà renderTrack()/doAddStep() kỳ vọng (submitters/approvers,
+   actions nối target tuần tự) để mở builder không lỗi. */
+function defaultSteps(n){
+  const steps = Array.from({length:n}, (_,i) => {
+    const id = 's' + i;
+    return i === 0
+      ? { id, type:'submit', title:'Nộp yêu cầu', submitters:[],
+          actions:[{ label:'Nộp', kind:'submit', target:id, resultStatus:'Chờ duyệt', fields:[] }] }
+      : { id, type:'approval', title: i===n-1 ? 'Ban hành quyết định' : `Bước duyệt ${i}`, approvers:[],
+          actions:[
+            { label:'Đồng ý', kind:'approve', target:id, resultStatus:'Đã duyệt', fields:[] },
+            { label:'Từ chối', kind:'reject', target:id, resultStatus:'Từ chối', fields:[] },
+          ] };
+  });
+  // Nối target: mỗi nút "approve/submit" của bước i trỏ sang bước i+1 (bước cuối tự trỏ về chính nó = dừng)
+  steps.forEach((step, i) => {
+    if (i === steps.length - 1) return;
+    const forwardAction = step.actions.find(a => a.kind==='approve' || a.kind==='submit');
+    if (forwardAction) forwardAction.target = steps[i+1].id;
+  });
+  return steps;
+}
+
+/* steps[] thật của từng quy trình — nguồn dữ liệu DUY NHẤT dùng chung bởi
+   bảng danh sách (cột "Các bước") VÀ popup builder (WORKFLOW của quy trình
+   đang mở). Sửa tên bước trong builder sẽ phản ánh ngay ra danh sách. */
+PROCESSES.forEach(p => { p.steps = defaultSteps(p.stepCount); });
+
+/* Đơn vị "hiệu lực" đang xem — Cấp 3 luôn quy về Cấp 2 cha (không có bản riêng) */
+function effectiveOwnerUnit(){
+  const u = unitById(selectedUnitId);
+  return u.level === 3 ? u.parent : u.id;
+}
+
+/* == Unit search combobox == */
+const unitSearchInput = document.getElementById('unit-search');
+const unitComboMenu = document.getElementById('unit-combo-menu');
+let unitHlIndex = -1;
+
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+
+function unitDisplayName(u){
+  return u.level === 1 ? u.name : (u.name + ' (' + unitById(u.parent).name + ')');
+}
+
+function renderUnitMenu(query){
+  const q = (query || '').trim();
+  const matches = q
+    ? UNITS.filter(u => u.name.toLowerCase().includes(q.toLowerCase()))
+    : UNITS;
+
+  if (!matches.length){
+    unitComboMenu.innerHTML = '<div class="unit-combo-empty">Khong tim thay don vi nao khop &quot;' + q + '&quot;</div>';
+    unitHlIndex = -1;
+    return;
+  }
+
+  const groups = { 1:[], 2:[], 3:[] };
+  matches.forEach(u => groups[u.level].push(u));
+
+  let html = '';
+  let flatIndex = 0;
+  [1,2,3].forEach(lvl => {
+    if (!groups[lvl].length) return;
+    html += '<div class="unit-combo-group">' + LEVEL_LABEL[lvl] + '</div>';
+    groups[lvl].forEach(u => {
+      const parentTag = u.level > 1 ? ('<span class="text-muted"> - ' + unitById(u.parent).name + '</span>') : '';
+      html += '<div class="unit-combo-item" data-idx="' + flatIndex + '" data-id="' + u.id + '" onclick="pickUnit(&#39;' + u.id + '&#39;)">'
+        + '<span>' + highlightMatch(u.name, q) + parentTag + '</span>'
+        + '<span class="lvl-badge">' + LEVEL_LABEL[lvl] + '</span></div>';
+      flatIndex++;
+    });
+  });
+  unitComboMenu.innerHTML = html;
+  unitHlIndex = -1;
+}
+
+function openUnitMenu(){
+  renderUnitMenu(unitSearchInput.value);
+  unitComboMenu.classList.add('open');
+}
+function closeUnitMenu(){
+  unitComboMenu.classList.remove('open');
+  unitHlIndex = -1;
+}
+
+function currentFuncFilter(){
+  return document.getElementById('func-select').value;
+}
+
+function pickUnit(id){
+  selectedUnitId = id;
+  unitSearchInput.value = unitDisplayName(unitById(id));
+  closeUnitMenu();
+  renderCopyAlert();
+  currentPage = 1;
+  renderProcGrid();
+}
+
+function setUnitHighlight(newIdx){
+  const items = unitComboMenu.querySelectorAll('.unit-combo-item');
+  items.forEach(el => el.classList.remove('hl'));
+  if (newIdx >= 0 && newIdx < items.length){
+    items[newIdx].classList.add('hl');
+    items[newIdx].scrollIntoView({ block:'nearest' });
+  }
+  unitHlIndex = newIdx;
+}
+
+unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
+unitSearchInput.addEventListener('input', () => openUnitMenu());
+unitSearchInput.addEventListener('keydown', e => {
+  const items = unitComboMenu.querySelectorAll('.unit-combo-item');
+  if (e.key === 'ArrowDown'){ e.preventDefault(); setUnitHighlight(Math.min(unitHlIndex+1, items.length-1)); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); setUnitHighlight(Math.max(unitHlIndex-1, 0)); }
+  else if (e.key === 'Enter'){
+    e.preventDefault();
+    if (unitHlIndex >= 0 && items[unitHlIndex]) pickUnit(items[unitHlIndex].dataset.id);
+  } else if (e.key === 'Escape'){ closeUnitMenu(); unitSearchInput.blur(); }
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('unit-combo').contains(e.target)) closeUnitMenu();
+});
+
+/* == Dropdown thông báo (chuông trên header) — demo data tĩnh, minh hoạ luồng bấm xem == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'📝', title:'Yêu cầu mới đến bước "Hội đồng Kỷ luật Khoa họp xét" cần bạn duyệt', time:'5 phút trước' },
+  { id:'n2', unread:true, ico:'⏰', title:'Quy trình "Quy trình xét học vụ (cảnh báo học vụ)" có yêu cầu trễ hạn xử lý', time:'2 giờ trước' },
+  { id:'n3', unread:false, ico:'✅', title:'Quy trình "Quy trình công nhận tốt nghiệp" vừa được cập nhật', time:'Hôm qua' },
+];
+
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+  showToast('Đã mở thông báo: ' + n.title, 'ok');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+
+updateNotifBadge();
+
+function renderUnitSelect(){
+  unitSearchInput.value = unitDisplayName(unitById(selectedUnitId));
+  renderCopyAlert();
+}
+
+function renderCopyAlert(){
+  const alertEl = document.getElementById('unit-copy-alert');
+  const u = unitById(selectedUnitId);
+
+  updateActionButtons(u);
+
+  /* Alert "dùng chung quy trình" (Cấp 3) / "chưa có quy trình riêng" (Cấp 2)
+     đã bị ẩn theo yêu cầu — giữ lại logic bên dưới để dễ khôi phục sau này. */
+  alertEl.style.display = 'none';
+}
+
+/* Cấp 1: được tạo quy trình mới. Cấp 2/3: chỉ được sao chép về từ Cấp 1. */
+function updateActionButtons(u){
+  const isLevel1 = u.level === 1;
+  document.getElementById('btn-new-process').style.display = isLevel1 ? '' : 'none';
+  document.getElementById('btn-copy-process').style.display = isLevel1 ? 'none' : '';
+}
+
+const PROC_PAGE_SIZE = 20;
+let currentPage = 1;
+
+function currentNameSearch(){
+  return document.getElementById('proc-name-search').value.trim().toLowerCase();
+}
+
+function renderProcGrid(){
+  const tbody = document.getElementById('proc-tbody');
+  const ownerUnit = effectiveOwnerUnit();
+  const filter = currentFuncFilter();
+  const nameQuery = currentNameSearch();
+
+  let list = PROCESSES.filter(p => p.ownerUnit === ownerUnit);
+  if (filter !== 'all') list = list.filter(p => p.func === filter);
+  if (nameQuery) list = list.filter(p => p.name.toLowerCase().includes(nameQuery));
+
+  const totalPages = Math.max(1, Math.ceil(list.length / PROC_PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*PROC_PAGE_SIZE, currentPage*PROC_PAGE_SIZE);
+
+  tbody.innerHTML = pageList.map((p, idx) => {
+    const chips = p.steps.map(s => s.title);
+    return `
+    <tr class="proc-row" onclick="openBuilder('${p.id}')">
+      <td class="text-muted">${(currentPage-1)*PROC_PAGE_SIZE + idx + 1}</td>
+      <td><span class="proc-id">${p.itemId}</span></td>
+      <td><span class="proc-name-cell">${p.name}</span></td>
+      <td>${FUNC_LABEL[p.func]}</td>
+      <td>
+        <ol class="proc-steps-list">
+          ${chips.slice(0, 2).map(c => `<li>${c}</li>`).join('')}
+          ${chips.length > 2 ? '<li class="proc-steps-more">…</li>' : ''}
+        </ol>
+      </td>
+      <td><span class="tag ${p.status==='active'?'tag-success':'tag-default'}">${p.status==='active'?'Active':'Inactive'}</span></td>
+      <td class="text-muted">${p.updated}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Cấu hình quy trình" onclick="openBuilder('${p.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </button>
+          <button class="icon-btn danger" title="Xoá quy trình" onclick="confirmDeleteProcess('${p.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có quy trình nào cho chức năng này ở đơn vị đang chọn</div></td></tr>`;
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('proc-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (currentPage-1)*PROC_PAGE_SIZE + 1;
+  const to = Math.min(currentPage*PROC_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} quy trình</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+
+function goToPage(p){
+  currentPage = p;
+  renderProcGrid();
+}
+
+function procById(id){ return PROCESSES.find(p => p.id === id); }
+
+function confirmDeleteProcess(id){
+  const p = procById(id);
+  showConfirm(`Xoá quy trình "${p.name}"? Hành động này không thể hoàn tác.`, () => {
+    const i = PROCESSES.findIndex(x => x.id === id);
+    if (i > -1) PROCESSES.splice(i, 1);
+    showToast('Đã xoá quy trình', 'ok');
+    renderProcGrid();
+  }, 'Xoá', 'btn-danger');
+}
+
+document.getElementById('func-select').addEventListener('change', () => {
+  currentPage = 1;
+  renderProcGrid();
+});
+
+document.getElementById('proc-name-search').addEventListener('input', () => {
+  currentPage = 1;
+  renderProcGrid();
+});
+
+renderUnitSelect();
+renderProcGrid();
+
+/* ── Modal Sao chép quy trình ── */
+function openCopyModal(){
+  const targetSel = document.getElementById('copy-target-unit');
+  const listEl = document.getElementById('copy-source-list');
+  const lvl2Units = UNITS.filter(u => u.level === 2);
+  targetSel.innerHTML = lvl2Units.map(u => `<option value="${u.id}" ${u.id===selectedUnitId?'selected':''}>${u.name}</option>`).join('');
+
+  const rootProcesses = PROCESSES.filter(p => p.ownerUnit === 'u-dh');
+  listEl.innerHTML = rootProcesses.map(p => `
+    <label class="copy-source-item" data-name="${p.name.toLowerCase()}">
+      <input type="checkbox" class="copy-source-check" value="${p.id}" onchange="updateCopyCount()">
+      <span class="csi-name">${p.name}</span>
+      <span class="csi-id">#${p.itemId}</span>
+    </label>`).join('');
+
+  document.getElementById('copy-select-all').checked = false;
+  document.getElementById('copy-source-search').value = '';
+  updateCopyCount();
+  openModal('modal-copy-process');
+}
+
+document.getElementById('copy-source-search').addEventListener('input', e => {
+  filterCopySourceList(e.target.value);
+});
+
+function filterCopySourceList(query){
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll('.copy-source-item').forEach(item => {
+    item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+
+function toggleAllCopySources(checked){
+  document.querySelectorAll('.copy-source-item').forEach(item => {
+    if (item.style.display !== 'none') item.querySelector('.copy-source-check').checked = checked;
+  });
+  updateCopyCount();
+}
+
+function updateCopyCount(){
+  const checks = document.querySelectorAll('.copy-source-check');
+  const checked = document.querySelectorAll('.copy-source-check:checked');
+  document.getElementById('copy-count-label').textContent = checked.length
+    ? `Đã chọn ${checked.length}/${checks.length} quy trình`
+    : '';
+  document.getElementById('copy-select-all').checked = checks.length > 0 && checked.length === checks.length;
+}
+
+/* Sao chép quy trình nguồn (Cấp 1) về đơn vị đích (Cấp 2): tạo bản ghi PROCESSES
+   mới thật sự cho mỗi quy trình được chọn — deep-clone steps[] để chỉnh sửa sau
+   này ở bản sao không ảnh hưởng bản gốc. Nếu đơn vị đích đã có bản sao của cùng
+   quy trình nguồn (originId trùng) rồi thì bỏ qua, không tạo trùng lặp. */
+function doCopyProcess(){
+  const targetUnit = document.getElementById('copy-target-unit').value;
+  const checkedIds = Array.from(document.querySelectorAll('.copy-source-check:checked')).map(cb => cb.value);
+
+  if (!checkedIds.length){
+    showToast('Chọn ít nhất 1 quy trình để sao chép', 'warn');
+    return;
+  }
+
+  const maxItemId = () => PROCESSES.reduce((max, p) => Math.max(max, p.itemId), 0);
+  const today = new Date();
+  const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+
+  const copiedNames = [];
+  const skippedNames = [];
+
+  checkedIds.forEach(sourceId => {
+    const source = procById(sourceId);
+    const alreadyCopied = PROCESSES.some(p => p.ownerUnit === targetUnit && p.originId === sourceId);
+    if (alreadyCopied){
+      skippedNames.push(source.name);
+      return;
+    }
+
+    const copy = {
+      id: 'p-copy-' + sourceId + '-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+      itemId: maxItemId() + 1,
+      ownerUnit: targetUnit,
+      func: source.func,
+      name: source.name,
+      status: source.status,
+      stepCount: source.steps.length,
+      updated,
+      originId: sourceId,
+      steps: JSON.parse(JSON.stringify(source.steps)),
+    };
+    PROCESSES.unshift(copy);
+    copiedNames.push(source.name);
+  });
+
+  closeModal('modal-copy-process');
+
+  if (copiedNames.length){
+    showToast(`Đã sao chép ${copiedNames.length} quy trình (${copiedNames.join(', ')}) về ${unitById(targetUnit).name}`, 'ok');
+  }
+  if (skippedNames.length){
+    showToast(`Bỏ qua ${skippedNames.length} quy trình đã có bản sao ở đơn vị này (${skippedNames.join(', ')})`, 'warn');
+  }
+
+  selectedUnitId = targetUnit;
+  renderUnitSelect();
+  document.getElementById('func-select').value = 'all';
+  document.getElementById('proc-name-search').value = '';
+  currentPage = 1;
+  renderProcGrid();
+}
+
+/* ============================================================
+   DATA — cấu trúc quy trình chi tiết (demo: Quy trình xét kỷ luật)
+   Mô hình: steps[] tuyến tính hiển thị. Mỗi step có actions[] —
+   MỖI ACTION (nút) có target (bước rẽ nhánh tới) VÀ fields[] riêng
+   (trường thông tin bắt buộc/tuỳ chọn phải nhập khi bấm đúng nút đó).
+   ============================================================ */
+const WORKFLOW_DEMO_STEPS = [
+    {
+      id:'s0', type:'submit', title:'Cố vấn học tập / GVCN nộp báo cáo vi phạm',
+      submitters:[{type:'role', label:'Cố vấn học tập'}],
+      actions:[
+        {label:'Nộp', kind:'submit', target:'s1', resultStatus:'Chờ duyệt', fields:[
+          {name:'Họ tên sinh viên', type:'Text', required:true},
+          {name:'Mô tả vi phạm', type:'Textarea', required:true},
+          {name:'Minh chứng đính kèm', type:'File upload', required:false},
+          {name:'Mức đề xuất xử lý', type:'Select', required:true},
+        ]},
+      ]
+    },
+    {
+      id:'s1', type:'approval', title:'Trưởng Bộ môn xác nhận',
+      approvers:[{type:'role', label:'Trưởng đơn vị'}],
+      actions:[
+        {label:'Đồng ý', kind:'approve', target:'s2', resultStatus:'Đã duyệt', fields:[
+          {name:'Ý kiến Bộ môn', type:'Textarea', required:false},
+        ]},
+        {label:'Từ chối', kind:'reject', target:'s1', resultStatus:'Từ chối', fields:[
+          {name:'Lý do từ chối', type:'Textarea', required:true},
+        ]},
+        {label:'Yêu cầu chỉnh sửa', kind:'revise', target:'s0', resultStatus:'Yêu cầu chỉnh sửa', fields:[
+          {name:'Nội dung cần bổ sung', type:'Textarea', required:true},
+        ]},
+      ]
+    },
+    {
+      id:'s2', type:'approval', title:'Hội đồng Kỷ luật Khoa họp xét',
+      approvers:[{type:'dept', label:'Phòng CTSV'}, {type:'role', label:'Trưởng đơn vị'}, {type:'person', label:'Nguyễn Thị Hoa', code:'CB0012', email:'hoa.nt@dh.edu.vn'}],
+      passMin:1,
+      actions:[
+        {label:'Đồng ý', kind:'approve', target:'s3', resultStatus:'Đã duyệt', fields:[
+          {name:'Biên bản họp Hội đồng', type:'File upload', required:true},
+          {name:'Hình thức kỷ luật đề xuất', type:'Select (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)', required:true},
+        ]},
+        {label:'Từ chối', kind:'reject', target:'s2', resultStatus:'Từ chối', fields:[
+          {name:'Lý do không đủ căn cứ', type:'Textarea', required:true},
+        ]},
+        {label:'Yêu cầu chỉnh sửa', kind:'revise', target:'s1', resultStatus:'Yêu cầu chỉnh sửa', fields:[
+          {name:'Nội dung cần điều tra thêm', type:'Textarea', required:true},
+        ]},
+      ]
+    },
+    {
+      id:'s3', type:'approval', title:'Ban Giám hiệu ký quyết định',
+      approvers:[{type:'role', label:'Phó trưởng đơn vị'}],
+      actions:[
+        {label:'Đồng ý', kind:'approve', target:'s3', resultStatus:'Đã duyệt', fields:[
+          {name:'Số quyết định', type:'Text', required:true},
+          {name:'Ngày hiệu lực', type:'Date', required:true},
+        ]},
+        {label:'Yêu cầu chỉnh sửa', kind:'revise', target:'s2', resultStatus:'Yêu cầu chỉnh sửa', fields:[
+          {name:'Lý do trả lại', type:'Textarea', required:true},
+        ]},
+      ]
+    },
+  ];
+
+/* Gán steps[] chi tiết đầy đủ (đã soạn tay ở trên) cho quy trình gốc "Xét kỷ luật
+   sinh viên" — quy trình khác vẫn dùng defaultSteps() placeholder ở trên. Bản sao
+   Khoa CNTT dùng clone riêng để sửa không ảnh hưởng bản gốc. */
+procById('p6').steps = WORKFLOW_DEMO_STEPS;
+procById('p6-cntt').steps = JSON.parse(JSON.stringify(WORKFLOW_DEMO_STEPS));
+
+/* currentWorkflow: quy trình đang mở trong popup builder — mọi thao tác sửa bước
+   (thêm/xoá/đổi tên/rẽ nhánh...) đọc/ghi thẳng vào steps[] của quy trình này, nên
+   danh sách ngoài bảng chính luôn phản ánh đúng dữ liệu đã sửa. */
+let currentWorkflow = null;
+
+/* expandedRows: Set các "stepId::branch" hoặc "stepId::fields" đang mở rộng */
+let expandedRows = new Set();
+
+/* Tạo quy trình mới: đọc form modal-new-process, validate, thêm vào ĐẦU PROCESSES
+   (unshift) rồi mở ngay builder để cấu hình bước. Vì bảng danh sách render theo
+   đúng thứ tự PROCESSES (không sort riêng) và trang được reset về 1, quy trình
+   mới luôn xuất hiện ở dòng đầu tiên khi đóng builder. */
+function doCreateProcess(){
+  const func = document.getElementById('new-proc-func').value;
+  const name = document.getElementById('new-proc-name').value.trim();
+  const status = document.getElementById('new-proc-status').value;
+
+  if (!func || !name){
+    showToast('Vui lòng nhập đủ Chức năng và Tên quy trình', 'warn');
+    return;
+  }
+
+  const newId = 'p-new-' + Date.now();
+  const maxItemId = PROCESSES.reduce((max, p) => Math.max(max, p.itemId), 0);
+  const today = new Date();
+  const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+
+  const newProcess = {
+    id: newId, itemId: maxItemId + 1, ownerUnit: 'u-dh', func, name, status,
+    stepCount: 0, updated, originId: null, steps: [],
+  };
+  PROCESSES.unshift(newProcess);
+
+  document.getElementById('new-proc-func').value = '';
+  document.getElementById('new-proc-name').value = '';
+  document.getElementById('new-proc-status').value = 'inactive';
+
+  /* Reset bộ lọc chức năng/tên đang áp dụng — tránh chúng vô tình che mất dòng
+     vừa tạo khi quay lại danh sách (VD: đang lọc chức năng khác/đang gõ tìm tên cũ). */
+  document.getElementById('func-select').value = 'all';
+  document.getElementById('proc-name-search').value = '';
+  currentPage = 1;
+
+  closeModal('modal-new-process');
+  openBuilder(newId);
+}
+
+function openBuilder(procId){
+  const p = procId === 'new' ? null : procById(procId);
+  currentWorkflow = p || { name:'Quy trình mới', func:'', steps:[], updated:'' };
+
+  document.getElementById('builder-title').textContent = currentWorkflow.name;
+  document.getElementById('builder-sub').textContent = (FUNC_LABEL[currentWorkflow.func] || '') + ' · ' + currentWorkflow.steps.length + ' bước · Cập nhật ' + (currentWorkflow.updated || '');
+  expandedRows.clear();
+  renderTrack();
+  openModal('modal-builder');
+}
+function backToList(){
+  closeModal('modal-builder');
+  renderProcGrid();
+}
+
+function saveBuilder(){
+  closeModal('modal-builder');
+  renderProcGrid();
+  showToast('Đã lưu cấu hình quy trình', 'ok');
+}
+
+function stepById(id){ return currentWorkflow.steps.find(s=>s.id===id); }
+
+/* Người nhận thông báo của 1 nút hành động = người phụ trách bước đích (target), bất kể kind
+   (approve/reject/revise) — target đã tự nhiên biểu diễn đúng "ai xử lý tiếp theo":
+   - target trỏ tới bước nộp (type='submit') → chính là người nộp (VD: reject, hoặc revise trả
+     thẳng về người nộp gốc để bổ sung lại).
+   - target trỏ về chính bước hiện tại (VD: "Đồng ý" ở bước cuối) → quy trình dừng ở đây, quy về
+     người nộp gốc vì không còn ai xử lý tiếp.
+   - target là một bước giữa chừng khác (VD: revise yêu cầu bước trước đó bổ sung) → báo đúng
+     người phụ trách bước đó, không phải người nộp gốc. */
+function getNotifyRecipientStep(step, a){
+  if (a.target === step.id) return currentWorkflow.steps.find(s => s.type === 'submit');
+  return stepById(a.target);
+}
+
+/* Danh sách đầy đủ đích rẽ nhánh có thể chọn: mọi bước trong quy trình (không còn điểm kết thúc riêng —
+   bước cuối cùng của quy trình tự nhiên là điểm kết thúc khi được duyệt xong) */
+function renderTargetOptions(currentTarget){
+  const emptyOption = `<option value="" ${!currentTarget?'selected':''}>— Chưa chọn —</option>`;
+  const stepOptions = currentWorkflow.steps.map((s, i) =>
+    `<option value="${s.id}" ${s.id===currentTarget?'selected':''}>${i+1}. ${s.title}</option>`
+  ).join('');
+  return emptyOption + stepOptions;
+}
+
+function setActionTarget(stepId, actionIdx, target){
+  const step = stepById(stepId);
+  step.actions[actionIdx].target = target;
+  renderTrack();
+  showToast('Đã cập nhật đích rẽ nhánh', 'ok');
+}
+
+/* Trạng thái yêu cầu sau khi bấm 1 nút hành động — độc lập với đích rẽ nhánh (bước tiếp theo).
+   Gõ tự do qua <input list>, gợi ý lấy từ STATUS_OPTIONS — gõ tên mới sẽ tự thêm vào danh sách gợi ý. */
+let STATUS_OPTIONS = ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Yêu cầu chỉnh sửa'];
+
+/* Tên nút chuẩn → trạng thái yêu cầu mặc định tương ứng, tự động điền khi đổi tên nút */
+const ACTION_LABEL_TO_STATUS = {
+  'Nộp': 'Chờ duyệt',
+  'Đồng ý': 'Đã duyệt',
+  'Từ chối': 'Từ chối',
+  'Yêu cầu chỉnh sửa': 'Yêu cầu chỉnh sửa',
+};
+
+function renderStatusDatalist(){
+  document.getElementById('status-suggest-list').innerHTML = STATUS_OPTIONS.map(s => `<option value="${s}">`).join('');
+}
+
+function setActionStatus(stepId, actionIdx, status){
+  const trimmed = status.trim();
+  if (!trimmed) return;
+  const step = stepById(stepId);
+  step.actions[actionIdx].resultStatus = trimmed;
+  if (!STATUS_OPTIONS.includes(trimmed)) STATUS_OPTIONS.push(trimmed);
+  renderTrack();
+  showToast('Đã cập nhật trạng thái yêu cầu', 'ok');
+}
+
+/* expandedFieldRows: Set các "stepId::actionIdx" đang mở rộng để xem/sửa trường thông tin */
+let expandedFieldRows = new Set();
+const FIELD_TYPE_OPTIONS = ['Text', 'Textarea', 'Select', 'Checkbox', 'Date', 'File upload'];
+
+/* Mẫu email mặc định báo người duyệt bước tiếp theo có yêu cầu mới cần xử lý — chỉ dùng làm
+   placeholder gợi ý khi admin chưa tự nhập, không phải giá trị đã lưu. */
+const APPROVE_NOTIFY_TITLE_DEFAULT = 'Thông báo có một Yêu cầu mới cần xử lý';
+const APPROVE_NOTIFY_TEMPLATE_DEFAULT = 'Có yêu cầu mới của quy trình #WorkflowName cần được xử lý, Thầy/Cô vui lòng truy cập vào hệ thống quản trị đại học để phê duyệt.';
+
+/* Mẫu email mặc định báo KẾT QUẢ về người nộp khi quy trình kết thúc tại nút này (target trỏ
+   tới bước nộp — xem getNotifyRecipientStep) — chỉ dùng làm placeholder gợi ý. */
+const FINAL_NOTIFY_TITLE_DEFAULT = 'Thông báo kết quả xử lý của yêu cầu';
+const FINAL_NOTIFY_TEMPLATE_DEFAULT = 'Yêu cầu của bạn đã có kết quả.\nKết quả: #StatusName\nVui lòng truy cập hệ thống quản trị để xem chi tiết.';
+
+/* expandedNotifyRows: Set các "stepId::actionIdx" đang mở rộng để xem/sửa cấu hình thông báo.
+   Người nhận không cần chọn riêng — luôn là người phụ trách bước đích (a.target), vì target đã
+   biểu diễn đúng "ai xử lý tiếp theo" cho cả rẽ nhánh đồng ý (bước sau) lẫn từ chối (bước trước). */
+let expandedNotifyRows = new Set();
+
+function toggleActionNotify(stepId, actionIdx){
+  const key = stepId + '::' + actionIdx;
+  if (expandedNotifyRows.has(key)) expandedNotifyRows.delete(key);
+  else expandedNotifyRows.add(key);
+  renderTrack();
+}
+
+/* Gửi thông báo mặc định TẮT — admin phải chủ động bật bằng switch cho từng nút */
+function isNotifyEnabled(a){
+  return !!(a.notify && a.notify.enabled);
+}
+
+function ensureActionNotify(action){
+  if (!action.notify) action.notify = { enabled:false, title:'', template:'', channels:{email:false, bell:false} };
+  if (!action.notify.channels) action.notify.channels = { email:false, bell:false };
+  return action.notify;
+}
+
+function toggleActionNotifyEnabled(stepId, actionIdx, checked){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).enabled = checked;
+  renderTrack();
+  showToast(checked ? 'Đã bật gửi thông báo cho nút này' : 'Đã tắt gửi thông báo cho nút này', 'ok');
+}
+
+function toggleActionNotifyChannel(stepId, actionIdx, channel, checked){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).channels[channel] = checked;
+  renderTrack();
+}
+
+function setActionNotifyTitle(stepId, actionIdx, title){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).title = title;
+  renderTrack();
+  showToast('Đã lưu tiêu đề thông báo', 'ok');
+}
+
+function setActionNotifyTemplate(stepId, actionIdx, template){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).template = template;
+  renderTrack();
+  showToast('Đã lưu nội dung thông báo', 'ok');
+}
+
+function renderActionRow(step, stepIdx, a, ai){
+  const fieldsKey = step.id + '::' + ai;
+  const fieldsOpen = expandedFieldRows.has(fieldsKey);
+  const notifyOpen = expandedNotifyRows.has(fieldsKey);
+
+  let html = `
+    <tr class="step-row">
+      <td class="text-muted"><div class="row-cell-center">${ai+1}</div></td>
+      <td>
+        <input class="step-title-input" style="font-size:13px;min-width:0;padding-left:0" list="action-label-suggest-list" value="${a.label}" onchange="renameAction('${step.id}',${ai},this.value)">
+      </td>
+      <td>
+        <div class="flex items-center gap-8">
+          <select class="fc" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${stepById(a.target)?.title || ''}" onchange="setActionTarget('${step.id}',${ai},this.value)">
+            ${renderTargetOptions(a.target)}
+          </select>
+        </div>
+      </td>
+      <td>
+        <input class="fc" style="width:100%" list="status-suggest-list" value="${a.resultStatus || ''}"
+          placeholder="VD: Đã duyệt" onchange="setActionStatus('${step.id}',${ai},this.value)">
+      </td>
+      <td>
+        <button class="branch-count-badge ${fieldsOpen?'open':''}" title="Trường thông tin yêu cầu khi bấm nút này" onclick="toggleActionFields('${step.id}',${ai})">
+          Trường dữ liệu (${a.fields.length}) <span class="chev">▾</span>
+        </button>
+      </td>
+      <td>
+        <div class="flex items-center gap-8">
+          <button class="icon-btn ${notifyOpen?'open':''}" title="${isNotifyEnabled(a) ? 'Cài đặt thông báo (đang gửi)' : 'Cài đặt thông báo'}" onclick="toggleActionNotify('${step.id}',${ai})">⚙️${isNotifyEnabled(a) ? '<span class=\"notify-dot\"></span>' : ''}</button>
+          <button class="step-del-btn" title="Xoá nút hành động" onclick="removeAction('${step.id}',${ai})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+
+  if (fieldsOpen){
+    const fieldsHtml = a.fields.map((f, fi) => `
+      <div>
+        <div class="dfield-row-inline">
+          <input class="fc fname" style="flex:1;min-width:0" placeholder="VD: Mã số sinh viên, Điểm rèn luyện…" value="${f.name}" onchange="setFieldName('${step.id}',${ai},${fi},this.value)">
+          <input class="fc" style="flex:1;min-width:0" placeholder="Mẫu hiển thị (placeholder)" value="${f.placeholder || ''}" onchange="setFieldPlaceholder('${step.id}',${ai},${fi},this.value)">
+          <select class="fc" style="flex:1;min-width:0" onchange="setFieldType('${step.id}',${ai},${fi},this.value)">
+            ${FIELD_TYPE_OPTIONS.map(t => `<option value="${t}" ${t===f.type?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <label class="text-sm" style="display:flex;align-items:center;gap:4px;font-weight:400;white-space:nowrap;flex-shrink:0">
+            <input type="checkbox" ${f.required?'checked':''} onchange="toggleFieldRequired('${step.id}',${ai},${fi},this.checked)"> Bắt buộc
+          </label>
+          <span class="icon-btn" title="Xoá trường" style="width:24px;height:24px;font-size:13px;flex-shrink:0" onclick="removeField('${step.id}',${ai},${fi})">✕</span>
+        </div>
+        ${f.type==='Select' ? `
+        <div class="fi" style="margin:0 0 10px">
+          <label class="text-sm">Danh sách các tùy chọn (cách nhau bởi dấu phẩy)</label>
+          <input class="fc" placeholder="Cách nhập: Tùy chọn A, Tùy chọn B, Tùy chọn C" value="${(f.options||[]).join(', ')}" onchange="setFieldOptions('${step.id}',${ai},${fi},this.value)">
+        </div>` : ''}
+      </div>`).join('') || '<div class="text-muted text-sm" style="padding:4px 0">Chưa yêu cầu nhập thêm trường nào khi bấm nút này</div>';
+
+    html += `
+    <tr class="step-expand-row"><td colspan="6" style="padding-left:32px">
+      <div class="flex justify-between items-center" style="margin-bottom:6px">
+        <div class="action-fields-label" style="margin-bottom:0">TRƯỜNG DỮ LIỆU TÙY CHỌN THÊM:</div>
+        <button class="btn btn-default btn-sm" onclick="addField('${step.id}',${ai})">＋ Thêm trường</button>
+      </div>
+      ${fieldsHtml}
+    </td></tr>`;
+  }
+
+  if (notifyOpen){
+    const notify = a.notify || {};
+    const enabled = !!notify.enabled;
+    const channels = notify.channels || {};
+    const recipientStep = getNotifyRecipientStep(step, a);
+    const isFinalNotify = recipientStep?.type === 'submit';
+    const titlePlaceholder = isFinalNotify ? FINAL_NOTIFY_TITLE_DEFAULT : APPROVE_NOTIFY_TITLE_DEFAULT;
+    const templatePlaceholder = isFinalNotify ? FINAL_NOTIFY_TEMPLATE_DEFAULT : APPROVE_NOTIFY_TEMPLATE_DEFAULT;
+
+    html += `
+    <tr class="step-expand-row"><td colspan="6" style="padding-left:32px">
+      <div class="notify-card">
+        <div class="notify-card-head">
+          <span class="head-label"><span class="ico">🔔</span> CÀI ĐẶT THÔNG BÁO</span>
+          <label class="switch" title="${enabled ? 'Đang gửi thông báo' : 'Không gửi thông báo'}">
+            <input type="checkbox" ${enabled?'checked':''} onchange="toggleActionNotifyEnabled('${step.id}',${ai},this.checked)">
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <div class="fi ${enabled?'':'disabled'}">
+          <label class="text-sm">Tiêu đề</label>
+          <input class="fc" style="width:100%" placeholder="${titlePlaceholder}"
+            value="${notify.title || ''}" onchange="setActionNotifyTitle('${step.id}',${ai},this.value)">
+        </div>
+        <div class="fi ${enabled?'':'disabled'}">
+          <label class="text-sm">Nội dung</label>
+          <textarea class="fc" style="width:100%;min-height:56px" placeholder="${templatePlaceholder}"
+            onchange="setActionNotifyTemplate('${step.id}',${ai},this.value)">${notify.template || ''}</textarea>
+          <div class="f-hint">Biến khả dụng: #ModuleName, #WorkflowName, #StepName, #StatusName, #mssv, #hovaten, #lophcn</div>
+        </div>
+
+        <div class="fi ${enabled?'':'disabled'}" style="margin-bottom:0">
+          <label class="text-sm">Kênh gửi</label>
+          <div class="notify-channels">
+            <label>
+              <input type="checkbox" ${channels.bell?'checked':''} onchange="toggleActionNotifyChannel('${step.id}',${ai},'bell',this.checked)"> 🔔 Chuông
+            </label>
+            <label>
+              <input type="checkbox" ${channels.email?'checked':''} onchange="toggleActionNotifyChannel('${step.id}',${ai},'email',this.checked)"> 📧 Email
+            </label>
+          </div>
+        </div>
+      </div>
+    </td></tr>`;
+  }
+
+  return html;
+}
+
+function toggleActionFields(stepId, actionIdx){
+  const key = stepId + '::' + actionIdx;
+  if (expandedFieldRows.has(key)) expandedFieldRows.delete(key);
+  else expandedFieldRows.add(key);
+  renderTrack();
+}
+
+function renameAction(stepId, actionIdx, newLabel){
+  const action = stepById(stepId).actions[actionIdx];
+  action.label = newLabel;
+  /* Nếu tên nút khớp 1 trong 4 tên chuẩn, tự động điền trạng thái yêu cầu tương ứng */
+  if (ACTION_LABEL_TO_STATUS[newLabel]) action.resultStatus = ACTION_LABEL_TO_STATUS[newLabel];
+  renderTrack();
+}
+
+function addAction(stepId){
+  const step = stepById(stepId);
+  step.actions.push({ label:'Nút mới', kind:'approve', target:step.id, resultStatus:STATUS_OPTIONS[0], fields:[], notify:{enabled:false, title:'', template:'', channels:{email:false, bell:false}} });
+  renderTrack();
+  showToast('Đã thêm nút hành động mới cho bước này', 'ok');
+}
+
+function removeAction(stepId, actionIdx){
+  const step = stepById(stepId);
+  step.actions.splice(actionIdx, 1);
+  expandedFieldRows.delete(stepId + '::' + actionIdx);
+  expandedNotifyRows.delete(stepId + '::' + actionIdx);
+  renderTrack();
+  showToast('Đã xoá nút hành động', 'warn');
+}
+
+function addField(stepId, actionIdx){
+  const step = stepById(stepId);
+  step.actions[actionIdx].fields.push({ name:'Trường mới', type:'Text', required:false });
+  renderTrack();
+  showToast('Đã thêm trường thông tin cho nút này', 'ok');
+}
+
+function removeField(stepId, actionIdx, fieldIdx){
+  const step = stepById(stepId);
+  step.actions[actionIdx].fields.splice(fieldIdx, 1);
+  renderTrack();
+  showToast('Đã xoá trường thông tin', 'warn');
+}
+
+function setFieldName(stepId, actionIdx, fieldIdx, name){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].name = name;
+  renderTrack();
+}
+
+function setFieldType(stepId, actionIdx, fieldIdx, type){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].type = type;
+  renderTrack();
+}
+
+function setFieldPlaceholder(stepId, actionIdx, fieldIdx, placeholder){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].placeholder = placeholder;
+  renderTrack();
+}
+
+function setFieldOptions(stepId, actionIdx, fieldIdx, raw){
+  const options = raw.split(',').map(s => s.trim()).filter(Boolean);
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].options = options;
+  renderTrack();
+}
+
+function toggleFieldRequired(stepId, actionIdx, fieldIdx, checked){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].required = checked;
+  renderTrack();
+}
+
+function renderTrack(){
+  const track = document.getElementById('wf-track');
+
+  let html = '';
+
+  currentWorkflow.steps.forEach((step, idx) => {
+    const badgeClass = step.type==='submit' ? 'submit' : '';
+    const badgeIco = step.type==='submit' ? '📥' : (idx+1);
+
+    const people = step.type==='approval' ? step.approvers : step.submitters;
+    const deptColHtml = renderPersonCol(step, people, 'dept');
+    const unitTypeColHtml = renderUnitTypeCol(step, people);
+    const roleColHtml = renderPersonCol(step, people, 'role');
+    const personColHtml = renderPersonPersonCol(step, people);
+    const deadlineColHtml = renderDeadlineCol(step);
+
+    const actionsOpen = expandedRows.has(step.id + '::actions');
+
+    const branchCountHtml = `
+      <button class="branch-count-badge ${actionsOpen?'open':''}" onclick="toggleExpand('${step.id}','actions')">
+        Cấu hình (${step.actions.length}) <span class="chev">▾</span>
+      </button>`;
+
+    html += `
+    <tr class="step-row">
+      <td>
+        <input type="number" class="step-order-input reveal-edit" min="1" max="${currentWorkflow.steps.length}" value="${idx+1}"
+          onchange="moveStep('${step.id}', this.value)">
+      </td>
+      <td>
+        <input class="step-title-input" data-step-id="${step.id}" value="${step.title}" onchange="renameStep('${step.id}', this.value)">
+      </td>
+      <td>${deptColHtml}</td>
+      <td>${unitTypeColHtml}</td>
+      <td>${roleColHtml}</td>
+      <td>${personColHtml}</td>
+      <td>${deadlineColHtml}</td>
+      <td>
+        ${branchCountHtml}
+      </td>
+      <td>
+        <button class="step-del-btn" title="Xoá bước" onclick="showToast('Đã xoá bước khỏi quy trình','warn')">🗑</button>
+      </td>
+    </tr>`;
+
+    if (actionsOpen){
+      html += `
+      <tr class="step-expand-row"><td colspan="9">
+        <div class="expand-title">Rẽ nhánh Điều kiện & Thiết lập trường dữ liệu yêu cầu</div>
+        <table class="action-tbl">
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th style="width:20%">Tên nút</th>
+              <th style="width:26%">Đích rẽ nhánh</th>
+              <th style="width:18%">Trạng thái yêu cầu</th>
+              <th style="width:18%">Trường thông tin</th>
+              <th style="width:64px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${step.actions.map((a, ai) => renderActionRow(step, idx, a, ai)).join('')}
+          </tbody>
+        </table>
+        <button class="btn btn-default btn-sm mt-8" onclick="addAction('${step.id}')">＋ Thêm nút</button>
+      </td></tr>`;
+    }
+  });
+
+  track.innerHTML = html;
+  renderStatusDatalist();
+
+  /* Sau khi thêm bước mới, tự động focus + chọn sẵn text ô "Tên bước" để gõ ngay không cần bấm thêm */
+  if (pendingFocusStepId){
+    const input = track.querySelector('.step-title-input[data-step-id="' + pendingFocusStepId + '"]');
+    if (input){ input.focus(); input.select(); }
+    pendingFocusStepId = null;
+  }
+}
+
+/* Nguồn gợi ý cho từng loại người duyệt/nộp — Đơn vị lấy từ cây UNITS, Vai trò/Người là danh mục mẫu */
+const ROLE_OPTIONS = ['Trưởng đơn vị', 'Phó trưởng đơn vị', 'Phó đơn vị', 'Cố vấn học tập', 'Sinh viên', 'Cán bộ'];
+const PERSON_OPTIONS = [
+  { code:'CB0012', name:'Nguyễn Thị Hoa', email:'hoa.nt@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0034', name:'Trần Văn Long', email:'long.tv@dh.edu.vn', unit:'u-kt' },
+  { code:'CB0056', name:'Lê Minh Đức', email:'duc.lm@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0078', name:'Phạm Thị Lan', email:'lan.pt@dh.edu.vn', unit:'u-kt' },
+  { code:'CB0091', name:'Hoàng Văn Nam', email:'nam.hv@dh.edu.vn', unit:'u-truongxd' },
+  { code:'CB0103', name:'Đỗ Thị Thu', email:'thu.dt@dh.edu.vn', unit:'u-ngoaingu' },
+  { code:'CB0125', name:'Vũ Minh Tuấn', email:'tuan.vm@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0147', name:'Bùi Thị Hương', email:'huong.bt@dh.edu.vn', unit:'u-kt' },
+];
+
+const COL_TITLE = { dept:'Đơn vị', role:'Vai trò', person:'Người' };
+
+/* Nguồn option gộp {value,label} cho Đơn vị/Vai trò — dùng bởi mini-combo tìm kiếm (Người duyệt dùng modal riêng, xem PERSON_OPTIONS) */
+function optionsForType(type){
+  if (type==='dept') return UNITS.filter(u=>u.level<=2).map(u => ({ value:'dept:'+u.name, label:u.name }));
+  return ROLE_OPTIONS.map(r => ({ value:'role:'+r, label:r }));
+}
+
+/* Render cột Đơn vị/Vai trò — lọc theo type, tối đa 1 giá trị/bước, bấm vào text mở mini-combo tại chỗ để thay thế */
+function renderPersonCol(step, list, type){
+  const pillsHtml = list.map((a, realIdx) => {
+    if (a.type !== type) return '';
+    const key = miniComboKey(step.id, type, realIdx);
+    if (miniComboOpenKey === key) return renderMiniCombo(step.id, type, realIdx);
+    return `<span class="approver-text" onclick="event.stopPropagation();openMiniCombo('${step.id}','${type}',${realIdx})">${a.label}</span>`;
+  }).join('');
+
+  /* Đơn vị duyệt & Vai trò duyệt: giới hạn tối đa 1/bước — ẩn ô thêm khi đã chọn (bấm vào pill để đổi) */
+  const count = list.filter(a => a.type===type).length;
+  const maxReached = count >= 1;
+
+  const addKey = miniComboKey(step.id, type, 'new');
+  const addFieldHtml = maxReached ? '' : (miniComboOpenKey === addKey ? renderMiniCombo(step.id, type, 'new') : renderMiniComboTrigger(step.id, type, 'new'));
+
+  /* Khi chưa chọn gì, ẩn nút "+ Thêm" — chỉ hiện khi hover/click vào ô */
+  const revealOnHover = count === 0;
+
+  return `<div class="approver-pills${revealOnHover ? ' reveal-on-hover' : ''}">
+    ${pillsHtml}
+    ${addFieldHtml}
+  </div>`;
+}
+
+/* Render cột Người duyệt — chọn nhiều qua modal picker (search + checkbox + Lưu/Huỷ).
+   Chưa chọn ai → ẩn hoàn toàn, chỉ hiện nút "+ Phân công" khi hover/focus (đồng bộ
+   hành vi reveal-on-hover với cột Đơn vị duyệt/Vai trò duyệt). */
+function renderPersonPersonCol(step, list){
+  const people = list.filter(a => a.type==='person');
+
+  if (!people.length){
+    return `<div class="approver-pills reveal-on-hover">
+      <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openPersonPicker('${step.id}')">+ Phân công</button>
+    </div>`;
+  }
+
+  const namesHtml = people.map(a => `<div>${a.label}</div>`).join('');
+  return `<span class="approver-text" onclick="event.stopPropagation();openPersonPicker('${step.id}')">${namesHtml}</span>`;
+}
+
+/* Loại ĐV — chỉ 1 lựa chọn/bước, mặc định TRỐNG (giống hành vi cột Đơn vị duyệt).
+   Trống thì ẩn nút "+ Thêm", chỉ hiện khi hover/click; bấm vào giá trị đã chọn để đổi lại. */
+const UNIT_TYPE_OPTIONS = ['Chính Quyền', 'Đảng', 'Đoàn'];
+let unitTypeOpenStepId = null;
+
+function renderUnitTypeCol(step, list){
+  if (unitTypeOpenStepId === step.id){
+    return `<span class="mini-combo">
+      <select class="fc" style="font-size:12px;padding:4px 6px" autofocus
+        onchange="setUnitType('${step.id}', this.value)" onclick="event.stopPropagation()">
+        <option value="" ${!step.unitType?'selected':''}>— Không chọn —</option>
+        ${UNIT_TYPE_OPTIONS.map(t => `<option value="${t}" ${step.unitType===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </span>`;
+  }
+
+  if (step.unitType){
+    return `<div class="approver-pills">
+      <span class="approver-text" onclick="event.stopPropagation();openUnitTypeSelect('${step.id}')">${step.unitType}</span>
+    </div>`;
+  }
+
+  return `<div class="approver-pills reveal-on-hover">
+    <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openUnitTypeSelect('${step.id}')">+ Thêm Loại ĐV</button>
+  </div>`;
+}
+
+function openUnitTypeSelect(stepId){
+  unitTypeOpenStepId = stepId;
+  renderTrack();
+}
+
+function setUnitType(stepId, value){
+  stepById(stepId).unitType = value;
+  unitTypeOpenStepId = null;
+  renderTrack();
+}
+
+document.addEventListener('click', e => {
+  if (unitTypeOpenStepId && !e.target.closest('select')) { unitTypeOpenStepId = null; renderTrack(); }
+});
+
+/* == Mini search combobox (Đơn vị / Vai trò / Người duyệt trong bảng bước) ==
+   key = "stepId::type::idx" — idx là realIdx của pill đang thay thế, hoặc 'new' khi thêm mới */
+let miniComboOpenKey = null;
+let miniComboHl = -1;
+let miniComboQuery = '';
+
+function miniComboKey(stepId, type, idx){ return stepId + '::' + type + '::' + idx; }
+
+function renderMiniComboTrigger(stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  return `<button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openMiniCombo('${stepId}','${type}','${idx}')">+ Thêm ${COL_TITLE[type]}</button>`;
+}
+
+function renderMiniCombo(stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  return `<span class="mini-combo">
+    <input class="mini-combo-input" data-key="${key}" placeholder="Tìm ${COL_TITLE[type].toLowerCase()}…" autocomplete="off"
+      value="${miniComboQuery}"
+      onclick="event.stopPropagation()"
+      oninput="onMiniComboInput('${stepId}','${type}','${idx}', this.value)"
+      onkeydown="onMiniComboKeydown(event,'${stepId}','${type}','${idx}')">
+    <div class="mini-combo-menu open">${renderMiniComboOptions(stepId, type, idx, miniComboQuery)}</div>
+  </span>`;
+}
+
+function renderMiniComboOptions(stepId, type, idx, query){
+  const q = (query || '').trim();
+  const all = optionsForType(type);
+  const matches = q ? all.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : all;
+  if (!matches.length) return `<div class="mini-combo-empty">Không tìm thấy "${q}"</div>`;
+  return matches.map((o, i) => `<div class="mini-combo-item${i===miniComboHl?' hl':''}" data-idx="${i}" onclick="event.stopPropagation();pickMiniCombo('${stepId}','${type}','${idx}','${o.value}')">${highlightMatch(o.label, q)}</div>`).join('');
+}
+
+function openMiniCombo(stepId, type, idx){
+  miniComboOpenKey = miniComboKey(stepId, type, idx);
+  miniComboQuery = '';
+  miniComboHl = -1;
+  renderTrack();
+  focusMiniComboInput();
+}
+
+function onMiniComboInput(stepId, type, idx, value){
+  miniComboQuery = value;
+  miniComboHl = -1;
+  renderTrack();
+  focusMiniComboInput();
+}
+
+function onMiniComboKeydown(e, stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  if (miniComboOpenKey !== key) return;
+  const menu = e.target.nextElementSibling;
+  const items = menu ? menu.querySelectorAll('.mini-combo-item') : [];
+  if (e.key === 'ArrowDown'){ e.preventDefault(); miniComboHl = Math.min(miniComboHl+1, items.length-1); renderTrack(); focusMiniComboInput(); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); miniComboHl = Math.max(miniComboHl-1, 0); renderTrack(); focusMiniComboInput(); }
+  else if (e.key === 'Enter'){
+    e.preventDefault();
+    const all = optionsForType(type);
+    const q = (miniComboQuery || '').trim();
+    const matches = q ? all.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : all;
+    const chosen = miniComboHl >= 0 ? matches[miniComboHl] : matches[0];
+    if (chosen) pickMiniCombo(stepId, type, idx, chosen.value);
+  } else if (e.key === 'Escape'){ closeMiniCombo(); }
+}
+
+/* idx số → thay thế pill tại vị trí đó trong mảng gốc; idx==='new' → thêm mới vào cuối */
+function pickMiniCombo(stepId, type, idx, value){
+  const [t, label] = value.split(':');
+  const step = stepById(stepId);
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  if (idx === 'new') list.push({ type:t, label });
+  else list[Number(idx)] = { type:t, label };
+  closeMiniCombo();
+  renderTrack();
+}
+
+function closeMiniCombo(){
+  miniComboOpenKey = null;
+  miniComboQuery = '';
+  miniComboHl = -1;
+  renderTrack();
+}
+
+function focusMiniComboInput(){
+  if (!miniComboOpenKey) return;
+  const input = document.querySelector('.mini-combo-input[data-key="' + miniComboOpenKey + '"]');
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+
+document.addEventListener('click', e => {
+  if (miniComboOpenKey && !e.target.closest('.mini-combo')) closeMiniCombo();
+});
+
+function toggleExpand(stepId, kind){
+  const key = stepId + '::' + kind;
+  if (expandedRows.has(key)) expandedRows.delete(key);
+  else expandedRows.add(key);
+  renderTrack();
+}
+
+function renameStep(stepId, newTitle){
+  stepById(stepId).title = newTitle;
+  renderTrack();
+}
+
+/* == Modal chọn Người duyệt — tìm theo mã CB/email/tên, checkbox chọn nhiều + Lưu/Huỷ == */
+let personPickerStepId = null;
+let personPickerSelected = []; // bản nháp danh sách mã CB đang chọn trong modal, chỉ commit khi bấm Lưu
+
+function personByCode(code){ return PERSON_OPTIONS.find(p => p.code === code); }
+
+/* Suy ra mã CB từ approver đã lưu — ưu tiên code có sẵn, fallback khớp theo tên cho dữ liệu cũ chưa có code */
+function codeForApprover(a){
+  if (a.code) return a.code;
+  const found = PERSON_OPTIONS.find(p => p.name === a.label);
+  return found ? found.code : null;
+}
+
+function openPersonPicker(stepId){
+  personPickerStepId = stepId;
+  const step = stepById(stepId);
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  personPickerSelected = list.filter(a => a.type==='person').map(codeForApprover).filter(Boolean);
+
+  document.getElementById('person-picker-search').value = '';
+  document.getElementById('person-picker-pass-min').value = step.passMin || 1;
+  renderPersonPickerList('');
+  updatePersonPickerCount();
+  openModal('modal-select-persons');
+}
+
+function renderPersonPickerList(query){
+  const q = (query || '').trim().toLowerCase();
+  const matches = q ? PERSON_OPTIONS.filter(p =>
+    p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
+  ) : PERSON_OPTIONS;
+  const listEl = document.getElementById('person-picker-list');
+
+  if (!matches.length){
+    listEl.innerHTML = `<div class="text-muted text-sm" style="padding:10px">Không tìm thấy cán bộ nào khớp</div>`;
+    return;
+  }
+
+  /* Nhóm cán bộ theo đơn vị, thứ tự nhóm theo thứ tự khai báo trong UNITS */
+  const unitsWithPeople = UNITS.filter(u => matches.some(p => p.unit === u.id));
+  listEl.innerHTML = unitsWithPeople.map(u => `
+    <div class="unit-combo-group">${u.name}</div>
+    ${matches.filter(p => p.unit === u.id).map(p => `
+      <label class="copy-source-item">
+        <input type="checkbox" class="person-picker-check" value="${p.code}" ${personPickerSelected.includes(p.code)?'checked':''} onchange="togglePersonPickerChoice('${p.code}', this.checked)">
+        <span class="csi-name">${p.name}</span>
+        <span class="csi-id">${p.email}</span>
+      </label>`).join('')}
+  `).join('');
+}
+
+document.getElementById('person-picker-search').addEventListener('input', e => renderPersonPickerList(e.target.value));
+
+function togglePersonPickerChoice(code, checked){
+  if (checked && !personPickerSelected.includes(code)) personPickerSelected.push(code);
+  else if (!checked) personPickerSelected = personPickerSelected.filter(c => c !== code);
+  updatePersonPickerCount();
+}
+
+function updatePersonPickerCount(){
+  document.getElementById('person-picker-count').textContent = personPickerSelected.length
+    ? `Đã chọn ${personPickerSelected.length} người`
+    : '';
+  document.getElementById('person-picker-pass-total').textContent = `/ ${personPickerSelected.length} người đồng ý`;
+  const passMinInput = document.getElementById('person-picker-pass-min');
+  passMinInput.max = personPickerSelected.length || 1;
+}
+
+function savePersonPicker(){
+  const step = stepById(personPickerStepId);
+  const passMinRaw = document.getElementById('person-picker-pass-min').value;
+  const passMin = parseInt(passMinRaw, 10);
+
+  if (personPickerSelected.length){
+    if (!passMinRaw || isNaN(passMin) || passMin < 1 || passMin > personPickerSelected.length){
+      showToast(`Quy tắc pass không hợp lệ — nhập từ 1 đến ${personPickerSelected.length} (số người đã chọn)`, 'warn');
+      return;
+    }
+  }
+
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  const others = list.filter(a => a.type!=='person');
+  const persons = personPickerSelected.map(code => {
+    const p = personByCode(code);
+    return { type:'person', label:p.name, code:p.code, email:p.email };
+  });
+  const merged = others.concat(persons);
+  list.length = 0;
+  list.push(...merged);
+
+  step.passMin = personPickerSelected.length ? passMin : null;
+
+  closeModal('modal-select-persons');
+  renderTrack();
+  showToast('Đã cập nhật người duyệt', 'ok');
+}
+
+/* == Deadline (thời hạn xử lý) cho từng bước ==
+   step.deadline = null, hoặc { type:'relative', value, unit } | { type:'absolute', datetime },
+                   alerts:{email,highlight,bell}, repeat:{enabled,everyHours} */
+let deadlineStepId = null;
+const DEADLINE_EMAIL_SUBJECT_DEFAULT = '[Cảnh báo trễ hạn] #StepName';
+const DEADLINE_EMAIL_BODY_DEFAULT = `Hệ thống Quản trị Đại học  trân trọng thông báo yêu cầu dưới đây hiện đã quá thời hạn xử lý theo quy trình được cấu hình.
+
+Thông tin yêu cầu:
+- Chức năng: #ModuleName
+- Quy trình: #WorkflowName
+- Bước xử lý hiện tại: #StepName
+
+Kính đề nghị Thầy/Cô dành thời gian xem xét và thực hiện xử lý yêu cầu trong thời gian sớm nhất để đảm bảo tiến độ giải quyết theo quy định.
+
+Để xem chi tiết yêu cầu, vui lòng truy cập: https://eduone.asia/`;
+
+/* Chuyển plain text nhiều dòng (\n) sang HTML (<br>) để hiển thị trong ô contenteditable */
+function textToHtml(text){
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+function renderDeadlineCol(step){
+  const d = step.deadline;
+  if (!d){
+    return `<div class="approver-pills reveal-on-hover">
+      <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openDeadlineModal('${step.id}')">+ Thêm deadline</button>
+    </div>`;
+  }
+  const summary = d.type==='absolute'
+    ? formatDateTimeLocal(d.datetime)
+    : `${d.value} ${d.type==='day'?'ngày':'giờ'}`;
+  const alertIcons = [d.alerts.email?'📧':'', d.alerts.highlight?'🖍️':'', d.alerts.bell?'🔔':''].filter(Boolean).join(' ');
+  const repeatTag = d.repeat.enabled ? `<div class="pass-min-tag">Nhắc lại mỗi ${d.repeat.everyHours}h</div>` : '';
+  return `<span class="approver-text" onclick="event.stopPropagation();openDeadlineModal('${step.id}')">
+    <div>${summary}</div>
+    ${alertIcons ? `<div class="text-sm">${alertIcons}</div>` : ''}
+    ${repeatTag}
+  </span>`;
+}
+
+function formatDateTimeLocal(v){
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function openDeadlineModal(stepId){
+  deadlineStepId = stepId;
+  const step = stepById(stepId);
+  const d = step.deadline || {
+    type:'hour', value:48, datetime:'',
+    alerts:{email:false,highlight:false,bell:false},
+    emailTemplate:{subject:'', body:''},
+    repeat:{enabled:false,everyHours:12},
+  };
+
+  document.querySelectorAll('#deadline-type-pills .dl-type-pill').forEach(el => el.classList.toggle('active', el.dataset.dltype===d.type));
+  document.getElementById('deadline-relative-wrap').style.display = d.type==='absolute' ? 'none' : '';
+  document.getElementById('deadline-absolute-wrap').style.display = d.type==='absolute' ? '' : 'none';
+  document.getElementById('deadline-relative-value').value = d.value || 48;
+  document.getElementById('deadline-relative-unit-label').textContent = d.type==='day' ? 'ngày' : 'giờ';
+  document.getElementById('deadline-absolute-value').value = d.datetime || '';
+
+  document.getElementById('deadline-alert-email').checked = !!d.alerts.email;
+  document.getElementById('deadline-alert-highlight').checked = !!d.alerts.highlight;
+  document.getElementById('deadline-alert-bell').checked = !!d.alerts.bell;
+
+  document.getElementById('deadline-email-template-wrap').style.display = d.alerts.email ? '' : 'none';
+  document.getElementById('deadline-email-subject').value = (d.emailTemplate && d.emailTemplate.subject) || DEADLINE_EMAIL_SUBJECT_DEFAULT;
+  document.getElementById('deadline-email-body').innerHTML = (d.emailTemplate && d.emailTemplate.body) || textToHtml(DEADLINE_EMAIL_BODY_DEFAULT);
+
+  document.getElementById('deadline-repeat-enabled').checked = !!d.repeat.enabled;
+  document.getElementById('deadline-repeat-wrap').style.display = d.repeat.enabled ? '' : 'none';
+  document.getElementById('deadline-repeat-hours').value = d.repeat.everyHours || 12;
+
+  openModal('modal-deadline');
+}
+
+function pickDeadlineType(el){
+  document.querySelectorAll('#deadline-type-pills .dl-type-pill').forEach(c => c.classList.toggle('active', c===el));
+  const type = el.dataset.dltype;
+  document.getElementById('deadline-relative-wrap').style.display = type==='absolute' ? 'none' : '';
+  document.getElementById('deadline-absolute-wrap').style.display = type==='absolute' ? '' : 'none';
+  document.getElementById('deadline-relative-unit-label').textContent = type==='day' ? 'ngày' : 'giờ';
+}
+
+function toggleDeadlineEmailTemplate(checked){
+  document.getElementById('deadline-email-template-wrap').style.display = checked ? '' : 'none';
+  const subjectInput = document.getElementById('deadline-email-subject');
+  const bodyInput = document.getElementById('deadline-email-body');
+  if (checked && !subjectInput.value.trim()) subjectInput.value = DEADLINE_EMAIL_SUBJECT_DEFAULT;
+  if (checked && !bodyInput.textContent.trim()) bodyInput.innerHTML = textToHtml(DEADLINE_EMAIL_BODY_DEFAULT);
+}
+
+function toggleDeadlineRepeat(checked){
+  document.getElementById('deadline-repeat-wrap').style.display = checked ? '' : 'none';
+}
+
+function saveDeadline(){
+  const step = stepById(deadlineStepId);
+  const type = document.querySelector('#deadline-type-pills .dl-type-pill.active').dataset.dltype;
+
+  if (type==='absolute' && !document.getElementById('deadline-absolute-value').value){
+    showToast('Chọn ngày giờ hạn chót trước khi lưu', 'warn');
+    return;
+  }
+
+  const emailEnabled = document.getElementById('deadline-alert-email').checked;
+  const emailSubject = document.getElementById('deadline-email-subject').value.trim();
+  const emailBodyEl = document.getElementById('deadline-email-body');
+  const emailBody = emailBodyEl.innerHTML.trim();
+  if (emailEnabled && (!emailSubject || !emailBodyEl.textContent.trim())){
+    showToast('Nhập tiêu đề và nội dung mẫu email trước khi lưu', 'warn');
+    return;
+  }
+
+  const repeatEnabled = document.getElementById('deadline-repeat-enabled').checked;
+  const repeatHoursRaw = document.getElementById('deadline-repeat-hours').value;
+  if (repeatEnabled && (!repeatHoursRaw || parseInt(repeatHoursRaw,10) < 1)){
+    showToast('Nhập chu kỳ nhắc lại hợp lệ (tối thiểu 1 giờ)', 'warn');
+    return;
+  }
+
+  step.deadline = {
+    type,
+    value: parseInt(document.getElementById('deadline-relative-value').value, 10) || 1,
+    datetime: document.getElementById('deadline-absolute-value').value,
+    alerts: {
+      email: emailEnabled,
+      highlight: document.getElementById('deadline-alert-highlight').checked,
+      bell: document.getElementById('deadline-alert-bell').checked,
+    },
+    emailTemplate: emailEnabled ? { subject: emailSubject, body: emailBody } : null,
+    repeat: {
+      enabled: repeatEnabled,
+      everyHours: parseInt(repeatHoursRaw, 10) || 12,
+    },
+  };
+
+  closeModal('modal-deadline');
+  renderTrack();
+  showToast('Đã cập nhật thời hạn xử lý', 'ok');
+}
+
+/* == Cấu hình Thông báo — áp dụng chung cho toàn bộ quy trình, không cần bật/tắt riêng từng bước/nút ==
+   currentWorkflow.notifyConfig = {
+     approver: { enabled, email, bell },   // báo người duyệt khi có yêu cầu mới đến bước
+     submitter: { enabled, email, bell },  // báo người nộp khi yêu cầu bị Từ chối/cần chỉnh sửa
+   } */
+function openNotifyModal(){
+  const cfg = currentWorkflow.notifyConfig || { approver:{enabled:false,email:false,bell:false}, submitter:{enabled:false,email:false,bell:false} };
+
+  document.getElementById('notify-approver-enabled').checked = cfg.approver.enabled;
+  document.getElementById('notify-approver-email').checked = cfg.approver.email;
+  document.getElementById('notify-approver-bell').checked = cfg.approver.bell;
+  document.getElementById('notify-approver-channels').style.display = cfg.approver.enabled ? '' : 'none';
+
+  document.getElementById('notify-submitter-enabled').checked = cfg.submitter.enabled;
+  document.getElementById('notify-submitter-email').checked = cfg.submitter.email;
+  document.getElementById('notify-submitter-bell').checked = cfg.submitter.bell;
+  document.getElementById('notify-submitter-channels').style.display = cfg.submitter.enabled ? '' : 'none';
+
+  openModal('modal-notify');
+}
+
+function toggleNotifyChannels(prefix){
+  const enabled = document.getElementById(prefix + '-enabled').checked;
+  document.getElementById(prefix + '-channels').style.display = enabled ? '' : 'none';
+}
+
+function saveNotifyConfig(){
+  const approverEnabled = document.getElementById('notify-approver-enabled').checked;
+  const submitterEnabled = document.getElementById('notify-submitter-enabled').checked;
+
+  const approverEmail = document.getElementById('notify-approver-email').checked;
+  const approverBell = document.getElementById('notify-approver-bell').checked;
+  if (approverEnabled && !approverEmail && !approverBell){
+    showToast('Chọn ít nhất 1 kênh (Email hoặc Chuông) cho thông báo người duyệt', 'warn');
+    return;
+  }
+
+  const submitterEmail = document.getElementById('notify-submitter-email').checked;
+  const submitterBell = document.getElementById('notify-submitter-bell').checked;
+  if (submitterEnabled && !submitterEmail && !submitterBell){
+    showToast('Chọn ít nhất 1 kênh (Email hoặc Chuông) cho thông báo người nộp', 'warn');
+    return;
+  }
+
+  currentWorkflow.notifyConfig = {
+    approver: { enabled:approverEnabled, email:approverEmail, bell:approverBell },
+    submitter: { enabled:submitterEnabled, email:submitterEmail, bell:submitterBell },
+  };
+
+  closeModal('modal-notify');
+  showToast('Đã cập nhật cấu hình thông báo', 'ok');
+}
+
+/* Đổi thứ tự bước bằng cách nhập số STT mới — các bước khác tự đẩy lên/xuống nhường chỗ */
+function moveStep(stepId, newPosRaw){
+  const steps = currentWorkflow.steps;
+  const oldIdx = steps.findIndex(s => s.id === stepId);
+  let newIdx = parseInt(newPosRaw, 10) - 1;
+
+  if (isNaN(newIdx) || newIdx < 0) newIdx = 0;
+  if (newIdx > steps.length - 1) newIdx = steps.length - 1;
+
+  if (newIdx === oldIdx){ renderTrack(); return; }
+
+  const [moved] = steps.splice(oldIdx, 1);
+  steps.splice(newIdx, 0, moved);
+
+  renderTrack();
+  showToast(`Đã chuyển "${moved.title}" sang vị trí ${newIdx+1}`, 'ok');
+}
+
+let pendingFocusStepId = null; // stepId cần tự động focus ô "Tên bước" ngay sau lần renderTrack() kế tiếp
+
+/* Bấm "+ Thêm bước mới" là thêm ngay 1 dòng trống vào cuối bảng, không qua modal — tự focus vào ô tên để gõ luôn.
+   Loại bước mặc định là "approval" (Phê duyệt) — bước Nộp đầu tiên thường đã có sẵn trong quy trình. */
+function doAddStep(){
+  const title = '';
+  const steps = currentWorkflow.steps;
+  const prevStep = steps[steps.length - 1]; // bước cuối hiện tại — sẽ nối target sang bước mới sau khi thêm
+  /* Bước đầu tiên của quy trình luôn là bước Nộp (submit) — chỉ từ bước thứ 2 trở
+     đi mới là bước Phê duyệt (Đồng ý/Từ chối), vì cần có người nộp yêu cầu trước. */
+  const addStepType = prevStep ? 'approval' : 'submit';
+  const newStepId = 's' + Date.now();
+
+  /* Sinh sẵn nút hành động mặc định: bước Nộp có 1 nút "Nộp"; bước Phê duyệt có "Đồng ý" + "Từ chối".
+     Target tạm trỏ về chính bước mới (= dừng tại chỗ, vì đây đang là bước cuối cùng lúc vừa tạo). */
+  const newStep = addStepType==='submit'
+    ? { id:newStepId, type:'submit', title, submitters:[],
+        actions:[{ label:'Nộp', kind:'submit', target:newStepId, resultStatus:'Chờ duyệt', fields:[] }] }
+    : { id:newStepId, type:'approval', title, approvers:[],
+        actions:[
+          { label:'Đồng ý', kind:'approve', target:newStepId, resultStatus:'Đã duyệt', fields:[] },
+          { label:'Từ chối', kind:'reject', target:newStepId, resultStatus:'Từ chối', fields:[] },
+        ] };
+
+  currentWorkflow.steps.push(newStep);
+
+  /* Nối chuỗi: nút "Đồng ý/Nộp" của bước liền trước (nếu có) sẽ trỏ sang bước mới thay vì dừng tại chỗ */
+  if (prevStep){
+    const forwardAction = prevStep.actions.find(a => a.kind==='approve' || a.kind==='submit');
+    if (forwardAction && forwardAction.target === prevStep.id) forwardAction.target = newStepId;
+  }
+
+  pendingFocusStepId = newStep.id;
+
+  renderTrack();
+  showToast('Đã thêm bước mới vào quy trình', 'ok');
+}
+
+/* Mặc định hiển thị danh sách quy trình (không tự mở builder), đúng ngữ cảnh đơn vị đang chọn */
+backToList();
+</script>
+</body>
+</html>

@@ -1,0 +1,3294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh mục Biểu mẫu | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: quản lý danh mục biểu mẫu (MH-ADMIN-02) ========== */
+
+  /* Dropdown thông báo — giống mh-admin-01 */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Unit search combobox — copy nguyên từ mh-admin-01 để tái sử dụng UI phân cấp */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-group{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px 4px}
+  .unit-combo-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-item .lvl-badge{font-size:10px;color:var(--text-3);background:#f5f5f5;padding:0 6px;border-radius:8px;flex-shrink:0}
+  .unit-combo-item:hover .lvl-badge,.unit-combo-item.hl .lvl-badge{background:#fff;color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Multi-select dropdown — bấm ô để mở danh sách checkbox, chọn nhiều mục,
+     đóng lại hiển thị dạng tag ngay trong ô (dùng cho Hệ/Chương trình/Đơn vị/Khoá) */
+  .msel{position:relative}
+  .msel-trigger{min-height:34px;padding:5px 32px 5px 11px;border:1px solid var(--border);border-radius:var(--radius);background:#fff;cursor:pointer;display:flex;flex-wrap:wrap;gap:5px;align-items:center;position:relative}
+  .msel-trigger:hover{border-color:var(--primary)}
+  .msel.open .msel-trigger{border-color:var(--primary);box-shadow:0 0 0 2px rgba(250,140,22,.15)}
+  .msel-trigger::after{content:'';position:absolute;right:11px;top:50%;width:8px;height:8px;border-right:1.5px solid var(--text-3);border-bottom:1.5px solid var(--text-3);transform:translateY(-65%) rotate(45deg);transition:transform .15s}
+  .msel.open .msel-trigger::after{transform:translateY(-35%) rotate(-135deg)}
+  .msel-placeholder{color:var(--text-3);font-size:14px}
+  .msel-tag{display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary);border:1px solid #ffd591;border-radius:4px;padding:1px 6px;font-size:12.5px;white-space:nowrap}
+  .msel-tag .msel-tag-x{cursor:pointer;font-size:12px;line-height:1;color:var(--primary)}
+  .msel-tag .msel-tag-x:hover{color:var(--error)}
+  .msel-tag-more{background:#f5f5f5;color:var(--text-2);border-color:var(--border);font-weight:600}
+  .msel-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;z-index:50;padding:4px}
+  .msel.open .msel-menu{display:block}
+  .msel-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .msel-item:hover{background:var(--primary-light)}
+  .msel-item input{pointer-events:none}
+  .msel-menu-actions{display:flex;gap:4px;padding:2px 6px 6px;margin-bottom:4px;border-bottom:1px solid var(--border)}
+  .msel-menu-actions button{flex:1;border:none;background:transparent;color:var(--primary);font-size:12px;font-weight:500;padding:5px 4px;border-radius:5px;cursor:pointer;font-family:inherit}
+  .msel-menu-actions button:hover{background:var(--primary-light)}
+
+  /* Bảng danh mục biểu mẫu */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .form-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .form-name-cell{font-size:13.5px;color:var(--text-1)}
+  tr.form-row{cursor:pointer}
+  tr.form-row:hover td{background:var(--primary-light)}
+
+  /* Cảnh báo ngữ cảnh khi đang xem 1 đơn vị Cấp 2/3 — giống unit-copy-alert của mh-admin-01 */
+  #unit-copy-alert .alert-title{margin-bottom:2px}
+
+  /* Danh mục Trường dữ liệu có thể mở chồng lên trên popup Thêm biểu mẫu mới
+     (bấm nút # hoặc link tra cứu khi đang soạn nội dung) — cần z-index cao
+     hơn overlay mặc định để không bị modal phía sau che mất */
+  #modal-field-catalog{z-index:1100}
+
+  /* Sao chép biểu mẫu — multi-select list, copy nguyên từ mh-admin-01 */
+  .copy-source-list{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px}
+  .copy-source-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+  .copy-source-item:hover{background:#fafafa}
+  .copy-source-item input[type=checkbox]{flex-shrink:0}
+  .copy-source-item .csi-name{flex:1}
+  .copy-source-item .csi-id{color:var(--text-3);font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:11.5px}
+
+  /* Modal chi tiết biểu mẫu — bản xem trước + thông tin quản lý */
+  .fdet-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .fdet-field{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+  .fdet-field-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .fdet-field-val{font-size:13.5px;color:var(--text-1)}
+  .fdet-preview{border:1px dashed var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--text-3);font-size:13px;background:#fafafa}
+  .fdet-preview svg{margin-bottom:8px;color:var(--text-3)}
+  .fdet-history{margin:0;padding:0;list-style:none}
+  .fdet-history li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:12.5px}
+  .fdet-history li:last-child{border-bottom:none}
+  .fdet-history .fh-dot{width:7px;height:7px;border-radius:50%;background:var(--primary);margin-top:5px;flex-shrink:0}
+  .fdet-history .fh-time{color:var(--text-3);white-space:nowrap}
+
+  /* Quyền truy cập — hiển thị rõ 1 biểu mẫu thuộc đúng 1 phòng ban, ai được thấy */
+  .access-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+  .access-row:last-child{border-bottom:none}
+  .access-row-left{display:flex;align-items:center;gap:8px}
+  .access-check{color:var(--success)}
+  .access-cross{color:var(--text-3)}
+
+  /* ========== Workflow builder — copy nguyên từ mh-admin-01 để cấu hình
+     quy trình xử lý riêng cho từng biểu mẫu (modal #modal-form-builder) ========== */
+  .wf-canvas{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+  /* Bỏ scroll ngang riêng cho bảng bước — để dropdown mini-combo không bị cắt bởi vùng cuộn */
+  .wf-canvas .tbl-wrap{overflow:visible}
+  /* Modal cấu hình quy trình cần rộng hơn modal thường để chứa đủ bảng bước + rẽ nhánh */
+  .modal-builder-box{width:min(1680px, 98vw);max-height:94vh}
+  .modal-builder-box .modal-hd{align-items:flex-start}
+
+  /* Step table */
+  table.step-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  table.step-tbl th{background:#f0f0f0;padding:9px 12px;text-align:left;font-weight:500;color:var(--text-1);border-bottom:1px solid var(--border);white-space:nowrap}
+  table.step-tbl td{padding:9px 12px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+  tr.step-row td{vertical-align:middle}
+  .step-order-input{width:44px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:13px;text-align:center;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;color:var(--text-1)}
+  .step-order-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(250,140,22,.2);outline:none}
+  /* Ẩn viền/nền mặc định, chỉ hiện affordance chỉnh sửa khi hover/focus vào ô */
+  .reveal-edit{border-color:transparent;background:transparent}
+  .reveal-edit:hover,.reveal-edit:focus{border-color:var(--border);background:#fff}
+  .step-title-input{width:100%;min-width:180px;padding:5px 8px;border:1px solid transparent;border-radius:4px;font-size:13px;font-weight:400;color:var(--text-1);background:transparent}
+  .step-title-input:hover{border-color:var(--border);background:#fafafa}
+  .step-title-input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 2px rgba(250,140,22,.2);outline:none}
+
+  /* Bảng "Nút hành động" trong phần mở rộng — nhất quán với bảng bước chính nhưng nhỏ gọn hơn */
+  table.action-tbl{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  table.action-tbl th{background:#f0f0f0;padding:7px 10px;text-align:left;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px}
+  table.action-tbl td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+  table.action-tbl tr:last-child td{border-bottom:none}
+  /* Đồng bộ chiều cao input/select/button trong bảng bước & bảng rẽ nhánh để các dòng thẳng hàng */
+  table.step-tbl tr.step-row td .fc,
+  table.step-tbl tr.step-row td .step-title-input,
+  table.action-tbl td .fc,
+  table.action-tbl td .step-title-input{height:32px;box-sizing:border-box}
+  table.action-tbl td .branch-count-badge,
+  table.action-tbl td .step-del-btn,
+  table.action-tbl td .icon-btn{height:28px;box-sizing:border-box}
+  table.action-tbl td .icon-btn.open{background:var(--primary-light);border-color:#ffd591;color:var(--primary)}
+  table.action-tbl td .icon-btn .notify-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--success)}
+  /* Ẩn icon mũi tên dropdown mặc định của input có gợi ý datalist (Tên nút / Trạng thái yêu cầu) */
+  table.action-tbl input[list]::-webkit-calendar-picker-indicator{display:none !important}
+  table.action-tbl input[list]{-moz-appearance:none}
+  /* Ô chỉ có text trơn (VD: STT) — bọc trong div cùng chiều cao 32px để căn giữa khớp với các control khác trong dòng */
+  .row-cell-center{height:32px;display:flex;align-items:center}
+
+  .step-badge{width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-badge.submit{background:var(--blue)}
+  .flow-edge-tag{font-size:10px;padding:1px 7px;border-radius:8px;font-weight:600;white-space:nowrap;margin-left:4px;background:#f5f5f5;color:var(--text-3)}
+  .approver-pills{display:flex;flex-wrap:wrap;gap:4px;max-width:230px;align-items:center}
+  .approver-text{font-size:13px;color:var(--text-1);cursor:pointer;white-space:nowrap;border-bottom:1px dashed transparent}
+  .approver-text:hover{border-bottom-color:var(--primary);color:var(--primary)}
+  .mini-combo-trigger{font-size:11px;padding:2px 8px;border:1px dashed var(--border);border-radius:10px;background:#fff;color:var(--text-3);cursor:pointer;font-family:inherit;white-space:nowrap}
+  .mini-combo-trigger:hover{border-color:var(--primary);color:var(--primary)}
+  /* Ô Đơn vị duyệt trống: ẩn nút "+ Thêm", chỉ hiện khi hover/focus vào ô */
+  .approver-pills.reveal-on-hover{min-height:22px}
+  .approver-pills.reveal-on-hover .mini-combo-trigger{opacity:0;pointer-events:none}
+  .approver-pills.reveal-on-hover:hover .mini-combo-trigger,
+  .approver-pills.reveal-on-hover:focus-within .mini-combo-trigger{opacity:1;pointer-events:auto}
+
+  /* Mini search combobox — dùng trong ô Đơn vị/Vai trò/Người duyệt của bảng bước */
+  .mini-combo{position:relative;display:inline-block}
+  .mini-combo-input{font-size:11px;padding:2px 6px;border:1px dashed var(--border);border-radius:10px;background:#fff;color:var(--text-3);cursor:pointer;width:88px}
+  .mini-combo-input:focus{border-style:solid;border-color:var(--primary);color:var(--text-1);outline:none;box-shadow:0 0 0 2px rgba(250,140,22,.15)}
+  .mini-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:200px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:220px;overflow-y:auto;z-index:60;padding:4px}
+  .mini-combo-menu.open{display:block}
+  .mini-combo-item{padding:6px 9px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--text-1);white-space:nowrap}
+  .mini-combo-item:hover,.mini-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .mini-combo-empty{padding:10px 9px;text-align:center;color:var(--text-3);font-size:12px}
+  .mini-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+  .pass-min-tag{font-size:10.5px;color:var(--primary);margin-top:3px}
+  .step-del-btn{width:26px;height:26px;border-radius:4px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--text-3);display:inline-flex;align-items:center;justify-content:center}
+  .step-del-btn:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
+
+  /* Cột "Nút hành động" — 1 badge tổng hợp hiển thị số nhánh rẽ, bấm để mở rộng chi tiết */
+  .branch-count-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:14px;font-size:12.5px;font-weight:600;color:var(--primary);background:var(--primary-light);border:1px solid #ffd591;cursor:pointer;font-family:inherit}
+  .branch-count-badge:hover{background:#ffe7ba}
+  .branch-count-badge .chev{font-size:10px;transition:transform .15s}
+  .branch-count-badge.open .chev{transform:rotate(180deg)}
+
+  /* Expand row — mở ngay dưới hàng bước khi bấm 1 nút hành động */
+  tr.step-expand-row td{background:#fafafa;padding:14px 16px 16px 52px;border-bottom:2px solid var(--border)}
+  .expand-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+
+  /* Danh sách lựa chọn của trường kê khai kiểu Select — mở ngay dưới dòng
+     trong bảng extrafields, nhập trực tiếp trong 1 ô, cách nhau bởi dấu
+     chấm phẩy (đồng bộ với ô "Trường dữ liệu" của bảng Nút hành động). */
+  tr.extrafield-expand-row td{background:#fafafa;padding:12px 16px 14px 52px;border-bottom:2px solid var(--border)}
+
+  .step-action-arrow{color:var(--text-3);flex-shrink:0}
+  .step-action-arrow.back{color:var(--warning)}
+  .step-action-back-tag{font-size:10px;color:var(--warning);border:1px solid #ffe58f;background:#fffbe6;padding:0 6px;border-radius:8px;flex-shrink:0}
+
+  .action-fields-label{font-size:11px;color:var(--text-3);margin-bottom:6px}
+  .dfield-row-inline{display:flex;align-items:center;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid #ececec}
+  .dfield-row-inline:last-child{border-bottom:none}
+  .dfield-row-inline .fname{flex:1;font-weight:500}
+
+  /* Cấu hình thông báo theo nút hành động */
+  .notify-card{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .notify-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em}
+  .notify-card-head .head-label{display:flex;align-items:center;gap:8px}
+  .notify-card-head .ico{font-size:16px}
+  .notify-card .fi{margin-bottom:0}
+  .notify-card .fi.disabled{opacity:.5;pointer-events:none}
+  .notify-card .fi label{font-size:14px}
+  .notify-card .fi .fc{font-size:14px}
+  .notify-card .fi input.fc{height:38px}
+  .notify-card .fi textarea.fc{min-height:90px}
+  .notify-channels{display:flex;gap:20px}
+  .notify-channels label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:400;cursor:pointer}
+
+  /* Toggle switch nhỏ dùng chung cho bật/tắt gửi thông báo — hành vi vẫn là checkbox thường */
+  .switch{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0}
+  .switch .track{position:absolute;inset:0;background:#d9d9d9;border-radius:20px;transition:.15s}
+  .switch .track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch input:checked + .track{background:var(--primary)}
+  .switch input:checked + .track::before{transform:translateX(14px)}
+
+  /* Add step button */
+  .add-step-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:8px;border:1px dashed var(--border);border-radius:6px;background:#fff;color:var(--text-3);font-size:12.5px;cursor:pointer;transition:all .15s;margin-top:10px}
+  .add-step-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+
+  /* Pass rule radio cards */
+  .rule-cards{display:flex;gap:8px}
+  .rule-card{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:10px 12px;cursor:pointer;transition:all .15s}
+  .rule-card.active{border-color:var(--primary);background:var(--primary-light)}
+  .rule-card-title{font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .rule-card-desc{font-size:11px;color:var(--text-3);margin-top:3px}
+
+  /* Modal Cấu hình Deadline — nhóm nội dung thành từng khối rõ ràng */
+  .dl-block{border:1px solid var(--border);border-radius:8px;background:#fafafa;padding:14px;margin-bottom:12px}
+  .dl-block-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .dl-check-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;margin-bottom:10px}
+  .dl-email-template{margin:2px 0 10px 24px;padding:12px;border:1px dashed var(--border);border-radius:6px;background:#fff}
+
+  .dl-type-pills{display:flex;gap:8px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px}
+  .dl-type-pill{flex:1;padding:8px 12px;border:none;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
+  .dl-type-pill:hover{background:#f5f5f5}
+  .dl-type-pill.active{background:var(--primary);color:#fff}
+
+  /* Wizard 2 bước cho popup Thêm biểu mẫu mới — tách bớt số field hiển thị
+     cùng lúc, mỗi bước chỉ validate đúng field của chính nó */
+  .wizard-steps{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+  .wizard-step-dot{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:13px}
+  .wizard-step-num{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;transition:all .15s}
+  .wizard-step-dot.active{color:var(--text-1);font-weight:600}
+  .wizard-step-dot.active .wizard-step-num{border-color:var(--primary);background:var(--primary);color:#fff}
+  .wizard-step-dot.done .wizard-step-num{border-color:var(--primary);color:var(--primary)}
+  .wizard-step-line{flex:1;height:1px;background:var(--border)}
+  .wizard-pane{display:none}
+  .wizard-pane.active{display:block}
+
+  /* Rich text editor cho Nội dung email — giữ định dạng đậm/nghiêng khi paste từ Word/Gmail */
+  .rte-body{min-height:140px;padding:8px 10px;overflow-y:auto;line-height:1.5;cursor:text}
+  .rte-body:empty::before{content:attr(data-placeholder);color:var(--text-3)}
+  .rich-area:empty::before{content:attr(data-placeholder);color:var(--text-3)}
+
+  /* Editor soạn nội dung biểu mẫu — toolbar đầy đủ như trình soạn thảo văn bản,
+     xem trước ngay trong hệ thống thay vì phải mở file Word rời để kiểm tra */
+  .fedit-toolbar{border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;background:#fafafa;padding:6px 8px}
+  .fedit-toolbar-row{display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+  .fedit-toolbar-row + .fedit-toolbar-row{margin-top:4px}
+  .fedit-toolbar select{border:1px solid var(--border);border-radius:6px;background:#fff;font-size:12.5px;padding:4px 6px;color:var(--text-1);font-family:inherit;cursor:pointer}
+  .fedit-toolbar button{border:none;background:transparent;border-radius:5px;padding:5px 7px;cursor:pointer;font-size:13px;color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;line-height:1}
+  .fedit-toolbar button:hover{background:#e8e8e8;color:var(--text-1)}
+  .fedit-toolbar .fedit-sep{width:1px;align-self:stretch;background:var(--border);margin:2px 4px}
+  .fedit-area{border:1px solid var(--border);border-radius:0 0 8px 8px;min-height:220px;padding:16px;outline:none;font-size:14px;line-height:1.7;background:#fff}
+  .fedit-area:focus{border-color:var(--primary)}
+  .fedit-area:empty::before{content:attr(data-placeholder);color:var(--text-3)}
+  .fedit-area mark.fedit-token{background:#fff1b8;border-radius:2px;padding:0 2px;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px}
+
+  /* Ghi chú kỹ thuật cho dev — chỉ xuất hiện trong file thiết kế, không phải text sản phẩm thật */
+  .dev-note{font-size:11px;color:#ad6800;background:#fffbe6;border:1px dashed #ffe58f;border-radius:4px;padding:6px 8px;margin-bottom:6px}
+
+  /* Chọn File mẫu (.docx) — thay input file mặc định (chỉ hiện tên nhỏ cạnh
+     nút, không xoá được) bằng 1 khu vực rõ ràng: chưa chọn thì hiện nút bấm
+     để mở hộp thoại chọn file; đã chọn thì hiện tên file + nút xoá riêng. */
+  .filepick{position:relative}
+  .filepick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .filepick-empty{display:flex;align-items:center;gap:8px;border:1px dashed var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text-3);font-size:13px;background:#fafafa}
+  .filepick-empty svg{flex-shrink:0}
+  .filepick.has-file .filepick-empty{display:none}
+  .filepick-picked{display:none;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;background:#fff}
+  .filepick.has-file .filepick-picked{display:flex}
+  .filepick-picked svg{color:var(--primary);flex-shrink:0}
+  .filepick-picked-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--text-1)}
+  .filepick-remove{position:relative;z-index:1;flex-shrink:0;width:24px;height:24px;border-radius:4px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--text-3);display:inline-flex;align-items:center;justify-content:center}
+  .filepick-remove:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Danh mục Biểu mẫu</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Bộ phận một cửa / <b style="color:var(--text-1)">Danh mục Biểu mẫu</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH MỤC BIỂU MẪU (MH-ADMIN-02, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Danh mục Biểu mẫu</h2>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-default" onclick="openFieldCatalogModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+              Trường dữ liệu
+            </button>
+            <button class="btn btn-primary" id="btn-copy-form" style="display:none" onclick="openCopyModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Sao chép
+            </button>
+            <button class="btn btn-primary" id="btn-new-form" onclick="populateNewFormDeptSelect();openModal('modal-new-form')">＋ Thêm mới</button>
+          </div>
+        </div>
+
+        <!-- Bộ lọc: Đơn vị (combobox phân cấp, đồng bộ UI với mh-admin-01) + Trạng thái + Tìm tên biểu mẫu -->
+        <div class="filter-bar">
+          <div class="unit-combo" id="dept-combo">
+            <input class="fc" id="dept-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="width:280px">
+            <div class="unit-combo-menu" id="dept-combo-menu"></div>
+          </div>
+          <select class="fc" id="status-select" style="width:180px">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <input class="fc" id="form-name-search" type="text" placeholder="🔍 Tìm tên biểu mẫu…" autocomplete="off" style="width:260px">
+        </div>
+
+        <div class="alert alert-info" id="unit-copy-alert" style="display:none">
+          <span class="alert-ico">📋</span>
+          <div class="alert-body">
+            <div class="alert-title" id="unit-copy-title"></div>
+            <div class="alert-desc" id="unit-copy-desc"></div>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:110px">Mã</th>
+                <th>Tên biểu mẫu</th>
+                <th style="width:260px">Đơn vị phụ trách</th>
+                <th style="width:120px">Trạng thái</th>
+                <th style="width:110px">Cập nhật</th>
+                <th style="width:100px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="form-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="form-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Danh mục Trường dữ liệu (mã fill tự động vào biểu mẫu) ═══ -->
+<div class="overlay hidden" id="modal-field-catalog">
+  <div class="modal-box w800">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Danh mục Trường dữ liệu</h3>
+      </div>
+      <button class="modal-close" data-close="modal-field-catalog">✕</button>
+    </div>
+    <div class="modal-bd">
+      <input class="fc" id="field-catalog-search" type="text" placeholder="🔍 Tìm theo trường thông tin hoặc mã…" autocomplete="off" style="margin-bottom:12px">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Trường thông tin</th>
+              <th style="width:160px">Mã</th>
+            </tr>
+          </thead>
+          <tbody id="field-catalog-tbody"><!-- rendered by JS --></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="field-catalog-pagination"><!-- rendered by JS --></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-field-catalog">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Thêm biểu mẫu mới ═══ -->
+<div class="overlay hidden" id="modal-new-form">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="new-form-modal-title">Thêm biểu mẫu mới</h3>
+      <button class="modal-close" data-close="modal-new-form">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="wizard-steps" id="new-form-wizard-steps">
+        <div class="wizard-step-dot active" data-step="1">
+          <span class="wizard-step-num">1</span>
+          <span>Thông tin biểu mẫu</span>
+        </div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step-dot" data-step="2">
+          <span class="wizard-step-num">2</span>
+          <span>Nội dung &amp; Trường kê khai</span>
+        </div>
+      </div>
+
+      <div class="wizard-pane active" data-step="1">
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Mã biểu mẫu</label>
+            <input class="fc" id="new-form-code" readonly style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;background:#fafafa;color:var(--text-3)">
+          </div>
+          <div class="fi" id="new-form-dept-wrap">
+            <label>Đơn vị ban hành<span class="req">*</span></label>
+            <select class="fc" id="new-form-dept">
+              <option value="" selected disabled>— Chọn đơn vị —</option>
+            </select>
+            <input class="fc" id="new-form-dept-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
+          </div>
+        </div>
+
+        <div class="fi">
+          <label>Tên biểu mẫu<span class="req">*</span></label>
+          <input class="fc" id="new-form-name" placeholder="VD: Đơn xin bảo lưu kết quả học tập">
+        </div>
+
+        <div class="fi">
+          <div class="flex justify-between items-center" style="margin-bottom:6px">
+            <label style="margin:0">Mô tả / Hướng dẫn nộp đơn</label>
+            <label class="dl-check-row" style="margin:0">
+              <input type="checkbox" id="new-form-allow-copy" checked> Cho phép sao chép
+            </label>
+          </div>
+          <div class="rich-toolbar">
+            <button type="button" onclick="document.execCommand('bold')"><b>B</b></button>
+            <button type="button" onclick="document.execCommand('italic')"><i>I</i></button>
+            <button type="button" onclick="document.execCommand('insertUnorderedList')">•&nbsp;List</button>
+          </div>
+          <div class="rich-area" id="new-form-guide" contenteditable="true" data-placeholder="VD: Nộp trước ngày 15 hằng tháng, kèm minh chứng liên quan…"></div>
+        </div>
+
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Đơn vị áp dụng</label>
+            <div class="msel" id="new-form-applyunit-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-applyunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Khoa/Trường —</span></div>
+              <div class="msel-menu"></div>
+            </div>
+            <input class="fc" id="new-form-applyunit-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
+          </div>
+
+          <div class="fi">
+            <label>Khoá áp dụng</label>
+            <div class="msel" id="new-form-cohort-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-cohort-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi khoá —</span></div>
+              <div class="msel-menu"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Hệ đào tạo<span class="req">*</span></label>
+            <div class="msel" id="new-form-scope-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-scope-msel')"><span class="msel-placeholder">— Chọn hệ đào tạo —</span></div>
+              <div class="msel-menu"></div>
+            </div>
+          </div>
+
+          <div class="fi">
+            <label>Chương trình đào tạo</label>
+            <div class="msel" id="new-form-program-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-program-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi chương trình —</span></div>
+              <div class="msel-menu"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fi" style="margin-bottom:0">
+          <label>Trạng thái sinh viên được đăng ký<span class="req">*</span></label>
+          <div class="flex gap-16" id="new-form-studentstatus-group" style="flex-wrap:wrap;row-gap:8px">
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="danghoc"> Đang học
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="buocthoihoc"> Buộc thôi học
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="chuyentruongdi"> Chuyển trường đi
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="baoluu"> Bảo lưu
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="dinhchi"> Bị đình chỉ
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="totnghiep"> Đã tốt nghiệp
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="xoaten"> Đã xoá tên
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="wizard-pane" data-step="2">
+        <div class="fi">
+          <label>File mẫu (.docx)<span class="req">*</span></label>
+          <div class="filepick" id="new-form-filepick">
+            <div class="filepick-empty">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Bấm để chọn file .doc, .docx…</span>
+            </div>
+            <div class="filepick-picked">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="filepick-picked-name" id="new-form-filepick-name"></span>
+              <button type="button" class="filepick-remove" title="Xoá file" onclick="removeNewFormFile(event)">✕</button>
+            </div>
+            <input type="file" id="new-form-file" accept=".doc,.docx" onchange="onNewFormFileChange(this)">
+          </div>
+        </div>
+
+        <div class="fi">
+          <label>Nội dung biểu mẫu<span class="req">*</span></label>
+          <div class="fedit-toolbar" id="new-form-content-toolbar" onmousedown="event.preventDefault()">
+            <div class="fedit-toolbar-row">
+              <button type="button" title="Hoàn tác" onclick="runFeditCmd('new-form-content','undo')">↶</button>
+              <button type="button" title="Làm lại" onclick="runFeditCmd('new-form-content','redo')">↷</button>
+              <div class="fedit-sep"></div>
+              <button type="button" title="Mở file có sẵn (.txt, .html)" onmousedown="event.stopPropagation()" onclick="document.getElementById('new-form-content-file').click()">📂&nbsp;Mở file</button>
+              <input type="file" id="new-form-content-file" accept=".txt,.html,.htm" style="display:none" onchange="importFeditFile('new-form-content', this)">
+              <div class="fedit-sep"></div>
+              <button type="button" title="Đậm" onclick="runFeditCmd('new-form-content','bold')"><b>B</b></button>
+              <button type="button" title="Nghiêng" onclick="runFeditCmd('new-form-content','italic')"><i>I</i></button>
+              <button type="button" title="Gạch chân" onclick="runFeditCmd('new-form-content','underline')"><u>U</u></button>
+              <button type="button" title="Chèn mã trường dữ liệu" onmousedown="event.stopPropagation()" onclick="openFieldCatalogModal()">#</button>
+              <div class="fedit-sep"></div>
+              <button type="button" title="Căn trái" onclick="runFeditCmd('new-form-content','justifyLeft')">≡</button>
+              <button type="button" title="Căn giữa" onclick="runFeditCmd('new-form-content','justifyCenter')">≣</button>
+              <button type="button" title="Căn phải" onclick="runFeditCmd('new-form-content','justifyRight')">≡</button>
+            </div>
+            <div class="fedit-toolbar-row">
+              <button type="button" title="Danh sách gạch đầu dòng" onclick="runFeditCmd('new-form-content','insertUnorderedList')">•&nbsp;List</button>
+              <button type="button" title="Danh sách đánh số" onclick="runFeditCmd('new-form-content','insertOrderedList')">1.&nbsp;List</button>
+              <div class="fedit-sep"></div>
+              <button type="button" title="Chèn liên kết" onmousedown="event.stopPropagation()" onclick="const u=prompt('Nhập URL:'); if(u) runFeditCmd('new-form-content','createLink',u)">🔗</button>
+              <button type="button" title="Chèn bảng" onclick="runFeditCmd('new-form-content','insertHTML','<table style=&quot;width:100%;border-collapse:collapse&quot;><tr><td style=&quot;border:1px solid #d9d9d9;padding:6px&quot;>&nbsp;</td><td style=&quot;border:1px solid #d9d9d9;padding:6px&quot;>&nbsp;</td></tr></table>')">⊞</button>
+            </div>
+          </div>
+          <div class="fedit-area" id="new-form-content" contenteditable="true" data-placeholder="Soạn thân biểu mẫu tại đây — chèn mã như #hoTen, #maSinhVien (xem nút # hoặc Danh mục Trường dữ liệu) để hệ thống tự điền khi sinh viên nộp…"></div>
+          <div class="text-sm" style="margin-top:6px">
+            <span class="text-link" onclick="openFieldCatalogModal()">Xem Danh mục Trường dữ liệu →</span>
+          </div>
+        </div>
+
+        <div class="fi">
+          <label>Trường thông tin sinh viên kê khai thêm</label>
+          <div class="tbl-wrap">
+            <table class="step-tbl">
+              <thead>
+                <tr>
+                  <th style="width:56px">Thứ tự</th>
+                  <th style="width:130px">Mã trường</th>
+                  <th style="width:170px">Tên trường</th>
+                  <th>Placeholder</th>
+                  <th style="width:130px">Kiểu dữ liệu</th>
+                  <th style="width:70px">Bắt buộc</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody id="new-form-extrafields-tbody"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-default btn-sm mt-8" onclick="addExtraField()">＋ Thêm trường</button>
+        </div>
+
+        <select class="fc" id="new-form-status" style="display:none"><option value="active">Active</option><option value="inactive" selected>Inactive</option></select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-new-form">Huỷ</button>
+      <button class="btn btn-default" id="new-form-back-btn" style="display:none" onclick="newFormGoToStep(1)">Quay lại</button>
+      <button class="btn btn-primary" id="new-form-next-btn" onclick="newFormGoToStep(2)">Tiếp tục</button>
+      <button class="btn btn-primary" id="new-form-submit-btn" style="display:none" onclick="doCreateForm()">Thêm biểu mẫu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Sao chép biểu mẫu về đơn vị ═══ -->
+<div class="overlay hidden" id="modal-copy-form">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Sao chép biểu mẫu về đơn vị</h3>
+      <button class="modal-close" data-close="modal-copy-form">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Sao chép về đơn vị<span class="req">*</span></label>
+        <select class="fc" id="copy-target-unit"></select>
+      </div>
+      <div class="fi">
+        <div class="flex justify-between items-center" style="margin-bottom:6px">
+          <label style="margin:0">Chọn biểu mẫu nguồn (Cấp 1)<span class="req">*</span></label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="copy-select-all" onchange="toggleAllCopySources(this.checked)"> Chọn tất cả
+          </label>
+        </div>
+        <input class="fc" id="copy-source-search" type="text" placeholder="🔍 Tìm biểu mẫu…" autocomplete="off" style="margin-bottom:6px">
+        <div class="copy-source-list" id="copy-source-list"></div>
+      </div>
+      <div class="f-hint">Bản sao giữ nguyên file mẫu, phạm vi áp dụng và trạng thái — bạn chỉnh sửa lại sau khi sao chép xong.</div>
+    </div>
+    <div class="modal-ft">
+      <span class="text-sm text-muted" id="copy-count-label" style="margin-right:auto"></span>
+      <button class="btn btn-default" data-close="modal-copy-form">Huỷ</button>
+      <button class="btn btn-primary" onclick="doCopyForm()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết biểu mẫu ═══ -->
+<div class="overlay hidden" id="modal-form-detail">
+  <div class="modal-box w800">
+    <div class="modal-hd">
+      <div>
+        <div class="flex items-center gap-8">
+          <h3 class="modal-title" id="fdet-title">Đơn xin bảo lưu kết quả học tập</h3>
+          <span class="tag tag-success" id="fdet-status-tag">Active</span>
+        </div>
+        <p class="text-muted text-sm" style="margin:6px 0 0 0" id="fdet-sub">BM1 · Phòng Đào tạo · Cập nhật 10/07/2026</p>
+      </div>
+      <button class="modal-close" data-close="modal-form-detail">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="fi" id="fdet-code-wrap">
+        <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em">Mã biểu mẫu</label>
+        <input class="fc" id="fdet-code-input" style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;max-width:220px">
+        <div class="fe">Mã này đã được dùng cho biểu mẫu khác.</div>
+      </div>
+
+      <div class="fdet-grid">
+        <div class="fdet-field">
+          <div class="fdet-field-label">Đơn vị phụ trách</div>
+          <div class="fdet-field-val" id="fdet-dept"></div>
+        </div>
+        <div class="fdet-field">
+          <div class="fdet-field-label">Hệ áp dụng</div>
+          <div class="fdet-field-val" id="fdet-scope"></div>
+        </div>
+      </div>
+
+      <div class="fi">
+        <label style="font-size:13px;font-weight:600;color:var(--text-1)">File mẫu</label>
+        <div class="fdet-preview">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <div id="fdet-filename">bieu-mau-bao-luu.docx</div>
+        </div>
+      </div>
+
+      <div class="fi">
+        <label style="font-size:13px;font-weight:600;color:var(--text-1)">Ai nhìn thấy biểu mẫu này</label>
+        <div id="fdet-access"></div>
+      </div>
+
+      <div class="fi" style="margin-bottom:0">
+        <label style="font-size:13px;font-weight:600;color:var(--text-1)">Lịch sử cập nhật</label>
+        <ul class="fdet-history" id="fdet-history"></ul>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-form-detail">Đóng</button>
+      <button class="btn btn-default" id="fdet-download-btn">Tải file mẫu</button>
+      <button class="btn btn-primary" id="fdet-edit-btn" onclick="saveFormCode()">Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình quy trình xử lý của 1 biểu mẫu (copy từ mh-admin-01, id đổi thành modal-form-builder) ═══ -->
+<div class="overlay hidden" id="modal-form-builder">
+  <div class="modal-box modal-builder-box">
+    <div class="modal-hd">
+      <div>
+        <div class="flex items-center gap-8">
+          <h3 class="modal-title" id="form-builder-title">Cấu hình quy trình xử lý</h3>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeFormBuilder()">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <!-- Canvas — bảng danh sách bước, sửa inline, không panel/modal riêng -->
+      <div class="wf-canvas">
+        <div class="tbl-wrap">
+          <table class="step-tbl">
+            <thead>
+              <tr>
+                <th style="width:56px">STT</th>
+                <th>Tên bước</th>
+                <th>Đơn vị duyệt</th>
+                <th>Loại ĐV</th>
+                <th>Vai trò duyệt</th>
+                <th>Người duyệt</th>
+                <th>Deadline</th>
+                <th>Rẽ nhánh</th>
+                <th style="width:56px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="wf-track"><!-- rendered by JS --></tbody>
+          </table>
+        </div>
+        <datalist id="status-suggest-list"><!-- gợi ý trạng thái yêu cầu, cập nhật động bởi JS --></datalist>
+        <datalist id="action-label-suggest-list">
+          <option value="Nộp">
+          <option value="Đồng ý">
+          <option value="Từ chối">
+          <option value="Yêu cầu chỉnh sửa">
+        </datalist>
+        <button class="btn btn-default btn-sm mt-8" onclick="doAddStep()">＋ Thêm bước</button>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" onclick="closeFormBuilder()">Đóng</button>
+      <button class="btn btn-primary" onclick="saveBuilder()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chọn người duyệt (dùng chung bởi modal-form-builder) ═══ -->
+<div class="overlay hidden" id="modal-select-persons">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Chọn người duyệt</h3>
+      <button class="modal-close" data-close="modal-select-persons">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <input class="fc" id="person-picker-search" type="text" placeholder="🔍 Tìm bằng email, tên cán bộ…" autocomplete="off" style="margin-bottom:6px">
+        <div class="copy-source-list" id="person-picker-list"></div>
+      </div>
+      <div class="fi" id="person-picker-pass-wrap">
+        <label>Quy tắc pass</label>
+        <div class="flex items-center gap-8">
+          <span class="text-sm">Pass nếu ≥</span>
+          <input class="fc" id="person-picker-pass-min" type="number" min="1" style="width:64px;text-align:center">
+          <span class="text-sm" id="person-picker-pass-total">/ 0 người đồng ý</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <span class="text-sm text-muted" id="person-picker-count" style="margin-right:auto"></span>
+      <button class="btn btn-default" data-close="modal-select-persons">Huỷ</button>
+      <button class="btn btn-primary" onclick="savePersonPicker()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình Deadline (dùng chung bởi modal-form-builder) ═══ -->
+<div class="overlay hidden" id="modal-deadline">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Cấu hình thời hạn xử lý</h3>
+      <button class="modal-close" data-close="modal-deadline">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="dl-block">
+        <div class="dl-block-title">Thời hạn xử lý</div>
+        <div class="dl-type-pills" id="deadline-type-pills">
+          <button type="button" class="dl-type-pill active" data-dltype="hour" onclick="pickDeadlineType(this)">Số giờ</button>
+          <button type="button" class="dl-type-pill" data-dltype="day" onclick="pickDeadlineType(this)">Số ngày</button>
+          <button type="button" class="dl-type-pill" data-dltype="absolute" onclick="pickDeadlineType(this)">Ngày cụ thể</button>
+        </div>
+
+        <div class="flex items-center gap-8" id="deadline-relative-wrap" style="margin-top:12px">
+          <span class="text-sm">Xử lý xong trong vòng</span>
+          <input class="fc" id="deadline-relative-value" type="number" min="1" value="48" style="width:80px;text-align:center">
+          <span class="text-sm" id="deadline-relative-unit-label">giờ</span>
+        </div>
+
+        <div class="flex items-center gap-8" id="deadline-absolute-wrap" style="margin-top:12px;display:none">
+          <span class="text-sm">Hạn chót</span>
+          <input class="fc" id="deadline-absolute-value" type="datetime-local" style="width:220px">
+        </div>
+      </div>
+
+      <div class="dl-block">
+        <div class="dl-block-title">Cảnh báo nếu muộn</div>
+        <label class="dl-check-row">
+          <input type="checkbox" id="deadline-alert-email" onchange="toggleDeadlineEmailTemplate(this.checked)"> 📧 Gửi email
+        </label>
+
+        <div class="dl-email-template" id="deadline-email-template-wrap" style="display:none">
+          <div class="fi" style="margin-bottom:8px">
+            <label class="text-sm">Tiêu đề email</label>
+            <input class="fc" id="deadline-email-subject" placeholder="VD: [Cảnh báo trễ hạn] #StepName">
+          </div>
+          <div class="fi" style="margin-bottom:0">
+            <label class="text-sm">Nội dung email</label>
+            <div class="dev-note">[Note dev] Ô này là div contenteditable (không phải textarea) — khi người dùng dán (paste) nội dung đã in đậm/nghiêng sẵn từ Word, Gmail… thì định dạng sẽ được giữ nguyên.</div>
+            <div class="fc rte-body" id="deadline-email-body" contenteditable="true" data-placeholder="VD: Yêu cầu đã quá hạn xử lý ở bước #StepName."></div>
+            <div class="f-hint">Biến khả dụng: #maSinhVien, #hoTen, #lopHanhChinh, #heDaoTao — xem đầy đủ tại Danh mục Trường dữ liệu</div>
+          </div>
+        </div>
+
+        <label class="dl-check-row">
+          <input type="checkbox" id="deadline-alert-highlight"> 🖍️ Highlight dòng trong bảng
+        </label>
+        <label class="dl-check-row" style="margin-bottom:0">
+          <input type="checkbox" id="deadline-alert-bell"> 🔔 Thông báo trên chuông
+        </label>
+      </div>
+
+      <div class="dl-block" style="margin-bottom:0">
+        <label class="dl-check-row" style="margin-bottom:0">
+          <input type="checkbox" id="deadline-repeat-enabled" onchange="toggleDeadlineRepeat(this.checked)"> Lặp lại cảnh báo cho đến khi xử lý xong
+        </label>
+        <div class="flex items-center gap-8" id="deadline-repeat-wrap" style="display:none;margin-top:10px">
+          <span class="text-sm">Nhắc lại mỗi</span>
+          <input class="fc" id="deadline-repeat-hours" type="number" min="1" value="12" style="width:80px;text-align:center">
+          <span class="text-sm">giờ</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-deadline">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveDeadline()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cấu hình Thông báo (áp dụng chung toàn quy trình của biểu mẫu, dùng chung bởi modal-form-builder) ═══ -->
+<div class="overlay hidden" id="modal-notify">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Cấu hình thông báo</h3>
+      <button class="modal-close" data-close="modal-notify">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="f-hint" style="margin-bottom:14px">Áp dụng chung cho toàn bộ quy trình — không cần bật/tắt riêng từng bước hay từng nút.</div>
+
+      <div class="dl-block">
+        <label class="dl-check-row" style="margin-bottom:10px">
+          <input type="checkbox" id="notify-approver-enabled" onchange="toggleNotifyChannels('notify-approver')">
+          Báo cho người duyệt khi có yêu cầu mới đến bước
+        </label>
+        <div id="notify-approver-channels" style="display:none;margin-left:24px">
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+            <input type="checkbox" id="notify-approver-email"> 📧 Email
+          </label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="notify-approver-bell"> 🔔 Thông báo trên chuông
+          </label>
+        </div>
+      </div>
+
+      <div class="dl-block" style="margin-bottom:0">
+        <label class="dl-check-row" style="margin-bottom:10px">
+          <input type="checkbox" id="notify-submitter-enabled" onchange="toggleNotifyChannels('notify-submitter')">
+          Báo cho người nộp khi yêu cầu bị Từ chối / cần chỉnh sửa
+        </label>
+        <div id="notify-submitter-channels" style="display:none;margin-left:24px">
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+            <input type="checkbox" id="notify-submitter-email"> 📧 Email
+          </label>
+          <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
+            <input type="checkbox" id="notify-submitter-bell"> 🔔 Thông báo trên chuông
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-notify">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveNotifyConfig()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+// ══════════════════════════════════════════════════
+// Cây đơn vị — tái sử dụng đúng UNITS 3 cấp của mh-admin-01
+// Cấp 1: Đại học + các Ban/Phòng ban hành biểu mẫu dùng chung toàn trường
+// Cấp 2: Trường con / Khoa — ĐƯỢC PHÉP sao chép biểu mẫu từ Cấp 1 về
+// Cấp 3: Khoa con / Bộ môn — KHÔNG có biểu mẫu riêng, luôn dùng chung
+//        bản hiệu lực của Cấp 2 quản lý nó
+// ══════════════════════════════════════════════════
+const UNITS = [
+  { id:'u-dh', level:1, parent:null, name:'Đại học' },
+  { id:'u-ctsv', level:1, parent:null, name:'Phòng CTSV' },
+  { id:'u-pdt', level:1, parent:null, name:'Phòng Đào tạo' },
+  { id:'u-sdh', level:1, parent:null, name:'Quản lý Sau đại học' },
+
+  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
+  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
+  { id:'u-truongxd', level:2, parent:'u-dh', name:'Trường Xây dựng' },
+  { id:'u-ngoaingu', level:2, parent:'u-dh', name:'Khoa Ngoại ngữ' },
+  { id:'u-yduoc', level:2, parent:'u-dh', name:'Trường Y Dược' },
+
+  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
+  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
+  { id:'u-kt-qtkd', level:3, parent:'u-kt', name:'Khoa con Quản trị Kinh doanh' },
+];
+
+function unitById(id){ return UNITS.find(u => u.id === id); }
+const LEVEL_LABEL = { 1:'Cấp 1', 2:'Cấp 2', 3:'Cấp 3' };
+
+/* Đơn vị đang chọn qua combobox tìm kiếm — mặc định Đại học (Cấp 1, xem toàn bộ) */
+let selectedUnitId = 'u-dh';
+
+const SCOPE_LABEL = {
+  chinhquy: 'Đại học chính quy',
+  vlvh:     'Vừa làm vừa học',
+  lienthong:'Liên thông',
+  saudaihoc:'Sau đại học',
+};
+const SCOPE_ORDER = ['chinhquy', 'vlvh', 'lienthong', 'saudaihoc'];
+const STATUS_TAG = {
+  active:   { cls:'tag-success', label:'Active' },
+  inactive: { cls:'tag-default', label:'Inactive' },
+};
+
+/* ============================================================
+   DATA — mỗi biểu mẫu gắn với 1 đơn vị SỞ HỮU (ownerUnit).
+   originId = null → biểu mẫu gốc. originId = 'fX' → bản sao,
+   giữ tham chiếu tới biểu mẫu gốc đã sao chép (không tự đồng bộ).
+   ============================================================ */
+const FORMS = [
+  /* Dữ liệu demo đầy đủ — content soạn sẵn dùng mã trường dữ liệu có sẵn
+     trong FIELD_CATALOG, đặt đầu danh sách để dễ thấy khi mở màn hình. */
+  { id:'f15', itemId:15, code:'BM15', name:'Đơn xin xác nhận sinh viên',
+    desc:'Dùng cho vay vốn ngân hàng, xin visa, xác nhận với cơ quan/tổ chức khác',
+    ownerUnit:'u-ctsv', scopes:['chinhquy','vlvh','lienthong','saudaihoc'], status:'active', updated:'17/07/2026',
+    file:'don-xac-nhan-sinh-vien.docx', originId:null,
+    guide:'<p>Sinh viên điền đầy đủ thông tin và nêu rõ mục đích xin xác nhận (vay vốn ngân hàng, xin visa, khác…) trước khi nộp.</p>',
+    studentStatuses:['danghoc'],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN XÁC NHẬN LÀ SINH VIÊN</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Phòng Công tác sinh viên</b></p>
+      <p>Họ và tên: <mark class="fedit-token">#hoTen</mark>&nbsp;&nbsp;&nbsp;Ngày sinh: <mark class="fedit-token">#ngaySinh</mark></p>
+      <p>Mã sinh viên: <mark class="fedit-token">#maSinhVien</mark>&nbsp;&nbsp;&nbsp;Số CCCD/Hộ chiếu: <mark class="fedit-token">#soCCCD</mark></p>
+      <p>Lớp: <mark class="fedit-token">#lopHanhChinh</mark>&nbsp;&nbsp;Khoá: <mark class="fedit-token">#khoaDaoTao</mark>&nbsp;&nbsp;Khoa: <mark class="fedit-token">#donViQuanLy</mark></p>
+      <p>Hệ đào tạo: <mark class="fedit-token">#heDaoTao</mark>&nbsp;&nbsp;Ngành đào tạo: <mark class="fedit-token">#nganhDaoTao</mark></p>
+      <p>Nơi thường trú: <mark class="fedit-token">#thuongTru</mark></p>
+      <p>Mục đích xin xác nhận: <mark class="fedit-token">#mucDichXacNhan</mark></p>
+      <p>Kính đề nghị Nhà trường xác nhận cho tôi hiện đang là sinh viên đang theo học tại trường để tôi hoàn thiện thủ tục nêu trên.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    `,
+    extraFields:[
+      { code:'mucDichXacNhan', label:'Mục đích xin xác nhận', placeholder:'', type:'Select', required:true,
+        options:['Vay vốn ngân hàng','Xin visa','Xác nhận với cơ quan/tổ chức khác','Xét miễn/giảm học phí'] },
+    ],
+  },
+  { id:'f16', itemId:16, code:'BM16', name:'Đơn đăng ký ở ký túc xá',
+    desc:'Nộp trước ngày 15/08 hằng năm',
+    ownerUnit:'u-ctsv', scopes:['chinhquy'], status:'active', updated:'16/07/2026',
+    file:'don-dang-ky-ktx.docx', originId:null,
+    guide:'<p>Sinh viên đăng ký nguyện vọng ở ký túc xá trước ngày 15/08 hằng năm, ưu tiên theo diện chính sách và khoảng cách nơi thường trú.</p>',
+    studentStatuses:['danghoc'],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN ĐĂNG KÝ Ở KÝ TÚC XÁ</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Phòng Công tác sinh viên</b></p>
+      <p>Họ và tên: <mark class="fedit-token">#hoTen</mark>&nbsp;&nbsp;&nbsp;Giới tính: <mark class="fedit-token">#gioiTinh</mark></p>
+      <p>Mã sinh viên: <mark class="fedit-token">#maSinhVien</mark>&nbsp;&nbsp;&nbsp;Ngày sinh: <mark class="fedit-token">#ngaySinh</mark></p>
+      <p>Lớp: <mark class="fedit-token">#lopHanhChinh</mark>&nbsp;&nbsp;Khoá: <mark class="fedit-token">#khoaDaoTao</mark>&nbsp;&nbsp;Khoa: <mark class="fedit-token">#donViQuanLy</mark></p>
+      <p>Số điện thoại: <mark class="fedit-token">#soDienThoai</mark>&nbsp;&nbsp;Email: <mark class="fedit-token">#email</mark></p>
+      <p>Nơi thường trú: <mark class="fedit-token">#thuongTru</mark></p>
+      <p>Loại phòng đăng ký: <mark class="fedit-token">#loaiPhongDangKy</mark></p>
+      <p>Thuộc diện ưu tiên: <mark class="fedit-token">#dienUuTien</mark></p>
+      <p>Tôi làm đơn này kính đề nghị Nhà trường xem xét, bố trí chỗ ở tại ký túc xá cho tôi trong năm học tới. Tôi xin cam kết thực hiện đúng nội quy ký túc xá.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    `,
+    extraFields:[
+      { code:'loaiPhongDangKy', label:'Loại phòng đăng ký', placeholder:'', type:'Select', required:true,
+        options:['Phòng 4 người','Phòng 6 người','Phòng 8 người'] },
+      { code:'dienUuTien', label:'Thuộc diện ưu tiên', placeholder:'', type:'Select', required:false,
+        options:['Không thuộc diện ưu tiên','Con thương binh, bệnh binh','Hộ nghèo, cận nghèo','Người dân tộc thiểu số','Mồ côi cả cha lẫn mẹ'] },
+    ],
+  },
+
+  { id:'f1',  itemId:1,  code:'BM1', name:'Đơn xin bảo lưu kết quả học tập', desc:'Áp dụng khi sinh viên tạm dừng học tối đa 2 học kỳ', ownerUnit:'u-pdt', scopes:['chinhquy','vlvh'], status:'active',   updated:'10/07/2026', file:'bieu-mau-bao-luu.docx', originId:null },
+  { id:'f2',  itemId:2,  code:'BM2', name:'Đơn xin chuyển ngành',            desc:'Nộp trước khi kết thúc học kỳ 2 năm nhất',            ownerUnit:'u-pdt', scopes:['chinhquy'], status:'active',   updated:'08/07/2026', file:'don-chuyen-nganh.docx', originId:null },
+  { id:'f3',  itemId:3,  code:'BM3', name:'Đơn xin học cải thiện điểm',      desc:'Áp dụng với học phần đã có điểm chữ ≥ D',             ownerUnit:'u-pdt', scopes:['chinhquy','vlvh','lienthong'], status:'active',   updated:'02/07/2026', file:'don-hoc-cai-thien.docx', originId:null },
+  { id:'f4',  itemId:4,  code:'BM4', name:'Đơn xin rút học phần',            desc:'Hạn chót tuần thứ 3 kể từ đầu học kỳ',                ownerUnit:'u-pdt', scopes:['chinhquy'], status:'inactive', updated:'28/06/2026', file:'don-rut-hoc-phan.docx', originId:null },
+  { id:'f5',  itemId:5,  code:'BM5', name:'Đơn đăng ký học vượt',            desc:'Yêu cầu GPA tích lũy ≥ 3.2',                          ownerUnit:'u-pdt', scopes:['chinhquy'], status:'inactive', updated:'14/05/2026', file:'don-hoc-vuot.docx', originId:null },
+  { id:'f6',  itemId:6,  code:'BM6', name:'Đơn xin trợ cấp khó khăn',       desc:'Kèm minh chứng hoàn cảnh gia đình',                   ownerUnit:'u-ctsv', scopes:['chinhquy','vlvh'], status:'active',   updated:'11/07/2026', file:'don-tro-cap.docx', originId:null },
+  { id:'f7',  itemId:7,  code:'BM7', name:'Đơn đăng ký ở ký túc xá',        desc:'Nộp trước ngày 15/08 hằng năm',                       ownerUnit:'u-ctsv', scopes:['chinhquy'], status:'active',   updated:'09/07/2026', file:'don-ktx.docx', originId:null },
+  { id:'f8',  itemId:8,  code:'BM8', name:'Đơn xin xác nhận sinh viên',     desc:'Dùng cho vay vốn ngân hàng, xin visa…',               ownerUnit:'u-ctsv', scopes:['chinhquy','vlvh','lienthong','saudaihoc'], status:'active',   updated:'05/07/2026', file:'don-xac-nhan-sv.docx', originId:null },
+  { id:'f9',  itemId:9,  code:'BM9', name:'Đơn đề nghị khen thưởng',        desc:'Kèm minh chứng thành tích học tập/rèn luyện',         ownerUnit:'u-ctsv', scopes:['chinhquy'], status:'inactive', updated:'30/06/2026', file:'don-khen-thuong.docx', originId:null },
+  { id:'f10', itemId:10, code:'BM10', name:'Đơn xin gia hạn thời gian đào tạo thạc sĩ', desc:'Tối đa gia hạn 12 tháng theo quy chế',       ownerUnit:'u-sdh', scopes:['saudaihoc'], status:'active',   updated:'12/07/2026', file:'don-gia-han-ths.docx', originId:null },
+  { id:'f11', itemId:11, code:'BM11', name:'Đơn đăng ký bảo vệ luận văn',     desc:'Nộp kèm 5 quyển luận văn + minh chứng công bố',       ownerUnit:'u-sdh', scopes:['saudaihoc'], status:'active',   updated:'07/07/2026', file:'don-bao-ve-lv.docx', originId:null },
+  { id:'f12', itemId:12, code:'BM12', name:'Đơn xin đổi tên đề tài luận văn', desc:'Cần ý kiến đồng ý của người hướng dẫn',               ownerUnit:'u-sdh', scopes:['saudaihoc'], status:'inactive', updated:'20/05/2026', file:'don-doi-ten-de-tai.docx', originId:null },
+
+  // Bản sao — Khoa CNTT (Cấp 2) đã sao chép từ Phòng Đào tạo rồi tuỳ chỉnh riêng
+  { id:'f1-cntt', itemId:13, code:'BM13', name:'Đơn xin bảo lưu kết quả học tập (Khoa CNTT)', desc:'Bản Khoa CNTT tuỳ chỉnh — bổ sung xác nhận của Bộ môn', ownerUnit:'u-cntt', scopes:['chinhquy','vlvh'], status:'active', updated:'12/07/2026', file:'bieu-mau-bao-luu-cntt.docx', originId:'f1' },
+
+  /* Dữ liệu demo đầy đủ 1 biểu mẫu thật — theo mẫu Phụ lục IV (Nghị định
+     238/2025/NĐ-CP), minh hoạ cách content dùng mã trường dữ liệu có sẵn
+     trong FIELD_CATALOG (#hoTen, #maSinhVien...) và extraFields cho các
+     thông tin không có sẵn mã (họ tên cha/mẹ, nơi thường trú ghi đầy đủ,
+     thuộc đối tượng miễn giảm). */
+  { id:'f14', itemId:14, code:'BM14', name:'Đơn đề nghị chi trả tiền miễn, giảm học phí',
+    desc:'Kèm theo Nghị định số 238/2025/NĐ-CP ngày 03 tháng 9 năm 2025 của Chính phủ',
+    ownerUnit:'u-ctsv', scopes:['chinhquy','vlvh'], status:'active', updated:'17/07/2026',
+    file:'don-mien-giam-hoc-phi.docx', originId:null,
+    guide:'<p>Sinh viên thuộc đối tượng được miễn, giảm học phí theo Nghị định số 238/2025/NĐ-CP nộp đơn kèm minh chứng liên quan tới Phòng Công tác sinh viên.</p>',
+    studentStatuses:['danghoc'],
+    content:`
+      <p style="text-align:center"><b>Phụ lục IV</b></p>
+      <p style="text-align:center"><b>ĐƠN ĐỀ NGHỊ CHI TRẢ TIỀN MIỄN, GIẢM HỌC PHÍ</b></p>
+      <p style="text-align:center"><i>(Kèm theo Nghị định số 238/2025/NĐ-CP<br>ngày 03 tháng 9 năm 2025 của Chính phủ)</i></p>
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN ĐỀ NGHỊ CHI TRẢ TIỀN MIỄN, GIẢM HỌC PHÍ</b></p>
+      <p style="text-align:center"><i>(Dùng cho các cơ sở giáo dục nghề nghiệp và giáo dục đại học tư thục,<br>thuộc doanh nghiệp nhà nước, tổ chức kinh tế)</i></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: ĐẠI HỌC PHENIKAA</b></p>
+      <p>Họ và tên: <mark class="fedit-token">#hoTen</mark>&nbsp;&nbsp;&nbsp;Số CMND/CCCD: <mark class="fedit-token">#soCCCD</mark></p>
+      <p>Mã sinh viên <mark class="fedit-token">#maSinhVien</mark></p>
+      <p>Ngày, tháng, năm sinh: <mark class="fedit-token">#ngaySinh</mark></p>
+      <p>Nơi sinh: <mark class="fedit-token">#noiSinh</mark></p>
+      <p>Lớp: <mark class="fedit-token">#lopHanhChinh</mark>&nbsp;&nbsp;Khoá: <mark class="fedit-token">#khoaDaoTao</mark>&nbsp;&nbsp;Khoa: <mark class="fedit-token">#donViQuanLy</mark></p>
+      <p>Họ tên cha/mẹ học sinh, sinh viên: <mark class="fedit-token">#hoTenChaMe</mark></p>
+      <p>Nơi thường trú (Ghi đầy đủ): <mark class="fedit-token">#noiThuongTruDayDu</mark></p>
+      <p>Thuộc đối tượng: <mark class="fedit-token">#thuocDoiTuong</mark></p>
+      <p>Căn cứ vào Nghị định số 238/2025/NĐ-CP, tôi làm đơn này đề nghị được xem xét, giải quyết để được cấp bù tiền hỗ trợ miễn, giảm học phí theo quy định và chế độ hiện hành.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    `,
+    extraFields:[
+      { code:'hoTenChaMe', label:'Họ tên cha/mẹ học sinh, sinh viên', placeholder:'', type:'Text', required:true, options:[] },
+      { code:'noiThuongTruDayDu', label:'Nơi thường trú (Ghi đầy đủ)', placeholder:'VD: Số nhà, thôn/xóm, xã/phường, huyện, tỉnh', type:'Text', required:true, options:[] },
+      { code:'thuocDoiTuong', label:'Thuộc đối tượng', placeholder:'', type:'Select', required:true,
+        options:['Con thương binh, bệnh binh','Con hộ nghèo, cận nghèo','Người dân tộc thiểu số','Mồ côi cả cha lẫn mẹ','Khuyết tật'] },
+    ],
+  },
+];
+
+/* Biểu mẫu tạo trước khi có các trường mở rộng (Hướng dẫn nộp, Chương trình
+   đào tạo, Đơn vị/Khoá áp dụng, Trạng thái sinh viên, MSSV whitelist, cho
+   phép sao chép) — gán mặc định để tránh undefined khi hiển thị, không đổi
+   ý nghĩa dữ liệu cũ. */
+FORMS.forEach(f => {
+  if (f.guide === undefined) f.guide = '';
+  if (f.programs === undefined) f.programs = [];
+  if (f.applyUnits === undefined) f.applyUnits = [];
+  if (f.cohorts === undefined) f.cohorts = [];
+  if (f.studentStatuses === undefined) f.studentStatuses = [];
+  if (f.mssvWhitelist === undefined) f.mssvWhitelist = [];
+  if (f.allowCopy === undefined) f.allowCopy = true;
+  if (f.content === undefined) f.content = '';
+  if (f.extraFields === undefined) f.extraFields = [];
+});
+
+/* ============================================================
+   Danh mục Trường dữ liệu — mã dùng để hệ thống tự động điền
+   thông tin (họ tên, MSSV, lớp...) vào nội dung email/biểu mẫu,
+   thay vì người soạn phải gõ tay. Dùng chung cho mọi biểu mẫu,
+   không gắn riêng 1 form nào — vì vậy đặt tách khỏi FORMS.
+   ============================================================ */
+const FIELD_CATALOG = [
+  { code:'hoTen',           label:'Họ tên' },
+  { code:'hoTenTA',         label:'Họ và tên tiếng anh' },
+  { code:'maSinhVien',      label:'Mã sinh viên' },
+  { code:'ngaySinh',        label:'Ngày sinh' },
+  { code:'ngaySinhTA',      label:'Ngày sinh tiếng anh' },
+  { code:'gioiTinh',        label:'Giới tính' },
+  { code:'gioiTinhTA',      label:'Giới tính tiếng anh' },
+  { code:'noiSinh',         label:'Nơi sinh' },
+  { code:'noiSinhTA',       label:'Nơi sinh tiếng anh' },
+  { code:'thuongTru',       label:'Địa chỉ thường trú' },
+  { code:'thuongTruTA',     label:'Địa chỉ thường trú tiếng anh' },
+  { code:'quocGia',         label:'Quốc gia' },
+  { code:'quocGiaTA',       label:'Quốc gia tiếng anh' },
+  { code:'quocTich',        label:'Quốc tịch' },
+  { code:'quocTichTA',      label:'Quốc tịch tiếng anh' },
+  { code:'soCCCD',          label:'Số CCCD/ Hộ chiếu' },
+  { code:'ngayCapCCCD',     label:'Ngày cấp CCCD/ Hộ chiếu' },
+  { code:'ngayCapCCCDTA',   label:'Ngày cấp CCCD/ Hộ chiếu bằng tiếng anh' },
+  { code:'noiCapCCCD',      label:'Nơi cấp CCCD/ Hộ chiếu' },
+  { code:'noiCapCCCDTA',    label:'Nơi cấp CCCD/ Hộ chiếu bằng tiếng anh' },
+  { code:'lopHanhChinh',    label:'Lớp hành chính' },
+  { code:'khoaDaoTao',      label:'Khoá đào tạo' },
+  { code:'donViQuanLy',     label:'Đơn vị quản lý' },
+  { code:'donViQuanLyTA',   label:'Đơn vị quản lý tiếng anh' },
+  { code:'heDaoTao',        label:'Hệ đào tạo' },
+  { code:'heDaoTaoTA',      label:'Hệ đào tạo tiếng anh' },
+  { code:'nganhDaoTao',     label:'Ngành đào tạo' },
+  { code:'nganhDaoTaoTA',   label:'Ngành đào tạo tiếng anh' },
+  { code:'chuongTrinhDaoTao',   label:'Chương trình đào tạo' },
+  { code:'chuongTrinhDaoTaoTA', label:'Chương trình đào tạo tiếng anh' },
+  { code:'email',           label:'Email' },
+  { code:'soDienThoai',     label:'Số điện thoại' },
+  { code:'gpa',             label:'GPA' },
+  { code:'gpaTongKet',      label:'GPA trung bình tổng' },
+  { code:'trangThaiSV',     label:'Trạng thái sinh viên' },
+  { code:'trangThaiSVTA',   label:'Trạng thái sinh viên tiếng anh' },
+  { code:'nienKhoa',        label:'Niên khoá' },
+  { code:'namNhapHoc',      label:'Năm nhập học' },
+  { code:'namTotNghiep',    label:'Năm tốt nghiệp' },
+  { code:'thoiGianHoc',     label:'Thời gian học' },
+  { code:'ngayHienTai',     label:'Ngày hiện tại' },
+  { code:'ngayHienTaiTA',   label:'Ngày hiện tại tiếng anh' },
+];
+
+/* Sinh steps[] placeholder cho biểu mẫu chưa có dữ liệu builder chi tiết — copy
+   nguyên logic defaultSteps() từ mh-admin-01. Giữ đúng shape mà renderTrack()/
+   doAddStep() kỳ vọng (submitters/approvers, actions nối target tuần tự) để mở
+   builder không lỗi. */
+function defaultSteps(n){
+  const steps = Array.from({length:n}, (_,i) => {
+    const id = 's' + i;
+    return i === 0
+      ? { id, type:'submit', title:'Nộp yêu cầu', submitters:[],
+          actions:[{ label:'Nộp', kind:'submit', target:id, resultStatus:'Chờ duyệt', fields:[] }] }
+      : { id, type:'approval', title: i===n-1 ? 'Ban hành quyết định' : `Bước duyệt ${i}`, approvers:[],
+          actions:[
+            { label:'Đồng ý', kind:'approve', target:id, resultStatus:'Đã duyệt', fields:[] },
+            { label:'Từ chối', kind:'reject', target:id, resultStatus:'Từ chối', fields:[] },
+          ] };
+  });
+  // Nối target: mỗi nút "approve/submit" của bước i trỏ sang bước i+1 (bước cuối tự trỏ về chính nó = dừng)
+  steps.forEach((step, i) => {
+    if (i === steps.length - 1) return;
+    const forwardAction = step.actions.find(a => a.kind==='approve' || a.kind==='submit');
+    if (forwardAction) forwardAction.target = steps[i+1].id;
+  });
+  return steps;
+}
+
+/* steps[] thật của từng biểu mẫu — nguồn dữ liệu DUY NHẤT dùng bởi popup builder
+   (quy trình xử lý của biểu mẫu đang mở). Biểu mẫu chưa có sẵn steps thì được
+   gán mặc định 3 bước (Nộp → Duyệt → Ban hành). */
+FORMS.forEach(f => { if (!f.steps) f.steps = defaultSteps(3); });
+
+function ownerLabel(unitId){
+  const u = unitById(unitId);
+  return u.level === 1 ? u.name : (u.name + ' — ' + unitById(u.parent).name);
+}
+
+function scopeText(scopes){
+  return SCOPE_ORDER.filter(s => scopes.includes(s)).map(s => SCOPE_LABEL[s]).join(', ');
+}
+
+/* Đơn vị "hiệu lực" đang xem — Cấp 3 luôn quy về Cấp 2 cha (không có bản riêng) */
+function effectiveOwnerUnit(){
+  const u = unitById(selectedUnitId);
+  return u.level === 3 ? u.parent : u.id;
+}
+
+// ══════════════════════════════════════════════════
+// Combobox tìm kiếm Đơn vị — copy nguyên hành vi từ mh-admin-01
+// ══════════════════════════════════════════════════
+const deptSearchInput = document.getElementById('dept-search');
+const deptComboMenu = document.getElementById('dept-combo-menu');
+let deptHlIndex = -1;
+
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+
+function unitDisplayName(u){
+  return u.level === 1 ? u.name : (u.name + ' (' + unitById(u.parent).name + ')');
+}
+
+function renderDeptMenu(query){
+  const q = (query || '').trim();
+  const matches = q
+    ? UNITS.filter(u => u.name.toLowerCase().includes(q.toLowerCase()))
+    : UNITS;
+
+  if (!matches.length){
+    deptComboMenu.innerHTML = '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
+    deptHlIndex = -1;
+    return;
+  }
+
+  const groups = { 1:[], 2:[], 3:[] };
+  matches.forEach(u => groups[u.level].push(u));
+
+  let html = '';
+  let flatIndex = 0;
+  [1,2,3].forEach(lvl => {
+    if (!groups[lvl].length) return;
+    html += '<div class="unit-combo-group">' + LEVEL_LABEL[lvl] + '</div>';
+    groups[lvl].forEach(u => {
+      const parentTag = u.level > 1 ? ('<span class="text-muted"> - ' + unitById(u.parent).name + '</span>') : '';
+      html += '<div class="unit-combo-item" data-idx="' + flatIndex + '" data-id="' + u.id + '" onclick="pickDept(&#39;' + u.id + '&#39;)">'
+        + '<span>' + highlightMatch(u.name, q) + parentTag + '</span>'
+        + '<span class="lvl-badge">' + LEVEL_LABEL[lvl] + '</span></div>';
+      flatIndex++;
+    });
+  });
+  deptComboMenu.innerHTML = html;
+  deptHlIndex = -1;
+}
+
+function openDeptMenu(){
+  renderDeptMenu(deptSearchInput.value);
+  deptComboMenu.classList.add('open');
+}
+function closeDeptMenu(){
+  deptComboMenu.classList.remove('open');
+  deptHlIndex = -1;
+}
+
+function pickDept(id){
+  selectedUnitId = id;
+  deptSearchInput.value = unitDisplayName(unitById(id));
+  closeDeptMenu();
+  renderCopyAlert();
+  currentPage = 1;
+  renderFormGrid();
+}
+
+function setDeptHighlight(newIdx){
+  const items = deptComboMenu.querySelectorAll('.unit-combo-item');
+  items.forEach(el => el.classList.remove('hl'));
+  if (newIdx >= 0 && newIdx < items.length){
+    items[newIdx].classList.add('hl');
+    items[newIdx].scrollIntoView({ block:'nearest' });
+  }
+  deptHlIndex = newIdx;
+}
+
+deptSearchInput.addEventListener('focus', () => { deptSearchInput.select(); openDeptMenu(); });
+deptSearchInput.addEventListener('input', () => openDeptMenu());
+deptSearchInput.addEventListener('keydown', e => {
+  const items = deptComboMenu.querySelectorAll('.unit-combo-item');
+  if (e.key === 'ArrowDown'){ e.preventDefault(); setDeptHighlight(Math.min(deptHlIndex+1, items.length-1)); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); setDeptHighlight(Math.max(deptHlIndex-1, 0)); }
+  else if (e.key === 'Enter'){
+    e.preventDefault();
+    if (deptHlIndex >= 0 && items[deptHlIndex]) pickDept(items[deptHlIndex].dataset.id);
+  } else if (e.key === 'Escape'){ closeDeptMenu(); deptSearchInput.blur(); }
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('dept-combo').contains(e.target)) closeDeptMenu();
+});
+
+/* Nút "Sao chép" chỉ hiện khi đang xem 1 đơn vị Cấp 2 (Khoa/Trường) — Cấp 2
+   không có quyền tự soạn biểu mẫu mới, chỉ được sao chép biểu mẫu do Cấp 1
+   (Đại học/PĐT/CTSV/SĐH) ban hành về rồi tuỳ chỉnh riêng. Ngược lại, nút
+   "＋ Thêm mới" chỉ dành cho Cấp 1. Alert ngữ cảnh không hiển thị nữa. */
+function renderCopyAlert(){
+  document.getElementById('unit-copy-alert').style.display = 'none';
+  // Cấp 3 (bộ môn con) quy về Cấp 2 cha — coi như đang xem 1 đơn vị Cấp 2.
+  const u = unitById(effectiveOwnerUnit());
+  const isLevel2 = u.level === 2;
+  document.getElementById('btn-copy-form').style.display = isLevel2 ? '' : 'none';
+  document.getElementById('btn-new-form').style.display = isLevel2 ? 'none' : '';
+}
+
+// ══════════════════════════════════════════════════
+// List rendering
+// ══════════════════════════════════════════════════
+const FORM_PAGE_SIZE = 20;
+let currentPage = 1;
+
+/* Danh sách biểu mẫu hiệu lực tại 1 đơn vị: luôn đúng bằng biểu mẫu có
+   ownerUnit === unitId, không tự động kế thừa biểu mẫu Cấp 1 nào — Khoa/
+   Trường (Cấp 2, hoặc Cấp 3 quy về cha) chỉ thấy được biểu mẫu Cấp 1 sau khi
+   tự sao chép về (bản sao có ownerUnit là chính Khoa đó). */
+function formsAtUnit(unitId){
+  const u = unitById(unitId);
+  if (u.level === 1 && unitId === 'u-dh') return FORMS.filter(f => unitById(f.ownerUnit).level === 1);
+  return FORMS.filter(f => f.ownerUnit === unitId);
+}
+
+function visibleForms() {
+  let list = formsAtUnit(effectiveOwnerUnit());
+  const statusFilter = document.getElementById('status-select').value;
+  if (statusFilter !== 'all') list = list.filter(f => f.status === statusFilter);
+  const q = document.getElementById('form-name-search').value.trim().toLowerCase();
+  if (q) list = list.filter(f => f.name.toLowerCase().includes(q) || f.code.toLowerCase().includes(q));
+  return list;
+}
+
+function renderFormGrid() {
+  const tbody = document.getElementById('form-tbody');
+  const list = visibleForms();
+  const totalPages = Math.max(1, Math.ceil(list.length / FORM_PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const pageList = list.slice((currentPage - 1) * FORM_PAGE_SIZE, currentPage * FORM_PAGE_SIZE);
+
+  if (pageList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty">Không tìm thấy biểu mẫu phù hợp.</td></tr>`;
+  } else {
+    tbody.innerHTML = pageList.map((f, i) => {
+      const st = STATUS_TAG[f.status];
+      const deptTd = `<td>${ownerLabel(f.ownerUnit)}</td>`;
+      return `
+        <tr class="form-row" onclick="openFormDetail('${f.id}')">
+          <td>${(currentPage - 1) * FORM_PAGE_SIZE + i + 1}</td>
+          <td class="form-code">${f.code}</td>
+          <td>
+            <div class="form-name-cell">${f.name}</div>
+          </td>
+          ${deptTd}
+          <td><span class="tag ${st.cls}">${st.label}</span></td>
+          <td class="text-muted text-sm">${f.updated}</td>
+          <td class="tbl-actions">
+            <button class="icon-btn" title="Cấu hình quy trình" onclick="event.stopPropagation();openFormBuilder('${f.id}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            </button>
+            <button class="icon-btn" title="Chỉnh sửa" onclick="event.stopPropagation();openFormEdit('${f.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="icon-btn" title="${f.status==='active' ? 'Chuyển sang Inactive' : 'Chuyển sang Active'}" onclick="event.stopPropagation();confirmToggleFormStatus('${f.id}')">
+              ${f.status==='active'
+                ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
+                : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'}
+            </button>
+            <button class="icon-btn danger" title="Xoá" onclick="event.stopPropagation();confirmDeleteForm('${f.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  renderFormPagination(list.length, totalPages);
+}
+
+function renderFormPagination(totalItems, totalPages) {
+  const el = document.getElementById('form-pagination');
+  if (totalItems === 0) { el.innerHTML = ''; return; }
+  const from = (currentPage - 1) * FORM_PAGE_SIZE + 1;
+  const to = Math.min(currentPage * FORM_PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++) {
+    btns += `<button class="pg-btn ${i === currentPage ? 'active' : ''}" onclick="goToFormPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `<span class="pg-info">${from}–${to} trong ${totalItems} biểu mẫu</span>${btns}`;
+}
+
+function goToFormPage(p) {
+  currentPage = p;
+  renderFormGrid();
+}
+
+document.getElementById('status-select').addEventListener('change', () => { currentPage = 1; renderFormGrid(); });
+document.getElementById('form-name-search').addEventListener('input', () => { currentPage = 1; renderFormGrid(); });
+
+// ══════════════════════════════════════════════════
+// Form detail modal
+// ══════════════════════════════════════════════════
+function formById(id) { return FORMS.find(f => f.id === id); }
+
+let fdetCurrentId = null;
+
+function openFormDetail(id) {
+  const f = formById(id);
+  if (!f) return;
+  const st = STATUS_TAG[f.status];
+
+  const owner = unitById(f.ownerUnit);
+  fdetCurrentId = id;
+
+  document.getElementById('fdet-title').textContent = f.name;
+  document.getElementById('fdet-status-tag').className = 'tag ' + st.cls;
+  document.getElementById('fdet-status-tag').textContent = st.label;
+  document.getElementById('fdet-sub').textContent = `${f.code} · ${ownerLabel(f.ownerUnit)} · Cập nhật ${f.updated}`;
+  document.getElementById('fdet-code-wrap').classList.remove('err');
+  document.getElementById('fdet-code-input').value = f.code;
+  document.getElementById('fdet-dept').textContent = ownerLabel(f.ownerUnit);
+  document.getElementById('fdet-scope').textContent = scopeText(f.scopes);
+  document.getElementById('fdet-filename').textContent = f.file;
+
+  let accessHtml = `
+    <div class="access-row">
+      <div class="access-row-left"><span class="access-check">✓</span> Quản trị hệ thống</div>
+      <span class="text-muted text-sm">Xem &amp; chỉnh sửa</span>
+    </div>
+    <div class="access-row">
+      <div class="access-row-left"><span class="access-check">✓</span> ${ownerLabel(f.ownerUnit)}</div>
+      <span class="text-muted text-sm">Xem &amp; chỉnh sửa</span>
+    </div>`;
+  if (owner.level === 1){
+    accessHtml += `
+    <div class="access-row">
+      <div class="access-row-left"><span class="access-check">✓</span> Mọi Khoa/Trường trực thuộc Đại học</div>
+      <span class="text-muted text-sm">Xem &amp; dùng chung (kế thừa)</span>
+    </div>`;
+  } else {
+    accessHtml += `
+    <div class="access-row">
+      <div class="access-row-left"><span class="access-cross">✕</span> Các Khoa/Trường khác</div>
+      <span class="text-muted text-sm">Không nhìn thấy — chỉ ${owner.name} dùng bản này</span>
+    </div>`;
+  }
+  document.getElementById('fdet-access').innerHTML = accessHtml;
+
+  const historyHtml = [`<li><span class="fh-dot"></span><div><b>${f.updated}</b> — Cập nhật file mẫu và mô tả điều kiện áp dụng<div class="fh-time">bởi ${ownerLabel(f.ownerUnit)}</div></div></li>`];
+  if (f.originId){
+    const origin = formById(f.originId);
+    historyHtml.push(`<li><span class="fh-dot"></span><div>Sao chép từ <b>${origin ? origin.name : f.originId}</b><div class="fh-time">bởi ${ownerLabel(f.ownerUnit)}</div></div></li>`);
+  } else {
+    historyHtml.push(`<li><span class="fh-dot"></span><div><b>Trước đó</b> — Tạo biểu mẫu, gán trạng thái ${st.label.toLowerCase()}<div class="fh-time">bởi ${ownerLabel(f.ownerUnit)}</div></div></li>`);
+  }
+  document.getElementById('fdet-history').innerHTML = historyHtml.join('');
+
+  openModal('modal-form-detail');
+}
+
+/* Mã biểu mẫu phải là duy nhất trong toàn hệ thống — kiểm tra không trùng
+   với mã của bất kỳ biểu mẫu nào khác (không tính chính nó) trước khi lưu. */
+function isCodeTaken(code, excludeId){
+  const normalized = code.trim().toUpperCase();
+  return FORMS.some(f => f.id !== excludeId && f.code.toUpperCase() === normalized);
+}
+
+/* Mã biểu mẫu khi tạo mới được hệ thống tự sinh (không cho gõ tay) — dạng
+   BM<số thứ tự tăng dần toàn hệ thống>, lấy số lớn nhất đang có trong các
+   mã dạng BM<n> rồi +1, để không bao giờ trùng dù có xoá bớt biểu mẫu cũ. */
+function generateNextFormCode(){
+  const maxNum = FORMS.reduce((max, f) => {
+    const m = /^BM(\d+)$/i.exec(f.code.trim());
+    return m ? Math.max(max, parseInt(m[1], 10)) : max;
+  }, 0);
+  return 'BM' + (maxNum + 1);
+}
+
+function saveFormCode(){
+  const f = formById(fdetCurrentId);
+  if (!f) return;
+  const input = document.getElementById('fdet-code-input');
+  const wrap = document.getElementById('fdet-code-wrap');
+  const newCode = input.value.trim();
+
+  if (!newCode){
+    wrap.classList.add('err');
+    input.focus();
+    return;
+  }
+  if (isCodeTaken(newCode, f.id)){
+    wrap.classList.add('err');
+    input.focus();
+    return;
+  }
+
+  wrap.classList.remove('err');
+  f.code = newCode;
+  renderFormGrid();
+  closeModal('modal-form-detail');
+  showToast('Đã lưu thay đổi.', 'ok');
+}
+
+function confirmDeleteForm(id) {
+  const f = formById(id);
+  showConfirm(`Xoá biểu mẫu "${f.name}"?`, () => {
+    const i = FORMS.findIndex(x => x.id === id);
+    if (i > -1) FORMS.splice(i, 1);
+    renderFormGrid();
+    showToast('Đã xoá biểu mẫu.', 'ok');
+  }, 'Xoá', 'btn-danger');
+}
+
+/* Bật/tắt nhanh trạng thái Active ngay tại cột Thao tác — không cần mở
+   popup Chỉnh sửa chỉ để đổi 1 trường này. Vẫn hỏi xác nhận vì chuyển sang
+   Inactive sẽ ẩn biểu mẫu khỏi lựa chọn của sinh viên. */
+function confirmToggleFormStatus(id) {
+  const f = formById(id);
+  if (!f) return;
+  const willActivate = f.status !== 'active';
+  const message = willActivate
+    ? `Chuyển biểu mẫu "${f.name}" sang Active?`
+    : `Chuyển biểu mẫu "${f.name}" sang Inactive? Sinh viên sẽ không còn thấy biểu mẫu này để nộp.`;
+  showConfirm(message, () => {
+    f.status = willActivate ? 'active' : 'inactive';
+    const today = new Date();
+    f.updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+    renderFormGrid();
+    showToast(willActivate ? 'Đã chuyển biểu mẫu sang Active.' : 'Đã chuyển biểu mẫu sang Inactive.', 'ok');
+  }, willActivate ? 'Chuyển sang Active' : 'Chuyển sang Inactive', willActivate ? 'btn-primary' : 'btn-danger');
+}
+
+// ══════════════════════════════════════════════════
+// Sao chép biểu mẫu Cấp 1 về đơn vị Cấp 2 (Khoa/Trường)
+// ══════════════════════════════════════════════════
+function openCopyModal(){
+  const targetSel = document.getElementById('copy-target-unit');
+  const listEl = document.getElementById('copy-source-list');
+  const lvl2Units = UNITS.filter(u => u.level === 2);
+  // Cấp 3 (nếu có bộ môn con) quy về Cấp 2 cha — dùng effectiveOwnerUnit()
+  // để luôn khớp đúng 1 option, tránh trình duyệt tự rơi về option đầu
+  // danh sách khi selectedUnitId không match option nào (mặc định sai đơn
+  // vị đích mà không có cảnh báo gì).
+  const defaultTargetUnit = unitById(effectiveOwnerUnit()).level === 2 ? effectiveOwnerUnit() : lvl2Units[0].id;
+  targetSel.innerHTML = lvl2Units.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  targetSel.value = defaultTargetUnit;
+
+  const rootForms = FORMS.filter(f => unitById(f.ownerUnit).level === 1);
+  listEl.innerHTML = rootForms.map(f => `
+    <label class="copy-source-item" data-name="${f.name.toLowerCase()}">
+      <input type="checkbox" class="copy-source-check" value="${f.id}" onchange="updateCopyCount()">
+      <span class="csi-name">${f.name}</span>
+      <span class="csi-id">${f.code}</span>
+    </label>`).join('');
+
+  document.getElementById('copy-select-all').checked = false;
+  document.getElementById('copy-source-search').value = '';
+  updateCopyCount();
+  openModal('modal-copy-form');
+}
+
+document.getElementById('copy-source-search').addEventListener('input', e => {
+  filterCopySourceList(e.target.value);
+});
+
+function filterCopySourceList(query){
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll('.copy-source-item').forEach(item => {
+    item.style.display = item.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+
+function toggleAllCopySources(checked){
+  document.querySelectorAll('.copy-source-item').forEach(item => {
+    if (item.style.display !== 'none') item.querySelector('.copy-source-check').checked = checked;
+  });
+  updateCopyCount();
+}
+
+function updateCopyCount(){
+  const checks = document.querySelectorAll('.copy-source-check');
+  const checked = document.querySelectorAll('.copy-source-check:checked');
+  document.getElementById('copy-count-label').textContent = checked.length
+    ? `Đã chọn ${checked.length}/${checks.length} biểu mẫu`
+    : '';
+  document.getElementById('copy-select-all').checked = checks.length > 0 && checked.length === checks.length;
+}
+
+/* Sao chép biểu mẫu nguồn (Cấp 1) về đơn vị đích (Cấp 2): tạo bản ghi FORMS mới
+   thật sự cho mỗi biểu mẫu được chọn. Nếu đơn vị đích đã có bản sao của cùng
+   biểu mẫu nguồn (originId trùng) rồi thì bỏ qua, không tạo trùng lặp. */
+function doCopyForm(){
+  const targetUnit = document.getElementById('copy-target-unit').value;
+  const checkedIds = Array.from(document.querySelectorAll('.copy-source-check:checked')).map(cb => cb.value);
+
+  if (!checkedIds.length){
+    showToast('Chọn ít nhất 1 biểu mẫu để sao chép', 'warn');
+    return;
+  }
+
+  const maxItemId = () => FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
+  const today = new Date();
+  const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+
+  const copiedNames = [];
+  const skippedNames = [];
+
+  checkedIds.forEach(sourceId => {
+    const source = formById(sourceId);
+    const alreadyCopied = FORMS.some(f => f.ownerUnit === targetUnit && f.originId === sourceId);
+    if (alreadyCopied){
+      skippedNames.push(source.name);
+      return;
+    }
+
+    // Sao chép nguyên vẹn mọi thuộc tính của biểu mẫu gốc (nội dung, file mẫu,
+    // trường kê khai thêm, quy trình xử lý...) — chỉ ownerUnit và applyUnits là
+    // gán lại theo đơn vị đích, vì bản sao này thuộc về và chỉ áp dụng cho
+    // chính Khoa/Trường vừa sao chép về, không kế thừa phạm vi áp dụng gốc.
+    const copy = {
+      ...source,
+      id: 'f-copy-' + sourceId + '-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+      itemId: maxItemId() + 1,
+      code: source.code + '-' + targetUnit.replace('u-', '').toUpperCase(),
+      ownerUnit: targetUnit,
+      applyUnits: [targetUnit],
+      name: source.name + ' (' + unitById(targetUnit).name + ')',
+      scopes: source.scopes.slice(),
+      programs: (source.programs || []).slice(),
+      cohorts: (source.cohorts || []).slice(),
+      studentStatuses: (source.studentStatuses || []).slice(),
+      mssvWhitelist: (source.mssvWhitelist || []).slice(),
+      extraFields: (source.extraFields || []).map(f => ({ ...f, options: (f.options || []).slice() })),
+      steps: JSON.parse(JSON.stringify(source.steps || [])),
+      updated,
+      originId: sourceId,
+    };
+    FORMS.unshift(copy);
+    copiedNames.push(source.name);
+  });
+
+  closeModal('modal-copy-form');
+
+  if (copiedNames.length){
+    showToast(`Đã sao chép ${copiedNames.length} biểu mẫu (${copiedNames.join(', ')}) về ${unitById(targetUnit).name}`, 'ok');
+  }
+  if (skippedNames.length){
+    showToast(`Bỏ qua ${skippedNames.length} biểu mẫu đã có bản sao ở đơn vị này (${skippedNames.join(', ')})`, 'warn');
+  }
+
+  selectedUnitId = targetUnit;
+  deptSearchInput.value = unitDisplayName(unitById(targetUnit));
+  renderCopyAlert();
+  document.getElementById('status-select').value = 'all';
+  document.getElementById('form-name-search').value = '';
+  currentPage = 1;
+  renderFormGrid();
+}
+
+// ══════════════════════════════════════════════════
+// Create form
+// ══════════════════════════════════════════════════
+const COHORTS = ['K44', 'K45', 'K46', 'K47', 'K48'];
+const TRAINING_PROGRAMS = ['Công nghệ thông tin', 'Khoa học máy tính', 'Hệ thống thông tin', 'Kỹ thuật phần mềm', 'Mạng máy tính', 'Kinh tế', 'Quản trị kinh doanh', 'Kế toán'];
+
+/* Multi-select dropdown — bấm ô để mở/đóng danh sách checkbox, chọn nhiều
+   mục, đóng lại hiển thị dạng tag ngay trong ô. Trạng thái chọn của mỗi ô
+   lưu trong MSEL_STATE theo id, options cấu hình 1 lần lúc populate. */
+const MSEL_STATE = {};
+
+function initMsel(containerId, options, placeholder){
+  MSEL_STATE[containerId] = { options, selected: [] };
+  const root = document.getElementById(containerId);
+  root.querySelector('.msel-trigger').innerHTML = `<span class="msel-placeholder">${placeholder}</span>`;
+  root.querySelector('.msel-menu').innerHTML = `
+    <div class="msel-menu-actions">
+      <button type="button" onclick="event.stopPropagation();selectAllMsel('${containerId}')">Chọn tất cả</button>
+      <button type="button" onclick="event.stopPropagation();deselectAllMsel('${containerId}')">Bỏ chọn tất cả</button>
+    </div>`
+    + options.map(o => `
+    <div class="msel-item" onclick="event.stopPropagation();toggleMselOption('${containerId}','${o.value}')">
+      <input type="checkbox" tabindex="-1">
+      <span>${o.label}</span>
+    </div>`).join('');
+}
+
+function selectAllMsel(containerId){
+  const state = MSEL_STATE[containerId];
+  state.selected = state.options.map(o => o.value);
+  renderMselTrigger(containerId);
+}
+
+function deselectAllMsel(containerId){
+  const state = MSEL_STATE[containerId];
+  state.selected = [];
+  renderMselTrigger(containerId);
+}
+
+function toggleMsel(containerId){
+  const isOpen = document.getElementById(containerId).classList.contains('open');
+  document.querySelectorAll('.msel.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) document.getElementById(containerId).classList.add('open');
+}
+
+function toggleMselOption(containerId, value){
+  const state = MSEL_STATE[containerId];
+  const idx = state.selected.indexOf(value);
+  if (idx === -1) state.selected.push(value); else state.selected.splice(idx, 1);
+  renderMselTrigger(containerId);
+}
+
+function removeMselValue(containerId, value){
+  const state = MSEL_STATE[containerId];
+  state.selected = state.selected.filter(v => v !== value);
+  renderMselTrigger(containerId);
+}
+
+function renderMselTrigger(containerId){
+  const state = MSEL_STATE[containerId];
+  const root = document.getElementById(containerId);
+  const trigger = root.querySelector('.msel-trigger');
+  const placeholder = root.querySelector('.msel-placeholder')?.textContent
+    || trigger.dataset.placeholder || '— Chọn —';
+  trigger.dataset.placeholder = placeholder;
+
+  root.querySelectorAll('.msel-item input').forEach((cb, i) => {
+    cb.checked = state.selected.includes(state.options[i].value);
+  });
+
+  if (!state.selected.length){
+    trigger.innerHTML = `<span class="msel-placeholder">${placeholder}</span>`;
+    return;
+  }
+  const renderTag = (v) => {
+    const opt = state.options.find(o => o.value === v);
+    return `<span class="msel-tag">${opt ? opt.label : v}<span class="msel-tag-x" onclick="event.stopPropagation();removeMselValue('${containerId}','${v}')">✕</span></span>`;
+  };
+  const rest = state.selected.length - 1;
+  trigger.innerHTML = renderTag(state.selected[0])
+    + (rest > 0 ? `<span class="msel-tag msel-tag-more">+${rest}</span>` : '');
+}
+
+function getMselValues(containerId){
+  return MSEL_STATE[containerId] ? MSEL_STATE[containerId].selected.slice() : [];
+}
+
+function setMselValues(containerId, values){
+  if (!MSEL_STATE[containerId]) return;
+  MSEL_STATE[containerId].selected = (values || []).slice();
+  renderMselTrigger(containerId);
+}
+
+function resetMsel(containerId){
+  if (!MSEL_STATE[containerId]) return;
+  MSEL_STATE[containerId].selected = [];
+  renderMselTrigger(containerId);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.msel')) document.querySelectorAll('.msel.open').forEach(el => el.classList.remove('open'));
+});
+
+/* Chạy lệnh định dạng (execCommand) lên đúng vùng soạn thảo — bấm nút toolbar
+   thường làm editor mất focus/selection trước khi lệnh kịp chạy, nên phải tự
+   focus lại editor ngay trước khi gọi lệnh để đảm bảo luôn có tác dụng. */
+function runFeditCmd(editorId, cmd, value){
+  const editor = document.getElementById(editorId);
+  editor.focus();
+  document.execCommand(cmd, false, value || null);
+}
+
+/* Mở file .txt/.html có sẵn và nạp thẳng nội dung vào editor — thay cho việc
+   soạn lại từ đầu khi đã có sẵn nội dung đơn ở nơi khác. File .doc/.docx cần
+   qua bước xử lý phía server (extract text) nên demo tĩnh chỉ hỗ trợ .txt/.html. */
+function importFeditFile(editorId, input){
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const editor = document.getElementById(editorId);
+    const isHtml = /\.html?$/i.test(file.name);
+    editor.innerHTML = isHtml ? reader.result : reader.result.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('');
+    showToast(`Đã nạp nội dung từ ${file.name}`, 'ok');
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+/* Trường thông tin sinh viên kê khai thêm — mảng nháp đang sửa trong popup
+   Thêm biểu mẫu mới, chỉ commit vào FORMS khi bấm "Thêm biểu mẫu". Dùng
+   FIELD_TYPE_OPTIONS đã có sẵn (Text/Textarea/Select/Checkbox/Date/File
+   upload) để đồng bộ với kiểu trường trong workflow builder. */
+let newFormExtraFields = [];
+
+/* null = popup đang ở chế độ "Thêm biểu mẫu mới"; có giá trị = đang sửa
+   biểu mẫu có id tương ứng (icon Chỉnh sửa) — dùng chung 1 wizard cho cả 2
+   luồng, chỉ khác nhau ở bước điền sẵn dữ liệu và cách lưu (update vs tạo mới). */
+let newFormEditId = null;
+
+/* Tên file mẫu hiện có khi đang sửa — trình duyệt không cho gán sẵn giá trị
+   cho <input type=file> bằng JS, nên hiển thị tên file cũ trong khung
+   filepick bằng biến riêng này thay vì đọc từ input. Bấm ✕ xoá sẽ set về
+   null, buộc phải chọn file mới mới lưu được (đúng quy tắc đã thống nhất). */
+let newFormExistingFileName = null;
+
+/* id đơn vị Cấp 2 khi đang sửa 1 bản sao (originId khác null, ownerUnit là
+   Khoa/Trường) — null nếu không phải trường hợp này. Bản sao chỉ thuộc về
+   và chỉ áp dụng cho đúng 1 Khoa nên "Đơn vị ban hành"/"Đơn vị áp dụng"
+   khoá cứng theo Khoa đó, không cho đổi sang đơn vị khác. */
+let newFormLockedUnit = null;
+
+function renderExtraFields(){
+  const tbody = document.getElementById('new-form-extrafields-tbody');
+  if (!newFormExtraFields.length){
+    tbody.innerHTML = `<tr><td colspan="7" class="tbl-empty" style="padding:16px">Chưa có trường kê khai nào</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = newFormExtraFields.map((f, i) => {
+    const row = `
+    <tr class="step-row">
+      <td><input class="step-order-input" type="number" min="1" value="${i+1}" onchange="reorderExtraField(${i},this.value)"></td>
+      <td><input class="fc reveal-edit step-title-input" style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace" value="${f.code}" placeholder="lyDoBaoLuu" onchange="setExtraField(${i},'code',this.value)"></td>
+      <td><input class="fc reveal-edit step-title-input" value="${f.label}" placeholder="Lý do bảo lưu" onchange="setExtraField(${i},'label',this.value)"></td>
+      <td><input class="fc reveal-edit step-title-input" value="${f.placeholder}" placeholder="VD: Nêu rõ lý do…" onchange="setExtraField(${i},'placeholder',this.value)"></td>
+      <td>
+        <select class="fc reveal-edit" onchange="setExtraFieldType(${i},this.value)">
+          ${FIELD_TYPE_OPTIONS.map(t => `<option value="${t}" ${t===f.type?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </td>
+      <td><div class="row-cell-center" style="justify-content:center"><input type="checkbox" ${f.required?'checked':''} onchange="setExtraField(${i},'required',this.checked)"></div></td>
+      <td><button class="step-del-btn" title="Xoá trường" onclick="removeExtraField(${i})">✕</button></td>
+    </tr>`;
+
+    if (f.type !== 'Select') return row;
+
+    return row + `
+    <tr class="extrafield-expand-row">
+      <td colspan="7">
+        <div class="fi" style="margin:0">
+          <label class="text-sm">Danh sách các lựa chọn (cách nhau bởi dấu chấm phẩy)</label>
+          <input class="fc" placeholder="Cách nhập: Lựa chọn A; Lựa chọn B; Lựa chọn C" value="${(f.options||[]).join('; ')}" onchange="setExtraFieldOptions(${i},this.value)">
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function addExtraField(){
+  newFormExtraFields.push({ code:'', label:'', placeholder:'', type:'Text', required:false, options:[] });
+  renderExtraFields();
+}
+
+function setExtraField(idx, key, value){
+  newFormExtraFields[idx][key] = value;
+}
+
+/* Đổi kiểu dữ liệu của trường kê khai — khởi tạo sẵn options[] nếu chưa có,
+   để hàng mở rộng nhập danh sách lựa chọn luôn có dữ liệu hợp lệ. */
+function setExtraFieldType(idx, type){
+  const f = newFormExtraFields[idx];
+  f.type = type;
+  if (type === 'Select' && !f.options) f.options = [];
+  renderExtraFields();
+}
+
+/* Danh sách lựa chọn của trường kiểu Select — nhập trực tiếp trong 1 ô,
+   các lựa chọn cách nhau bởi dấu chấm phẩy. */
+function setExtraFieldOptions(idx, value){
+  newFormExtraFields[idx].options = value.split(';').map(s => s.trim()).filter(Boolean);
+}
+
+/* Đổi số thứ tự hiển thị (thứ tự sinh viên cần nhập lần lượt) — di chuyển
+   trường sang đúng vị trí mới trong mảng rồi vẽ lại bảng theo thứ tự đó. */
+function reorderExtraField(idx, newPos){
+  const target = Math.min(Math.max(parseInt(newPos, 10) || 1, 1), newFormExtraFields.length) - 1;
+  if (target === idx) { renderExtraFields(); return; }
+  const [field] = newFormExtraFields.splice(idx, 1);
+  newFormExtraFields.splice(target, 0, field);
+  renderExtraFields();
+}
+
+function removeExtraField(idx){
+  newFormExtraFields.splice(idx, 1);
+  renderExtraFields();
+}
+
+/* Chuyển bước wizard trong popup Thêm biểu mẫu mới — bước 1 validate xong
+   mới cho sang bước 2, tránh phải cuộn 1 form dài chứa hết mọi field. */
+function newFormGoToStep(step){
+  if (step === 2){
+    const code = document.getElementById('new-form-code').value.trim();
+    const ownerUnit = newFormLockedUnit || document.getElementById('new-form-dept').value;
+    const name = document.getElementById('new-form-name').value.trim();
+    const scopes = getMselValues('new-form-scope-msel');
+    const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
+    if (isCodeTaken(code, newFormEditId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
+    if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
+    if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
+    if (!scopes.length) { showToast('Vui lòng chọn ít nhất 1 hệ đào tạo.', 'err'); return; }
+    if (!studentStatuses.length) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
+  }
+
+  document.querySelectorAll('.wizard-step-dot').forEach(el => {
+    const s = Number(el.dataset.step);
+    el.classList.toggle('active', s === step);
+    el.classList.toggle('done', s < step);
+  });
+  document.querySelectorAll('.wizard-pane').forEach(el => {
+    el.classList.toggle('active', Number(el.dataset.step) === step);
+  });
+
+  document.getElementById('new-form-back-btn').style.display = step === 1 ? 'none' : '';
+  document.getElementById('new-form-next-btn').style.display = step === 1 ? '' : 'none';
+  document.getElementById('new-form-submit-btn').style.display = step === 1 ? 'none' : '';
+}
+
+/* Ô chọn File mẫu — sau khi chọn, hiện tên file + nút xoá thay vì chỉ dòng
+   text nhỏ mặc định của trình duyệt (không xoá được, khó đọc tên dài). Chọn
+   file mới cũng coi như đã bỏ qua file cũ (nếu đang sửa). */
+function onNewFormFileChange(input){
+  newFormExistingFileName = null;
+  const picker = document.getElementById('new-form-filepick');
+  if (input.files.length){
+    document.getElementById('new-form-filepick-name').textContent = input.files[0].name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+
+/* Xoá file đang hiển thị (dù là file mới vừa chọn hay file cũ của biểu mẫu
+   đang sửa) — khi đang sửa, việc này buộc phải chọn file mới mới lưu được
+   (xem điều kiện hasFile trong doCreateForm). */
+function removeNewFormFile(event){
+  event.stopPropagation();
+  newFormExistingFileName = null;
+  document.getElementById('new-form-file').value = '';
+  document.getElementById('new-form-filepick').classList.remove('has-file');
+}
+
+/* Hiển thị tên file hiện có của biểu mẫu đang sửa ngay trong khung filepick
+   (không qua <input type=file> vì không gán giá trị được bằng JS). */
+function showExistingFileInPicker(fileName){
+  newFormExistingFileName = fileName;
+  document.getElementById('new-form-filepick-name').textContent = fileName;
+  document.getElementById('new-form-filepick').classList.add('has-file');
+}
+
+/* Mỗi lần bấm "＋ Thêm mới" là một phiên tạo mới hoàn toàn — reset sạch mọi
+   input của cả 2 bước, kể cả khi lần trước người dùng đã nhập dở rồi đóng
+   popup mà chưa submit, để tránh dữ liệu cũ lẫn vào biểu mẫu mới. */
+function setFormDeptAndApplyUnitLocked(unitId){
+  newFormLockedUnit = unitId;
+  const isLocked = !!unitId;
+  const unitName = isLocked ? unitById(unitId).name : '';
+
+  document.getElementById('new-form-dept').style.display = isLocked ? 'none' : '';
+  const deptLockedEl = document.getElementById('new-form-dept-locked');
+  deptLockedEl.style.display = isLocked ? '' : 'none';
+  if (isLocked) deptLockedEl.value = unitName + ' (cố định — bản sao chỉ thuộc về đơn vị này)';
+
+  document.getElementById('new-form-applyunit-msel').style.display = isLocked ? 'none' : '';
+  const applyLockedEl = document.getElementById('new-form-applyunit-locked');
+  applyLockedEl.style.display = isLocked ? '' : 'none';
+  if (isLocked) applyLockedEl.value = unitName + ' (cố định — bản sao chỉ áp dụng cho đơn vị này)';
+}
+
+function resetNewFormWizard(){
+  newFormEditId = null;
+  newFormExistingFileName = null;
+  setFormDeptAndApplyUnitLocked(null);
+  document.getElementById('new-form-modal-title').textContent = 'Thêm biểu mẫu mới';
+  document.getElementById('new-form-submit-btn').textContent = 'Thêm biểu mẫu';
+  document.getElementById('new-form-code').value = generateNextFormCode();
+  document.getElementById('new-form-name').value = '';
+  document.getElementById('new-form-guide').innerHTML = '';
+  document.getElementById('new-form-allow-copy').checked = true;
+  document.querySelectorAll('.new-form-studentstatus-check').forEach(cb => cb.checked = false);
+  document.getElementById('new-form-file').value = '';
+  document.getElementById('new-form-filepick').classList.remove('has-file');
+  document.getElementById('new-form-content').innerHTML = '';
+  document.getElementById('new-form-status').value = 'inactive';
+  resetMsel('new-form-scope-msel');
+  resetMsel('new-form-program-msel');
+  resetMsel('new-form-applyunit-msel');
+  resetMsel('new-form-cohort-msel');
+  newFormExtraFields = [];
+  renderExtraFields();
+}
+
+function populateNewFormDeptSelect(){
+  resetNewFormWizard();
+
+  const sel = document.getElementById('new-form-dept');
+  const level1 = UNITS.filter(u => u.level === 1 && u.id !== 'u-dh');
+  sel.innerHTML = '<option value="" selected disabled>— Chọn đơn vị —</option>'
+    + level1.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+
+  initMsel('new-form-scope-msel',
+    SCOPE_ORDER.map(s => ({ value:s, label:SCOPE_LABEL[s] })), '— Chọn hệ đào tạo —');
+
+  initMsel('new-form-program-msel',
+    TRAINING_PROGRAMS.map(p => ({ value:p, label:p })), '— Để trống nếu áp dụng mọi chương trình —');
+
+  initMsel('new-form-cohort-msel',
+    COHORTS.map(c => ({ value:c, label:c })), '— Để trống nếu áp dụng mọi khoá —');
+
+  const level2 = UNITS.filter(u => u.level === 2);
+  initMsel('new-form-applyunit-msel',
+    level2.map(u => ({ value:u.id, label:u.name })), '— Để trống nếu áp dụng mọi Khoa/Trường —');
+
+  newFormGoToStep(1);
+}
+
+/* Icon "Chỉnh sửa" trên bảng danh mục — dùng chung wizard 2 bước của popup
+   Thêm biểu mẫu mới, chỉ khác ở việc điền sẵn dữ liệu cũ của biểu mẫu và
+   cách lưu (update tại chỗ trong FORMS thay vì unshift bản ghi mới). */
+function openFormEdit(id){
+  const f = formById(id);
+  if (!f) return;
+
+  populateNewFormDeptSelect();
+  newFormEditId = id;
+  document.getElementById('new-form-modal-title').textContent = 'Sửa biểu mẫu';
+  document.getElementById('new-form-submit-btn').textContent = 'Lưu thay đổi';
+
+  // Bản sao (originId khác null) luôn thuộc về đúng 1 Khoa/Trường Cấp 2 —
+  // khoá cứng ownerUnit/applyUnits theo đơn vị đó, không cho đổi khi sửa.
+  // Biểu mẫu Cấp 1 dùng chung, khi được sửa trong lúc đang xem tại 1 đơn vị
+  // Cấp 2, cũng khoá theo đúng đơn vị Cấp 2 đang xem — vì lưu lại sẽ tạo
+  // (hoặc cập nhật) bản sao riêng cho đơn vị đó, không sửa thẳng bản gốc.
+  const isCopy = !!f.originId && unitById(f.ownerUnit).level === 2;
+  const viewingUnit = unitById(effectiveOwnerUnit());
+  const lockedUnitId = isCopy ? f.ownerUnit : (viewingUnit.level === 2 ? viewingUnit.id : null);
+  setFormDeptAndApplyUnitLocked(lockedUnitId);
+
+  document.getElementById('new-form-code').value = f.code;
+  document.getElementById('new-form-dept').value = f.ownerUnit;
+  document.getElementById('new-form-name').value = f.name;
+  document.getElementById('new-form-guide').innerHTML = f.guide || '';
+  document.getElementById('new-form-allow-copy').checked = f.allowCopy;
+  document.querySelectorAll('.new-form-studentstatus-check').forEach(cb => {
+    cb.checked = (f.studentStatuses || []).includes(cb.value);
+  });
+  setMselValues('new-form-scope-msel', f.scopes);
+  setMselValues('new-form-program-msel', f.programs);
+  setMselValues('new-form-applyunit-msel', f.applyUnits);
+  setMselValues('new-form-cohort-msel', f.cohorts);
+
+  document.getElementById('new-form-content').innerHTML = f.content || '';
+  showExistingFileInPicker(f.file);
+  document.getElementById('new-form-status').value = f.status;
+
+  newFormExtraFields = (f.extraFields || []).map(ef => ({ ...ef, options: (ef.options || []).slice() }));
+  renderExtraFields();
+
+  openModal('modal-new-form');
+}
+
+function doCreateForm() {
+  const editId = newFormEditId;
+  const editingForm = editId ? formById(editId) : null;
+
+  const code = document.getElementById('new-form-code').value.trim();
+  // Bản sao Cấp 2 bị khoá cứng ownerUnit/applyUnits theo đơn vị đang sở hữu —
+  // đọc từ newFormLockedUnit thay vì input đang bị ẩn trong trường hợp này.
+  const ownerUnit = newFormLockedUnit || document.getElementById('new-form-dept').value;
+  const name = document.getElementById('new-form-name').value.trim();
+  const guide = document.getElementById('new-form-guide').innerHTML.trim();
+  const scopes = getMselValues('new-form-scope-msel');
+  const programs = getMselValues('new-form-program-msel');
+  const applyUnits = newFormLockedUnit ? [newFormLockedUnit] : getMselValues('new-form-applyunit-msel');
+  const cohorts = getMselValues('new-form-cohort-msel');
+  const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
+  const allowCopy = document.getElementById('new-form-allow-copy').checked;
+  const content = document.getElementById('new-form-content').innerHTML.trim();
+  const fileInput = document.getElementById('new-form-file');
+  // Khi sửa, còn giữ file cũ (newFormExistingFileName) nếu admin không chọn
+  // file mới và chưa bấm ✕ xoá nó — bấm ✕ sẽ xoá luôn tên file cũ khỏi biến
+  // này nên bắt buộc phải chọn file mới mới lưu được.
+  const hasNewFile = fileInput.files.length > 0;
+  const keepsOldFile = !hasNewFile && !!newFormExistingFileName;
+  const hasFile = hasNewFile || keepsOldFile;
+
+  // Sửa 1 biểu mẫu Cấp 1 dùng chung (không phải bản sao) trong lúc đang khoá
+  // theo 1 đơn vị Cấp 2 khác chủ sở hữu gốc: không sửa đè bản gốc (sẽ ảnh
+  // hưởng mọi đơn vị khác đang dùng chung) — thay vào đó tạo/cập nhật đúng
+  // bản sao riêng của đơn vị đó, giống hệt cơ chế nút "Sao chép". Mã hiển thị
+  // trên form khi đó vẫn là mã bản gốc (ô readonly không đổi theo đơn vị
+  // khoá) — mã thật của bản sao tự sinh/giữ nguyên riêng ở bước lưu bên dưới.
+  const willForkAsCopy = !!(editingForm && !editingForm.originId && ownerUnit !== editingForm.ownerUnit);
+  if (!willForkAsCopy && isCodeTaken(code, editId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
+  if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
+  if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
+  if (!scopes.length) { showToast('Vui lòng chọn ít nhất 1 hệ đào tạo.', 'err'); return; }
+  if (!studentStatuses.length) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
+  if (!hasFile) { showToast('Vui lòng upload file mẫu (.docx).', 'err'); return; }
+  if (!content) { showToast('Vui lòng soạn nội dung biểu mẫu.', 'err'); return; }
+
+  const extraFields = newFormExtraFields.map(f => ({
+    ...f, code: f.code.trim(), label: f.label.trim(),
+    options: (f.options || []).map(o => o.trim()).filter(Boolean),
+  }));
+  if (extraFields.some(f => !f.code || !f.label)) { showToast('Mỗi trường kê khai thêm cần có Mã trường và Tên trường.', 'err'); return; }
+  const extraFieldCodes = new Set();
+  for (const f of extraFields){
+    const key = f.code.toLowerCase();
+    if (extraFieldCodes.has(key)) { showToast(`Mã trường #${f.code} bị lặp lại trong danh sách kê khai thêm.`, 'err'); return; }
+    extraFieldCodes.add(key);
+    if (f.type === 'Select' && !f.options.length) { showToast(`Trường "${f.label}" kiểu Select cần ít nhất 1 lựa chọn.`, 'err'); return; }
+  }
+
+  const status = document.getElementById('new-form-status').value;
+  const today = new Date();
+  const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
+  const file = hasNewFile ? fileInput.files[0].name : newFormExistingFileName;
+
+  const forkTargetForm = willForkAsCopy
+    ? FORMS.find(f => f.ownerUnit === ownerUnit && f.originId === editingForm.id)
+    : null;
+
+  if (forkTargetForm){
+    Object.assign(forkTargetForm, {
+      name, guide, scopes, programs, applyUnits, cohorts,
+      studentStatuses, allowCopy, content, extraFields, status, updated, file,
+    });
+  } else if (willForkAsCopy){
+    const maxItemId = FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
+    FORMS.unshift({
+      id: 'f-copy-' + editingForm.id + '-' + Date.now(),
+      itemId: maxItemId + 1,
+      code: editingForm.code + '-' + ownerUnit.replace('u-', '').toUpperCase(),
+      name: name + ' (' + unitById(ownerUnit).name + ')',
+      desc: editingForm.desc, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
+      status, updated, file, originId: editingForm.id,
+    });
+  } else if (editingForm){
+    Object.assign(editingForm, {
+      code, name, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      studentStatuses, allowCopy, content, extraFields, status, updated, file,
+    });
+  } else {
+    const maxItemId = FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
+    FORMS.unshift({
+      id: 'f-new-' + Date.now(),
+      itemId: maxItemId + 1,
+      code, name, desc: '', guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
+      status, updated, file, originId: null,
+    });
+  }
+
+  closeModal('modal-new-form');
+  resetNewFormWizard();
+  currentPage = 1;
+  renderFormGrid();
+  const savedMsg = willForkAsCopy
+    ? `Đã lưu thành bản sao riêng cho ${unitById(ownerUnit).name}.`
+    : (editingForm ? 'Đã lưu thay đổi biểu mẫu.' : 'Đã thêm biểu mẫu mới.');
+  showToast(savedMsg, 'ok');
+}
+
+// ══════════════════════════════════════════════════
+// Workflow builder — copy nguyên logic từ mh-admin-01, gắn thẳng vào FORMS
+// thay vì PROCESSES: mỗi biểu mẫu trong danh mục có 1 quy trình xử lý riêng
+// (các bước duyệt, đơn vị/vai trò/người duyệt, deadline, thông báo…).
+// ══════════════════════════════════════════════════
+
+/* currentWorkflow: biểu mẫu đang mở trong popup builder — mọi thao tác sửa bước
+   (thêm/xoá/đổi tên/rẽ nhánh...) đọc/ghi thẳng vào f.steps của biểu mẫu này, nên
+   danh mục ngoài bảng chính luôn phản ánh đúng dữ liệu đã sửa. */
+let currentWorkflow = null;
+
+/* expandedRows: Set các "stepId::branch" hoặc "stepId::fields" đang mở rộng */
+let expandedRows = new Set();
+
+function openFormBuilder(formId){
+  const f = formById(formId);
+  if (!f) return;
+  // Biểu mẫu vừa tạo (chưa từng cấu hình quy trình) mở ra rỗng hoàn toàn —
+  // admin tự bấm "Thêm bước" để xây từ đầu. doAddStep() tự biết bước đầu
+  // tiên luôn là loại Nộp, các bước sau là Phê duyệt.
+  if (!f.steps) f.steps = [];
+  currentWorkflow = f;
+
+  document.getElementById('form-builder-title').textContent = f.name;
+  expandedRows.clear();
+  renderTrack();
+  openModal('modal-form-builder');
+}
+
+function closeFormBuilder(){
+  closeModal('modal-form-builder');
+}
+
+function saveBuilder(){
+  closeModal('modal-form-builder');
+  renderFormGrid();
+  showToast('Đã lưu cấu hình quy trình.', 'ok');
+}
+
+function stepById(id){ return currentWorkflow.steps.find(s=>s.id===id); }
+
+/* Người nhận thông báo của 1 nút hành động = người phụ trách bước đích (target), bất kể kind
+   (approve/reject/revise) — target đã tự nhiên biểu diễn đúng "ai xử lý tiếp theo":
+   - target trỏ tới bước nộp (type='submit') → chính là người nộp (VD: reject, hoặc revise trả
+     thẳng về người nộp gốc để bổ sung lại).
+   - target trỏ về chính bước hiện tại (VD: "Đồng ý" ở bước cuối) → quy trình dừng ở đây, quy về
+     người nộp gốc vì không còn ai xử lý tiếp.
+   - target là một bước giữa chừng khác (VD: revise yêu cầu bước trước đó bổ sung) → báo đúng
+     người phụ trách bước đó, không phải người nộp gốc. */
+function getNotifyRecipientStep(step, a){
+  if (a.target === step.id) return currentWorkflow.steps.find(s => s.type === 'submit');
+  return stepById(a.target);
+}
+
+/* Danh sách đầy đủ đích rẽ nhánh có thể chọn: mọi bước trong quy trình (không còn điểm kết thúc riêng —
+   bước cuối cùng của quy trình tự nhiên là điểm kết thúc khi được duyệt xong) */
+function renderTargetOptions(currentTarget){
+  const emptyOption = `<option value="" ${!currentTarget?'selected':''}>— Chưa chọn —</option>`;
+  const stepOptions = currentWorkflow.steps.map((s, i) =>
+    `<option value="${s.id}" ${s.id===currentTarget?'selected':''}>${i+1}. ${s.title}</option>`
+  ).join('');
+  return emptyOption + stepOptions;
+}
+
+function setActionTarget(stepId, actionIdx, target){
+  const step = stepById(stepId);
+  step.actions[actionIdx].target = target;
+  renderTrack();
+  showToast('Đã cập nhật đích rẽ nhánh', 'ok');
+}
+
+/* Trạng thái yêu cầu sau khi bấm 1 nút hành động — độc lập với đích rẽ nhánh (bước tiếp theo).
+   Gõ tự do qua <input list>, gợi ý lấy từ STATUS_OPTIONS — gõ tên mới sẽ tự thêm vào danh sách gợi ý. */
+let STATUS_OPTIONS = ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Yêu cầu chỉnh sửa'];
+
+/* Tên nút chuẩn → trạng thái yêu cầu mặc định tương ứng, tự động điền khi đổi tên nút */
+const ACTION_LABEL_TO_STATUS = {
+  'Nộp': 'Chờ duyệt',
+  'Đồng ý': 'Đã duyệt',
+  'Từ chối': 'Từ chối',
+  'Yêu cầu chỉnh sửa': 'Yêu cầu chỉnh sửa',
+};
+
+function renderStatusDatalist(){
+  document.getElementById('status-suggest-list').innerHTML = STATUS_OPTIONS.map(s => `<option value="${s}">`).join('');
+}
+
+function setActionStatus(stepId, actionIdx, status){
+  const trimmed = status.trim();
+  if (!trimmed) return;
+  const step = stepById(stepId);
+  step.actions[actionIdx].resultStatus = trimmed;
+  if (!STATUS_OPTIONS.includes(trimmed)) STATUS_OPTIONS.push(trimmed);
+  renderTrack();
+  showToast('Đã cập nhật trạng thái yêu cầu', 'ok');
+}
+
+/* expandedFieldRows: Set các "stepId::actionIdx" đang mở rộng để xem/sửa trường thông tin */
+let expandedFieldRows = new Set();
+const FIELD_TYPE_OPTIONS = ['Text', 'Textarea', 'Select', 'Checkbox', 'Date', 'File upload'];
+
+/* Mẫu email mặc định báo người duyệt bước tiếp theo có yêu cầu mới cần xử lý — chỉ dùng làm
+   placeholder gợi ý khi admin chưa tự nhập, không phải giá trị đã lưu. */
+const APPROVE_NOTIFY_TITLE_DEFAULT = 'Thông báo có một Yêu cầu mới cần xử lý';
+const APPROVE_NOTIFY_TEMPLATE_DEFAULT = 'Có yêu cầu mới của quy trình #WorkflowName cần được xử lý, Thầy/Cô vui lòng truy cập vào hệ thống quản trị đại học để phê duyệt.';
+
+/* Mẫu email mặc định báo KẾT QUẢ về người nộp khi quy trình kết thúc tại nút này (target trỏ
+   tới bước nộp — xem getNotifyRecipientStep) — chỉ dùng làm placeholder gợi ý. */
+const FINAL_NOTIFY_TITLE_DEFAULT = 'Thông báo kết quả xử lý của yêu cầu';
+const FINAL_NOTIFY_TEMPLATE_DEFAULT = 'Yêu cầu của bạn đã có kết quả.\nKết quả: #StatusName\nVui lòng truy cập hệ thống quản trị để xem chi tiết.';
+
+/* expandedNotifyRows: Set các "stepId::actionIdx" đang mở rộng để xem/sửa cấu hình thông báo.
+   Người nhận không cần chọn riêng — luôn là người phụ trách bước đích (a.target), vì target đã
+   biểu diễn đúng "ai xử lý tiếp theo" cho cả rẽ nhánh đồng ý (bước sau) lẫn từ chối (bước trước). */
+let expandedNotifyRows = new Set();
+
+function toggleActionNotify(stepId, actionIdx){
+  const key = stepId + '::' + actionIdx;
+  if (expandedNotifyRows.has(key)) expandedNotifyRows.delete(key);
+  else expandedNotifyRows.add(key);
+  renderTrack();
+}
+
+/* Gửi thông báo mặc định TẮT — admin phải chủ động bật bằng switch cho từng nút */
+function isNotifyEnabled(a){
+  return !!(a.notify && a.notify.enabled);
+}
+
+function ensureActionNotify(action){
+  if (!action.notify) action.notify = { enabled:false, title:'', template:'', channels:{email:false, bell:false} };
+  if (!action.notify.channels) action.notify.channels = { email:false, bell:false };
+  return action.notify;
+}
+
+function toggleActionNotifyEnabled(stepId, actionIdx, checked){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).enabled = checked;
+  renderTrack();
+  showToast(checked ? 'Đã bật gửi thông báo cho nút này' : 'Đã tắt gửi thông báo cho nút này', 'ok');
+}
+
+function toggleActionNotifyChannel(stepId, actionIdx, channel, checked){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).channels[channel] = checked;
+  renderTrack();
+}
+
+function setActionNotifyTitle(stepId, actionIdx, title){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).title = title;
+  renderTrack();
+  showToast('Đã lưu tiêu đề thông báo', 'ok');
+}
+
+function setActionNotifyTemplate(stepId, actionIdx, template){
+  const action = stepById(stepId).actions[actionIdx];
+  ensureActionNotify(action).template = template;
+  renderTrack();
+  showToast('Đã lưu nội dung thông báo', 'ok');
+}
+
+function renderActionRow(step, stepIdx, a, ai){
+  const fieldsKey = step.id + '::' + ai;
+  const fieldsOpen = expandedFieldRows.has(fieldsKey);
+  const notifyOpen = expandedNotifyRows.has(fieldsKey);
+
+  let html = `
+    <tr class="step-row">
+      <td class="text-muted"><div class="row-cell-center">${ai+1}</div></td>
+      <td>
+        <input class="step-title-input" style="font-size:13px;min-width:0;padding-left:0" list="action-label-suggest-list" value="${a.label}" onchange="renameAction('${step.id}',${ai},this.value)">
+      </td>
+      <td>
+        <div class="flex items-center gap-8">
+          <select class="fc" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${stepById(a.target)?.title || ''}" onchange="setActionTarget('${step.id}',${ai},this.value)">
+            ${renderTargetOptions(a.target)}
+          </select>
+        </div>
+      </td>
+      <td>
+        <input class="fc" style="width:100%" list="status-suggest-list" value="${a.resultStatus || ''}"
+          placeholder="VD: Đã duyệt" onchange="setActionStatus('${step.id}',${ai},this.value)">
+      </td>
+      <td>
+        <button class="branch-count-badge ${fieldsOpen?'open':''}" title="Trường thông tin yêu cầu khi bấm nút này" onclick="toggleActionFields('${step.id}',${ai})">
+          Trường dữ liệu (${a.fields.length}) <span class="chev">▾</span>
+        </button>
+      </td>
+      <td>
+        <div class="flex items-center gap-8">
+          <button class="icon-btn ${notifyOpen?'open':''}" title="${isNotifyEnabled(a) ? 'Cài đặt thông báo (đang gửi)' : 'Cài đặt thông báo'}" onclick="toggleActionNotify('${step.id}',${ai})">⚙️${isNotifyEnabled(a) ? '<span class=\"notify-dot\"></span>' : ''}</button>
+          <button class="step-del-btn" title="Xoá nút hành động" onclick="removeAction('${step.id}',${ai})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+
+  if (fieldsOpen){
+    const fieldsHtml = a.fields.map((f, fi) => `
+      <div>
+        <div class="dfield-row-inline">
+          <input class="fc fname" style="flex:1;min-width:0" placeholder="VD: Mã số sinh viên, Điểm rèn luyện…" value="${f.name}" onchange="setFieldName('${step.id}',${ai},${fi},this.value)">
+          <input class="fc" style="flex:1;min-width:0" placeholder="Mẫu hiển thị (placeholder)" value="${f.placeholder || ''}" onchange="setFieldPlaceholder('${step.id}',${ai},${fi},this.value)">
+          <select class="fc" style="flex:1;min-width:0" onchange="setFieldType('${step.id}',${ai},${fi},this.value)">
+            ${FIELD_TYPE_OPTIONS.map(t => `<option value="${t}" ${t===f.type?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <label class="text-sm" style="display:flex;align-items:center;gap:4px;font-weight:400;white-space:nowrap;flex-shrink:0">
+            <input type="checkbox" ${f.required?'checked':''} onchange="toggleFieldRequired('${step.id}',${ai},${fi},this.checked)"> Bắt buộc
+          </label>
+          <span class="icon-btn" title="Xoá trường" style="width:24px;height:24px;font-size:13px;flex-shrink:0" onclick="removeField('${step.id}',${ai},${fi})">✕</span>
+        </div>
+        ${f.type==='Select' ? `
+        <div class="fi" style="margin:0 0 10px">
+          <label class="text-sm">Danh sách các tùy chọn (cách nhau bởi dấu phẩy)</label>
+          <input class="fc" placeholder="Cách nhập: Tùy chọn A, Tùy chọn B, Tùy chọn C" value="${(f.options||[]).join(', ')}" onchange="setFieldOptions('${step.id}',${ai},${fi},this.value)">
+        </div>` : ''}
+      </div>`).join('') || '<div class="text-muted text-sm" style="padding:4px 0">Chưa yêu cầu nhập thêm trường nào khi bấm nút này</div>';
+
+    html += `
+    <tr class="step-expand-row"><td colspan="6" style="padding-left:32px">
+      <div class="flex justify-between items-center" style="margin-bottom:6px">
+        <div class="action-fields-label" style="margin-bottom:0">TRƯỜNG DỮ LIỆU TÙY CHỌN THÊM:</div>
+        <button class="btn btn-default btn-sm" onclick="addField('${step.id}',${ai})">＋ Thêm trường</button>
+      </div>
+      ${fieldsHtml}
+    </td></tr>`;
+  }
+
+  if (notifyOpen){
+    const notify = a.notify || {};
+    const enabled = !!notify.enabled;
+    const channels = notify.channels || {};
+    const recipientStep = getNotifyRecipientStep(step, a);
+    const isFinalNotify = recipientStep?.type === 'submit';
+    const titlePlaceholder = isFinalNotify ? FINAL_NOTIFY_TITLE_DEFAULT : APPROVE_NOTIFY_TITLE_DEFAULT;
+    const templatePlaceholder = isFinalNotify ? FINAL_NOTIFY_TEMPLATE_DEFAULT : APPROVE_NOTIFY_TEMPLATE_DEFAULT;
+
+    html += `
+    <tr class="step-expand-row"><td colspan="6" style="padding-left:32px">
+      <div class="notify-card">
+        <div class="notify-card-head">
+          <span class="head-label"><span class="ico">🔔</span> CÀI ĐẶT THÔNG BÁO</span>
+          <label class="switch" title="${enabled ? 'Đang gửi thông báo' : 'Không gửi thông báo'}">
+            <input type="checkbox" ${enabled?'checked':''} onchange="toggleActionNotifyEnabled('${step.id}',${ai},this.checked)">
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <div class="fi ${enabled?'':'disabled'}">
+          <label class="text-sm">Tiêu đề</label>
+          <input class="fc" style="width:100%" placeholder="${titlePlaceholder}"
+            value="${notify.title || ''}" onchange="setActionNotifyTitle('${step.id}',${ai},this.value)">
+        </div>
+        <div class="fi ${enabled?'':'disabled'}">
+          <label class="text-sm">Nội dung</label>
+          <textarea class="fc" style="width:100%;min-height:56px" placeholder="${templatePlaceholder}"
+            onchange="setActionNotifyTemplate('${step.id}',${ai},this.value)">${notify.template || ''}</textarea>
+          <div class="f-hint">Biến khả dụng: #maSinhVien, #hoTen, #lopHanhChinh, #trangThaiSV — xem đầy đủ tại Danh mục Trường dữ liệu</div>
+        </div>
+
+        <div class="fi ${enabled?'':'disabled'}" style="margin-bottom:0">
+          <label class="text-sm">Kênh gửi</label>
+          <div class="notify-channels">
+            <label>
+              <input type="checkbox" ${channels.bell?'checked':''} onchange="toggleActionNotifyChannel('${step.id}',${ai},'bell',this.checked)"> 🔔 Chuông
+            </label>
+            <label>
+              <input type="checkbox" ${channels.email?'checked':''} onchange="toggleActionNotifyChannel('${step.id}',${ai},'email',this.checked)"> 📧 Email
+            </label>
+          </div>
+        </div>
+      </div>
+    </td></tr>`;
+  }
+
+  return html;
+}
+
+function toggleActionFields(stepId, actionIdx){
+  const key = stepId + '::' + actionIdx;
+  if (expandedFieldRows.has(key)) expandedFieldRows.delete(key);
+  else expandedFieldRows.add(key);
+  renderTrack();
+}
+
+function renameAction(stepId, actionIdx, newLabel){
+  const action = stepById(stepId).actions[actionIdx];
+  action.label = newLabel;
+  /* Nếu tên nút khớp 1 trong 4 tên chuẩn, tự động điền trạng thái yêu cầu tương ứng */
+  if (ACTION_LABEL_TO_STATUS[newLabel]) action.resultStatus = ACTION_LABEL_TO_STATUS[newLabel];
+  renderTrack();
+}
+
+function addAction(stepId){
+  const step = stepById(stepId);
+  step.actions.push({ label:'Nút mới', kind:'approve', target:step.id, resultStatus:STATUS_OPTIONS[0], fields:[], notify:{enabled:false, title:'', template:'', channels:{email:false, bell:false}} });
+  renderTrack();
+  showToast('Đã thêm nút hành động mới cho bước này', 'ok');
+}
+
+function removeAction(stepId, actionIdx){
+  const step = stepById(stepId);
+  step.actions.splice(actionIdx, 1);
+  expandedFieldRows.delete(stepId + '::' + actionIdx);
+  expandedNotifyRows.delete(stepId + '::' + actionIdx);
+  renderTrack();
+  showToast('Đã xoá nút hành động', 'warn');
+}
+
+function addField(stepId, actionIdx){
+  const step = stepById(stepId);
+  step.actions[actionIdx].fields.push({ name:'Trường mới', type:'Text', required:false });
+  renderTrack();
+  showToast('Đã thêm trường thông tin cho nút này', 'ok');
+}
+
+function removeField(stepId, actionIdx, fieldIdx){
+  const step = stepById(stepId);
+  step.actions[actionIdx].fields.splice(fieldIdx, 1);
+  renderTrack();
+  showToast('Đã xoá trường thông tin', 'warn');
+}
+
+function setFieldName(stepId, actionIdx, fieldIdx, name){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].name = name;
+  renderTrack();
+}
+
+function setFieldType(stepId, actionIdx, fieldIdx, type){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].type = type;
+  renderTrack();
+}
+
+function setFieldPlaceholder(stepId, actionIdx, fieldIdx, placeholder){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].placeholder = placeholder;
+  renderTrack();
+}
+
+function setFieldOptions(stepId, actionIdx, fieldIdx, raw){
+  const options = raw.split(',').map(s => s.trim()).filter(Boolean);
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].options = options;
+  renderTrack();
+}
+
+function toggleFieldRequired(stepId, actionIdx, fieldIdx, checked){
+  stepById(stepId).actions[actionIdx].fields[fieldIdx].required = checked;
+  renderTrack();
+}
+
+function renderTrack(){
+  const track = document.getElementById('wf-track');
+
+  let html = '';
+
+  currentWorkflow.steps.forEach((step, idx) => {
+    const badgeClass = step.type==='submit' ? 'submit' : '';
+    const badgeIco = step.type==='submit' ? '📥' : (idx+1);
+
+    const people = step.type==='approval' ? step.approvers : step.submitters;
+    const deptColHtml = renderPersonCol(step, people, 'dept');
+    const unitTypeColHtml = renderUnitTypeCol(step, people);
+    const roleColHtml = renderPersonCol(step, people, 'role');
+    const personColHtml = renderPersonPersonCol(step, people);
+    const deadlineColHtml = renderDeadlineCol(step);
+
+    const actionsOpen = expandedRows.has(step.id + '::actions');
+
+    const branchCountHtml = `
+      <button class="branch-count-badge ${actionsOpen?'open':''}" onclick="toggleExpand('${step.id}','actions')">
+        Cấu hình (${step.actions.length}) <span class="chev">▾</span>
+      </button>`;
+
+    html += `
+    <tr class="step-row">
+      <td>
+        <input type="number" class="step-order-input reveal-edit" min="1" max="${currentWorkflow.steps.length}" value="${idx+1}"
+          onchange="moveStep('${step.id}', this.value)">
+      </td>
+      <td>
+        <input class="step-title-input" data-step-id="${step.id}" value="${step.title}" onchange="renameStep('${step.id}', this.value)">
+      </td>
+      <td>${deptColHtml}</td>
+      <td>${unitTypeColHtml}</td>
+      <td>${roleColHtml}</td>
+      <td>${personColHtml}</td>
+      <td>${deadlineColHtml}</td>
+      <td>
+        ${branchCountHtml}
+      </td>
+      <td>
+        <button class="step-del-btn" title="Xoá bước" onclick="showToast('Đã xoá bước khỏi quy trình','warn')">🗑</button>
+      </td>
+    </tr>`;
+
+    if (actionsOpen){
+      html += `
+      <tr class="step-expand-row"><td colspan="9">
+        <div class="expand-title">Rẽ nhánh Điều kiện & Thiết lập trường dữ liệu yêu cầu</div>
+        <table class="action-tbl">
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th style="width:20%">Tên nút</th>
+              <th style="width:26%">Đích rẽ nhánh</th>
+              <th style="width:18%">Trạng thái yêu cầu</th>
+              <th style="width:18%">Trường thông tin</th>
+              <th style="width:64px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${step.actions.map((a, ai) => renderActionRow(step, idx, a, ai)).join('')}
+          </tbody>
+        </table>
+        <button class="btn btn-default btn-sm mt-8" onclick="addAction('${step.id}')">＋ Thêm nút</button>
+      </td></tr>`;
+    }
+  });
+
+  track.innerHTML = html;
+  renderStatusDatalist();
+
+  /* Sau khi thêm bước mới, tự động focus + chọn sẵn text ô "Tên bước" để gõ ngay không cần bấm thêm */
+  if (pendingFocusStepId){
+    const input = track.querySelector('.step-title-input[data-step-id="' + pendingFocusStepId + '"]');
+    if (input){ input.focus(); input.select(); }
+    pendingFocusStepId = null;
+  }
+}
+
+/* Nguồn gợi ý cho từng loại người duyệt/nộp — Đơn vị lấy từ cây UNITS, Vai trò/Người là danh mục mẫu */
+const ROLE_OPTIONS = ['Trưởng đơn vị', 'Phó trưởng đơn vị', 'Phó đơn vị', 'Cố vấn học tập', 'Sinh viên', 'Cán bộ'];
+const PERSON_OPTIONS = [
+  { code:'CB0012', name:'Nguyễn Thị Hoa', email:'hoa.nt@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0034', name:'Trần Văn Long', email:'long.tv@dh.edu.vn', unit:'u-kt' },
+  { code:'CB0056', name:'Lê Minh Đức', email:'duc.lm@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0078', name:'Phạm Thị Lan', email:'lan.pt@dh.edu.vn', unit:'u-kt' },
+  { code:'CB0091', name:'Hoàng Văn Nam', email:'nam.hv@dh.edu.vn', unit:'u-truongxd' },
+  { code:'CB0103', name:'Đỗ Thị Thu', email:'thu.dt@dh.edu.vn', unit:'u-ngoaingu' },
+  { code:'CB0125', name:'Vũ Minh Tuấn', email:'tuan.vm@dh.edu.vn', unit:'u-cntt' },
+  { code:'CB0147', name:'Bùi Thị Hương', email:'huong.bt@dh.edu.vn', unit:'u-kt' },
+];
+
+const COL_TITLE = { dept:'Đơn vị', role:'Vai trò', person:'Người' };
+
+/* Nguồn option gộp {value,label} cho Đơn vị/Vai trò — dùng bởi mini-combo tìm kiếm (Người duyệt dùng modal riêng, xem PERSON_OPTIONS) */
+function optionsForType(type){
+  if (type==='dept') return UNITS.filter(u=>u.level<=2).map(u => ({ value:'dept:'+u.name, label:u.name }));
+  return ROLE_OPTIONS.map(r => ({ value:'role:'+r, label:r }));
+}
+
+/* Render cột Đơn vị/Vai trò — lọc theo type, tối đa 1 giá trị/bước, bấm vào text mở mini-combo tại chỗ để thay thế */
+function renderPersonCol(step, list, type){
+  const pillsHtml = list.map((a, realIdx) => {
+    if (a.type !== type) return '';
+    const key = miniComboKey(step.id, type, realIdx);
+    if (miniComboOpenKey === key) return renderMiniCombo(step.id, type, realIdx);
+    return `<span class="approver-text" onclick="event.stopPropagation();openMiniCombo('${step.id}','${type}',${realIdx})">${a.label}</span>`;
+  }).join('');
+
+  /* Đơn vị duyệt & Vai trò duyệt: giới hạn tối đa 1/bước — ẩn ô thêm khi đã chọn (bấm vào pill để đổi) */
+  const count = list.filter(a => a.type===type).length;
+  const maxReached = count >= 1;
+
+  const addKey = miniComboKey(step.id, type, 'new');
+  const addFieldHtml = maxReached ? '' : (miniComboOpenKey === addKey ? renderMiniCombo(step.id, type, 'new') : renderMiniComboTrigger(step.id, type, 'new'));
+
+  /* Khi chưa chọn gì, ẩn nút "+ Thêm" — chỉ hiện khi hover/click vào ô */
+  const revealOnHover = count === 0;
+
+  return `<div class="approver-pills${revealOnHover ? ' reveal-on-hover' : ''}">
+    ${pillsHtml}
+    ${addFieldHtml}
+  </div>`;
+}
+
+/* Render cột Người duyệt — chọn nhiều qua modal picker (search + checkbox + Lưu/Huỷ).
+   Chưa chọn ai → ẩn hoàn toàn, chỉ hiện nút "+ Phân công" khi hover/focus (đồng bộ
+   hành vi reveal-on-hover với cột Đơn vị duyệt/Vai trò duyệt). */
+function renderPersonPersonCol(step, list){
+  const people = list.filter(a => a.type==='person');
+
+  if (!people.length){
+    return `<div class="approver-pills reveal-on-hover">
+      <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openPersonPicker('${step.id}')">+ Phân công</button>
+    </div>`;
+  }
+
+  const namesHtml = people.map(a => `<div>${a.label}</div>`).join('');
+  return `<span class="approver-text" onclick="event.stopPropagation();openPersonPicker('${step.id}')">${namesHtml}</span>`;
+}
+
+/* Loại ĐV — chỉ 1 lựa chọn/bước, mặc định TRỐNG (giống hành vi cột Đơn vị duyệt).
+   Trống thì ẩn nút "+ Thêm", chỉ hiện khi hover/click; bấm vào giá trị đã chọn để đổi lại. */
+const UNIT_TYPE_OPTIONS = ['Chính Quyền', 'Đảng', 'Đoàn'];
+let unitTypeOpenStepId = null;
+
+function renderUnitTypeCol(step, list){
+  if (unitTypeOpenStepId === step.id){
+    return `<span class="mini-combo">
+      <select class="fc" style="font-size:12px;padding:4px 6px" autofocus
+        onchange="setUnitType('${step.id}', this.value)" onclick="event.stopPropagation()">
+        <option value="" ${!step.unitType?'selected':''}>— Không chọn —</option>
+        ${UNIT_TYPE_OPTIONS.map(t => `<option value="${t}" ${step.unitType===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+    </span>`;
+  }
+
+  if (step.unitType){
+    return `<div class="approver-pills">
+      <span class="approver-text" onclick="event.stopPropagation();openUnitTypeSelect('${step.id}')">${step.unitType}</span>
+    </div>`;
+  }
+
+  return `<div class="approver-pills reveal-on-hover">
+    <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openUnitTypeSelect('${step.id}')">+ Thêm Loại ĐV</button>
+  </div>`;
+}
+
+function openUnitTypeSelect(stepId){
+  unitTypeOpenStepId = stepId;
+  renderTrack();
+}
+
+function setUnitType(stepId, value){
+  stepById(stepId).unitType = value;
+  unitTypeOpenStepId = null;
+  renderTrack();
+}
+
+document.addEventListener('click', e => {
+  if (unitTypeOpenStepId && !e.target.closest('select')) { unitTypeOpenStepId = null; renderTrack(); }
+});
+
+/* == Mini search combobox (Đơn vị / Vai trò / Người duyệt trong bảng bước) ==
+   key = "stepId::type::idx" — idx là realIdx của pill đang thay thế, hoặc 'new' khi thêm mới */
+let miniComboOpenKey = null;
+let miniComboHl = -1;
+let miniComboQuery = '';
+
+function miniComboKey(stepId, type, idx){ return stepId + '::' + type + '::' + idx; }
+
+function renderMiniComboTrigger(stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  return `<button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openMiniCombo('${stepId}','${type}','${idx}')">+ Thêm ${COL_TITLE[type]}</button>`;
+}
+
+function renderMiniCombo(stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  return `<span class="mini-combo">
+    <input class="mini-combo-input" data-key="${key}" placeholder="Tìm ${COL_TITLE[type].toLowerCase()}…" autocomplete="off"
+      value="${miniComboQuery}"
+      onclick="event.stopPropagation()"
+      oninput="onMiniComboInput('${stepId}','${type}','${idx}', this.value)"
+      onkeydown="onMiniComboKeydown(event,'${stepId}','${type}','${idx}')">
+    <div class="mini-combo-menu open">${renderMiniComboOptions(stepId, type, idx, miniComboQuery)}</div>
+  </span>`;
+}
+
+function renderMiniComboOptions(stepId, type, idx, query){
+  const q = (query || '').trim();
+  const all = optionsForType(type);
+  const matches = q ? all.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : all;
+  if (!matches.length) return `<div class="mini-combo-empty">Không tìm thấy "${q}"</div>`;
+  return matches.map((o, i) => `<div class="mini-combo-item${i===miniComboHl?' hl':''}" data-idx="${i}" onclick="event.stopPropagation();pickMiniCombo('${stepId}','${type}','${idx}','${o.value}')">${highlightMatch(o.label, q)}</div>`).join('');
+}
+
+function openMiniCombo(stepId, type, idx){
+  miniComboOpenKey = miniComboKey(stepId, type, idx);
+  miniComboQuery = '';
+  miniComboHl = -1;
+  renderTrack();
+  focusMiniComboInput();
+}
+
+function onMiniComboInput(stepId, type, idx, value){
+  miniComboQuery = value;
+  miniComboHl = -1;
+  renderTrack();
+  focusMiniComboInput();
+}
+
+function onMiniComboKeydown(e, stepId, type, idx){
+  const key = miniComboKey(stepId, type, idx);
+  if (miniComboOpenKey !== key) return;
+  const menu = e.target.nextElementSibling;
+  const items = menu ? menu.querySelectorAll('.mini-combo-item') : [];
+  if (e.key === 'ArrowDown'){ e.preventDefault(); miniComboHl = Math.min(miniComboHl+1, items.length-1); renderTrack(); focusMiniComboInput(); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); miniComboHl = Math.max(miniComboHl-1, 0); renderTrack(); focusMiniComboInput(); }
+  else if (e.key === 'Enter'){
+    e.preventDefault();
+    const all = optionsForType(type);
+    const q = (miniComboQuery || '').trim();
+    const matches = q ? all.filter(o => o.label.toLowerCase().includes(q.toLowerCase())) : all;
+    const chosen = miniComboHl >= 0 ? matches[miniComboHl] : matches[0];
+    if (chosen) pickMiniCombo(stepId, type, idx, chosen.value);
+  } else if (e.key === 'Escape'){ closeMiniCombo(); }
+}
+
+/* idx số → thay thế pill tại vị trí đó trong mảng gốc; idx==='new' → thêm mới vào cuối */
+function pickMiniCombo(stepId, type, idx, value){
+  const [t, label] = value.split(':');
+  const step = stepById(stepId);
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  if (idx === 'new') list.push({ type:t, label });
+  else list[Number(idx)] = { type:t, label };
+  closeMiniCombo();
+  renderTrack();
+}
+
+function closeMiniCombo(){
+  miniComboOpenKey = null;
+  miniComboQuery = '';
+  miniComboHl = -1;
+  renderTrack();
+}
+
+function focusMiniComboInput(){
+  if (!miniComboOpenKey) return;
+  const input = document.querySelector('.mini-combo-input[data-key="' + miniComboOpenKey + '"]');
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+
+document.addEventListener('click', e => {
+  if (miniComboOpenKey && !e.target.closest('.mini-combo')) closeMiniCombo();
+});
+
+function toggleExpand(stepId, kind){
+  const key = stepId + '::' + kind;
+  if (expandedRows.has(key)) expandedRows.delete(key);
+  else expandedRows.add(key);
+  renderTrack();
+}
+
+function renameStep(stepId, newTitle){
+  stepById(stepId).title = newTitle;
+  renderTrack();
+}
+
+/* == Modal chọn Người duyệt — tìm theo mã CB/email/tên, checkbox chọn nhiều + Lưu/Huỷ == */
+let personPickerStepId = null;
+let personPickerSelected = []; // bản nháp danh sách mã CB đang chọn trong modal, chỉ commit khi bấm Lưu
+
+function personByCode(code){ return PERSON_OPTIONS.find(p => p.code === code); }
+
+/* Suy ra mã CB từ approver đã lưu — ưu tiên code có sẵn, fallback khớp theo tên cho dữ liệu cũ chưa có code */
+function codeForApprover(a){
+  if (a.code) return a.code;
+  const found = PERSON_OPTIONS.find(p => p.name === a.label);
+  return found ? found.code : null;
+}
+
+function openPersonPicker(stepId){
+  personPickerStepId = stepId;
+  const step = stepById(stepId);
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  personPickerSelected = list.filter(a => a.type==='person').map(codeForApprover).filter(Boolean);
+
+  document.getElementById('person-picker-search').value = '';
+  document.getElementById('person-picker-pass-min').value = step.passMin || 1;
+  renderPersonPickerList('');
+  updatePersonPickerCount();
+  openModal('modal-select-persons');
+}
+
+function renderPersonPickerList(query){
+  const q = (query || '').trim().toLowerCase();
+  const matches = q ? PERSON_OPTIONS.filter(p =>
+    p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
+  ) : PERSON_OPTIONS;
+  const listEl = document.getElementById('person-picker-list');
+
+  if (!matches.length){
+    listEl.innerHTML = `<div class="text-muted text-sm" style="padding:10px">Không tìm thấy cán bộ nào khớp</div>`;
+    return;
+  }
+
+  /* Nhóm cán bộ theo đơn vị, thứ tự nhóm theo thứ tự khai báo trong UNITS */
+  const unitsWithPeople = UNITS.filter(u => matches.some(p => p.unit === u.id));
+  listEl.innerHTML = unitsWithPeople.map(u => `
+    <div class="unit-combo-group">${u.name}</div>
+    ${matches.filter(p => p.unit === u.id).map(p => `
+      <label class="copy-source-item">
+        <input type="checkbox" class="person-picker-check" value="${p.code}" ${personPickerSelected.includes(p.code)?'checked':''} onchange="togglePersonPickerChoice('${p.code}', this.checked)">
+        <span class="csi-name">${p.name}</span>
+        <span class="csi-id">${p.email}</span>
+      </label>`).join('')}
+  `).join('');
+}
+
+document.getElementById('person-picker-search').addEventListener('input', e => renderPersonPickerList(e.target.value));
+
+function togglePersonPickerChoice(code, checked){
+  if (checked && !personPickerSelected.includes(code)) personPickerSelected.push(code);
+  else if (!checked) personPickerSelected = personPickerSelected.filter(c => c !== code);
+  updatePersonPickerCount();
+}
+
+function updatePersonPickerCount(){
+  document.getElementById('person-picker-count').textContent = personPickerSelected.length
+    ? `Đã chọn ${personPickerSelected.length} người`
+    : '';
+  document.getElementById('person-picker-pass-total').textContent = `/ ${personPickerSelected.length} người đồng ý`;
+  const passMinInput = document.getElementById('person-picker-pass-min');
+  passMinInput.max = personPickerSelected.length || 1;
+}
+
+function savePersonPicker(){
+  const step = stepById(personPickerStepId);
+  const passMinRaw = document.getElementById('person-picker-pass-min').value;
+  const passMin = parseInt(passMinRaw, 10);
+
+  if (personPickerSelected.length){
+    if (!passMinRaw || isNaN(passMin) || passMin < 1 || passMin > personPickerSelected.length){
+      showToast(`Quy tắc pass không hợp lệ — nhập từ 1 đến ${personPickerSelected.length} (số người đã chọn)`, 'warn');
+      return;
+    }
+  }
+
+  const list = step.type==='approval' ? step.approvers : step.submitters;
+  const others = list.filter(a => a.type!=='person');
+  const persons = personPickerSelected.map(code => {
+    const p = personByCode(code);
+    return { type:'person', label:p.name, code:p.code, email:p.email };
+  });
+  const merged = others.concat(persons);
+  list.length = 0;
+  list.push(...merged);
+
+  step.passMin = personPickerSelected.length ? passMin : null;
+
+  closeModal('modal-select-persons');
+  renderTrack();
+  showToast('Đã cập nhật người duyệt', 'ok');
+}
+
+/* == Deadline (thời hạn xử lý) cho từng bước ==
+   step.deadline = null, hoặc { type:'relative', value, unit } | { type:'absolute', datetime },
+                   alerts:{email,highlight,bell}, repeat:{enabled,everyHours} */
+let deadlineStepId = null;
+const DEADLINE_EMAIL_SUBJECT_DEFAULT = '[Cảnh báo trễ hạn] #StepName';
+const DEADLINE_EMAIL_BODY_DEFAULT = `Hệ thống Quản trị Đại học  trân trọng thông báo yêu cầu dưới đây hiện đã quá thời hạn xử lý theo quy trình được cấu hình.
+
+Thông tin yêu cầu:
+- Chức năng: #ModuleName
+- Quy trình: #WorkflowName
+- Bước xử lý hiện tại: #StepName
+
+Kính đề nghị Thầy/Cô dành thời gian xem xét và thực hiện xử lý yêu cầu trong thời gian sớm nhất để đảm bảo tiến độ giải quyết theo quy định.
+
+Để xem chi tiết yêu cầu, vui lòng truy cập: https://eduone.asia/`;
+
+/* Chuyển plain text nhiều dòng (\n) sang HTML (<br>) để hiển thị trong ô contenteditable */
+function textToHtml(text){
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+function renderDeadlineCol(step){
+  const d = step.deadline;
+  if (!d){
+    return `<div class="approver-pills reveal-on-hover">
+      <button type="button" class="mini-combo-trigger" onclick="event.stopPropagation();openDeadlineModal('${step.id}')">+ Thêm deadline</button>
+    </div>`;
+  }
+  const summary = d.type==='absolute'
+    ? formatDateTimeLocal(d.datetime)
+    : `${d.value} ${d.type==='day'?'ngày':'giờ'}`;
+  const alertIcons = [d.alerts.email?'📧':'', d.alerts.highlight?'🖍️':'', d.alerts.bell?'🔔':''].filter(Boolean).join(' ');
+  const repeatTag = d.repeat.enabled ? `<div class="pass-min-tag">Nhắc lại mỗi ${d.repeat.everyHours}h</div>` : '';
+  return `<span class="approver-text" onclick="event.stopPropagation();openDeadlineModal('${step.id}')">
+    <div>${summary}</div>
+    ${alertIcons ? `<div class="text-sm">${alertIcons}</div>` : ''}
+    ${repeatTag}
+  </span>`;
+}
+
+function formatDateTimeLocal(v){
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function openDeadlineModal(stepId){
+  deadlineStepId = stepId;
+  const step = stepById(stepId);
+  const d = step.deadline || {
+    type:'hour', value:48, datetime:'',
+    alerts:{email:false,highlight:false,bell:false},
+    emailTemplate:{subject:'', body:''},
+    repeat:{enabled:false,everyHours:12},
+  };
+
+  document.querySelectorAll('#deadline-type-pills .dl-type-pill').forEach(el => el.classList.toggle('active', el.dataset.dltype===d.type));
+  document.getElementById('deadline-relative-wrap').style.display = d.type==='absolute' ? 'none' : '';
+  document.getElementById('deadline-absolute-wrap').style.display = d.type==='absolute' ? '' : 'none';
+  document.getElementById('deadline-relative-value').value = d.value || 48;
+  document.getElementById('deadline-relative-unit-label').textContent = d.type==='day' ? 'ngày' : 'giờ';
+  document.getElementById('deadline-absolute-value').value = d.datetime || '';
+
+  document.getElementById('deadline-alert-email').checked = !!d.alerts.email;
+  document.getElementById('deadline-alert-highlight').checked = !!d.alerts.highlight;
+  document.getElementById('deadline-alert-bell').checked = !!d.alerts.bell;
+
+  document.getElementById('deadline-email-template-wrap').style.display = d.alerts.email ? '' : 'none';
+  document.getElementById('deadline-email-subject').value = (d.emailTemplate && d.emailTemplate.subject) || DEADLINE_EMAIL_SUBJECT_DEFAULT;
+  document.getElementById('deadline-email-body').innerHTML = (d.emailTemplate && d.emailTemplate.body) || textToHtml(DEADLINE_EMAIL_BODY_DEFAULT);
+
+  document.getElementById('deadline-repeat-enabled').checked = !!d.repeat.enabled;
+  document.getElementById('deadline-repeat-wrap').style.display = d.repeat.enabled ? '' : 'none';
+  document.getElementById('deadline-repeat-hours').value = d.repeat.everyHours || 12;
+
+  openModal('modal-deadline');
+}
+
+function pickDeadlineType(el){
+  document.querySelectorAll('#deadline-type-pills .dl-type-pill').forEach(c => c.classList.toggle('active', c===el));
+  const type = el.dataset.dltype;
+  document.getElementById('deadline-relative-wrap').style.display = type==='absolute' ? 'none' : '';
+  document.getElementById('deadline-absolute-wrap').style.display = type==='absolute' ? '' : 'none';
+  document.getElementById('deadline-relative-unit-label').textContent = type==='day' ? 'ngày' : 'giờ';
+}
+
+function toggleDeadlineEmailTemplate(checked){
+  document.getElementById('deadline-email-template-wrap').style.display = checked ? '' : 'none';
+  const subjectInput = document.getElementById('deadline-email-subject');
+  const bodyInput = document.getElementById('deadline-email-body');
+  if (checked && !subjectInput.value.trim()) subjectInput.value = DEADLINE_EMAIL_SUBJECT_DEFAULT;
+  if (checked && !bodyInput.textContent.trim()) bodyInput.innerHTML = textToHtml(DEADLINE_EMAIL_BODY_DEFAULT);
+}
+
+function toggleDeadlineRepeat(checked){
+  document.getElementById('deadline-repeat-wrap').style.display = checked ? '' : 'none';
+}
+
+function saveDeadline(){
+  const step = stepById(deadlineStepId);
+  const type = document.querySelector('#deadline-type-pills .dl-type-pill.active').dataset.dltype;
+
+  if (type==='absolute' && !document.getElementById('deadline-absolute-value').value){
+    showToast('Chọn ngày giờ hạn chót trước khi lưu', 'warn');
+    return;
+  }
+
+  const emailEnabled = document.getElementById('deadline-alert-email').checked;
+  const emailSubject = document.getElementById('deadline-email-subject').value.trim();
+  const emailBodyEl = document.getElementById('deadline-email-body');
+  const emailBody = emailBodyEl.innerHTML.trim();
+  if (emailEnabled && (!emailSubject || !emailBodyEl.textContent.trim())){
+    showToast('Nhập tiêu đề và nội dung mẫu email trước khi lưu', 'warn');
+    return;
+  }
+
+  const repeatEnabled = document.getElementById('deadline-repeat-enabled').checked;
+  const repeatHoursRaw = document.getElementById('deadline-repeat-hours').value;
+  if (repeatEnabled && (!repeatHoursRaw || parseInt(repeatHoursRaw,10) < 1)){
+    showToast('Nhập chu kỳ nhắc lại hợp lệ (tối thiểu 1 giờ)', 'warn');
+    return;
+  }
+
+  step.deadline = {
+    type,
+    value: parseInt(document.getElementById('deadline-relative-value').value, 10) || 1,
+    datetime: document.getElementById('deadline-absolute-value').value,
+    alerts: {
+      email: emailEnabled,
+      highlight: document.getElementById('deadline-alert-highlight').checked,
+      bell: document.getElementById('deadline-alert-bell').checked,
+    },
+    emailTemplate: emailEnabled ? { subject: emailSubject, body: emailBody } : null,
+    repeat: {
+      enabled: repeatEnabled,
+      everyHours: parseInt(repeatHoursRaw, 10) || 12,
+    },
+  };
+
+  closeModal('modal-deadline');
+  renderTrack();
+  showToast('Đã cập nhật thời hạn xử lý', 'ok');
+}
+
+/* == Cấu hình Thông báo — áp dụng chung cho toàn bộ quy trình của biểu mẫu, không cần bật/tắt riêng từng bước/nút ==
+   currentWorkflow.notifyConfig = {
+     approver: { enabled, email, bell },   // báo người duyệt khi có yêu cầu mới đến bước
+     submitter: { enabled, email, bell },  // báo người nộp khi yêu cầu bị Từ chối/cần chỉnh sửa
+   } */
+function openNotifyModal(){
+  const cfg = currentWorkflow.notifyConfig || { approver:{enabled:false,email:false,bell:false}, submitter:{enabled:false,email:false,bell:false} };
+
+  document.getElementById('notify-approver-enabled').checked = cfg.approver.enabled;
+  document.getElementById('notify-approver-email').checked = cfg.approver.email;
+  document.getElementById('notify-approver-bell').checked = cfg.approver.bell;
+  document.getElementById('notify-approver-channels').style.display = cfg.approver.enabled ? '' : 'none';
+
+  document.getElementById('notify-submitter-enabled').checked = cfg.submitter.enabled;
+  document.getElementById('notify-submitter-email').checked = cfg.submitter.email;
+  document.getElementById('notify-submitter-bell').checked = cfg.submitter.bell;
+  document.getElementById('notify-submitter-channels').style.display = cfg.submitter.enabled ? '' : 'none';
+
+  openModal('modal-notify');
+}
+
+function toggleNotifyChannels(prefix){
+  const enabled = document.getElementById(prefix + '-enabled').checked;
+  document.getElementById(prefix + '-channels').style.display = enabled ? '' : 'none';
+}
+
+function saveNotifyConfig(){
+  const approverEnabled = document.getElementById('notify-approver-enabled').checked;
+  const submitterEnabled = document.getElementById('notify-submitter-enabled').checked;
+
+  const approverEmail = document.getElementById('notify-approver-email').checked;
+  const approverBell = document.getElementById('notify-approver-bell').checked;
+  if (approverEnabled && !approverEmail && !approverBell){
+    showToast('Chọn ít nhất 1 kênh (Email hoặc Chuông) cho thông báo người duyệt', 'warn');
+    return;
+  }
+
+  const submitterEmail = document.getElementById('notify-submitter-email').checked;
+  const submitterBell = document.getElementById('notify-submitter-bell').checked;
+  if (submitterEnabled && !submitterEmail && !submitterBell){
+    showToast('Chọn ít nhất 1 kênh (Email hoặc Chuông) cho thông báo người nộp', 'warn');
+    return;
+  }
+
+  currentWorkflow.notifyConfig = {
+    approver: { enabled:approverEnabled, email:approverEmail, bell:approverBell },
+    submitter: { enabled:submitterEnabled, email:submitterEmail, bell:submitterBell },
+  };
+
+  closeModal('modal-notify');
+  showToast('Đã cập nhật cấu hình thông báo', 'ok');
+}
+
+/* Đổi thứ tự bước bằng cách nhập số STT mới — các bước khác tự đẩy lên/xuống nhường chỗ */
+function moveStep(stepId, newPosRaw){
+  const steps = currentWorkflow.steps;
+  const oldIdx = steps.findIndex(s => s.id === stepId);
+  let newIdx = parseInt(newPosRaw, 10) - 1;
+
+  if (isNaN(newIdx) || newIdx < 0) newIdx = 0;
+  if (newIdx > steps.length - 1) newIdx = steps.length - 1;
+
+  if (newIdx === oldIdx){ renderTrack(); return; }
+
+  const [moved] = steps.splice(oldIdx, 1);
+  steps.splice(newIdx, 0, moved);
+
+  renderTrack();
+  showToast(`Đã chuyển "${moved.title}" sang vị trí ${newIdx+1}`, 'ok');
+}
+
+let pendingFocusStepId = null; // stepId cần tự động focus ô "Tên bước" ngay sau lần renderTrack() kế tiếp
+
+/* Bấm "+ Thêm bước mới" là thêm ngay 1 dòng trống vào cuối bảng, không qua modal — tự focus vào ô tên để gõ luôn.
+   Loại bước mặc định là "approval" (Phê duyệt) — bước Nộp đầu tiên thường đã có sẵn trong quy trình. */
+function doAddStep(){
+  const title = '';
+  const steps = currentWorkflow.steps;
+  const prevStep = steps[steps.length - 1]; // bước cuối hiện tại — sẽ nối target sang bước mới sau khi thêm
+  /* Bước đầu tiên của quy trình luôn là bước Nộp (submit) — chỉ từ bước thứ 2 trở
+     đi mới là bước Phê duyệt (Đồng ý/Từ chối), vì cần có người nộp yêu cầu trước. */
+  const addStepType = prevStep ? 'approval' : 'submit';
+  const newStepId = 's' + Date.now();
+
+  /* Sinh sẵn nút hành động mặc định: bước Nộp có 1 nút "Nộp"; bước Phê duyệt có "Đồng ý" + "Từ chối".
+     Target tạm trỏ về chính bước mới (= dừng tại chỗ, vì đây đang là bước cuối cùng lúc vừa tạo). */
+  const newStep = addStepType==='submit'
+    ? { id:newStepId, type:'submit', title, submitters:[],
+        actions:[{ label:'Nộp', kind:'submit', target:newStepId, resultStatus:'Chờ duyệt', fields:[] }] }
+    : { id:newStepId, type:'approval', title, approvers:[],
+        actions:[
+          { label:'Đồng ý', kind:'approve', target:newStepId, resultStatus:'Đã duyệt', fields:[] },
+          { label:'Từ chối', kind:'reject', target:newStepId, resultStatus:'Từ chối', fields:[] },
+        ] };
+
+  currentWorkflow.steps.push(newStep);
+
+  /* Nối chuỗi: nút "Đồng ý/Nộp" của bước liền trước (nếu có) sẽ trỏ sang bước mới thay vì dừng tại chỗ */
+  if (prevStep){
+    const forwardAction = prevStep.actions.find(a => a.kind==='approve' || a.kind==='submit');
+    if (forwardAction && forwardAction.target === prevStep.id) forwardAction.target = newStepId;
+  }
+
+  pendingFocusStepId = newStep.id;
+
+  renderTrack();
+  showToast('Đã thêm bước mới vào quy trình', 'ok');
+}
+
+// ══════════════════════════════════════════════════
+// Notifications (giống mh-admin-01)
+// ══════════════════════════════════════════════════
+const NOTIFICATIONS = [
+  { id:'n1', title:'Phòng CTSV vừa cập nhật "Đơn xin trợ cấp khó khăn"', time:'12 phút trước', unread:true },
+  { id:'n2', title:'Quản lý Sau đại học vừa thêm biểu mẫu mới', time:'1 giờ trước', unread:true },
+];
+
+function renderNotifMenu() {
+  const listEl = document.getElementById('notif-menu-list');
+  if (NOTIFICATIONS.length === 0) {
+    listEl.innerHTML = `<div class="notif-menu-empty">Không có thông báo</div>`;
+    return;
+  }
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">🔔</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('');
+}
+function updateNotifBadge() {
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+  badge.textContent = unreadCount;
+}
+function toggleNotifMenu() {
+  document.getElementById('notif-menu').classList.toggle('open');
+}
+function readNotification(id) {
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+  updateNotifBadge();
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#notif-wrap')) document.getElementById('notif-menu').classList.remove('open');
+});
+
+document.getElementById('fdet-code-input').addEventListener('input', () => {
+  document.getElementById('fdet-code-wrap').classList.remove('err');
+});
+
+// ══════════════════════════════════════════════════
+// Danh mục Trường dữ liệu (mã fill tự động)
+// ══════════════════════════════════════════════════
+const FIELD_CATALOG_PAGE_SIZE = 10;
+let fieldCatalogPage = 1;
+
+function renderFieldCatalog(){
+  const tbody = document.getElementById('field-catalog-tbody');
+  const q = document.getElementById('field-catalog-search').value.trim().toLowerCase();
+  const list = q
+    ? FIELD_CATALOG.filter(f => f.code.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
+    : FIELD_CATALOG;
+
+  const totalPages = Math.max(1, Math.ceil(list.length / FIELD_CATALOG_PAGE_SIZE));
+  if (fieldCatalogPage > totalPages) fieldCatalogPage = totalPages;
+  const pageList = list.slice((fieldCatalogPage - 1) * FIELD_CATALOG_PAGE_SIZE, fieldCatalogPage * FIELD_CATALOG_PAGE_SIZE);
+
+  if (!pageList.length){
+    tbody.innerHTML = `<tr><td colspan="2" class="tbl-empty">Không tìm thấy trường thông tin nào phù hợp.</td></tr>`;
+  } else {
+    tbody.innerHTML = pageList.map(f => `
+      <tr>
+        <td>${f.label}</td>
+        <td class="form-code">#${f.code}</td>
+      </tr>`).join('');
+  }
+
+  renderFieldCatalogPagination(list.length, totalPages);
+}
+
+function renderFieldCatalogPagination(totalItems, totalPages){
+  const el = document.getElementById('field-catalog-pagination');
+  if (totalItems === 0){ el.innerHTML = ''; return; }
+  const from = (fieldCatalogPage - 1) * FIELD_CATALOG_PAGE_SIZE + 1;
+  const to = Math.min(fieldCatalogPage * FIELD_CATALOG_PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button class="pg-btn ${i === fieldCatalogPage ? 'active' : ''}" onclick="goToFieldCatalogPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `<span class="pg-info">${from}–${to} trong ${totalItems} trường</span>${btns}`;
+}
+
+function goToFieldCatalogPage(p){
+  fieldCatalogPage = p;
+  renderFieldCatalog();
+}
+
+function openFieldCatalogModal(){
+  document.getElementById('field-catalog-search').value = '';
+  fieldCatalogPage = 1;
+  renderFieldCatalog();
+  openModal('modal-field-catalog');
+}
+
+document.getElementById('field-catalog-search').addEventListener('input', () => { fieldCatalogPage = 1; renderFieldCatalog(); });
+
+// ══════════════════════════════════════════════════
+// Init
+// ══════════════════════════════════════════════════
+renderNotifMenu();
+updateNotifBadge();
+deptSearchInput.value = unitDisplayName(unitById(selectedUnitId));
+renderCopyAlert();
+renderFormGrid();
+</script>
+</body>
+</html>

@@ -478,6 +478,7 @@
             <select class="fc" id="new-form-dept">
               <option value="" selected disabled>— Chọn đơn vị —</option>
             </select>
+            <input class="fc" id="new-form-dept-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
           </div>
         </div>
 
@@ -508,6 +509,7 @@
               <div class="msel-trigger" onclick="toggleMsel('new-form-applyunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Khoa/Trường —</span></div>
               <div class="msel-menu"></div>
             </div>
+            <input class="fc" id="new-form-applyunit-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
           </div>
 
           <div class="fi">
@@ -1318,20 +1320,17 @@ document.addEventListener('click', e => {
   if (!document.getElementById('dept-combo').contains(e.target)) closeDeptMenu();
 });
 
-/* Alert + nút "Sao chép" chỉ hiện khi đang xem 1 đơn vị Cấp 2 (Khoa/Trường) */
+/* Nút "Sao chép" chỉ hiện khi đang xem 1 đơn vị Cấp 2 (Khoa/Trường) — Cấp 2
+   không có quyền tự soạn biểu mẫu mới, chỉ được sao chép biểu mẫu do Cấp 1
+   (Đại học/PĐT/CTSV/SĐH) ban hành về rồi tuỳ chỉnh riêng. Ngược lại, nút
+   "＋ Thêm mới" chỉ dành cho Cấp 1. Alert ngữ cảnh không hiển thị nữa. */
 function renderCopyAlert(){
-  const alertEl = document.getElementById('unit-copy-alert');
-  const copyBtn = document.getElementById('btn-copy-form');
-  const u = unitById(selectedUnitId);
+  document.getElementById('unit-copy-alert').style.display = 'none';
+  // Cấp 3 (bộ môn con) quy về Cấp 2 cha — coi như đang xem 1 đơn vị Cấp 2.
+  const u = unitById(effectiveOwnerUnit());
   const isLevel2 = u.level === 2;
-  copyBtn.style.display = isLevel2 ? '' : 'none';
-  if (!isLevel2){
-    alertEl.style.display = 'none';
-    return;
-  }
-  alertEl.style.display = 'flex';
-  document.getElementById('unit-copy-title').textContent = 'Đang xem biểu mẫu của ' + u.name;
-  document.getElementById('unit-copy-desc').textContent = 'Danh sách bao gồm biểu mẫu dùng chung do Đại học/PĐT/CTSV/SĐH ban hành và biểu mẫu ' + u.name + ' đã tự sao chép về tuỳ chỉnh riêng.';
+  document.getElementById('btn-copy-form').style.display = isLevel2 ? '' : 'none';
+  document.getElementById('btn-new-form').style.display = isLevel2 ? 'none' : '';
 }
 
 // ══════════════════════════════════════════════════
@@ -1340,20 +1339,14 @@ function renderCopyAlert(){
 const FORM_PAGE_SIZE = 20;
 let currentPage = 1;
 
-/* Danh sách biểu mẫu hiệu lực tại 1 đơn vị: nếu là Cấp 1 → đúng biểu mẫu của
-   đơn vị đó (Đại học xem toàn bộ Cấp 1). Nếu là Khoa/Trường (Cấp 2, hoặc Cấp 3
-   quy về cha) → gồm biểu mẫu dùng chung của mọi đơn vị Cấp 1 CỘNG bản riêng
-   Khoa đã sao chép về, và bản riêng sẽ ẩn bản gốc tương ứng (originId trỏ tới). */
+/* Danh sách biểu mẫu hiệu lực tại 1 đơn vị: luôn đúng bằng biểu mẫu có
+   ownerUnit === unitId, không tự động kế thừa biểu mẫu Cấp 1 nào — Khoa/
+   Trường (Cấp 2, hoặc Cấp 3 quy về cha) chỉ thấy được biểu mẫu Cấp 1 sau khi
+   tự sao chép về (bản sao có ownerUnit là chính Khoa đó). */
 function formsAtUnit(unitId){
   const u = unitById(unitId);
-  if (u.level === 1){
-    if (unitId === 'u-dh') return FORMS.filter(f => unitById(f.ownerUnit).level === 1);
-    return FORMS.filter(f => f.ownerUnit === unitId);
-  }
-  const overriddenOriginIds = new Set(FORMS.filter(f => f.ownerUnit === unitId).map(f => f.originId).filter(Boolean));
-  const inherited = FORMS.filter(f => unitById(f.ownerUnit).level === 1 && !overriddenOriginIds.has(f.id));
-  const own = FORMS.filter(f => f.ownerUnit === unitId);
-  return inherited.concat(own);
+  if (u.level === 1 && unitId === 'u-dh') return FORMS.filter(f => unitById(f.ownerUnit).level === 1);
+  return FORMS.filter(f => f.ownerUnit === unitId);
 }
 
 function visibleForms() {
@@ -1377,8 +1370,7 @@ function renderFormGrid() {
   } else {
     tbody.innerHTML = pageList.map((f, i) => {
       const st = STATUS_TAG[f.status];
-      const copiedTag = f.originId ? '<span class="tag tag-default" style="margin-left:4px">Bản sao</span>' : '';
-      const deptTd = `<td>${ownerLabel(f.ownerUnit)}${copiedTag}</td>`;
+      const deptTd = `<td>${ownerLabel(f.ownerUnit)}</td>`;
       return `
         <tr class="form-row" onclick="openFormDetail('${f.id}')">
           <td>${(currentPage - 1) * FORM_PAGE_SIZE + i + 1}</td>
@@ -1572,7 +1564,13 @@ function openCopyModal(){
   const targetSel = document.getElementById('copy-target-unit');
   const listEl = document.getElementById('copy-source-list');
   const lvl2Units = UNITS.filter(u => u.level === 2);
-  targetSel.innerHTML = lvl2Units.map(u => `<option value="${u.id}" ${u.id===selectedUnitId?'selected':''}>${u.name}</option>`).join('');
+  // Cấp 3 (nếu có bộ môn con) quy về Cấp 2 cha — dùng effectiveOwnerUnit()
+  // để luôn khớp đúng 1 option, tránh trình duyệt tự rơi về option đầu
+  // danh sách khi selectedUnitId không match option nào (mặc định sai đơn
+  // vị đích mà không có cảnh báo gì).
+  const defaultTargetUnit = unitById(effectiveOwnerUnit()).level === 2 ? effectiveOwnerUnit() : lvl2Units[0].id;
+  targetSel.innerHTML = lvl2Units.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  targetSel.value = defaultTargetUnit;
 
   const rootForms = FORMS.filter(f => unitById(f.ownerUnit).level === 1);
   listEl.innerHTML = rootForms.map(f => `
@@ -1642,17 +1640,26 @@ function doCopyForm(){
       return;
     }
 
+    // Sao chép nguyên vẹn mọi thuộc tính của biểu mẫu gốc (nội dung, file mẫu,
+    // trường kê khai thêm, quy trình xử lý...) — chỉ ownerUnit và applyUnits là
+    // gán lại theo đơn vị đích, vì bản sao này thuộc về và chỉ áp dụng cho
+    // chính Khoa/Trường vừa sao chép về, không kế thừa phạm vi áp dụng gốc.
     const copy = {
+      ...source,
       id: 'f-copy-' + sourceId + '-' + Date.now() + '-' + Math.floor(Math.random()*1000),
       itemId: maxItemId() + 1,
       code: source.code + '-' + targetUnit.replace('u-', '').toUpperCase(),
       ownerUnit: targetUnit,
+      applyUnits: [targetUnit],
       name: source.name + ' (' + unitById(targetUnit).name + ')',
-      desc: source.desc,
       scopes: source.scopes.slice(),
-      status: source.status,
+      programs: (source.programs || []).slice(),
+      cohorts: (source.cohorts || []).slice(),
+      studentStatuses: (source.studentStatuses || []).slice(),
+      mssvWhitelist: (source.mssvWhitelist || []).slice(),
+      extraFields: (source.extraFields || []).map(f => ({ ...f, options: (f.options || []).slice() })),
+      steps: JSON.parse(JSON.stringify(source.steps || [])),
       updated,
-      file: source.file,
       originId: sourceId,
     };
     FORMS.unshift(copy);
@@ -1823,6 +1830,12 @@ let newFormEditId = null;
    null, buộc phải chọn file mới mới lưu được (đúng quy tắc đã thống nhất). */
 let newFormExistingFileName = null;
 
+/* id đơn vị Cấp 2 khi đang sửa 1 bản sao (originId khác null, ownerUnit là
+   Khoa/Trường) — null nếu không phải trường hợp này. Bản sao chỉ thuộc về
+   và chỉ áp dụng cho đúng 1 Khoa nên "Đơn vị ban hành"/"Đơn vị áp dụng"
+   khoá cứng theo Khoa đó, không cho đổi sang đơn vị khác. */
+let newFormLockedUnit = null;
+
 function renderExtraFields(){
   const tbody = document.getElementById('new-form-extrafields-tbody');
   if (!newFormExtraFields.length){
@@ -1903,7 +1916,7 @@ function removeExtraField(idx){
 function newFormGoToStep(step){
   if (step === 2){
     const code = document.getElementById('new-form-code').value.trim();
-    const ownerUnit = document.getElementById('new-form-dept').value;
+    const ownerUnit = newFormLockedUnit || document.getElementById('new-form-dept').value;
     const name = document.getElementById('new-form-name').value.trim();
     const scopes = getMselValues('new-form-scope-msel');
     const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
@@ -1963,9 +1976,26 @@ function showExistingFileInPicker(fileName){
 /* Mỗi lần bấm "＋ Thêm mới" là một phiên tạo mới hoàn toàn — reset sạch mọi
    input của cả 2 bước, kể cả khi lần trước người dùng đã nhập dở rồi đóng
    popup mà chưa submit, để tránh dữ liệu cũ lẫn vào biểu mẫu mới. */
+function setFormDeptAndApplyUnitLocked(unitId){
+  newFormLockedUnit = unitId;
+  const isLocked = !!unitId;
+  const unitName = isLocked ? unitById(unitId).name : '';
+
+  document.getElementById('new-form-dept').style.display = isLocked ? 'none' : '';
+  const deptLockedEl = document.getElementById('new-form-dept-locked');
+  deptLockedEl.style.display = isLocked ? '' : 'none';
+  if (isLocked) deptLockedEl.value = unitName + ' (cố định — bản sao chỉ thuộc về đơn vị này)';
+
+  document.getElementById('new-form-applyunit-msel').style.display = isLocked ? 'none' : '';
+  const applyLockedEl = document.getElementById('new-form-applyunit-locked');
+  applyLockedEl.style.display = isLocked ? '' : 'none';
+  if (isLocked) applyLockedEl.value = unitName + ' (cố định — bản sao chỉ áp dụng cho đơn vị này)';
+}
+
 function resetNewFormWizard(){
   newFormEditId = null;
   newFormExistingFileName = null;
+  setFormDeptAndApplyUnitLocked(null);
   document.getElementById('new-form-modal-title').textContent = 'Thêm biểu mẫu mới';
   document.getElementById('new-form-submit-btn').textContent = 'Thêm biểu mẫu';
   document.getElementById('new-form-code').value = generateNextFormCode();
@@ -2021,6 +2051,16 @@ function openFormEdit(id){
   document.getElementById('new-form-modal-title').textContent = 'Sửa biểu mẫu';
   document.getElementById('new-form-submit-btn').textContent = 'Lưu thay đổi';
 
+  // Bản sao (originId khác null) luôn thuộc về đúng 1 Khoa/Trường Cấp 2 —
+  // khoá cứng ownerUnit/applyUnits theo đơn vị đó, không cho đổi khi sửa.
+  // Biểu mẫu Cấp 1 dùng chung, khi được sửa trong lúc đang xem tại 1 đơn vị
+  // Cấp 2, cũng khoá theo đúng đơn vị Cấp 2 đang xem — vì lưu lại sẽ tạo
+  // (hoặc cập nhật) bản sao riêng cho đơn vị đó, không sửa thẳng bản gốc.
+  const isCopy = !!f.originId && unitById(f.ownerUnit).level === 2;
+  const viewingUnit = unitById(effectiveOwnerUnit());
+  const lockedUnitId = isCopy ? f.ownerUnit : (viewingUnit.level === 2 ? viewingUnit.id : null);
+  setFormDeptAndApplyUnitLocked(lockedUnitId);
+
   document.getElementById('new-form-code').value = f.code;
   document.getElementById('new-form-dept').value = f.ownerUnit;
   document.getElementById('new-form-name').value = f.name;
@@ -2049,12 +2089,14 @@ function doCreateForm() {
   const editingForm = editId ? formById(editId) : null;
 
   const code = document.getElementById('new-form-code').value.trim();
-  const ownerUnit = document.getElementById('new-form-dept').value;
+  // Bản sao Cấp 2 bị khoá cứng ownerUnit/applyUnits theo đơn vị đang sở hữu —
+  // đọc từ newFormLockedUnit thay vì input đang bị ẩn trong trường hợp này.
+  const ownerUnit = newFormLockedUnit || document.getElementById('new-form-dept').value;
   const name = document.getElementById('new-form-name').value.trim();
   const guide = document.getElementById('new-form-guide').innerHTML.trim();
   const scopes = getMselValues('new-form-scope-msel');
   const programs = getMselValues('new-form-program-msel');
-  const applyUnits = getMselValues('new-form-applyunit-msel');
+  const applyUnits = newFormLockedUnit ? [newFormLockedUnit] : getMselValues('new-form-applyunit-msel');
   const cohorts = getMselValues('new-form-cohort-msel');
   const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
   const allowCopy = document.getElementById('new-form-allow-copy').checked;
@@ -2067,7 +2109,14 @@ function doCreateForm() {
   const keepsOldFile = !hasNewFile && !!newFormExistingFileName;
   const hasFile = hasNewFile || keepsOldFile;
 
-  if (isCodeTaken(code, editId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
+  // Sửa 1 biểu mẫu Cấp 1 dùng chung (không phải bản sao) trong lúc đang khoá
+  // theo 1 đơn vị Cấp 2 khác chủ sở hữu gốc: không sửa đè bản gốc (sẽ ảnh
+  // hưởng mọi đơn vị khác đang dùng chung) — thay vào đó tạo/cập nhật đúng
+  // bản sao riêng của đơn vị đó, giống hệt cơ chế nút "Sao chép". Mã hiển thị
+  // trên form khi đó vẫn là mã bản gốc (ô readonly không đổi theo đơn vị
+  // khoá) — mã thật của bản sao tự sinh/giữ nguyên riêng ở bước lưu bên dưới.
+  const willForkAsCopy = !!(editingForm && !editingForm.originId && ownerUnit !== editingForm.ownerUnit);
+  if (!willForkAsCopy && isCodeTaken(code, editId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
   if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
   if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
   if (!scopes.length) { showToast('Vui lòng chọn ít nhất 1 hệ đào tạo.', 'err'); return; }
@@ -2093,7 +2142,27 @@ function doCreateForm() {
   const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
   const file = hasNewFile ? fileInput.files[0].name : newFormExistingFileName;
 
-  if (editingForm){
+  const forkTargetForm = willForkAsCopy
+    ? FORMS.find(f => f.ownerUnit === ownerUnit && f.originId === editingForm.id)
+    : null;
+
+  if (forkTargetForm){
+    Object.assign(forkTargetForm, {
+      name, guide, scopes, programs, applyUnits, cohorts,
+      studentStatuses, allowCopy, content, extraFields, status, updated, file,
+    });
+  } else if (willForkAsCopy){
+    const maxItemId = FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
+    FORMS.unshift({
+      id: 'f-copy-' + editingForm.id + '-' + Date.now(),
+      itemId: maxItemId + 1,
+      code: editingForm.code + '-' + ownerUnit.replace('u-', '').toUpperCase(),
+      name: name + ' (' + unitById(ownerUnit).name + ')',
+      desc: editingForm.desc, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
+      status, updated, file, originId: editingForm.id,
+    });
+  } else if (editingForm){
     Object.assign(editingForm, {
       code, name, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, allowCopy, content, extraFields, status, updated, file,
@@ -2113,7 +2182,10 @@ function doCreateForm() {
   resetNewFormWizard();
   currentPage = 1;
   renderFormGrid();
-  showToast(editingForm ? 'Đã lưu thay đổi biểu mẫu.' : 'Đã thêm biểu mẫu mới.', 'ok');
+  const savedMsg = willForkAsCopy
+    ? `Đã lưu thành bản sao riêng cho ${unitById(ownerUnit).name}.`
+    : (editingForm ? 'Đã lưu thay đổi biểu mẫu.' : 'Đã thêm biểu mẫu mới.');
+  showToast(savedMsg, 'ok');
 }
 
 // ══════════════════════════════════════════════════

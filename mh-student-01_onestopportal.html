@@ -287,7 +287,7 @@
 </div>
 
 <!-- ═══ MODAL: Quy trình duyệt — cùng layout modal-workflow-progress ở mh-admin-03
-     (STT/Bước/Đơn vị duyệt/Vai trò duyệt/Người xử lý/Thời gian nhận/Thời gian xử lý/Kết quả/Lý do) ═══ -->
+     (STT/Bước/Đơn vị duyệt/Vai trò duyệt/Người xử lý/Thời gian nhận/Thời gian xử lý/Trạng thái/Lý do) ═══ -->
 <div class="overlay hidden" id="modal-workflow-progress">
   <div class="modal-box w960">
     <div class="modal-hd">
@@ -308,7 +308,7 @@
               <th>Người xử lý</th>
               <th>Thời gian nhận</th>
               <th>Thời gian xử lý</th>
-              <th>Kết quả</th>
+              <th>Trạng thái</th>
               <th>Lý do</th>
             </tr>
           </thead>
@@ -946,7 +946,7 @@ function openSubmitForm(id, viewOnly, historyIndex){
   if (!f) return;
   currentSubmitForm = f;
   currentHistoryIndex = typeof historyIndex === 'number' ? historyIndex : null;
-  document.getElementById('subm-title').textContent = viewOnly ? `Xem đơn: ${f.name}` : f.name;
+  document.getElementById('subm-title').textContent = f.name;
   document.getElementById('subm-guide').innerHTML = f.desc ? `<p>${f.desc}</p>` : '<p class="text-muted">Chưa có nội dung/hướng dẫn cho biểu mẫu này.</p>';
 
   const extraTitle = document.getElementById('subm-extra-title');

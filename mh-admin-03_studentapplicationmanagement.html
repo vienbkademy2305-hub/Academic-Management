@@ -1,0 +1,2351 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Đơn từ Sinh viên | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: quản lý đơn từ sinh viên (MH-ADMIN-03) ========== */
+
+  /* Dropdown thông báo — giống mh-admin-01/02 */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Unit search combobox — copy nguyên từ mh-admin-01/02 */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-group{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px 4px}
+  .unit-combo-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-item .lvl-badge{font-size:10px;color:var(--text-3);background:#f5f5f5;padding:0 6px;border-radius:8px;flex-shrink:0}
+  .unit-combo-item:hover .lvl-badge,.unit-combo-item.hl .lvl-badge{background:#fff;color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Bộ lọc "Tên biểu mẫu" — combobox nhiều lựa chọn (checkbox) + tìm kiếm, dùng chung khung .unit-combo-menu */
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
+  .form-combo-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .form-combo-item:hover{background:var(--primary-light);color:var(--primary)}
+  .form-combo-item input[type="checkbox"]{flex-shrink:0;cursor:pointer}
+  .form-combo-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* Dropdown "Chức năng" — liệt kê các thao tác hàng loạt (duyệt/từ chối/xuất/tạo văn bản) dạng list */
+  .bulk-action-combo{position:relative}
+  .bulk-action-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;width:300px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:50;padding:6px}
+  .bulk-action-menu.open{display:block}
+  .bulk-action-sep{height:1px;background:var(--border);margin:6px 4px}
+  .bulk-action-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 10px;border-radius:6px;border:none;background:none;cursor:pointer;font-family:inherit}
+  .bulk-action-item:hover{background:var(--primary-light)}
+  .bulk-action-item:disabled{cursor:default;opacity:.5}
+  .bulk-action-item:disabled:hover{background:none}
+  .bulk-action-item .bai-ico{flex-shrink:0;width:22px;text-align:center;font-size:14px;color:var(--primary)}
+  .bulk-action-item .bai-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .bulk-action-item .bai-title{font-size:13.5px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:6px}
+  .bulk-action-item .bai-desc{display:none}
+  .bulk-action-item .bai-soon{font-size:10px;font-weight:600;color:var(--text-3);background:#f5f5f5;padding:1px 6px;border-radius:8px}
+
+  /* Dropdown "Cột hiển thị" — bật/tắt các cột tuỳ chọn trong bảng danh sách đơn */
+  .col-toggle{position:relative}
+  .col-toggle-menu{display:none;position:absolute;top:calc(100% + 4px);right:0;width:250px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);z-index:50;padding:6px}
+  .col-toggle-menu.open{display:block}
+  .col-toggle-actions{display:flex;gap:6px;padding:4px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:4px}
+  .col-toggle-actions button{flex:1;border:none;background:none;color:var(--primary);font-size:12px;font-family:inherit;cursor:pointer;padding:4px;border-radius:4px}
+  .col-toggle-actions button:hover{background:var(--primary-light)}
+  .col-toggle-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;color:var(--text-1)}
+  .col-toggle-item:hover{background:var(--primary-light)}
+  .col-toggle-item label{display:flex;align-items:center;gap:8px;flex:1;cursor:pointer}
+  .col-toggle-item input{margin:0}
+  .col-toggle-pin{border:none;background:none;padding:2px;font-size:13px;cursor:pointer;opacity:.35;flex-shrink:0;border-radius:4px}
+  .col-toggle-pin:hover{opacity:.7}
+  .col-toggle-pin.pinned{opacity:1}
+
+  /* Tabs trạng thái — lọc nhanh kiểu AMIS (Tất cả/Chưa giao/Đang giao/Hoàn thành) */
+  .status-tabs{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .status-tab{display:flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .status-tab:hover{color:var(--primary)}
+  .status-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .status-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:12px;font-weight:600;background:#f0f0f0;color:var(--text-2)}
+  .status-tab-badge.warn{background:#fffbe6;color:var(--warning)}
+  .status-tab-badge.success{background:#f6ffed;color:var(--success)}
+  .status-tab-badge.error{background:#fff2f0;color:var(--error)}
+  .status-tab-badge.blue{background:#e6f4ff;color:var(--blue)}
+  .status-tab.active .status-tab-badge{background:var(--primary);color:#fff}
+
+  /* Bảng danh sách đơn */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .app-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .app-form-cell{font-size:13.5px;color:var(--primary);cursor:pointer;display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+  .app-form-cell:hover{text-decoration:underline}
+  .app-sv-name{font-size:13.5px;color:var(--text-1)}
+  tr.app-row{cursor:pointer}
+  tr.app-row:hover td{background:var(--primary-light)}
+  tr.app-row.overdue td{background:#fff2f0}
+  tr.app-row.overdue:hover td{background:#ffe1de}
+  .overdue-tag{font-size:10px;color:var(--error);border:1px solid #ffa39e;background:#fff2f0;padding:0 6px;border-radius:8px;margin-left:6px;white-space:nowrap}
+
+  /* Nút mở nhanh danh sách tài liệu đính kèm ngay tại dòng bảng */
+  .attach-btn{border:none;background:none;padding:0;color:var(--primary);font-size:13px;cursor:pointer;font-family:inherit}
+  .attach-btn:hover{color:var(--primary-h);text-decoration:underline}
+
+  /* Popup Tài liệu đính kèm */
+  .attach-list{list-style:none;margin:0;padding:0}
+  .attach-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+  .attach-list li:last-child{border-bottom:none}
+  .attach-list .attach-ico{font-size:18px;flex-shrink:0}
+  .attach-list .attach-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--text-1)}
+  .attach-empty{text-align:center;color:var(--text-3);font-size:13px;padding:24px}
+
+  /* Cột "Bước duyệt" trong bảng danh sách — tên bước ở trên, người/vai trò duyệt bên dưới.
+     Từ 2 approver trở lên chỉ hiện tên đầu + "+N" (xem currentApproverLabel), nên chỉ cần
+     ellipsis 1 dòng phòng trường hợp 1 tên/vai trò vẫn dài hơn độ rộng cột. */
+  .approver-step{font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-name{font-size:11.5px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-more{color:var(--primary);font-weight:600}
+
+  .submitter-tag{font-size:10px;color:var(--blue);border:1px solid #91caff;background:#e6f4ff;padding:0 6px;border-radius:8px;margin-left:4px;white-space:nowrap}
+
+  /* Thang đánh giá dạng sao (Feedback) — dùng chung cho bảng danh sách + popup Chi tiết đánh giá */
+  .stars{color:#d9d9d9;font-size:14px;letter-spacing:1px;white-space:nowrap}
+  .stars .filled{color:#faad14}
+  .stars-lg{font-size:32px}
+
+  /* Mã hoá đơn trong bảng danh sách — bấm mở popup riêng modal-invoice, không đụng popup chi tiết đơn */
+  .invoice-btn{border:none;background:none;padding:0;color:var(--primary);cursor:pointer;font-family:inherit;font-size:13px}
+  .invoice-btn:hover{color:var(--primary-h);text-decoration:underline}
+
+  /* Popup Hoá đơn */
+  .inv-detail-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:13.5px}
+  .inv-detail-row:last-child{border-bottom:none}
+  .inv-detail-row .inv-label{color:var(--text-2)}
+  .inv-detail-row .inv-val{color:var(--text-1);font-weight:600}
+
+  /* Popup Thông tin sinh viên kê khai — khối info biểu mẫu (guide + trường cần kê khai + bản ghi), read-only */
+  .decl-form-name{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:6px}
+  .decl-guide{font-size:13px;color:var(--text-2);line-height:1.6;margin-top:6px}
+  .decl-guide p{margin:0 0 4px}
+  .decl-guide p:last-child{margin-bottom:0}
+  .decl-guide ol,.decl-guide ul{margin:0 0 4px;padding-left:18px}
+  .decl-guide li{margin-bottom:2px}
+  .decl-guide a{color:var(--primary)}
+  .decl-guide a:hover{text-decoration:underline}
+  .decl-field-required{font-size:13px;font-weight:700;color:var(--error);margin-left:2px}
+  .decl-field-type{font-size:10px;color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0}
+  .decl-record-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .decl-empty{font-size:12.5px;color:var(--text-3)}
+
+  /* Modal chi tiết đơn — nội dung biểu mẫu đã điền + lịch sử bước (read-only) */
+  .adet-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+
+  /* Field dạng label-ngoài + khung giá trị riêng (view-only) — dùng cho "Thông tin nhận đơn" */
+  .fi-view label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px}
+  .fi-view-box{padding:7px 11px;border:1px solid var(--border);border-radius:var(--radius);background:#fafafa;font-size:13.5px;color:var(--text-1);min-height:34px;display:flex;align-items:center}
+  .adet-field{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+  .adet-field-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .adet-field-val{font-size:13.5px;color:var(--text-1)}
+  .adet-content-preview{border:1px solid var(--border);border-radius:8px;padding:24px 28px;background:#fff;font-size:13.5px;line-height:1.7;max-height:420px;overflow-y:auto}
+  .adet-content-preview mark{background:#fff1b8;border-radius:2px;padding:0 2px;font-weight:600}
+
+  /* Định dạng công văn — quốc hiệu 2 cột, tiêu đề, thân bài, chữ ký */
+  .doc-header{display:flex;justify-content:space-between;gap:16px;text-align:center;font-size:13px;margin-bottom:10px}
+  .doc-header-col{flex:1}
+  .doc-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text-2);margin-bottom:18px}
+  .doc-title{text-align:center;font-weight:700;font-size:15px;text-transform:uppercase;margin-bottom:16px}
+  .doc-body p{margin:0 0 8px}
+  .doc-sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:24px;gap:16px}
+  .doc-sign-note{font-size:12.5px;flex:1}
+  .doc-sign-block{text-align:center;font-size:13px;min-width:220px}
+  .adet-section-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px}
+  .adet-section-title:first-child{margin-top:0}
+
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text-3)}
+  .empty-state-ico{font-size:32px;margin-bottom:8px}
+
+  /* Popup Xác nhận trả kết quả */
+  .dl-check-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li class="active"><a href="#">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb">Bộ phận một cửa / <b style="color:var(--text-1)">Quản lý Đơn từ</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH ĐƠN TỪ (MH-ADMIN-03)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Quản lý Đơn từ</h2>
+          </div>
+        </div>
+
+        <!-- Bộ lọc: Đơn vị + Tìm theo tên/MSSV -->
+        <div class="filter-bar">
+          <div class="unit-combo" id="unit-combo">
+            <input class="fc" id="unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:260px">
+            <div class="unit-combo-menu" id="unit-combo-menu"></div>
+          </div>
+          <!-- Tạm ẩn bộ lọc "Chức năng" — màn hình này chỉ xử lý riêng Quản lý Đơn từ (bieumau),
+               không còn cần lọc theo chức năng khác (qdsv/khenthuong/kyluat).
+          <select class="fc" id="func-select" style="width:200px">
+            <option value="all">Tất cả chức năng</option>
+            <option value="qdsv">Quyết định sinh viên</option>
+            <option value="khenthuong">Khen thưởng</option>
+            <option value="kyluat">Kỷ luật sinh viên</option>
+            <option value="bieumau">Biểu mẫu (một cửa)</option>
+          </select>
+          -->
+          <!-- Tạm ẩn bộ lọc "Người nộp" theo yêu cầu — giữ nguyên select + logic JS liên quan
+               (currentSubmitterFilter/submitter-select) để dễ khôi phục khi cần bật lại.
+          <select class="fc" id="submitter-select" style="width:190px">
+            <option value="all">Tất cả người nộp</option>
+            <option value="student">Sinh viên tự nộp</option>
+            <option value="lecturer">Giảng viên tạo hộ</option>
+          </select>
+          -->
+          <div class="unit-combo" id="form-combo" style="width:240px">
+            <button type="button" class="fc form-combo-trigger" id="form-combo-trigger" onclick="event.stopPropagation();toggleFormMenu()">
+              <span id="form-combo-label">Tất cả biểu mẫu</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="form-combo-menu">
+              <input class="fc" id="form-search" type="text" placeholder="🔍 Tìm biểu mẫu…" autocomplete="off" style="margin-bottom:4px">
+              <div id="form-combo-list"></div>
+            </div>
+          </div>
+          <input class="fc" id="app-search" type="text" placeholder="🔍 Tìm theo MSSV, tên SV, email hoặc CCCD người nhận…" autocomplete="off" style="width:260px">
+          <select class="fc" id="return-result-select" style="width:170px">
+            <option value="all">Tất cả kết quả trả</option>
+            <option value="done">Đã trả</option>
+            <option value="pending">Chưa trả</option>
+          </select>
+          <select class="fc" id="invoice-status-select" style="width:170px">
+            <option value="all">Tất cả trạng thái HĐ</option>
+            <option value="paid">Đã thanh toán</option>
+            <option value="unpaid">Chưa thanh toán</option>
+          </select>
+          <div class="date-range-filter" style="display:flex;align-items:center;gap:6px">
+            <input class="fc" id="submitted-from" type="date" style="width:150px" title="Ngày nộp từ">
+            <span class="text-muted text-sm">đến</span>
+            <input class="fc" id="submitted-to" type="date" style="width:150px" title="Ngày nộp đến">
+          </div>
+
+          <div class="bulk-action-combo" id="bulk-action-combo" style="margin-left:auto">
+            <button type="button" class="btn btn-default" onclick="event.stopPropagation();toggleBulkActionMenu()">Chức năng ▾</button>
+            <div class="bulk-action-menu" id="bulk-action-menu">
+              <button type="button" class="bulk-action-item" onclick="bulkApprove(true)">
+                <span class="bai-ico">✓</span>
+                <span class="bai-text"><span class="bai-title">Duyệt đồng thời</span><span class="bai-desc">Duyệt các đơn đã chọn đang chờ bạn xử lý</span></span>
+              </button>
+              <button type="button" class="bulk-action-item" onclick="bulkApprove(false)">
+                <span class="bai-ico">✕</span>
+                <span class="bai-text"><span class="bai-title">Từ chối đồng thời</span><span class="bai-desc">Từ chối các đơn đã chọn đang chờ bạn xử lý</span></span>
+              </button>
+              <div class="bulk-action-sep"></div>
+              <button type="button" class="bulk-action-item" onclick="bulkExportZip()">
+                <span class="bai-ico">⬇</span>
+                <span class="bai-text"><span class="bai-title">Xuất đơn của sinh viên</span><span class="bai-desc">Xuất tất cả đơn đã chọn dạng file .zip</span></span>
+              </button>
+              <button type="button" class="bulk-action-item" onclick="bulkCreateDecision()">
+                <span class="bai-ico">▤</span>
+                <span class="bai-text"><span class="bai-title">Tạo quyết định sinh viên<span class="bai-soon">(sẽ cập nhật sau)</span></span><span class="bai-desc">Sinh văn bản quyết định cho các đơn đã chọn</span></span>
+              </button>
+              <button type="button" class="bulk-action-item" disabled title="Sắp ra mắt">
+                <span class="bai-ico">§</span>
+                <span class="bai-text"><span class="bai-title">Tạo hoá đơn<span class="bai-soon">Sắp ra mắt</span></span><span class="bai-desc">Sinh hoá đơn cho các đơn đã chọn</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="col-toggle" id="col-toggle">
+            <button type="button" class="btn btn-default" onclick="event.stopPropagation();toggleColToggleMenu()">Cột hiển thị ▾</button>
+            <div class="col-toggle-menu" id="col-toggle-menu"></div>
+          </div>
+        </div>
+
+        <!-- Tabs trạng thái — lọc nhanh, mỗi tab có badge đếm số lượng -->
+        <div class="status-tabs" id="status-tabs">
+          <button type="button" class="status-tab active" data-status="all" onclick="pickStatusTab('all')">
+            Tất cả <span class="status-tab-badge" id="badge-all">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Chờ duyệt" onclick="pickStatusTab('Chờ duyệt')">
+            Chờ duyệt <span class="status-tab-badge warn" id="badge-Chờ duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Đã duyệt" onclick="pickStatusTab('Đã duyệt')">
+            Đã duyệt <span class="status-tab-badge success" id="badge-Đã duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Từ chối" onclick="pickStatusTab('Từ chối')">
+            Từ chối <span class="status-tab-badge error" id="badge-Từ chối">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Yêu cầu chỉnh sửa" onclick="pickStatusTab('Yêu cầu chỉnh sửa')">
+            Yêu cầu chỉnh sửa <span class="status-tab-badge blue" id="badge-Yêu cầu chỉnh sửa">0</span>
+          </button>
+        </div>
+
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" id="app-select-all" onchange="toggleSelectAll(this.checked)"></th>
+                <th class="col-optional" data-col="formName" style="width:160px">Tên Đơn</th>
+                <th class="col-optional" data-col="mssv" style="width:110px">Mã sinh viên</th>
+                <th class="col-optional" data-col="svName" style="width:180px">Họ và tên</th>
+                <th class="col-optional" data-col="lopHC" style="width:100px">Lớp HC</th>
+                <th class="col-optional" data-col="attachments" style="width:90px">Tài liệu</th>
+                <th class="col-optional" data-col="recipientCccd" style="width:130px">CCCD người nhận</th>
+                <th class="col-optional" data-col="method" style="width:130px;display:none">Phương thức nhận</th>
+                <th class="col-optional" data-col="phone" style="width:130px;display:none">SĐT người nhận</th>
+                <th class="col-optional" data-col="copies" style="width:100px;display:none">Số bản in</th>
+                <!-- Tạm ẩn cột "Ngày hẹn lấy" — sẽ chuyển thành field động cấu hình theo từng
+                     quy trình/bước (giống resultStatus fields ở MH-ADMIN-01/02), không còn cố định.
+                <th style="width:110px">Ngày hẹn lấy</th>
+                -->
+                <th class="col-optional" data-col="submitted">Ngày nộp</th>
+                <th class="col-optional" data-col="status">Trạng thái</th>
+                <th class="col-optional" data-col="returnResult" style="width:100px">Kết quả trả</th>
+                <th class="col-optional" data-col="returnHandler" style="width:150px;display:none">Người trả đơn</th>
+                <th class="col-optional" data-col="returnDate" style="width:140px;display:none">Ngày trả</th>
+                <th class="col-optional" data-col="invoiceCode" style="width:110px">Mã hoá đơn</th>
+                <th class="col-optional" data-col="invoiceStatus" style="width:110px">Trạng thái HĐ</th>
+                <th class="col-optional" data-col="approver" style="width:170px">Bước duyệt</th>
+                <th class="col-optional" data-col="satisfaction" style="width:120px;display:none">Feedback</th>
+                <th style="width:110px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="app-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="app-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết đơn ═══ -->
+<div class="overlay hidden" id="modal-app-detail">
+  <div class="modal-box w800">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="adet-title">Đơn xin xác nhận sinh viên</h3>
+      </div>
+      <button class="modal-close" data-close="modal-app-detail">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="adet-section-title" style="margin-top:0">Nội dung mẫu đơn</div>
+      <div class="adet-content-preview" id="adet-content"></div>
+
+      <div class="adet-section-title" id="adet-attach-title" style="display:none">Tài liệu đính kèm</div>
+      <ul class="attach-list" id="adet-attach-list"></ul>
+
+      <div class="adet-section-title" id="adet-receive-title">Thông tin nhận đơn</div>
+      <div class="adet-grid" id="adet-receive-grid">
+        <div class="fi-view">
+          <label>Phương thức nhận đơn</label>
+          <div class="fi-view-box" id="adet-receive-method"></div>
+        </div>
+        <div class="fi-view" id="adet-copies-block">
+          <label>Số bản in mong muốn</label>
+          <div class="fi-view-box" id="adet-copies"></div>
+        </div>
+        <div class="fi-view" id="adet-recipient-cccd-block">
+          <label>CCCD người nhận</label>
+          <div class="fi-view-box" id="adet-recipient-cccd"></div>
+        </div>
+        <div class="fi-view" id="adet-recipient-phone-block">
+          <label>SĐT người nhận</label>
+          <div class="fi-view-box" id="adet-recipient-phone"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-app-detail">Đóng</button>
+      <button class="btn btn-default" onclick="downloadAppWord()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Tải Word
+      </button>
+      <button class="btn btn-default" onclick="printApp()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        In
+      </button>
+      <button class="btn btn-danger" id="adet-btn-reject" style="display:none" onclick="approveApp(false)">Từ chối</button>
+      <button class="btn btn-primary" id="adet-btn-approve" style="display:none" onclick="approveApp(true)">Đồng ý</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Xác nhận phê duyệt ═══ -->
+<div class="overlay hidden" id="modal-approve-confirm">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="approve-confirm-title">Đồng ý đơn</h3>
+        <p class="text-muted text-sm" style="margin:6px 0 0 0" id="approve-confirm-sub"></p>
+      </div>
+      <button class="modal-close" data-close="modal-approve-confirm">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label id="approve-confirm-note-label">Ghi chú (không bắt buộc)</label>
+        <textarea class="fc" id="approve-confirm-note" rows="3" placeholder="Nhập ghi chú/lý do…"></textarea>
+        <div class="fe" id="approve-confirm-note-err">Vui lòng nhập lý do từ chối để sinh viên biết cần chỉnh sửa gì.</div>
+      </div>
+      <div class="fi" style="margin-bottom:0">
+        <label>Đính kèm file (nếu có)</label>
+        <input class="fc" id="approve-confirm-file" type="file">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-approve-confirm">Huỷ</button>
+      <button class="btn btn-primary" id="approve-confirm-btn" onclick="confirmApproveApp()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Xác nhận Duyệt/Từ chối đồng thời ═══ -->
+<div class="overlay hidden" id="modal-bulk-approve-confirm">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="bulk-approve-confirm-title">Duyệt đồng thời</h3>
+      </div>
+      <button class="modal-close" data-close="modal-bulk-approve-confirm">✕</button>
+    </div>
+    <div class="modal-bd">
+      <p id="bulk-approve-confirm-sub" style="margin:0"></p>
+      <div class="fi" id="bulk-approve-confirm-reason-block" style="display:none;margin-top:14px;margin-bottom:0">
+        <label>Lý do từ chối<span class="decl-field-required">*</span></label>
+        <textarea class="fc" id="bulk-approve-confirm-reason" rows="3" placeholder="Nhập lý do từ chối…"></textarea>
+        <div class="fe" id="bulk-approve-confirm-reason-err">Vui lòng nhập lý do từ chối để sinh viên biết cần chỉnh sửa gì.</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-bulk-approve-confirm">Huỷ</button>
+      <button class="btn btn-primary" id="bulk-approve-confirm-btn" onclick="confirmBulkApprove()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tiến trình quy trình ═══ -->
+<div class="overlay hidden" id="modal-workflow-progress">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Quy trình phê duyệt</h3>
+      </div>
+      <button class="modal-close" data-close="modal-workflow-progress">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:40px">STT</th>
+              <th>Bước</th>
+              <th>Đơn vị duyệt</th>
+              <th>Vai trò duyệt</th>
+              <th>Người xử lý</th>
+              <th>Thời gian nhận</th>
+              <th>Thời gian xử lý</th>
+              <th>Kết quả</th>
+              <th>Lý do</th>
+            </tr>
+          </thead>
+          <tbody id="workflow-progress-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-workflow-progress">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tài liệu đính kèm ═══ -->
+<div class="overlay hidden" id="modal-attachments">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Tài liệu đính kèm</h3>
+      <button class="modal-close" data-close="modal-attachments">✕</button>
+    </div>
+    <div class="modal-bd">
+      <ul class="attach-list" id="attach-list"></ul>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-attachments">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Hoá đơn ═══ -->
+<div class="overlay hidden" id="modal-invoice">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Hoá đơn</h3>
+        <p class="text-muted text-sm" style="margin:6px 0 0 0" id="inv-sub"></p>
+      </div>
+      <button class="modal-close" data-close="modal-invoice">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div id="inv-empty" class="empty-state" style="display:none;padding:24px">
+        <div class="empty-state-ico">🧾</div>
+        <div>Đơn này chưa có hoá đơn</div>
+      </div>
+      <div id="inv-content">
+        <div class="inv-detail-row"><span class="inv-label">Mã hoá đơn</span><span class="inv-val" id="inv-code"></span></div>
+        <div class="inv-detail-row"><span class="inv-label">Nội dung</span><span class="inv-val" id="inv-reason"></span></div>
+        <div class="inv-detail-row"><span class="inv-label">Số tiền</span><span class="inv-val" id="inv-amount"></span></div>
+        <div class="inv-detail-row"><span class="inv-label">Trạng thái</span><span class="inv-val" id="inv-status"></span></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-invoice">Đóng</button>
+      <button class="btn btn-primary" id="inv-btn-mark-paid" onclick="markInvoicePaid()">Đánh dấu đã thanh toán</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Cập nhật kết quả trả ═══ -->
+<div class="overlay hidden" id="modal-return-result">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Cập nhật kết quả trả đơn</h3>
+      </div>
+      <button class="modal-close" data-close="modal-return-result">✕</button>
+    </div>
+    <div class="modal-bd">
+      <label class="dl-check-row" id="return-done-row" style="margin-bottom:0">
+        <input type="checkbox" id="return-done-check" onchange="onReturnDoneChange()"> Đã trả kết quả cho sinh viên
+      </label>
+
+      <div class="f-row col-2" id="return-meta-row" style="margin-top:14px">
+        <div class="fi">
+          <label>Người trả</label>
+          <div class="fi-view-box" id="return-handler-val"></div>
+        </div>
+        <div class="fi">
+          <label>Ngày trả</label>
+          <div class="fi-view-box" id="return-date-val"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-return-result">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveReturnResult()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết đánh giá ═══ -->
+<div class="overlay hidden" id="modal-satisfaction-detail">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Chi tiết đánh giá</h3>
+      </div>
+      <button class="modal-close" data-close="modal-satisfaction-detail">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi-view">
+        <label>Mức độ hài lòng<span class="decl-field-required">*</span></label>
+        <div id="sat-level" style="display:flex;flex-direction:column;align-items:center;gap:8px;min-height:60px;padding:8px 0"></div>
+      </div>
+      <div class="fi-view" style="margin-top:14px">
+        <label>Kiến nghị, đề xuất</label>
+        <div class="fi-view-box" id="sat-comment" style="min-height:70px;align-items:flex-start;white-space:pre-wrap"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-satisfaction-detail">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Thông tin sinh viên kê khai (xem/sửa) ═══ -->
+<div class="overlay hidden" id="modal-declared-info">
+  <div class="modal-box w800">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="decl-form-name"></h3>
+        <div class="decl-guide" id="decl-guide"></div>
+      </div>
+      <button class="modal-close" data-close="modal-declared-info">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="adet-section-title" style="margin-top:0">Trường thông tin biểu mẫu yêu cầu kê khai thêm</div>
+      <div id="decl-extra-fields"></div>
+
+      <div class="adet-section-title">Tài liệu đính kèm theo yêu cầu biểu mẫu</div>
+      <div id="decl-required-attach"></div>
+
+      <div class="adet-section-title">Thông tin bản ghi</div>
+      <div class="decl-record-grid">
+        <div class="adet-field"><div class="adet-field-label">Mã đơn</div><div class="adet-field-val" id="decl-rec-code"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Ngày nộp</div><div class="adet-field-val" id="decl-rec-submitted"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Người nộp</div><div class="adet-field-val" id="decl-rec-submitter"></div></div>
+      </div>
+
+      <div class="adet-section-title" id="decl-attach-title" style="display:none">Tài liệu sinh viên đã nộp kèm đơn</div>
+      <ul class="attach-list" id="decl-attach-list"></ul>
+
+      <!-- Tạm ẩn chức năng chỉnh sửa "Thông tin nhận đơn" theo yêu cầu — popup này chỉ còn xem.
+           Giữ nguyên các #id + logic JS (onDeclaredMethodChange/saveDeclaredInfo) để dễ khôi phục.
+      <div class="adet-section-title">Thông tin nhận đơn</div>
+      <div class="f-row col-2">
+        <div class="fi">
+          <label>Phương thức nhận đơn</label>
+          <select class="fc" id="declared-method" onchange="onDeclaredMethodChange()">
+            <option value="Sinh viên tự lấy">Sinh viên tự lấy</option>
+            <option value="Người lấy hộ">Người lấy hộ</option>
+          </select>
+        </div>
+        <div class="fi" id="declared-copies-block">
+          <label>Số bản in mong muốn</label>
+          <input class="fc" id="declared-copies" type="number" min="1">
+        </div>
+      </div>
+      <div class="f-row col-2" id="declared-proxy-row">
+        <div class="fi">
+          <label>CCCD người nhận</label>
+          <input class="fc" id="declared-recipient-cccd" placeholder="Số CCCD/Hộ chiếu">
+        </div>
+        <div class="fi">
+          <label>SĐT người nhận</label>
+          <input class="fc" id="declared-recipient-phone" placeholder="Số điện thoại">
+        </div>
+      </div>
+      -->
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-declared-info">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — cây đơn vị 3 cấp (đồng bộ với mh-admin-01/02)
+   ============================================================ */
+const UNITS = [
+  { id:'u-dh', level:1, parent:null, name:'Đại học' },
+  { id:'u-ctsv', level:1, parent:null, name:'Ban Công tác Sinh viên' },
+  { id:'u-daotao', level:1, parent:null, name:'Ban Đào tạo' },
+  { id:'u-sdh', level:1, parent:null, name:'Phòng Sau đại học' },
+  { id:'u-khcn', level:1, parent:null, name:'Phòng Khoa học Công nghệ' },
+  { id:'u-thanhtra', level:1, parent:null, name:'Ban Thanh tra Pháp chế' },
+
+  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
+  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
+  { id:'u-truongxd', level:2, parent:'u-dh', name:'Trường Xây dựng' },
+  { id:'u-ngoaingu', level:2, parent:'u-dh', name:'Khoa Ngoại ngữ' },
+  { id:'u-yduoc', level:2, parent:'u-dh', name:'Trường Y Dược' },
+  { id:'u-cokhi', level:2, parent:'u-dh', name:'Khoa Cơ khí' },
+  { id:'u-dienlanh', level:2, parent:'u-dh', name:'Khoa Điện – Điện lạnh' },
+
+  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
+  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
+  { id:'u-cntt-mangmt', level:3, parent:'u-cntt', name:'Bộ môn Mạng máy tính' },
+  { id:'u-kt-qtkd', level:3, parent:'u-kt', name:'Khoa con Quản trị Kinh doanh' },
+  { id:'u-kt-ketoan', level:3, parent:'u-kt', name:'Bộ môn Kế toán' },
+  { id:'u-xd-cauduongtb', level:3, parent:'u-truongxd', name:'Khoa con Cầu đường' },
+];
+function unitById(id){ return UNITS.find(u => u.id === id); }
+const LEVEL_LABEL = { 1:'Cấp 1', 2:'Cấp 2', 3:'Cấp 3' };
+
+/* Đơn vị đang chọn qua combobox — mặc định "Tất cả" (toàn trường), null = không lọc */
+let selectedUnitId = null;
+
+/* Trạng thái active/inactive của từng mã biểu mẫu — đối chiếu danh mục biểu mẫu MH-02.
+   Dùng để mặc định chọn sẵn các biểu mẫu active trong bộ lọc, biểu mẫu inactive không chọn sẵn. */
+const FORM_CODE_STATUS = {
+  BM02:'active', BM03:'active', BM04:'active', BM06:'inactive',
+  BM07:'active', BM09:'inactive', BM11:'active', BM15:'active', BM16:'active',
+};
+
+/* Các tên biểu mẫu đang chọn để lọc (theo danh mục biểu mẫu MH-02) — khởi tạo mặc định = các biểu mẫu active */
+let selectedFormNames = new Set();
+
+const FUNC_LABEL = { qdsv:'Quyết định sinh viên', khenthuong:'Khen thưởng', kyluat:'Kỷ luật sinh viên', bieumau:'Biểu mẫu (một cửa)' };
+
+/* ============================================================
+   DATA — mô phỏng quy trình rút gọn (đủ để hiển thị "bước hiện tại"
+   và lịch sử xử lý — đồng bộ khái niệm resultStatus với mh-admin-01)
+   ============================================================ */
+/* Người dùng đang đăng nhập (mock) — dùng để kiểm tra quyền phê duyệt theo approver của từng bước */
+const CURRENT_USER = 'Nguyễn Văn Admin';
+
+/* Đơn vị của người dùng đang đăng nhập — dùng riêng cho phạm vi XEM đơn (khác quyền phê duyệt ở trên).
+   null = Admin toàn trường, thấy tất cả. Đổi giá trị này để test các cấp phân quyền khác nhau, ví dụ:
+     'u-cntt'      -> Trưởng khoa CNTT (cấp 2): thấy đơn của khoa + mọi bộ môn cấp 3 trực thuộc
+     'u-cntt-httt' -> Trưởng bộ môn HTTT (cấp 3): chỉ thấy đơn của đúng bộ môn này
+     'u-dh'        -> Cấp 1 (Đại học): thấy đơn của mọi khoa/bộ môn trực thuộc Đại học */
+const CURRENT_USER_UNIT_ID = null;
+
+/* Mỗi bước có approver cụ thể (mảng tên) — chỉ người có tên trong danh sách approver
+   của ĐÚNG bước hiện tại của đơn mới thấy nút Đồng ý/Từ chối trong popup chi tiết.
+   CURRENT_USER được gán sẵn ở một số bước để demo cả 2 trường hợp có/không có quyền. */
+const PROCESSES_MINI = {
+  'p-xacnhan': { name:'Quy trình xác nhận sinh viên', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Phòng CTSV xác nhận', dept:'Ban Công tác Sinh viên', role:'Chuyên viên CTSV', approvers:['Nguyễn Văn Admin','Cán bộ Trần Thị Loan'] },
+  ] },
+  'p-ktx': { name:'Quy trình đăng ký ký túc xá', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Ban Quản lý KTX xét duyệt', dept:'Ban Quản lý Ký túc xá', role:'Chuyên viên KTX', approvers:['Cán bộ Phạm Văn Kỳ'] },
+    { name:'Phòng CTSV phê duyệt', dept:'Ban Công tác Sinh viên', role:'Trưởng phòng CTSV', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-baoluu': { name:'Quy trình bảo lưu kết quả học tập', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Khoa xét duyệt', dept:'Khoa Kinh tế', role:'Trưởng Khoa', approvers:['PGS.TS. Lê Văn Hùng'] },
+    { name:'Phòng Đào tạo phê duyệt', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-kyluat': { name:'Quy trình xét kỷ luật sinh viên', steps:[
+    { name:'Nộp yêu cầu', dept:'Giảng viên/Sinh viên', role:'Giảng viên/Sinh viên', approvers:[] },
+    { name:'Khoa lập biên bản', dept:'Khoa CNTT', role:'Giảng viên', approvers:['GV. Nguyễn Thanh Sơn'] },
+    { name:'Hội đồng Kỷ luật họp xét', dept:'Ban Thanh tra Pháp chế', role:'Chủ tịch Hội đồng', approvers:['TS. Nguyễn Quang Vinh'] },
+    { name:'Ban hành quyết định', dept:'Ban Thanh tra Pháp chế', role:'Trưởng ban Thanh tra', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-khenthuong': { name:'Quy trình khen thưởng học kỳ', steps:[
+    { name:'Nộp yêu cầu', dept:'Giảng viên/Sinh viên', role:'Giảng viên/Sinh viên', approvers:[] },
+    { name:'Khoa xét duyệt', dept:'Khoa Ngoại ngữ', role:'Trưởng Khoa', approvers:['TS. Đặng Thị Huyền'] },
+    { name:'Phòng CTSV ban hành', dept:'Ban Công tác Sinh viên', role:'Trưởng phòng CTSV', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-hocvu': { name:'Quy trình xét học vụ (cảnh báo học vụ)', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Khoa xét duyệt', dept:'Khoa Điện – Điện lạnh', role:'Trưởng Khoa', approvers:['PGS.TS. Bùi Văn Minh'] },
+    { name:'Phòng Đào tạo phê duyệt', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+    { name:'Ban hành quyết định', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-totnghiep': { name:'Quy trình công nhận tốt nghiệp', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Khoa xét duyệt', dept:'Khoa Kinh tế', role:'Trưởng Khoa', approvers:['PGS.TS. Lê Văn Hùng'] },
+    { name:'Phòng Đào tạo phê duyệt', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  'p-diemthi': { name:'Quy trình phúc khảo điểm thi', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Bộ môn chấm phúc khảo', dept:'Khoa CNTT', role:'Giảng viên', approvers:['GV. Đỗ Thị Hằng'] },
+    { name:'Khoa xác nhận kết quả', dept:'Khoa CNTT', role:'Trưởng Khoa', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  /* Quy trình demo 7 bước — minh hoạ đơn mới đi qua bước 2/7, các bước còn lại đang chờ đến lượt */
+  'p-demo7': { name:'Quy trình minh hoạ 7 bước phê duyệt', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Bộ môn xác nhận', dept:'Khoa CNTT', role:'Trưởng Bộ môn', approvers:['Nguyễn Văn Admin'] },
+    { name:'Khoa xét duyệt', dept:'Khoa CNTT', role:'Trưởng Khoa', approvers:['PGS.TS. Lê Văn Hùng'] },
+    { name:'Phòng Đào tạo thẩm định', dept:'Ban Đào tạo', role:'Chuyên viên Đào tạo', approvers:['Cán bộ Trần Thị Loan'] },
+    { name:'Phòng CTSV thẩm định', dept:'Ban Công tác Sinh viên', role:'Chuyên viên CTSV', approvers:['Cán bộ Phạm Văn Kỳ'] },
+    { name:'Hội đồng thẩm định chung', dept:'Ban Thanh tra Pháp chế', role:'Chủ tịch Hội đồng', approvers:['TS. Nguyễn Quang Vinh'] },
+    { name:'Ban hành quyết định', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+  ] },
+  /* Quy trình demo 5 bước — minh hoạ đơn bị từ chối tại bước 2/5, các bước 3-5 hiển thị "Bỏ qua" */
+  'p-demo5-tuchoi': { name:'Quy trình minh hoạ 5 bước — bị từ chối giữa chừng', steps:[
+    { name:'Nộp yêu cầu', dept:'Sinh viên', role:'Sinh viên', approvers:[] },
+    { name:'Bộ môn xác nhận', dept:'Khoa CNTT', role:'Trưởng Bộ môn', approvers:['Nguyễn Văn Admin'] },
+    { name:'Khoa xét duyệt', dept:'Khoa CNTT', role:'Trưởng Khoa', approvers:['PGS.TS. Lê Văn Hùng'] },
+    { name:'Phòng Đào tạo thẩm định', dept:'Ban Đào tạo', role:'Chuyên viên Đào tạo', approvers:['Cán bộ Trần Thị Loan'] },
+    { name:'Ban hành quyết định', dept:'Ban Đào tạo', role:'Trưởng phòng Đào tạo', approvers:['Nguyễn Văn Admin'] },
+  ] },
+};
+
+/* ============================================================
+   DATA — mô phỏng danh sách đơn (submissions) đã nộp
+   status dùng đúng resultStatus kiểu chuỗi giống steps[].actions[].resultStatus
+   ở mh-admin-01 (Chờ duyệt / Đã duyệt / Từ chối / Yêu cầu chỉnh sửa)
+   ============================================================ */
+const APPLICATIONS = [
+  { id:'a1', code:'BM15-000231', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
+    processId:'p-xacnhan', currentStepIdx:1, status:'Chờ duyệt', overdue:true,
+    svName:'Trần Thị Bích', mssv:'20120045', unit:'u-cntt-httt', submitted:'17/07/2026',
+    invoice:{ code:'HD-000231', reason:'Lệ phí xác nhận sinh viên', amount:20000, status:'Chưa thanh toán' },
+    fields:{ hoTen:'Trần Thị Bích', ngaySinh:'12/03/2004', maSinhVien:'20120045', soCCCD:'038204012345',
+      lopHanhChinh:'CT4501', khoaDaoTao:'K45', donViQuanLy:'Khoa CNTT', heDaoTao:'Chính quy',
+      nganhDaoTao:'Hệ thống Thông tin', thuongTru:'Hà Nội', mucDichXacNhan:'Vay vốn ngân hàng' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'Sinh viên nộp đơn qua cổng thông tin', time:'17/07/2026 09:12' },
+      { step:'Phòng CTSV xác nhận', status:'Chờ duyệt', note:'Đang chờ xử lý — quá hạn 6 giờ', time:'—' },
+    ] },
+  { id:'a2', code:'BM16-000198', formCode:'BM16', formName:'Đơn đăng ký ở ký túc xá', func:'bieumau',
+    processId:'p-ktx', currentStepIdx:2, status:'Đã duyệt', overdue:false,
+    svName:'Nguyễn Văn Long', mssv:'20120078', unit:'u-cntt-kthm', submitted:'10/07/2026',
+    invoice:{ code:'HD-000198', reason:'Phí ở ký túc xá học kỳ 1', amount:1500000, status:'Đã thanh toán', paidDate:'12/07/2026 16:00' },
+    returnInfo:{ method:'Người lấy hộ', copies:2, recipientCccd:'038204011122', recipientPhone:'0977123456', appointmentDate:'14/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'14/07/2026 10:20', satisfaction:4, comment:'Thời gian xử lý hơi lâu, mong bộ phận một cửa rút ngắn thêm.' },
+    attachments:[
+      { name:'so-ho-khau.pdf', size:'1.2 MB' },
+      { name:'giay-uy-quyen.pdf', size:'420 KB' },
+    ],
+    fields:{ hoTen:'Nguyễn Văn Long', gioiTinh:'Nam', maSinhVien:'20120078', ngaySinh:'05/09/2004', soCCCD:'038204078901',
+      lopHanhChinh:'CT4502', khoaDaoTao:'K45', donViQuanLy:'Khoa CNTT', soDienThoai:'0912345678',
+      email:'long.nv@sv.edu.vn', thuongTru:'Nam Định', loaiPhongDangKy:'Phòng 4 người' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'10/07/2026 14:20' },
+      { step:'Ban Quản lý KTX xét duyệt', status:'Đã duyệt', note:'Đủ điều kiện, còn chỗ trống', time:'12/07/2026 08:40' },
+      { step:'Phòng CTSV phê duyệt', status:'Đã duyệt', note:'Duyệt xếp phòng', time:'13/07/2026 10:05' },
+    ] },
+  { id:'a3', code:'BM03-000077', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
+    processId:'p-baoluu', currentStepIdx:1, status:'Từ chối', overdue:false,
+    svName:'Phạm Thu Hà', mssv:'20120112', unit:'u-kt', submitted:'05/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'12/07/2026', done:false, satisfaction:null },
+    attachments:[
+      { name:'giay-kham-suc-khoe.pdf', size:'890 KB' },
+    ],
+    fields:{ hoTen:'Phạm Thu Hà', maSinhVien:'20120112', soCCCD:'038204011203', lopHanhChinh:'KT4503', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Kinh tế', lyDoBaoLuu:'Lý do sức khoẻ', thoiGianBaoLuu:'1 học kỳ' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'05/07/2026 11:00' },
+      { step:'Khoa xét duyệt', status:'Từ chối', note:'Thiếu giấy xác nhận của cơ sở y tế — yêu cầu bổ sung', time:'08/07/2026 16:30' },
+    ] },
+  { id:'a4', code:'BM07-000045', formCode:'BM07', formName:'Đơn kiến nghị xét kỷ luật', func:'kyluat',
+    processId:'p-kyluat', currentStepIdx:2, status:'Chờ duyệt', overdue:false,
+    svName:'Lê Minh Đức', mssv:'20120199', unit:'u-cntt-mangmt', submitted:'01/07/2026',
+    submittedBy:'GV. Nguyễn Thanh Sơn',
+    fields:{ hoTen:'Lê Minh Đức', maSinhVien:'20120199', soCCCD:'038204019902', lopHanhChinh:'CT4504', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa CNTT', noiDungViPham:'Vi phạm quy chế thi' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'GV. Nguyễn Thanh Sơn lập đơn kiến nghị thay sinh viên', time:'01/07/2026 08:00' },
+      { step:'Khoa lập biên bản', status:'Đã duyệt', note:'Biên bản đã lập, chuyển hội đồng', time:'03/07/2026 09:15' },
+      { step:'Hội đồng Kỷ luật họp xét', status:'Chờ duyệt', note:'Đang chờ lịch họp hội đồng', time:'—' },
+    ] },
+  { id:'a5', code:'BM15-000230', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
+    processId:'p-xacnhan', currentStepIdx:1, status:'Đã duyệt', overdue:false,
+    svName:'Đỗ Quang Huy', mssv:'20120056', unit:'u-yduoc', submitted:'15/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, recipientCccd:'', recipientPhone:'', appointmentDate:'20/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'20/07/2026 11:00', satisfaction:null, comment:'' },
+    fields:{ hoTen:'Đỗ Quang Huy', ngaySinh:'20/01/2004', maSinhVien:'20120056', soCCCD:'038204054321',
+      lopHanhChinh:'YD4501', khoaDaoTao:'K45', donViQuanLy:'Trường Y Dược', heDaoTao:'Chính quy',
+      nganhDaoTao:'Y đa khoa', thuongTru:'Hải Phòng', mucDichXacNhan:'Xin visa' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'15/07/2026 10:00' },
+      { step:'Phòng CTSV xác nhận', status:'Đã duyệt', note:'', time:'16/07/2026 09:30' },
+    ] },
+  { id:'a6', code:'BM04-000112', formCode:'BM04', formName:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', func:'khenthuong',
+    processId:'p-khenthuong', currentStepIdx:1, status:'Chờ duyệt', overdue:false,
+    svName:'Vũ Thị Mai Anh', mssv:'20120233', unit:'u-ngoaingu', submitted:'16/07/2026',
+    submittedBy:'GV. Đặng Thu Trang',
+    invoice:{ code:'HD-000112', reason:'Phí làm hồ sơ khen thưởng', amount:50000, status:'Chưa thanh toán' },
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'22/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Vũ Thị Mai Anh', maSinhVien:'20120233', soCCCD:'038204023301', lopHanhChinh:'NN4501', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Ngoại ngữ', thanhTichNoiBat:'Đạt giải Nhì Olympic Tiếng Anh cấp Quốc gia' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'GV. Đặng Thu Trang đề nghị khen thưởng thay sinh viên', time:'16/07/2026 08:30' },
+      { step:'Khoa xét duyệt', status:'Chờ duyệt', note:'', time:'—' },
+    ] },
+  { id:'a7', code:'BM02-000301', formCode:'BM02', formName:'Đơn xin xác nhận vay vốn ngân hàng', func:'bieumau',
+    processId:'p-xacnhan', currentStepIdx:1, status:'Yêu cầu chỉnh sửa', overdue:false,
+    svName:'Ngô Bảo Châu', mssv:'20120087', unit:'u-cokhi', submitted:'14/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'18/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Ngô Bảo Châu', maSinhVien:'20120087', soCCCD:'038204008701', lopHanhChinh:'CK4502', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Cơ khí', mucDichXacNhan:'Vay vốn ngân hàng' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'14/07/2026 13:45' },
+      { step:'Phòng CTSV xác nhận', status:'Yêu cầu chỉnh sửa', note:'Thiếu chữ ký xác nhận của phụ huynh', time:'15/07/2026 15:20' },
+    ] },
+  { id:'a8', code:'BM09-000018', formCode:'BM09', formName:'Đơn xét cảnh báo học vụ', func:'qdsv',
+    processId:'p-hocvu', currentStepIdx:3, status:'Đã duyệt', overdue:false,
+    svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh', submitted:'02/07/2026',
+    returnInfo:{ method:'Người lấy hộ', copies:1, recipientCccd:'038204020088', recipientPhone:'0966112233', appointmentDate:'10/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'10/07/2026 09:15', satisfaction:3, comment:'' },
+    fields:{ hoTen:'Hoàng Anh Tuấn', maSinhVien:'20120145', soCCCD:'038204014501', lopHanhChinh:'DL4503', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Điện – Điện lạnh', lyDoCanhBao:'Điểm trung bình học kỳ dưới 1.0' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'02/07/2026 09:00' },
+      { step:'Khoa xét duyệt', status:'Đã duyệt', note:'', time:'04/07/2026 10:00' },
+      { step:'Phòng Đào tạo phê duyệt', status:'Đã duyệt', note:'', time:'06/07/2026 14:00' },
+      { step:'Ban hành quyết định', status:'Đã duyệt', note:'Quyết định cảnh báo học vụ đã ban hành', time:'08/07/2026 09:30' },
+    ] },
+  { id:'a9', code:'BM11-000209', formCode:'BM11', formName:'Đơn xin công nhận tốt nghiệp', func:'qdsv',
+    processId:'p-totnghiep', currentStepIdx:1, status:'Chờ duyệt', overdue:true,
+    svName:'Đặng Thị Kim Ngân', mssv:'20120021', unit:'u-kt-qtkd', submitted:'11/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'15/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Đặng Thị Kim Ngân', maSinhVien:'20120021', soCCCD:'038204002101', lopHanhChinh:'QTKD4501', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Kinh tế', diemTBTichLuy:'3.42' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'11/07/2026 08:00' },
+      { step:'Khoa xét duyệt', status:'Chờ duyệt', note:'Đang chờ xử lý — quá hạn 1 ngày', time:'—' },
+    ] },
+  { id:'a10', code:'BM06-000054', formCode:'BM06', formName:'Đơn phúc khảo điểm thi', func:'bieumau',
+    processId:'p-diemthi', currentStepIdx:2, status:'Đã duyệt', overdue:false,
+    svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt', submitted:'08/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'13/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'13/07/2026 14:00', satisfaction:5, comment:'Cán bộ hỗ trợ nhiệt tình, quy trình rõ ràng, dễ theo dõi.' },
+    fields:{ hoTen:'Trịnh Văn Hiếu', maSinhVien:'20120167', soCCCD:'038204016701', lopHanhChinh:'CT4501', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa CNTT', monHocPhucKhao:'Cơ sở dữ liệu', diemHienTai:'4.5' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'08/07/2026 10:15' },
+      { step:'Bộ môn chấm phúc khảo', status:'Đã duyệt', note:'Điều chỉnh điểm thành 6.0', time:'11/07/2026 09:00' },
+      { step:'Khoa xác nhận kết quả', status:'Đã duyệt', note:'', time:'12/07/2026 11:30' },
+    ] },
+  { id:'a11', code:'BM15-000245', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
+    processId:'p-xacnhan', currentStepIdx:0, status:'Chờ duyệt', overdue:false,
+    svName:'Bùi Thị Thanh Thảo', mssv:'20120302', unit:'u-truongxd', submitted:'18/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'25/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Bùi Thị Thanh Thảo', ngaySinh:'02/11/2004', maSinhVien:'20120302', soCCCD:'038204099887',
+      lopHanhChinh:'XD4502', khoaDaoTao:'K45', donViQuanLy:'Trường Xây dựng', heDaoTao:'Chính quy',
+      nganhDaoTao:'Kỹ thuật Xây dựng', thuongTru:'Thanh Hóa', mucDichXacNhan:'Xác nhận với cơ quan/tổ chức khác' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'18/07/2026 07:50' },
+    ] },
+  { id:'a12', code:'BM16-000199', formCode:'BM16', formName:'Đơn đăng ký ở ký túc xá', func:'bieumau',
+    processId:'p-ktx', currentStepIdx:1, status:'Từ chối', overdue:false,
+    svName:'Phan Đình Khoa', mssv:'20120290', unit:'u-xd-cauduongtb', submitted:'09/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'16/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Phan Đình Khoa', gioiTinh:'Nam', maSinhVien:'20120290', ngaySinh:'14/06/2004', soCCCD:'038204029001',
+      lopHanhChinh:'CD4503', khoaDaoTao:'K45', donViQuanLy:'Trường Xây dựng', soDienThoai:'0987654321',
+      email:'khoa.pd@sv.edu.vn', thuongTru:'Ninh Bình', loaiPhongDangKy:'Phòng 8 người' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'09/07/2026 09:00' },
+      { step:'Ban Quản lý KTX xét duyệt', status:'Từ chối', note:'Đã hết chỗ trống loại phòng đăng ký', time:'11/07/2026 14:10' },
+    ] },
+  { id:'a13', code:'BM04-000113', formCode:'BM04', formName:'Đơn đề nghị khen thưởng (NCKH)', func:'khenthuong',
+    processId:'p-khenthuong', currentStepIdx:2, status:'Đã duyệt', overdue:false,
+    svName:'Lâm Gia Bảo', mssv:'20120311', unit:'u-cntt-kthm', submitted:'20/06/2026',
+    returnInfo:{ method:'Người lấy hộ', copies:1, recipientCccd:'038204031199', recipientPhone:'0933445566', appointmentDate:'24/06/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'26/06/2026 09:30', satisfaction:4, comment:'' },
+    fields:{ hoTen:'Lâm Gia Bảo', maSinhVien:'20120311', soCCCD:'038204031101', lopHanhChinh:'CT4505', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa CNTT', thanhTichNoiBat:'Giải Nhất cuộc thi Nghiên cứu Khoa học sinh viên cấp Trường' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'20/06/2026 08:00' },
+      { step:'Khoa xét duyệt', status:'Đã duyệt', note:'', time:'23/06/2026 10:00' },
+      { step:'Phòng CTSV ban hành', status:'Đã duyệt', note:'Quyết định khen thưởng đã ban hành', time:'26/06/2026 09:00' },
+    ] },
+  { id:'a14', code:'BM03-000078', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
+    processId:'p-baoluu', currentStepIdx:2, status:'Chờ duyệt', overdue:true,
+    svName:'Nguyễn Hải Đăng', mssv:'20120356', unit:'u-kt-ketoan', submitted:'03/07/2026',
+    returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'09/07/2026', done:false, satisfaction:null },
+    fields:{ hoTen:'Nguyễn Hải Đăng', maSinhVien:'20120356', soCCCD:'038204035601', lopHanhChinh:'KTOAN4502', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Kinh tế', lyDoBaoLuu:'Đi nghĩa vụ quân sự', thoiGianBaoLuu:'2 học kỳ' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'03/07/2026 08:20' },
+      { step:'Khoa xét duyệt', status:'Đã duyệt', note:'', time:'05/07/2026 09:00' },
+      { step:'Phòng Đào tạo phê duyệt', status:'Chờ duyệt', note:'Đang chờ xử lý — quá hạn 2 ngày', time:'—' },
+    ] },
+  { id:'a15', code:'BM07-000046', formCode:'BM07', formName:'Đơn kiến nghị xét kỷ luật', func:'kyluat',
+    processId:'p-kyluat', currentStepIdx:3, status:'Đã duyệt', overdue:false,
+    svName:'Tô Ngọc Lan', mssv:'20120378', unit:'u-cntt-mangmt', submitted:'25/06/2026',
+    fields:{ hoTen:'Tô Ngọc Lan', maSinhVien:'20120378', soCCCD:'038204037801', lopHanhChinh:'CT4506', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa CNTT', noiDungViPham:'Sử dụng tài liệu trái phép trong phòng thi' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'25/06/2026 08:00' },
+      { step:'Khoa lập biên bản', status:'Đã duyệt', note:'', time:'27/06/2026 09:00' },
+      { step:'Hội đồng Kỷ luật họp xét', status:'Đã duyệt', note:'Đề nghị hình thức khiển trách', time:'02/07/2026 14:00' },
+      { step:'Ban hành quyết định', status:'Đã duyệt', note:'Quyết định khiển trách đã ban hành', time:'05/07/2026 10:00' },
+    ] },
+  /* Demo minh hoạ quy trình 7 bước — mới đi qua bước 2/7 (đã duyệt bước 2, đang chờ duyệt bước 3),
+     các bước 4-7 chưa tới lượt nên hiển thị "Chưa xử lý" trong popup Quy trình phê duyệt */
+  { id:'a16', code:'BM15-000260', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
+    processId:'p-demo7', currentStepIdx:2, status:'Chờ duyệt', overdue:false,
+    svName:'Đinh Thị Hương Giang', mssv:'20120401', unit:'u-cntt-httt', submitted:'19/07/2026',
+    fields:{ hoTen:'Đinh Thị Hương Giang', ngaySinh:'08/02/2004', maSinhVien:'20120401', soCCCD:'038204040101',
+      lopHanhChinh:'CT4507', khoaDaoTao:'K45', donViQuanLy:'Khoa CNTT', heDaoTao:'Chính quy',
+      nganhDaoTao:'Hệ thống Thông tin', thuongTru:'Hưng Yên', mucDichXacNhan:'Xin visa' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'19/07/2026 08:00' },
+      { step:'Bộ môn xác nhận', status:'Đã duyệt', note:'Nguyễn Văn Admin: Đủ điều kiện', time:'19/07/2026 14:30' },
+      { step:'Khoa xét duyệt', status:'Chờ duyệt', note:'Đang chờ xử lý', time:'—' },
+    ] },
+  /* Demo minh hoạ quy trình 5 bước — bị từ chối ngay tại bước 2/5, các bước 3-5 không còn được
+     xử lý nên hiển thị "Bỏ qua" trong popup Quy trình phê duyệt */
+  { id:'a17', code:'BM03-000090', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
+    processId:'p-demo5-tuchoi', currentStepIdx:1, status:'Từ chối', overdue:false,
+    svName:'Trương Công Minh', mssv:'20120422', unit:'u-kt', submitted:'15/07/2026',
+    fields:{ hoTen:'Trương Công Minh', maSinhVien:'20120422', soCCCD:'038204042201', lopHanhChinh:'KT4504', khoaDaoTao:'K45',
+      donViQuanLy:'Khoa Kinh tế', lyDoBaoLuu:'Lý do cá nhân', thoiGianBaoLuu:'1 học kỳ' },
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', note:'', time:'15/07/2026 09:00' },
+      { step:'Bộ môn xác nhận', status:'Từ chối', note:'Nguyễn Văn Admin: Lý do bảo lưu không hợp lệ theo quy chế', time:'16/07/2026 10:00' },
+    ] },
+];
+
+const STATUS_TAG_CLASS = { 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Từ chối':'tag-error', 'Yêu cầu chỉnh sửa':'tag-blue' };
+
+/* Thang đánh giá 5 sao (Feedback) — satisfaction lưu dạng số 1-5, map sang nhãn tiếng Việt */
+const SATISFACTION_LABEL = { 1:'Rất không hài lòng', 2:'Không hài lòng', 3:'Bình thường', 4:'Hài lòng', 5:'Rất hài lòng' };
+
+/* Render dạng sao ★ (đã đánh giá) / ☆ (chưa đủ) cho 1 mức 0-5 — dùng chung cho bảng + popup.
+   level=0 (chưa khảo sát) vẫn render đủ 5 sao rỗng thay vì để trống hẳn.
+   extraClass cho phép phóng to cỡ sao ở popup (stars-lg) so với bảng danh sách. */
+function renderStars(level, extraClass){
+  let html = '';
+  for (let i = 1; i <= 5; i++) html += `<span class="${i <= level ? 'filled' : ''}">★</span>`;
+  return `<span class="stars ${extraClass || ''}">${html}</span>`;
+}
+
+/* Định dạng số tiền kiểu VNĐ — dùng chung cho cột/popup Hoá đơn */
+function formatVnd(n){ return Number(n || 0).toLocaleString('vi-VN') + 'đ'; }
+
+/* Bỏ tiền tố chức danh ("Cán bộ ", "GV. ") khi hiển thị tên người xử lý ở cột "Người trả đơn" */
+function stripHandlerPrefix(name){
+  return (name || '').replace(/^(Cán bộ|GV\.)\s+/, '');
+}
+
+/* == Tabs trạng thái — lọc nhanh + badge đếm số lượng theo từng trạng thái == */
+let currentStatusTab = 'all';
+
+function pickStatusTab(status){
+  currentStatusTab = status;
+  document.querySelectorAll('.status-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === status);
+  });
+  currentPage = 1;
+  renderAppGrid();
+}
+
+function updateStatusTabBadges(baseList){
+  document.getElementById('badge-all').textContent = baseList.length;
+  ['Đã duyệt','Từ chối','Yêu cầu chỉnh sửa'].forEach(s => {
+    document.getElementById('badge-' + s).textContent = baseList.filter(a => a.status === s).length;
+  });
+  // Admin (CURRENT_USER_UNIT_ID = null) xem "Chờ duyệt" theo nghĩa chung — mọi đơn còn xử lý dở
+  // trên toàn hệ thống. Người duyệt cụ thể (có unit riêng) chỉ thấy đơn đang thực sự cần họ duyệt.
+  document.getElementById('badge-Chờ duyệt').textContent = CURRENT_USER_UNIT_ID
+    ? baseList.filter(isPendingForCurrentUser).length
+    : baseList.filter(a => a.status === 'Chờ duyệt').length;
+}
+
+/* == Unit search combobox == */
+const unitSearchInput = document.getElementById('unit-search');
+const unitComboMenu = document.getElementById('unit-combo-menu');
+let unitHlIndex = -1;
+
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+function unitDisplayName(u){
+  return u.level === 1 ? u.name : (u.name + ' (' + unitById(u.parent).name + ')');
+}
+function renderUnitMenu(query){
+  const q = (query || '').trim();
+  const matches = q ? UNITS.filter(u => u.name.toLowerCase().includes(q.toLowerCase())) : UNITS;
+
+  let html = '<div class="unit-combo-item" data-id="__all__" onclick="pickUnit(null)"><span>Tất cả đơn vị (toàn trường)</span></div>';
+  if (!matches.length){
+    html += '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
+    unitComboMenu.innerHTML = html;
+    unitHlIndex = -1;
+    return;
+  }
+  const groups = { 1:[], 2:[], 3:[] };
+  matches.forEach(u => groups[u.level].push(u));
+  [1,2,3].forEach(lvl => {
+    if (!groups[lvl].length) return;
+    html += '<div class="unit-combo-group">' + LEVEL_LABEL[lvl] + '</div>';
+    groups[lvl].forEach(u => {
+      const parentTag = u.level > 1 ? ('<span class="text-muted"> - ' + unitById(u.parent).name + '</span>') : '';
+      html += '<div class="unit-combo-item" data-id="' + u.id + '" onclick="pickUnit(&#39;' + u.id + '&#39;)">'
+        + '<span>' + highlightMatch(u.name, q) + parentTag + '</span>'
+        + '<span class="lvl-badge">' + LEVEL_LABEL[lvl] + '</span></div>';
+    });
+  });
+  unitComboMenu.innerHTML = html;
+  unitHlIndex = -1;
+}
+function openUnitMenu(){ renderUnitMenu(unitSearchInput.value); unitComboMenu.classList.add('open'); }
+function closeUnitMenu(){ unitComboMenu.classList.remove('open'); unitHlIndex = -1; }
+
+function pickUnit(id){
+  selectedUnitId = id;
+  unitSearchInput.value = id ? unitDisplayName(unitById(id)) : '';
+  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  closeUnitMenu();
+  currentPage = 1;
+  renderAppGrid();
+}
+
+unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
+unitSearchInput.addEventListener('input', () => openUnitMenu());
+document.addEventListener('click', e => {
+  if (!document.getElementById('unit-combo').contains(e.target)) closeUnitMenu();
+});
+
+/* Đơn vị con (Cấp 3) tính vào đơn vị cha (Cấp 2) khi lọc theo Cấp 2 */
+function unitMatchesFilter(unitId, filterUnitId){
+  if (!filterUnitId) return true;
+  if (unitId === filterUnitId) return true;
+  const u = unitById(unitId);
+  if (u && u.parent === filterUnitId) return true;
+  return false;
+}
+
+/* Đơn vị unitId có nằm trong phạm vi quản lý của ancestorUnitId hay không — đệ quy qua mọi cấp
+   cha-con (khác unitMatchesFilter chỉ xét 1 cấp, dùng cho combobox lọc theo 1 unit cụ thể).
+   Dùng cho phạm vi XEM theo CURRENT_USER_UNIT_ID: 1 (Đại học/Ban) -> 2 (Khoa/Trường) -> 3 (Bộ môn),
+   nên đơn vị cấp 3 sao chép biểu mẫu từ cấp 2 vẫn được cấp 2 (và cấp 1 cha của nó) nhìn thấy. */
+function unitIsWithin(unitId, ancestorUnitId){
+  if (!ancestorUnitId) return true;
+  let u = unitById(unitId);
+  while (u){
+    if (u.id === ancestorUnitId) return true;
+    u = u.parent ? unitById(u.parent) : null;
+  }
+  return false;
+}
+
+/* == Dropdown thông báo == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'⏰', title:'Đơn "BM15-000231" của SV Trần Thị Bích đang quá hạn xử lý 6 giờ', time:'6 giờ trước' },
+  { id:'n2', unread:true, ico:'📝', title:'Có 3 đơn mới nộp trong hôm nay cần theo dõi', time:'2 giờ trước' },
+  { id:'n3', unread:false, ico:'✅', title:'Đơn "BM16-000198" đã hoàn tất xét duyệt', time:'Hôm qua' },
+];
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+updateNotifBadge();
+
+/* == Danh sách đơn == */
+const APP_PAGE_SIZE = 20;
+let currentPage = 1;
+
+/* Tạm ẩn cùng với bộ lọc "Chức năng" đã comment ở filter-bar — giữ nguyên hàm để dễ khôi phục.
+function currentFuncFilter(){ return document.getElementById('func-select').value; }
+*/
+/* Tạm ẩn cùng với bộ lọc "Người nộp" đã comment ở filter-bar — giữ nguyên hàm để dễ khôi phục.
+function currentSubmitterFilter(){ return document.getElementById('submitter-select').value; }
+*/
+/* Cho phép tìm nhiều từ khoá (MSSV/tên/email/CCCD người nhận) cùng lúc — tách theo dấu phẩy,
+   chấm phẩy, xuống dòng hoặc khoảng trắng, ví dụ dán cả danh sách "20120045 20120078, 20120112"
+   để lọc nhiều SV 1 lần. */
+function currentSearchTerms(){
+  return document.getElementById('app-search').value
+    .split(/[,;\n\s]+/)
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/* CCCD người nhận hiển thị ở cột bảng — SV tự lấy thì dùng CCCD của chính SV, "Người lấy hộ"
+   thì dùng CCCD người được uỷ quyền đã kê khai (đồng bộ với logic render cột trong renderAppGrid). */
+function appRecipientCccd(a){
+  const isProxy = a.returnInfo && a.returnInfo.method === 'Người lấy hộ';
+  return isProxy ? ((a.returnInfo && a.returnInfo.recipientCccd) || '') : (a.fields.soCCCD || '');
+}
+
+function currentReturnResultFilter(){ return document.getElementById('return-result-select').value; }
+function currentInvoiceStatusFilter(){ return document.getElementById('invoice-status-select').value; }
+
+/* "dd/MM/yyyy" (dữ liệu mock) -> Date, dùng để so khớp khoảng ngày nộp đơn */
+function parseVnDate(s){
+  if (!s) return null;
+  const [d, m, y] = s.split('/').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function renderAppGrid(){
+  const tbody = document.getElementById('app-tbody');
+  const searchTerms = currentSearchTerms();
+  const returnResultFilter = currentReturnResultFilter();
+  const invoiceStatusFilter = currentInvoiceStatusFilter();
+  const submittedFromStr = document.getElementById('submitted-from').value;
+  const submittedToStr = document.getElementById('submitted-to').value;
+  const submittedFrom = submittedFromStr ? new Date(submittedFromStr + 'T00:00:00') : null;
+  const submittedTo = submittedToStr ? new Date(submittedToStr + 'T23:59:59') : null;
+
+  // Phạm vi XEM theo đơn vị của người dùng đăng nhập (CURRENT_USER_UNIT_ID) — áp dụng trước tiên,
+  // độc lập với bộ lọc "Tìm đơn vị" trên UI: người dùng chỉ được lọc/xem trong phạm vi quyền của mình.
+  let baseList = APPLICATIONS.filter(a => unitIsWithin(a.unit, CURRENT_USER_UNIT_ID));
+
+  // Danh sách theo các filter khác (chưa lọc theo tab trạng thái) — dùng để tính badge đếm của từng tab
+  baseList = baseList.filter(a => unitMatchesFilter(a.unit, selectedUnitId));
+  if (selectedFormNames.size) baseList = baseList.filter(a => selectedFormNames.has(a.formName));
+  if (submittedFrom) baseList = baseList.filter(a => parseVnDate(a.submitted) >= submittedFrom);
+  if (submittedTo) baseList = baseList.filter(a => parseVnDate(a.submitted) <= submittedTo);
+  if (searchTerms.length) baseList = baseList.filter(a => searchTerms.some(term =>
+    a.svName.toLowerCase().includes(term) ||
+    a.mssv.toLowerCase().includes(term) ||
+    (a.fields.email && a.fields.email.toLowerCase().includes(term)) ||
+    appRecipientCccd(a).toLowerCase().includes(term) ||
+    (a.submittedBy && a.submittedBy.toLowerCase().includes(term))));
+  // "Kết quả trả" chỉ áp dụng cho đơn cần trả bản in cứng — đơn không cần trả (VD kỷ luật) bị loại
+  // khỏi kết quả khi lọc theo "Đã trả"/"Chưa trả" vì không có trạng thái trả nào để so khớp.
+  if (returnResultFilter !== 'all') baseList = baseList.filter(a => {
+    if (!formNeedsReturn(a.formCode)) return false;
+    const done = !!(a.returnInfo && a.returnInfo.done);
+    return returnResultFilter === 'done' ? done : !done;
+  });
+  if (invoiceStatusFilter !== 'all') baseList = baseList.filter(a => {
+    if (!a.invoice) return false;
+    const paid = a.invoice.status === 'Đã thanh toán';
+    return invoiceStatusFilter === 'paid' ? paid : !paid;
+  });
+  updateStatusTabBadges(baseList);
+
+  let list;
+  if (currentStatusTab === 'all'){
+    list = baseList;
+  } else if (currentStatusTab === 'Chờ duyệt' && CURRENT_USER_UNIT_ID){
+    // Người duyệt cụ thể — tab "Chờ duyệt" chỉ là việc thực sự cần họ xử lý, không phải mọi đơn
+    // còn dở dang trên toàn hệ thống (đơn đã qua bước của họ, đang chờ ban khác, sẽ không hiện ở đây).
+    list = baseList.filter(isPendingForCurrentUser);
+  } else {
+    list = baseList.filter(a => a.status === currentStatusTab);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(list.length / APP_PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*APP_PAGE_SIZE, currentPage*APP_PAGE_SIZE);
+
+  // Bỏ chọn các dòng không còn nằm trong kết quả lọc hiện tại
+  const pageListIds = new Set(list.map(a => a.id));
+  selectedIds.forEach(id => { if (!pageListIds.has(id)) selectedIds.delete(id); });
+
+  if (!pageList.length){
+    tbody.innerHTML = `<tr><td colspan="20">
+      <div class="empty-state">
+        <div class="empty-state-ico">🔍</div>
+        <div>Không tìm thấy đơn nào phù hợp</div>
+      </div>
+    </td></tr>`;
+    renderPagination(list.length, totalPages);
+    return;
+  }
+
+  tbody.innerHTML = pageList.map((a) => {
+    const tagClass = STATUS_TAG_CLASS[a.status] || 'tag-default';
+    const checked = selectedIds.has(a.id) ? 'checked' : '';
+    const done = !!(a.returnInfo && a.returnInfo.done);
+    const needsReturn = formNeedsReturn(a.formCode);
+    const satisfaction = a.returnInfo && a.returnInfo.satisfaction;
+    const attachCount = (a.attachments || []).length;
+    const isProxy = a.returnInfo && a.returnInfo.method === 'Người lấy hộ';
+    const recipientCccd = needsReturn ? (isProxy ? (a.returnInfo.recipientCccd || '') : (a.fields.soCCCD || '')) : '';
+    const appointmentDate = needsReturn ? ((a.returnInfo && a.returnInfo.appointmentDate) || '') : '';
+    const receiveMethod = needsReturn ? ((a.returnInfo && a.returnInfo.method) || 'Sinh viên tự lấy') : '';
+    const recipientPhone = needsReturn ? (isProxy ? (a.returnInfo.recipientPhone || '') : (a.fields.soDienThoai || '')) : '';
+    const copies = needsReturn ? ((a.returnInfo && a.returnInfo.copies) || 1) : '';
+    return `
+    <tr class="app-row ${a.overdue ? 'overdue' : ''}" onclick="openAppDetail('${a.id}')">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="app-row-check" data-id="${a.id}" ${checked} onchange="toggleRowSelect('${a.id}', this.checked)"></td>
+      <td class="col-optional" data-col="formName"><span class="app-form-cell" title="${a.formName}">${a.formName}</span></td>
+      <td class="col-optional" data-col="mssv"><span class="app-code">${a.mssv}</span></td>
+      <td class="col-optional" data-col="svName"><span class="app-sv-name">${a.svName}</span></td>
+      <td class="text-muted col-optional" data-col="lopHC">${a.fields.lopHanhChinh || '—'}</td>
+      <td class="col-optional" data-col="attachments" onclick="event.stopPropagation()">
+        ${attachCount
+          ? `<button class="attach-btn" onclick="openAttachments('${a.id}')">${attachCount} file</button>`
+          : ''}
+      </td>
+      <td class="text-muted col-optional" data-col="recipientCccd">${recipientCccd}</td>
+      <td class="text-muted col-optional" data-col="method">${receiveMethod}</td>
+      <td class="text-muted col-optional" data-col="phone">${recipientPhone}</td>
+      <td class="text-muted col-optional" data-col="copies">${copies}</td>
+      <!-- <td class="text-muted">${appointmentDate}</td> -->
+      <td class="text-muted col-optional" data-col="submitted">${a.submitted}</td>
+      <td class="col-optional" data-col="status">
+        <span class="tag ${tagClass}">${a.status}</span>
+      </td>
+      <td class="col-optional" data-col="returnResult">
+        ${needsReturn ? `<span class="tag ${done ? 'tag-success' : 'tag-default'}">${done ? 'Đã trả' : 'Chưa trả'}</span>` : ''}
+      </td>
+      <td class="text-muted col-optional" data-col="returnHandler">${stripHandlerPrefix(a.returnInfo && a.returnInfo.handler)}</td>
+      <td class="text-muted col-optional" data-col="returnDate">${(a.returnInfo && a.returnInfo.returnedDate) || ''}</td>
+      ${renderInvoiceCells(a)}
+      <td class="text-muted col-optional" data-col="approver">${currentApproverLabel(a)}</td>
+      <td class="col-optional" data-col="satisfaction" title="${satisfaction ? '' : 'Chưa khảo sát'}">${renderStars(satisfaction || 0)}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Xem chi tiết / Phê duyệt" onclick="openAppDetail('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+          </button>
+          <button class="icon-btn" title="${needsReturn ? 'Cập nhật kết quả trả' : 'Loại đơn này không cần trả bản in cứng'}" ${needsReturn ? '' : 'disabled'} onclick="openReturnResult('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8.5"/><path d="M18 2l4 4-9.5 9.5-4.5 1 1-4.5z"/></svg>
+          </button>
+          <!-- Tạm ẩn icon "Xem/sửa thông tin sinh viên kê khai" theo yêu cầu — popup modal-declared-info
+               và hàm openDeclaredInfo() vẫn giữ nguyên trong code để dễ khôi phục khi cần bật lại.
+          <button class="icon-btn" title="Xem/sửa thông tin sinh viên kê khai" onclick="openDeclaredInfo('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 11h6"/></svg>
+          </button>
+          -->
+          <button class="icon-btn" title="Xem tiến trình quy trình" onclick="openWorkflowProgress('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+          <button class="icon-btn" title="Xem đánh giá chi tiết" onclick="openSatisfactionDetail('${a.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(list.length, totalPages);
+  applyOptionalColumnVisibility();
+}
+
+/* Đồng bộ hiển thị các cột (theo dropdown "Cột hiển thị") sau mỗi lần render lại bảng — vì
+   innerHTML render mới luôn tạo lại các <td class="col-optional"> ở trạng thái mặc định hiện,
+   cần set lại display:none cho những cột người dùng đã chủ động tắt (không nằm trong Set này). */
+function applyOptionalColumnVisibility(){
+  OPTIONAL_COLUMNS.forEach(c => {
+    const visible = visibleOptionalCols.has(c.key);
+    document.querySelectorAll(`.col-optional[data-col="${c.key}"]`).forEach(el => {
+      el.style.display = visible ? '' : 'none';
+    });
+  });
+}
+
+/* == Chọn nhiều dòng (checkbox) == */
+const selectedIds = new Set();
+
+function toggleRowSelect(id, checked){
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+  syncSelectAllState();
+}
+
+function toggleSelectAll(checked){
+  document.querySelectorAll('.app-row-check').forEach(cb => {
+    cb.checked = checked;
+    if (checked) selectedIds.add(cb.dataset.id); else selectedIds.delete(cb.dataset.id);
+  });
+}
+
+function syncSelectAllState(){
+  const boxes = document.querySelectorAll('.app-row-check');
+  const allChecked = boxes.length > 0 && [...boxes].every(cb => cb.checked);
+  document.getElementById('app-select-all').checked = allChecked;
+}
+
+function clearSelection(){
+  selectedIds.clear();
+  document.querySelectorAll('.app-row-check').forEach(cb => cb.checked = false);
+  document.getElementById('app-select-all').checked = false;
+}
+
+/* == Dropdown "Chức năng" — luôn hiển thị ở thanh filter, không phụ thuộc số dòng đang chọn == */
+function openBulkActionMenu(){ document.getElementById('bulk-action-menu').classList.add('open'); }
+function closeBulkActionMenu(){ document.getElementById('bulk-action-menu').classList.remove('open'); }
+function toggleBulkActionMenu(){
+  document.getElementById('bulk-action-menu').classList.contains('open') ? closeBulkActionMenu() : openBulkActionMenu();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('bulk-action-combo').contains(e.target)) closeBulkActionMenu();
+});
+
+/* == Duyệt/Từ chối đồng thời — chỉ áp dụng cho các đơn đã chọn đang thực sự chờ CURRENT_USER xử lý,
+   các đơn còn lại trong lựa chọn (đã duyệt/chờ đơn vị khác…) được báo bỏ qua để tránh nhầm lẫn.
+   Mở popup xác nhận cơ bản trước, chỉ thực thi khi bấm "Xác nhận". == */
+let pendingBulkApproveIds = [];
+let pendingBulkApproveIsApprove = null;
+
+function bulkApprove(isApprove){
+  closeBulkActionMenu();
+  if (!selectedIds.size){
+    showToast('Vui lòng chọn ít nhất 1 đơn trong bảng trước khi thực hiện.', 'err');
+    return;
+  }
+  const chosen = [...selectedIds].map(appById).filter(Boolean);
+  const eligible = chosen.filter(isPendingForCurrentUser);
+  const skipped = chosen.length - eligible.length;
+
+  if (!eligible.length){
+    showToast('Không có đơn nào trong lựa chọn đang chờ bạn xử lý.', 'err');
+    return;
+  }
+
+  pendingBulkApproveIds = eligible.map(a => a.id);
+  pendingBulkApproveIsApprove = isApprove;
+
+  document.getElementById('bulk-approve-confirm-title').textContent = isApprove ? 'Duyệt đồng thời' : 'Từ chối đồng thời';
+  const skippedMsg = skipped ? ` (bỏ qua ${skipped} đơn không thuộc lượt duyệt của bạn)` : '';
+  const verb = isApprove ? 'duyệt' : 'từ chối';
+  document.getElementById('bulk-approve-confirm-sub').textContent = `Bạn có chắc chắn muốn ${verb} cho ${eligible.length} sinh viên không?${skippedMsg}`;
+  document.getElementById('bulk-approve-confirm-reason-block').style.display = isApprove ? 'none' : '';
+  document.getElementById('bulk-approve-confirm-reason').value = '';
+  document.getElementById('bulk-approve-confirm-reason').closest('.fi').classList.remove('err');
+  const confirmBtn = document.getElementById('bulk-approve-confirm-btn');
+  confirmBtn.textContent = isApprove ? 'Duyệt' : 'Từ chối';
+  confirmBtn.className = 'btn ' + (isApprove ? 'btn-primary' : 'btn-danger');
+
+  openModal('modal-bulk-approve-confirm');
+}
+
+function confirmBulkApprove(){
+  const isApprove = pendingBulkApproveIsApprove;
+  const reasonField = document.getElementById('bulk-approve-confirm-reason');
+  const reason = reasonField.value.trim();
+
+  if (!isApprove && !reason){
+    reasonField.closest('.fi').classList.add('err');
+    reasonField.focus();
+    return;
+  }
+
+  const now = new Date();
+  const timeLabel = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+
+  pendingBulkApproveIds.map(appById).filter(Boolean).forEach(a => {
+    const proc = PROCESSES_MINI[a.processId];
+    const currentStep = proc.steps[a.currentStepIdx];
+    if (isApprove){
+      a.history.push({ step:currentStep.name, status:'Đã duyệt', note:`${CURRENT_USER} đã duyệt (duyệt đồng thời)`, time:timeLabel });
+      if (a.currentStepIdx < proc.steps.length - 1){
+        a.currentStepIdx += 1;
+        a.status = 'Chờ duyệt';
+      } else {
+        a.status = 'Đã duyệt';
+      }
+    } else {
+      a.history.push({ step:currentStep.name, status:'Từ chối', note:`${CURRENT_USER}: ${reason}`, time:timeLabel });
+      a.status = 'Từ chối';
+    }
+    a.overdue = false;
+  });
+
+  const count = pendingBulkApproveIds.length;
+  closeModal('modal-bulk-approve-confirm');
+  clearSelection();
+  renderAppGrid();
+  showToast(`Đã ${isApprove ? 'duyệt' : 'từ chối'} ${count} đơn.`, isApprove ? 'ok' : 'warn');
+}
+
+/* == Xuất đơn của sinh viên dạng ZIP — mô phỏng bằng toast (mockup tĩnh, không đóng gói file thật) == */
+function bulkExportZip(){
+  closeBulkActionMenu();
+  if (!selectedIds.size){
+    showToast('Vui lòng chọn ít nhất 1 đơn trong bảng trước khi thực hiện.', 'err');
+    return;
+  }
+  showToast(`Đang chuẩn bị xuất ${selectedIds.size} đơn dạng file .zip…`, 'ok');
+}
+
+/* == Tạo quyết định sinh viên hàng loạt — mô phỏng bằng toast, chưa có mẫu văn bản thật == */
+function bulkCreateDecision(){
+  closeBulkActionMenu();
+  if (!selectedIds.size){
+    showToast('Vui lòng chọn ít nhất 1 đơn trong bảng trước khi thực hiện.', 'err');
+    return;
+  }
+  showToast(`Đang tạo quyết định sinh viên cho ${selectedIds.size} đơn…`, 'ok');
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('app-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+  const from = (currentPage-1)*APP_PAGE_SIZE + 1;
+  const to = Math.min(currentPage*APP_PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} đơn</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+function goToPage(p){ currentPage = p; renderAppGrid(); }
+
+document.getElementById('app-search').addEventListener('input', () => { currentPage = 1; renderAppGrid(); });
+document.getElementById('return-result-select').addEventListener('change', () => { currentPage = 1; renderAppGrid(); });
+document.getElementById('invoice-status-select').addEventListener('change', () => { currentPage = 1; renderAppGrid(); });
+document.getElementById('submitted-from').addEventListener('change', () => { currentPage = 1; renderAppGrid(); });
+document.getElementById('submitted-to').addEventListener('change', () => { currentPage = 1; renderAppGrid(); });
+
+/* == Bộ lọc "Tên biểu mẫu" — combobox nhiều lựa chọn (checkbox) + tìm kiếm, danh sách lấy theo
+   danh mục biểu mẫu (đối chiếu MH-02), suy ra từ các formName đang có trong dữ liệu đơn để tránh trùng lặp.
+   Mặc định chọn sẵn các biểu mẫu active, biểu mẫu inactive để trống — người dùng tự bật thêm nếu cần. == */
+const FORM_NAME_TO_CODE = {};
+APPLICATIONS.forEach(a => { if (!FORM_NAME_TO_CODE[a.formName]) FORM_NAME_TO_CODE[a.formName] = a.formCode; });
+const FORM_NAME_OPTIONS = Object.keys(FORM_NAME_TO_CODE).sort((x, y) => x.localeCompare(y, 'vi'));
+function formNameIsActive(name){ return FORM_CODE_STATUS[FORM_NAME_TO_CODE[name]] === 'active'; }
+FORM_NAME_OPTIONS.filter(formNameIsActive).forEach(name => selectedFormNames.add(name));
+
+const formSearchInput = document.getElementById('form-search');
+const formComboMenu = document.getElementById('form-combo-menu');
+const formComboList = document.getElementById('form-combo-list');
+const formComboLabel = document.getElementById('form-combo-label');
+
+function renderFormComboList(query){
+  const q = (query || '').trim().toLowerCase();
+  const matches = q ? FORM_NAME_OPTIONS.filter(n => n.toLowerCase().includes(q)) : FORM_NAME_OPTIONS;
+  if (!matches.length){
+    formComboList.innerHTML = '<div class="unit-combo-empty">Không tìm thấy biểu mẫu nào khớp "' + query.trim() + '"</div>';
+    return;
+  }
+  formComboList.innerHTML = matches.map(name => {
+    const checked = selectedFormNames.has(name) ? 'checked' : '';
+    return `<label class="form-combo-item">
+      <input type="checkbox" ${checked} onchange="toggleFormName(${JSON.stringify(name)}, this.checked)">
+      <span>${highlightMatch(name, query)}</span>
+    </label>`;
+  }).join('');
+}
+
+function updateFormComboLabel(){
+  const total = FORM_NAME_OPTIONS.length;
+  formComboLabel.textContent = selectedFormNames.size === total
+    ? 'Tất cả biểu mẫu'
+    : (selectedFormNames.size ? selectedFormNames.size + ' biểu mẫu đã chọn' : 'Không chọn biểu mẫu nào');
+}
+updateFormComboLabel();
+
+function toggleFormName(name, checked){
+  if (checked) selectedFormNames.add(name); else selectedFormNames.delete(name);
+  updateFormComboLabel();
+  currentPage = 1;
+  renderAppGrid();
+}
+
+function openFormMenu(){ renderFormComboList(formSearchInput.value); formComboMenu.classList.add('open'); }
+function closeFormMenu(){ formComboMenu.classList.remove('open'); }
+function toggleFormMenu(){ formComboMenu.classList.contains('open') ? closeFormMenu() : openFormMenu(); }
+
+formSearchInput.addEventListener('focus', () => openFormMenu());
+formSearchInput.addEventListener('input', () => renderFormComboList(formSearchInput.value));
+document.addEventListener('click', e => {
+  if (!document.getElementById('form-combo').contains(e.target)) closeFormMenu();
+});
+
+/* == Dropdown "Cột hiển thị" — liệt kê TẤT CẢ cột của bảng (trừ cột chọn dòng + Thao tác, luôn cố định).
+   Các cột đang hiển thị mặc định ngoài bảng hiện tại được ghim sẵn (pin) — luôn hiện, không tắt được.
+   5 cột còn lại (Phương thức nhận, SĐT người nhận, Số bản in, Người trả đơn, Ngày trả) là tuỳ chọn,
+   bật/tắt tự do và mặc định đang ẩn — người dùng tự bật khi cần. == */
+const OPTIONAL_COLUMNS = [
+  { key:'formName', label:'Tên Đơn', pinned:true },
+  { key:'mssv', label:'Mã sinh viên', pinned:true },
+  { key:'svName', label:'Họ và tên', pinned:true },
+  { key:'lopHC', label:'Lớp HC', pinned:true },
+  { key:'attachments', label:'Tài liệu', pinned:true },
+  { key:'recipientCccd', label:'CCCD người nhận', pinned:true },
+  { key:'method', label:'Phương thức nhận' },
+  { key:'phone', label:'SĐT người nhận' },
+  { key:'copies', label:'Số bản in' },
+  { key:'submitted', label:'Ngày nộp', pinned:true },
+  { key:'status', label:'Trạng thái', pinned:true },
+  { key:'approver', label:'Bước duyệt', pinned:true },
+  { key:'returnResult', label:'Kết quả trả', pinned:true },
+  { key:'returnHandler', label:'Người trả đơn' },
+  { key:'returnDate', label:'Ngày trả' },
+  { key:'invoiceCode', label:'Mã hoá đơn', pinned:true },
+  { key:'invoiceStatus', label:'Trạng thái HĐ', pinned:true },
+  { key:'satisfaction', label:'Đánh giá' },
+];
+const pinnedOptionalCols = new Set(OPTIONAL_COLUMNS.filter(c => c.pinned).map(c => c.key));
+const visibleOptionalCols = new Set(pinnedOptionalCols);
+
+function renderColToggleMenu(){
+  const itemsHtml = OPTIONAL_COLUMNS.map(c => {
+    const pinned = pinnedOptionalCols.has(c.key);
+    const visible = visibleOptionalCols.has(c.key);
+    return `
+    <div class="col-toggle-item">
+      <label>
+        <input type="checkbox" ${visible ? 'checked' : ''} ${pinned ? 'disabled' : ''} onchange="toggleOptionalColumn('${c.key}', this.checked)">
+        ${c.label}
+      </label>
+      <button type="button" class="col-toggle-pin ${pinned ? 'pinned' : ''}" title="${pinned ? 'Bỏ ghim' : 'Ghim cột (luôn hiện)'}" onclick="togglePinColumn('${c.key}')">📌</button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('col-toggle-menu').innerHTML = `
+    <div class="col-toggle-actions">
+      <button type="button" onclick="setAllOptionalColumns(true)">Chọn tất cả</button>
+      <button type="button" onclick="setAllOptionalColumns(false)">Bỏ chọn tất cả</button>
+    </div>
+    ${itemsHtml}`;
+}
+
+function toggleOptionalColumn(key, visible){
+  if (visible) visibleOptionalCols.add(key); else visibleOptionalCols.delete(key);
+  document.querySelectorAll(`.col-optional[data-col="${key}"]`).forEach(el => {
+    el.style.display = visible ? '' : 'none';
+  });
+}
+
+function togglePinColumn(key){
+  if (pinnedOptionalCols.has(key)){
+    pinnedOptionalCols.delete(key);
+  } else {
+    pinnedOptionalCols.add(key);
+    if (!visibleOptionalCols.has(key)) toggleOptionalColumn(key, true);
+  }
+  renderColToggleMenu();
+}
+
+function setAllOptionalColumns(visible){
+  OPTIONAL_COLUMNS.forEach(c => {
+    if (!visible && pinnedOptionalCols.has(c.key)) return; // cột đã ghim không bị tắt bởi "Bỏ chọn tất cả"
+    toggleOptionalColumn(c.key, visible);
+  });
+  renderColToggleMenu();
+}
+
+function toggleColToggleMenu(){
+  document.getElementById('col-toggle-menu').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('col-toggle').contains(e.target)) {
+    document.getElementById('col-toggle-menu').classList.remove('open');
+  }
+});
+renderColToggleMenu();
+
+/* Nhãn field tiếng Việt cho phần "Nội dung đơn đã điền" — map mã #token sang label dễ đọc */
+const FIELD_LABEL = {
+  hoTen:'Họ và tên', ngaySinh:'Ngày sinh', maSinhVien:'Mã sinh viên', soCCCD:'Số CCCD/Hộ chiếu',
+  lopHanhChinh:'Lớp', khoaDaoTao:'Khoá', donViQuanLy:'Khoa/Đơn vị quản lý', heDaoTao:'Hệ đào tạo',
+  nganhDaoTao:'Ngành đào tạo', thuongTru:'Nơi thường trú', mucDichXacNhan:'Mục đích xin xác nhận',
+  gioiTinh:'Giới tính', soDienThoai:'Số điện thoại', email:'Email', loaiPhongDangKy:'Loại phòng đăng ký',
+  lyDoBaoLuu:'Lý do bảo lưu', thoiGianBaoLuu:'Thời gian bảo lưu', noiDungViPham:'Nội dung vi phạm',
+  thanhTichNoiBat:'Thành tích nổi bật', lyDoCanhBao:'Lý do cảnh báo', diemTBTichLuy:'Điểm TB tích lũy',
+  monHocPhucKhao:'Môn học phúc khảo', diemHienTai:'Điểm hiện tại',
+};
+
+/* File .docx mẫu của từng loại biểu mẫu — đã cấu hình sẵn ở Danh mục Biểu mẫu (MH-ADMIN-02) */
+const FORM_FILE_BY_CODE = {
+  BM15:'don-xac-nhan-sinh-vien.docx', BM16:'don-dang-ky-ktx.docx', BM03:'don-xin-bao-luu.docx',
+  BM07:'don-kien-nghi-ky-luat.docx', BM04:'don-de-nghi-khen-thuong.docx', BM02:'don-xin-xac-nhan-vay-von.docx',
+  BM09:'don-xet-canh-bao-hoc-vu.docx', BM11:'don-cong-nhan-tot-nghiep.docx', BM06:'don-phuc-khao-diem-thi.docx',
+};
+
+/* Mô phỏng cấu hình "Cần trả bản in cứng" đã bật/tắt sẵn ở Danh mục Biểu mẫu (MH-ADMIN-02)
+   theo từng loại biểu mẫu — đơn chỉ lưu hồ sơ nội bộ (VD kỷ luật) không cần trả bản in. */
+const FORM_NEEDS_RETURN = {
+  BM15:true, BM16:true, BM03:true, BM07:false, BM04:true, BM02:true, BM09:true, BM11:true, BM06:true,
+};
+function formNeedsReturn(formCode){ return FORM_NEEDS_RETURN[formCode] !== false; }
+
+/* Bản sao rút gọn cấu hình biểu mẫu đã khai báo ở Danh mục Biểu mẫu (MH-ADMIN-02) — chỉ giữ
+   lại phần cần cho popup "Thông tin sinh viên kê khai": hướng dẫn nộp đơn (guide) và các trường
+   thông tin biểu mẫu yêu cầu sinh viên tự kê khai thêm ngoài dữ liệu hệ thống (extraFields),
+   trong đó field type 'File upload' là tài liệu đính kèm bắt buộc theo cấu hình biểu mẫu. */
+const FORM_CATALOG = {
+  BM15:{ guide:'<p>Sinh viên điền đầy đủ thông tin và nêu rõ mục đích xin xác nhận (vay vốn ngân hàng, xin visa, khác…) trước khi nộp. Sinh viên cần xem đối tượng áp dụng của mình tại <a href="#" onclick="return false">quy định xác nhận sinh viên</a>.</p>',
+    extraFields:[
+      { code:'mucDichXacNhan', label:'Mục đích xin xác nhận', type:'Select', required:true,
+        options:['Vay vốn ngân hàng','Xin visa','Xác nhận với cơ quan/tổ chức khác','Xét miễn/giảm học phí'] },
+    ] },
+  BM16:{ guide:'<p>Các bước thực hiện:</p><ol><li>B1: Sinh viên nộp đơn đăng ký ở ký túc xá trước ngày 15/08 hằng năm.</li><li>B2: Sinh viên upload file sổ hộ khẩu (bản chụp).</li><li>B3: Chờ Ban Quản lý Ký túc xá xét duyệt theo diện ưu tiên.</li></ol>',
+    extraFields:[
+      { code:'loaiPhongDangKy', label:'Loại phòng đăng ký', type:'Select', required:true,
+        options:['Phòng 4 người','Phòng 6 người','Phòng 8 người'] },
+      { code:'soHoKhau', label:'Sổ hộ khẩu (bản chụp)', type:'File upload', required:true },
+      { code:'giayUyQuyen', label:'Giấy uỷ quyền nhận hộ (nếu có)', type:'File upload', required:false },
+    ] },
+  BM03:{ guide:'<p>Áp dụng khi sinh viên tạm dừng học tối đa 2 học kỳ liên tiếp — nêu rõ lý do và thời gian bảo lưu, kèm minh chứng nếu lý do sức khoẻ.</p>',
+    extraFields:[
+      { code:'lyDoBaoLuu', label:'Lý do bảo lưu', type:'Textarea', required:true },
+      { code:'thoiGianBaoLuu', label:'Thời gian bảo lưu', type:'Select', required:true, options:['1 học kỳ','2 học kỳ'] },
+      { code:'giayKhamSucKhoe', label:'Giấy khám sức khoẻ (nếu lý do sức khoẻ)', type:'File upload', required:false },
+    ] },
+  BM07:{ guide:'<p>Giảng viên/Sinh viên lập đơn kiến nghị xét kỷ luật, mô tả cụ thể nội dung vi phạm để Khoa lập biên bản chuyển Hội đồng Kỷ luật.</p>',
+    extraFields:[
+      { code:'noiDungViPham', label:'Nội dung vi phạm', type:'Textarea', required:true },
+    ] },
+  BM04:{ guide:'<p>Đề nghị khen thưởng kèm minh chứng thành tích học tập/rèn luyện/nghiên cứu khoa học nổi bật.</p>',
+    extraFields:[
+      { code:'thanhTichNoiBat', label:'Thành tích nổi bật', type:'Textarea', required:true },
+      { code:'minhChungThanhTich', label:'Minh chứng thành tích (bằng khen/giấy chứng nhận)', type:'File upload', required:true },
+    ] },
+  BM02:{ guide:'<p>Sinh viên nêu rõ mục đích xác nhận để vay vốn ngân hàng, cần chữ ký xác nhận của phụ huynh khi hồ sơ yêu cầu.</p>',
+    extraFields:[
+      { code:'mucDichXacNhan', label:'Mục đích xin xác nhận', type:'Select', required:true, options:['Vay vốn ngân hàng'] },
+    ] },
+  BM09:{ guide:'<p>Áp dụng khi sinh viên bị cảnh báo học vụ theo quy chế đào tạo — nêu rõ lý do cảnh báo.</p>',
+    extraFields:[
+      { code:'lyDoCanhBao', label:'Lý do cảnh báo', type:'Textarea', required:true },
+    ] },
+  BM11:{ guide:'<p>Sinh viên đủ điều kiện tốt nghiệp theo chương trình đào tạo nộp đơn kèm điểm trung bình tích luỹ.</p>',
+    extraFields:[
+      { code:'diemTBTichLuy', label:'Điểm TB tích luỹ', type:'Text', required:true },
+    ] },
+  BM06:{ guide:'<p>Sinh viên đăng ký phúc khảo trong vòng 15 ngày kể từ ngày công bố điểm, nêu rõ môn học và điểm hiện tại.</p>',
+    extraFields:[
+      { code:'monHocPhucKhao', label:'Môn học phúc khảo', type:'Text', required:true },
+      { code:'diemHienTai', label:'Điểm hiện tại', type:'Text', required:true },
+    ] },
+};
+
+function appById(id){ return APPLICATIONS.find(a => a.id === id); }
+
+/* Đơn có đang ở đúng bước mà CURRENT_USER là approver hay không — dùng để phân biệt "Chờ duyệt"
+   theo nghĩa CHUNG (toàn hệ thống, dành cho Admin) và theo nghĩa RIÊNG (chỉ việc của người duyệt
+   đang đăng nhập). Đơn đã qua bước của CURRENT_USER, đang chờ đơn vị/bước khác xử lý tiếp thì
+   hàm này trả về false dù a.status vẫn là 'Chờ duyệt'. */
+function isPendingForCurrentUser(a){
+  if (a.status !== 'Chờ duyệt') return false;
+  const proc = PROCESSES_MINI[a.processId];
+  const currentStep = proc.steps[a.currentStepIdx];
+  return currentStep.approvers.includes(CURRENT_USER);
+}
+
+/* Tên bước + người/vai trò đang cần xử lý ở bước hiện tại của đơn — dùng cho cột "Bước duyệt"
+   trong bảng (tên bước ở trên, người duyệt ở dưới). Nếu có từ 2 approver trở lên, chỉ hiện tên
+   đầu tiên kèm "+N" thay vì liệt kê hết (tránh phụ thuộc CSS line-clamp không ổn định theo độ
+   dài tên) — title chứa đầy đủ danh sách để xem khi hover. Đơn đã có kết quả cuối (Đã duyệt/
+   Từ chối) thì không còn ai cần duyệt tiếp, để trống. */
+function currentApproverLabel(a){
+  if (a.status !== 'Chờ duyệt' && a.status !== 'Yêu cầu chỉnh sửa') return '';
+  const proc = PROCESSES_MINI[a.processId];
+  const currentStep = proc.steps[a.currentStepIdx];
+  const approvers = currentStep.approvers;
+  const fullText = approvers.length ? approvers.join(', ') : (currentStep.role || '');
+  const displayText = approvers.length > 1 ? `${approvers[0]} <span class="approver-more">+${approvers.length - 1}</span>` : fullText;
+  return `<div class="approver-step" title="${currentStep.name}">${currentStep.name}</div><div class="approver-name" title="${fullText}">${displayText}</div>`;
+}
+
+/* Popup xem tiến trình quy trình — timeline từng bước, đánh dấu đã qua/hiện tại/chưa tới,
+   kèm tên người duyệt (approvers) đã cấu hình sẵn cho từng bước ở PROCESSES_MINI. */
+/* Trích tên người xử lý từ ghi chú lưu lúc duyệt — note luôn có dạng "Tên: nội dung"
+   hoặc "Tên đã duyệt/đã từ chối" (xem confirmApproveApp/approveApp cũ). */
+function extractHandlerFromNote(note){
+  if (!note) return '';
+  const m = /^(.*?)(?::| đã)/.exec(note);
+  return m ? m[1].trim() : '';
+}
+
+/* Trích lý do/ghi chú xử lý từ note — phần còn lại sau "Tên: ", dùng cho cột "Lý do"
+   trong popup Quy trình phê duyệt (chủ yếu có ý nghĩa ở bước Từ chối/Yêu cầu chỉnh sửa). */
+function extractReasonFromNote(note){
+  if (!note) return '';
+  const m = /^.*?:\s*(.+)$/.exec(note);
+  return m ? m[1].trim() : note;
+}
+
+function openWorkflowProgress(id){
+  const a = appById(id);
+  const proc = PROCESSES_MINI[a.processId];
+
+  const history = a.history || [];
+  let previousTime = a.submitted;
+
+  const tbody = document.getElementById('workflow-progress-tbody');
+  tbody.innerHTML = proc.steps.map((step, idx) => {
+    const historyEntry = history.find(h => h.step === step.name);
+    const isPending = idx > a.currentStepIdx || (idx === a.currentStepIdx && !historyEntry);
+    const receivedTime = previousTime;
+
+    let handlerText = '—';
+    let processedTime = '—';
+    let resultTagClass = 'tag-warning';
+    let resultLabel = 'Chờ duyệt';
+
+    if (historyEntry){
+      if (idx === 0){
+        handlerText = a.submittedBy || a.svName;
+      } else {
+        handlerText = extractHandlerFromNote(historyEntry.note) || (step.approvers[0] || '—');
+      }
+      processedTime = historyEntry.time && historyEntry.time !== '—' ? historyEntry.time : '—';
+      resultLabel = historyEntry.status;
+      resultTagClass = STATUS_TAG_CLASS[historyEntry.status] || 'tag-default';
+      previousTime = processedTime !== '—' ? processedTime : previousTime;
+    } else if (idx === a.currentStepIdx){
+      handlerText = step.approvers.length ? step.approvers.join(', ') : 'Chưa gán người duyệt';
+      resultLabel = 'Chờ duyệt';
+      resultTagClass = 'tag-warning';
+    } else if (idx > a.currentStepIdx && a.status === 'Từ chối'){
+      // Đơn đã bị từ chối ở 1 bước trước đó — các bước sau không còn được xử lý
+      handlerText = step.approvers.length ? step.approvers.join(', ') : '—';
+      resultLabel = 'Bỏ qua';
+      resultTagClass = 'tag-default';
+    } else if (idx > a.currentStepIdx && step.approvers.length){
+      // Bước chưa tới lượt — vẫn hiện sẵn người duyệt phụ trách để biết đơn còn phải qua ai
+      handlerText = step.approvers.join(', ');
+    }
+
+    // Bước nộp yêu cầu (idx 0) là sinh viên/giảng viên tự nộp, không phải đơn vị đi duyệt — để trống
+    const isSubmitStep = idx === 0 && !step.approvers.length;
+
+    // Lý do/ghi chú xử lý — chỉ có ý nghĩa khi bước đã có lịch sử xử lý thật (không áp dụng cho
+    // bước nộp yêu cầu hay các bước chưa/không còn được xử lý)
+    const reasonText = (historyEntry && idx > 0) ? extractReasonFromNote(historyEntry.note) : '';
+
+    return `
+    <tr>
+      <td class="text-muted">${idx + 1}</td>
+      <td>${step.name}</td>
+      <td class="text-muted">${isSubmitStep ? '' : (step.dept || '')}</td>
+      <td class="text-muted">${isSubmitStep ? '' : (step.role || '')}</td>
+      <td>${handlerText}</td>
+      <td class="text-muted">${isSubmitStep || isPending || !receivedTime ? '' : receivedTime}</td>
+      <td class="text-muted">${processedTime === '—' ? '' : processedTime}</td>
+      <td><span class="tag ${resultTagClass}">${resultLabel}</span></td>
+      <td class="text-muted">${reasonText}</td>
+    </tr>`;
+  }).join('');
+
+  openModal('modal-workflow-progress');
+}
+
+/* Popup xem nhanh danh sách tài liệu sinh viên đã upload kèm đơn — mở thẳng từ dòng bảng */
+function openAttachments(id){
+  const a = appById(id);
+  const files = a.attachments || [];
+  const listEl = document.getElementById('attach-list');
+  listEl.innerHTML = files.length ? files.map(f => `
+    <li>
+      <span class="attach-ico">📄</span>
+      <span class="attach-name">${f.name}</span>
+      <button class="icon-btn" title="Tải xuống" onclick="downloadAttachment('${f.name}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </button>
+    </li>`).join('') : '<div class="attach-empty">Đơn này không có tài liệu đính kèm</div>';
+  openModal('modal-attachments');
+}
+
+function downloadAttachment(fileName){
+  showToast(`Đang tải file: ${fileName}`, 'ok');
+}
+
+/* == Hoá đơn — mở rộng sau này: tạo tự động khi duyệt đơn hoặc khi GV tạo đơn hộ,
+   rồi các bước phê duyệt tiếp theo có thể kiểm tra invoice.status trước khi cho đi tiếp.
+   Hiện tại chỉ hiển thị trạng thái + cho phép đánh dấu đã thanh toán (mock, không chặn phê duyệt). == */
+function renderInvoiceCells(a){
+  if (!a.invoice){
+    return `<td class="col-optional" data-col="invoiceCode"></td><td class="col-optional" data-col="invoiceStatus"></td>`;
+  }
+  const paid = a.invoice.status === 'Đã thanh toán';
+  /* Tạm khoá bấm vào mã hoá đơn theo yêu cầu — chỉ hiển thị text, giữ nguyên hàm openInvoice()
+     và modal-invoice để dễ khôi phục khi cần bật lại (đổi span dưới lại thành button). */
+  return `
+    <td class="col-optional" data-col="invoiceCode">${a.invoice.code}</td>
+    <td class="col-optional" data-col="invoiceStatus"><span class="tag ${paid ? 'tag-success' : 'tag-warning'}">${a.invoice.status}</span></td>`;
+}
+
+let invoiceAppId = null;
+
+function openInvoice(id){
+  invoiceAppId = id;
+  const a = appById(id);
+  document.getElementById('inv-sub').textContent = `${a.formName} — ${a.svName} (${a.mssv})`;
+
+  const has = !!a.invoice;
+  document.getElementById('inv-empty').style.display = has ? 'none' : '';
+  document.getElementById('inv-content').style.display = has ? '' : 'none';
+  document.getElementById('inv-btn-mark-paid').style.display = has && a.invoice.status !== 'Đã thanh toán' ? '' : 'none';
+
+  if (has){
+    document.getElementById('inv-code').textContent = a.invoice.code;
+    document.getElementById('inv-reason').textContent = a.invoice.reason;
+    document.getElementById('inv-amount').textContent = formatVnd(a.invoice.amount);
+    const paid = a.invoice.status === 'Đã thanh toán';
+    document.getElementById('inv-status').innerHTML = `<span class="tag ${paid ? 'tag-success' : 'tag-warning'}">${a.invoice.status}</span>`;
+  }
+
+  openModal('modal-invoice');
+}
+
+function markInvoicePaid(){
+  const a = appById(invoiceAppId);
+  if (!a.invoice) return;
+  a.invoice.status = 'Đã thanh toán';
+  a.invoice.paidDate = formatNowDateTime();
+  closeModal('modal-invoice');
+  showToast('Đã đánh dấu hoá đơn thanh toán.', 'ok');
+  renderAppGrid();
+}
+
+/* Khung công văn dùng chung (quốc hiệu + số hiệu + tiêu đề văn bản) — mỗi formCode
+   truyền vào phần nội dung riêng + dòng ký tên phù hợp với loại đơn */
+function docFrame(a, docTitle, bodyHtml, signerRole){
+  return `
+    <div class="doc-header">
+      <div class="doc-header-col">
+        <b>BỘ GIÁO DỤC VÀ ĐÀO TẠO</b><br>
+        <b>ĐẠI HỌC PHENIKAA</b>
+      </div>
+      <div class="doc-header-col">
+        <b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br>
+        <i>Độc lập - Tự do - Hạnh phúc</i>
+      </div>
+    </div>
+    <div class="doc-meta">
+      <span>Số: ..... /${new Date().getFullYear()}/${a.formCode}</span>
+      <i>Hà Nội, ngày ..... tháng ..... năm ${new Date().getFullYear()}</i>
+    </div>
+    <div class="doc-title">${docTitle}</div>
+    <div class="doc-body">${bodyHtml}</div>
+    <div class="doc-sign">
+      <div class="doc-sign-note"><i>Giấy này có giá trị đến hết ngày ......................</i></div>
+      <div class="doc-sign-block">
+        <b>TL. HIỆU TRƯỞNG</b><br>
+        <b>${signerRole}</b>
+      </div>
+    </div>`;
+}
+
+/* Nội dung công văn theo từng loại biểu mẫu — dùng đúng giá trị đã điền của đơn (a.fields),
+   không phải liệt kê #token như trước (đã hỏi lại user, chỉ đổi cách hiển thị, giữ nguyên phần còn lại của modal) */
+const FORM_DOCUMENT_RENDERERS = {
+  BM15: (a) => docFrame(a, 'GIẤY CHỨNG NHẬN SINH VIÊN', `
+    <p>HIỆU TRƯỞNG ĐẠI HỌC PHENIKAA CHỨNG NHẬN</p>
+    <p>Anh/Chị: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã SV: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Trạng thái: Đang học</p>
+    <p>Ngày tháng năm sinh: ${a.fields.ngaySinh || ''} &nbsp;&nbsp; Nơi sinh: ${a.fields.noiSinh || ''}</p>
+    <p>CMTND/CCCD số: ${a.fields.soCCCD || ''}</p>
+    <p>Là sinh viên lớp: <b>${a.fields.lopHanhChinh || ''}</b> &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Hệ đào tạo: ${a.fields.heDaoTao || ''} &nbsp;&nbsp; Ngành đào tạo: ${a.fields.nganhDaoTao || ''}</p>
+    <p>Mục đích xác nhận: ${a.fields.mucDichXacNhan || ''}</p>
+    <p>Đại học Phenikaa.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG CÔNG TÁC SINH VIÊN'),
+
+  BM16: (a) => docFrame(a, 'ĐƠN ĐĂNG KÝ Ở KÝ TÚC XÁ', `
+    <p style="text-align:center"><b>Kính gửi: Phòng Công tác sinh viên</b></p>
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Giới tính: ${a.fields.gioiTinh || ''}</p>
+    <p>Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b> &nbsp;&nbsp; Ngày sinh: ${a.fields.ngaySinh || ''}</p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Số điện thoại: ${a.fields.soDienThoai || ''} &nbsp;&nbsp; Email: ${a.fields.email || ''}</p>
+    <p>Nơi thường trú: ${a.fields.thuongTru || ''}</p>
+    <p>Loại phòng đăng ký: <b>${a.fields.loaiPhongDangKy || ''}</b></p>
+    <p>Kính đề nghị Nhà trường xem xét, chấp thuận cho tôi được đăng ký ở ký túc xá.</p>
+  `, 'TRƯỞNG BAN<br>BAN QUẢN LÝ KÝ TÚC XÁ'),
+
+  BM03: (a) => docFrame(a, 'ĐƠN XIN BẢO LƯU KẾT QUẢ HỌC TẬP', `
+    <p style="text-align:center"><b>Kính gửi: Phòng Đào tạo</b></p>
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Lý do xin bảo lưu: <b>${a.fields.lyDoBaoLuu || ''}</b></p>
+    <p>Thời gian xin bảo lưu: <b>${a.fields.thoiGianBaoLuu || ''}</b></p>
+    <p>Kính đề nghị Nhà trường xem xét, chấp thuận cho tôi được bảo lưu kết quả học tập.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG ĐÀO TẠO'),
+
+  BM07: (a) => docFrame(a, 'BIÊN BẢN KIẾN NGHỊ XÉT KỶ LUẬT SINH VIÊN', `
+    <p>Họ và tên sinh viên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Nội dung vi phạm: <b>${a.fields.noiDungViPham || ''}</b></p>
+    <p>Kính đề nghị Hội đồng Kỷ luật Khoa xem xét, xử lý theo đúng quy chế.</p>
+  `, 'CHỦ TỊCH<br>HỘI ĐỒNG KỶ LUẬT'),
+
+  BM04: (a) => docFrame(a, 'ĐƠN ĐỀ NGHỊ KHEN THƯỞNG SINH VIÊN', `
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Thành tích nổi bật: <b>${a.fields.thanhTichNoiBat || ''}</b></p>
+    <p>Kính đề nghị Nhà trường xem xét, khen thưởng cho sinh viên có tên trên.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG CÔNG TÁC SINH VIÊN'),
+
+  BM02: (a) => docFrame(a, 'GIẤY XÁC NHẬN SINH VIÊN (VAY VỐN NGÂN HÀNG)', `
+    <p>Anh/Chị: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã SV: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Mục đích xác nhận: <b>${a.fields.mucDichXacNhan || ''}</b></p>
+    <p>Đại học Phenikaa xác nhận sinh viên có tên trên hiện đang theo học tại trường.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG CÔNG TÁC SINH VIÊN'),
+
+  BM09: (a) => docFrame(a, 'QUYẾT ĐỊNH CẢNH BÁO HỌC VỤ', `
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Lý do cảnh báo: <b>${a.fields.lyDoCanhBao || ''}</b></p>
+    <p>Nhà trường ra quyết định cảnh báo học vụ đối với sinh viên có tên trên.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG ĐÀO TẠO'),
+
+  BM11: (a) => docFrame(a, 'QUYẾT ĐỊNH CÔNG NHẬN TỐT NGHIỆP', `
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Điểm trung bình tích luỹ: <b>${a.fields.diemTBTichLuy || ''}</b></p>
+    <p>Nhà trường ra quyết định công nhận tốt nghiệp đối với sinh viên có tên trên.</p>
+  `, 'TRƯỞNG PHÒNG<br>PHÒNG ĐÀO TẠO'),
+
+  BM06: (a) => docFrame(a, 'ĐƠN PHÚC KHẢO ĐIỂM THI', `
+    <p style="text-align:center"><b>Kính gửi: Khoa/Bộ môn phụ trách</b></p>
+    <p>Họ và tên: <b>${a.fields.hoTen || ''}</b> &nbsp;&nbsp; Mã sinh viên: <b>${a.fields.maSinhVien || ''}</b></p>
+    <p>Lớp: ${a.fields.lopHanhChinh || ''} &nbsp;&nbsp; Khoá: ${a.fields.khoaDaoTao || ''} &nbsp;&nbsp; Khoa: ${a.fields.donViQuanLy || ''}</p>
+    <p>Môn học xin phúc khảo: <b>${a.fields.monHocPhucKhao || ''}</b> &nbsp;&nbsp; Điểm hiện tại: <b>${a.fields.diemHienTai || ''}</b></p>
+    <p>Kính đề nghị Khoa/Bộ môn xem xét, chấm phúc khảo lại bài thi của tôi.</p>
+  `, 'TRƯỞNG BỘ MÔN'),
+};
+
+/* Fallback khi chưa soạn template riêng cho mã biểu mẫu — liệt kê field như trước */
+function renderFormDocument(a){
+  const renderer = FORM_DOCUMENT_RENDERERS[a.formCode];
+  if (renderer) return renderer(a);
+  return Object.entries(a.fields).map(([code, val]) =>
+    `<p>${FIELD_LABEL[code] || code}: <mark>${val}</mark></p>`).join('');
+}
+
+let openingAppId = null;
+
+function openAppDetail(id){
+  openingAppId = id;
+  const a = appById(id);
+  const proc = PROCESSES_MINI[a.processId];
+  const currentStep = proc.steps[a.currentStepIdx];
+  const canApprove = currentStep.approvers.includes(CURRENT_USER) && a.status === 'Chờ duyệt';
+
+  document.getElementById('adet-title').textContent = a.formName;
+
+  // Biểu mẫu được cấu hình "không cần trả bản in cứng" (FORM_NEEDS_RETURN ở mh-admin-02) thì
+  // không phát sinh việc nhận đơn — ẩn hẳn cả khối "Thông tin nhận đơn", không chỉ từng field.
+  const needsReturn = formNeedsReturn(a.formCode);
+  document.getElementById('adet-receive-title').style.display = needsReturn ? '' : 'none';
+  document.getElementById('adet-receive-grid').style.display = needsReturn ? '' : 'none';
+
+  if (needsReturn){
+    const info = a.returnInfo || {};
+    const isProxy = info.method === 'Người lấy hộ';
+    const noPickup = info.method === 'Không cần lấy đơn';
+    document.getElementById('adet-copies').textContent = info.copies || 1;
+    document.getElementById('adet-receive-method').textContent = info.method || 'Sinh viên tự lấy';
+    document.getElementById('adet-copies-block').style.display = noPickup ? 'none' : '';
+    // Sinh viên tự lấy → người nhận chính là sinh viên, hiển thị CCCD/SĐT của sinh viên (a.fields)
+    // thay vì ẩn đi; chỉ khi "Người lấy hộ" mới dùng CCCD/SĐT người được uỷ quyền (returnInfo)
+    document.getElementById('adet-recipient-cccd-block').style.display = noPickup ? 'none' : '';
+    document.getElementById('adet-recipient-phone-block').style.display = noPickup ? 'none' : '';
+    document.getElementById('adet-recipient-cccd').textContent = (isProxy ? info.recipientCccd : a.fields.soCCCD) || '';
+    document.getElementById('adet-recipient-phone').textContent = (isProxy ? info.recipientPhone : a.fields.soDienThoai) || '';
+  }
+
+  document.getElementById('adet-content').innerHTML = renderFormDocument(a);
+
+  // Tài liệu đính kèm — chỉ hiện tiêu đề + danh sách khi đơn có file đính kèm
+  const files = a.attachments || [];
+  document.getElementById('adet-attach-title').style.display = files.length ? '' : 'none';
+  document.getElementById('adet-attach-list').innerHTML = files.map(f => `
+    <li>
+      <span class="attach-ico">📄</span>
+      <span class="attach-name">${f.name}</span>
+      <button class="icon-btn" title="Tải xuống" onclick="downloadAttachment('${f.name}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </button>
+    </li>`).join('');
+
+  // Quyền phê duyệt: chỉ hiện nút Đồng ý/Từ chối khi CURRENT_USER là approver của đúng bước hiện tại
+  document.getElementById('adet-btn-approve').style.display = canApprove ? '' : 'none';
+  document.getElementById('adet-btn-reject').style.display = canApprove ? '' : 'none';
+
+  openModal('modal-app-detail');
+}
+
+/* Duyệt/Từ chối đơn ngay tại popup — chuyển đơn sang bước tiếp theo (hoặc Từ chối) thật sự */
+/* Bấm Đồng ý/Từ chối ở popup chi tiết đơn — không xử lý ngay, mở popup xác nhận
+   để cán bộ nhập ghi chú/lý do trước khi chốt (bắt buộc khi Từ chối). */
+let pendingApproveIsApprove = null;
+
+function approveApp(isApprove){
+  pendingApproveIsApprove = isApprove;
+  const a = appById(openingAppId);
+  const proc = PROCESSES_MINI[a.processId];
+  const currentStep = proc.steps[a.currentStepIdx];
+
+  document.getElementById('approve-confirm-title').textContent = isApprove ? 'Đồng ý đơn' : 'Từ chối đơn';
+  document.getElementById('approve-confirm-sub').textContent = `${a.formName} — ${a.svName} (${a.mssv}) · Bước: ${currentStep.name}`;
+  document.getElementById('approve-confirm-note-label').textContent = isApprove ? 'Ghi chú (không bắt buộc)' : 'Lý do từ chối (bắt buộc)';
+  document.getElementById('approve-confirm-note').value = '';
+  document.getElementById('approve-confirm-note').closest('.fi').classList.remove('err');
+  const confirmBtn = document.getElementById('approve-confirm-btn');
+  confirmBtn.textContent = isApprove ? 'Đồng ý' : 'Từ chối';
+  confirmBtn.className = 'btn ' + (isApprove ? 'btn-primary' : 'btn-danger');
+
+  openModal('modal-approve-confirm');
+}
+
+function confirmApproveApp(){
+  const isApprove = pendingApproveIsApprove;
+  const noteField = document.getElementById('approve-confirm-note');
+  const note = noteField.value.trim();
+
+  if (!isApprove && !note){
+    noteField.closest('.fi').classList.add('err');
+    noteField.focus();
+    return;
+  }
+
+  const a = appById(openingAppId);
+  const proc = PROCESSES_MINI[a.processId];
+  const currentStep = proc.steps[a.currentStepIdx];
+  const now = new Date();
+  const timeLabel = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+
+  if (isApprove){
+    a.history.push({ step:currentStep.name, status:'Đã duyệt', note: note ? `${CURRENT_USER}: ${note}` : `${CURRENT_USER} đã duyệt`, time:timeLabel });
+    if (a.currentStepIdx < proc.steps.length - 1){
+      a.currentStepIdx += 1;
+      a.status = 'Chờ duyệt';
+    } else {
+      a.status = 'Đã duyệt';
+    }
+    showToast('Đã duyệt đơn.', 'ok');
+  } else {
+    a.history.push({ step:currentStep.name, status:'Từ chối', note:`${CURRENT_USER}: ${note}`, time:timeLabel });
+    a.status = 'Từ chối';
+    showToast('Đã từ chối đơn.', 'warn');
+  }
+  a.overdue = false;
+
+  closeModal('modal-approve-confirm');
+  closeModal('modal-app-detail');
+  renderAppGrid();
+}
+
+/* Tải file Word mẫu của biểu mẫu — dùng chính file .docx đã cấu hình sẵn ở Danh mục Biểu mẫu (MH-ADMIN-02) */
+function downloadAppWord(){
+  const a = appById(openingAppId);
+  showToast(`Đang tải file mẫu: ${FORM_FILE_BY_CODE[a.formCode] || (a.formCode + '.docx')}`, 'ok');
+}
+
+/* In nội dung đơn đã điền (đúng phần đang hiển thị trong popup) */
+function printApp(){
+  const a = appById(openingAppId);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow){
+    showToast('Trình duyệt đã chặn cửa sổ in — vui lòng cho phép popup rồi thử lại.', 'err');
+    return;
+  }
+  printWindow.document.write(`<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>${a.formName}</title>
+    <style>
+      body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;line-height:1.7;padding:32px;color:#262626}
+      mark{background:#fff1b8;padding:0 2px}
+      .doc-header{display:flex;justify-content:space-between;gap:16px;text-align:center;font-size:13px;margin-bottom:10px}
+      .doc-header-col{flex:1}
+      .doc-meta{display:flex;justify-content:space-between;font-size:12.5px;color:#595959;margin-bottom:18px}
+      .doc-title{text-align:center;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:16px}
+      .doc-body p{margin:0 0 8px}
+      .doc-sign{display:flex;justify-content:space-between;align-items:flex-end;margin-top:24px;gap:16px}
+      .doc-sign-note{font-size:12.5px;flex:1}
+      .doc-sign-block{text-align:center;font-size:13px;min-width:220px}
+      @media print{ body{padding:0} }
+    </style>
+    </head><body>${document.getElementById('adet-content').innerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.onload = () => printWindow.print();
+}
+
+/* == Popup "Cập nhật kết quả trả" — chỉ đánh dấu đã trả/chưa, mở từ cột Thao tác == */
+let returnResultAppId = null;
+
+function openReturnResult(id){
+  returnResultAppId = id;
+  const a = appById(id);
+  const info = a.returnInfo || {};
+  document.getElementById('return-done-check').checked = !!info.done;
+  document.getElementById('return-handler-val').textContent = info.handler || '';
+  document.getElementById('return-date-val').textContent = info.returnedDate || '';
+  openModal('modal-return-result');
+}
+
+/* Xem trước Người trả/Ngày trả ngay khi tích — giá trị thật chỉ chốt khi bấm Lưu.
+   Bỏ tích lại thì để trống, không phải xoá dữ liệu đã lưu trước đó (chỉ preview). */
+function onReturnDoneChange(){
+  const checked = document.getElementById('return-done-check').checked;
+  document.getElementById('return-handler-val').textContent = checked ? CURRENT_USER : '';
+  document.getElementById('return-date-val').textContent = checked ? formatNowDateTime() : '';
+}
+
+/* Định dạng ngày giờ hiện tại theo dd/mm/yyyy hh:mm — đồng bộ định dạng hiển thị chung toàn hệ thống */
+function formatNowDateTime(){
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+function saveReturnResult(){
+  const a = appById(returnResultAppId);
+  if (!a.returnInfo) a.returnInfo = { method:'', copies:1, recipientCccd:'', recipientPhone:'', done:false, satisfaction:null };
+  const checked = document.getElementById('return-done-check').checked;
+  a.returnInfo.done = checked;
+  if (checked){
+    a.returnInfo.handler = CURRENT_USER;
+    a.returnInfo.returnedDate = formatNowDateTime();
+  } else {
+    a.returnInfo.handler = '';
+    a.returnInfo.returnedDate = '';
+  }
+  closeModal('modal-return-result');
+  showToast('Đã cập nhật kết quả trả.', 'ok');
+  renderAppGrid();
+}
+
+/* == Popup "Chi tiết đánh giá" — xem mức độ hài lòng + kiến nghị/đề xuất sinh viên đã gửi
+   khi khảo sát sau khi nhận kết quả trả đơn, mở từ cột Thao tác == */
+function openSatisfactionDetail(id){
+  const a = appById(id);
+  const info = a.returnInfo || {};
+  const level = info.satisfaction;
+  document.getElementById('sat-level').innerHTML = `${renderStars(level || 0, 'stars-lg')}` +
+    (level ? `<span style="font-size:12.5px;font-weight:500;color:var(--text-2)">${SATISFACTION_LABEL[level]}</span>` : '');
+  document.getElementById('sat-comment').textContent = info.comment || '';
+  openModal('modal-satisfaction-detail');
+}
+
+/* == Popup "Thông tin sinh viên kê khai" — xem + sửa lại nếu SV khai sai == */
+let declaredInfoAppId = null;
+
+/* Tạm ẩn cùng với khối HTML "Thông tin nhận đơn" đã comment ở modal-declared-info —
+   giữ nguyên hàm để dễ khôi phục khi cần bật lại chức năng sửa.
+function onDeclaredMethodChange(){
+  const method = document.getElementById('declared-method').value;
+  const isProxy = method === 'Người lấy hộ';
+  document.getElementById('declared-proxy-row').style.display = isProxy ? '' : 'none';
+}
+*/
+
+/* Nhãn loại trường — hiển thị cạnh label trong danh sách "Trường thông tin biểu mẫu yêu cầu kê khai thêm" */
+const DECL_FIELD_TYPE_LABEL = { Text:'Văn bản', Textarea:'Văn bản dài', Select:'Lựa chọn', Checkbox:'Hộp kiểm', Date:'Ngày', 'File upload':'Tệp đính kèm' };
+
+function openDeclaredInfo(id){
+  declaredInfoAppId = id;
+  const a = appById(id);
+  const catalog = FORM_CATALOG[a.formCode];
+
+  document.getElementById('decl-form-name').textContent = a.formName;
+  document.getElementById('decl-guide').innerHTML = (catalog && catalog.guide) || '<p class="decl-empty">Chưa có hướng dẫn cấu hình cho biểu mẫu này.</p>';
+
+  // Trường thông tin biểu mẫu yêu cầu kê khai thêm — tách riêng field dữ liệu (đã lưu ở a.fields)
+  // và field kiểu "File upload" (chuyển xuống khối tài liệu đính kèm bên dưới)
+  const extraFields = (catalog && catalog.extraFields) || [];
+  const dataFields = extraFields.filter(f => f.type !== 'File upload');
+  const fileFields = extraFields.filter(f => f.type === 'File upload');
+
+  document.getElementById('decl-extra-fields').innerHTML = dataFields.length ? `<div class="f-row col-2">${
+    dataFields.map(f => `
+      <div class="fi-view">
+        <label>${f.label}${f.required ? '<span class="decl-field-required">*</span>' : ''} <span class="decl-field-type">(${DECL_FIELD_TYPE_LABEL[f.type] || f.type})</span></label>
+        <div class="fi-view-box">${(a.fields && a.fields[f.code]) || '—'}</div>
+      </div>`).join('')
+  }</div>` : '<div class="decl-empty">Biểu mẫu này không yêu cầu kê khai thêm trường thông tin nào.</div>';
+
+  document.getElementById('decl-required-attach').innerHTML = fileFields.length ? `<div class="adet-grid">${
+    fileFields.map(f => `
+      <div class="adet-field">
+        <div class="adet-field-label">${f.label}${f.required ? '<span class="decl-field-required">*</span>' : ''}</div>
+        <div class="adet-field-val">${(a.attachments || []).length ? 'Xem tại "Tài liệu sinh viên đã nộp" bên dưới' : 'Sinh viên chưa nộp'}</div>
+      </div>`).join('')
+  }</div>` : '<div class="decl-empty">Biểu mẫu này không yêu cầu đính kèm tài liệu.</div>';
+
+  document.getElementById('decl-rec-code').textContent = a.code;
+  document.getElementById('decl-rec-submitted').textContent = a.submitted;
+  document.getElementById('decl-rec-submitter').textContent = a.submittedBy ? `${a.submittedBy} (tạo hộ) — SV ${a.svName} (${a.mssv})` : `${a.svName} (${a.mssv}) — SV tự nộp`;
+
+  const files = a.attachments || [];
+  document.getElementById('decl-attach-title').style.display = files.length ? '' : 'none';
+  document.getElementById('decl-attach-list').innerHTML = files.map(f => `
+    <li>
+      <span class="attach-ico">📄</span>
+      <span class="attach-name">${f.name}</span>
+      <button class="icon-btn" title="Tải xuống" onclick="downloadAttachment('${f.name}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </button>
+    </li>`).join('');
+
+  openModal('modal-declared-info');
+}
+
+/* Tạm ẩn cùng với khối HTML "Thông tin nhận đơn" đã comment ở modal-declared-info —
+   giữ nguyên hàm để dễ khôi phục khi cần bật lại chức năng sửa.
+function saveDeclaredInfo(){
+  const a = appById(declaredInfoAppId);
+  const method = document.getElementById('declared-method').value;
+  const isProxy = method === 'Người lấy hộ';
+  const recipientCccd = document.getElementById('declared-recipient-cccd').value.trim();
+  const recipientPhone = document.getElementById('declared-recipient-phone').value.trim();
+  if (isProxy && (!recipientCccd || !recipientPhone)){
+    showToast('Vui lòng nhập đủ CCCD và SĐT người nhận khi chọn "Người lấy hộ".', 'err');
+    return;
+  }
+
+  if (!a.returnInfo) a.returnInfo = { done:false, satisfaction:null };
+  a.returnInfo.method = method;
+  a.returnInfo.copies = Number(document.getElementById('declared-copies').value) || 1;
+  a.returnInfo.recipientCccd = isProxy ? recipientCccd : '';
+  a.returnInfo.recipientPhone = isProxy ? recipientPhone : '';
+
+  closeModal('modal-declared-info');
+  showToast('Đã lưu thông tin sinh viên kê khai.', 'ok');
+  renderAppGrid();
+}
+*/
+
+renderAppGrid();
+</script>
+</body>
+</html>

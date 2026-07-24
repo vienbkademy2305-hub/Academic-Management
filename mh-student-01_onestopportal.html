@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bộ phận một cửa | Cổng thông tin Sinh viên</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Bộ phận một cửa cho sinh viên (MH-STUDENT-01) ========== */
+
+  /* Dropdown thông báo — giống các màn hình admin */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Tabs điều hướng chính: Biểu mẫu khả dụng / Lịch sử đăng ký */
+  .portal-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .portal-tab{padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .15s}
+  .portal-tab:hover{color:var(--primary)}
+  .portal-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .portal-pane{display:none}
+  .portal-pane.active{display:block}
+
+  /* Card lưới biểu mẫu khả dụng */
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .form-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s}
+  .form-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+  .form-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .form-card-name{font-size:14.5px;font-weight:600;color:var(--text-1);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+  .form-card-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:11px;color:var(--text-3);flex-shrink:0;margin-top:2px}
+  .form-card-desc{font-size:12.5px;color:var(--text-2);line-height:1.5;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .form-card-unit{font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:5px}
+  .form-card-ft{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+
+  /* Bộ lọc biểu mẫu */
+  .form-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+
+  /* Bảng lịch sử đăng ký — dùng đúng class .tbl/.app-code/.app-form-cell như mh-admin-03 */
+  #pane-history .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #pane-history table.tbl th{background:#f0f0f0}
+  .app-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .app-form-cell{font-size:13.5px;color:var(--primary);cursor:pointer;display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+  .app-form-cell:hover{text-decoration:underline}
+  tr.app-row{cursor:pointer}
+  tr.app-row:hover td{background:var(--primary-light)}
+
+  /* Cột "Bước duyệt" — cùng pattern với mh-admin-03: tên bước ở trên, ghi chú/trạng thái bên dưới */
+  .approver-step{font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-name{font-size:11.5px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-more{color:var(--primary);font-weight:600}
+
+  /* Cột "Tài liệu" — nút link dạng "N file" mở popup danh sách đính kèm, copy nguyên từ mh-admin-03 */
+  .attach-btn{border:none;background:none;padding:0;color:var(--primary);font-size:13px;cursor:pointer;font-family:inherit}
+  .attach-btn:hover{color:var(--primary-h);text-decoration:underline}
+  .attach-list{list-style:none;margin:0;padding:0}
+  .attach-list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0}
+  .attach-list li:last-child{border-bottom:none}
+  .attach-list .attach-ico{font-size:18px;flex-shrink:0}
+  .attach-list .attach-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--text-1)}
+  .attach-empty{text-align:center;color:var(--text-3);font-size:13px;padding:24px}
+
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text-3)}
+  .empty-state-ico{font-size:32px;margin-bottom:8px}
+
+  /* Khung view-only cho popup chi tiết đơn — copy nguyên từ mh-admin-03 */
+  .fi-view label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px}
+  .fi-view-box{padding:7px 11px;border:1px solid var(--border);border-radius:var(--radius);background:#fafafa;font-size:13.5px;color:var(--text-1);min-height:34px;display:flex;align-items:center}
+
+  /* Popup Nộp đơn */
+  .subm-form-name{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:6px}
+  .subm-guide{font-size:13px;color:var(--text-2);line-height:1.5;margin-top:6px}
+  .subm-guide p{margin:0 0 4px}
+  .subm-guide p:last-child{margin-bottom:0}
+  .subm-guide a{color:var(--primary)}
+  .subm-guide a:hover{text-decoration:underline}
+  .subm-section-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 10px}
+  .subm-section-title:first-child{margin-top:0}
+  .decl-field-required{font-size:13px;font-weight:700;color:var(--error);margin-left:2px}
+
+  /* Sao chọn mức độ hài lòng trong khối Feedback của popup xem đơn */
+  #subm-feedback-stars span{color:#d9d9d9;transition:color .1s}
+  #subm-feedback-stars span.filled{color:#faad14}
+  #subm-feedback-readonly-stars{color:#d9d9d9;font-size:18px;letter-spacing:2px}
+  #subm-feedback-readonly-stars .filled{color:#faad14}
+
+  /* Cột "Feedback" trong bảng Lịch sử — cùng pattern .stars ở mh-admin-03 */
+  .stars{color:#d9d9d9;font-size:14px;letter-spacing:1px;white-space:nowrap}
+  .stars .filled{color:#faad14}
+  .stars-lg{font-size:32px}
+
+  /* Khung xem trước nội dung đơn — copy nguyên pattern .adet-content-preview từ mh-admin-03 */
+  .adet-content-preview{border:1px solid var(--border);border-radius:8px;padding:24px 28px;background:#fff;font-size:13.5px;line-height:1.7;max-height:420px;overflow-y:auto}
+
+  /* Ô chọn file đính kèm — copy nguyên pattern .filepick từ mh-admin-02 */
+  .filepick{position:relative}
+  .filepick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .filepick-empty{display:flex;align-items:center;gap:8px;border:1px dashed var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text-3);font-size:13px;background:#fafafa}
+  .filepick-empty svg{flex-shrink:0}
+  .filepick.has-file .filepick-empty{display:none}
+  .filepick-picked{display:none;align-items:center;gap:10px;border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;background:#fff}
+  .filepick.has-file .filepick-picked{display:flex}
+  .filepick-picked svg{color:var(--primary);flex-shrink:0}
+  .filepick-picked-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--text-1)}
+  .filepick-remove{position:relative;z-index:1;flex-shrink:0;width:24px;height:24px;border-radius:4px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--text-3);display:inline-flex;align-items:center;justify-content:center}
+  .filepick-remove:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Cổng Sinh viên</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">BT</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Trần Thị Bích</div>
+        <div style="font-size:11px;color:var(--text-3)">MSSV 20120045</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li class="active">
+        <a href="#">🗂️&nbsp; Bộ phận một cửa</a>
+      </li>
+      <li><a href="#">📚&nbsp; Kết quả học tập</a></li>
+      <li><a href="#">📅&nbsp; Thời khoá biểu</a></li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb"><b style="color:var(--text-1)">Bộ phận một cửa</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av">BT</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — BỘ PHẬN MỘT CỬA CHO SINH VIÊN (MH-STUDENT-01)
+      ═══════════════════════════════════════════════════════ -->
+
+      <!-- Tabs -->
+      <div class="portal-tabs">
+        <button type="button" class="portal-tab active" data-tab="pane-forms" onclick="pickPortalTab('pane-forms')">Biểu mẫu</button>
+        <button type="button" class="portal-tab" data-tab="pane-history" onclick="pickPortalTab('pane-history')">Lịch sử</button>
+      </div>
+
+      <!-- ═══ TAB 1: Biểu mẫu khả dụng ═══ -->
+      <div class="portal-pane active" id="pane-forms">
+        <div class="form-filter-bar">
+          <input class="fc" id="form-search" type="text" placeholder="🔍 Tìm biểu mẫu…" autocomplete="off" style="width:280px">
+          <select class="fc" id="form-unit-select" style="width:220px">
+            <option value="all">Tất cả đơn vị phụ trách</option>
+          </select>
+        </div>
+        <div class="form-grid" id="form-grid"><!-- rendered by JS --></div>
+      </div>
+
+      <!-- ═══ TAB 2: Lịch sử — dùng đúng class bảng .tbl/.tag/.app-form-cell/.app-code như bảng
+           "Quản lý Đơn từ" ở mh-admin-03, rút gọn cột cho phù hợp góc nhìn sinh viên. Gộp chung
+           đơn đã nộp và đơn đã lưu nháp vào 1 bảng, phân biệt bằng tag trạng thái "Nháp". ═══ -->
+      <div class="portal-pane" id="pane-history">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:50px">STT</th>
+                <th style="width:250px">Tên Đơn</th>
+                <th style="width:90px">Tài liệu</th>
+                <th style="width:130px">Ngày nộp</th>
+                <th style="width:150px">Trạng thái</th>
+                <th style="width:170px;display:none">Bước duyệt</th>
+                <th style="width:100px">Số bản in</th>
+                <th style="width:110px">Kết quả trả</th>
+                <th style="width:130px">Ngày trả</th>
+                <th style="width:120px">Feedback</th>
+                <th style="width:80px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody"><!-- rendered by JS --></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="history-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Nộp đơn ═══ -->
+<div class="overlay hidden" id="modal-submit-form">
+  <div class="modal-box w700">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="subm-title">Nộp đơn</h3>
+        <div class="subm-guide" id="subm-guide"></div>
+      </div>
+      <button class="modal-close" data-close="modal-submit-form">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="subm-section-title" id="subm-extra-title" style="margin-top:0;display:none">Thông tin kê khai</div>
+      <div id="subm-extra-fields"></div>
+      <div id="subm-extra-empty" class="text-muted text-sm" style="display:none">Biểu mẫu này không yêu cầu kê khai thêm trường thông tin nào.</div>
+
+      <div id="subm-receive-section">
+        <div class="subm-section-title">Thông tin nhận đơn</div>
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Phương thức nhận đơn</label>
+            <select class="fc" id="subm-method" onchange="onSubmMethodChange()">
+              <option value="Sinh viên tự lấy">Sinh viên tự lấy</option>
+              <option value="Người lấy hộ">Người lấy hộ</option>
+            </select>
+          </div>
+          <div class="fi">
+            <label>Số bản in mong muốn</label>
+            <input class="fc" id="subm-copies" type="number" min="1" value="1">
+          </div>
+        </div>
+        <div class="f-row col-2" id="subm-proxy-row">
+          <div class="fi" id="subm-recipient-cccd-block">
+            <label>CCCD người nhận<span class="req">*</span></label>
+            <input class="fc" id="subm-recipient-cccd" placeholder="Số CCCD/Hộ chiếu">
+            <div class="fe">Vui lòng nhập CCCD/Hộ chiếu người nhận.</div>
+          </div>
+          <div class="fi" style="margin-bottom:0">
+            <label>SĐT người nhận</label>
+            <input class="fc" id="subm-recipient-phone" placeholder="Số điện thoại">
+          </div>
+        </div>
+      </div>
+
+      <div id="subm-progress-section" style="display:none">
+        <div class="subm-section-title">Quy trình duyệt</div>
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:40px">STT</th>
+              <th>Bước</th>
+              <th>Ghi chú</th>
+              <th style="width:150px">Thời gian</th>
+            </tr>
+          </thead>
+          <tbody id="subm-progress-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" id="subm-btn-close" data-close="modal-submit-form">Huỷ</button>
+      <button class="btn btn-default" onclick="previewSubmitForm()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview
+      </button>
+      <button class="btn btn-default" onclick="downloadSubmitFormWord()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Tải đơn
+      </button>
+      <button class="btn btn-default" id="subm-btn-draft" onclick="saveSubmitFormDraft()">Lưu nháp</button>
+      <button class="btn btn-primary" id="subm-btn-confirm" onclick="confirmSubmitForm()">Nộp</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Quy trình duyệt — cùng layout modal-workflow-progress ở mh-admin-03
+     (STT/Bước/Đơn vị duyệt/Vai trò duyệt/Người xử lý/Thời gian nhận/Thời gian xử lý/Kết quả/Lý do) ═══ -->
+<div class="overlay hidden" id="modal-workflow-progress">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="wfp-title">Quy trình phê duyệt</h3>
+      </div>
+      <button class="modal-close" data-close="modal-workflow-progress">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:40px">STT</th>
+              <th>Bước</th>
+              <th>Đơn vị duyệt</th>
+              <th>Vai trò duyệt</th>
+              <th>Người xử lý</th>
+              <th>Thời gian nhận</th>
+              <th>Thời gian xử lý</th>
+              <th>Kết quả</th>
+              <th>Lý do</th>
+            </tr>
+          </thead>
+          <tbody id="wfp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-workflow-progress">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Feedback — mở nhanh từ cột Feedback trong bảng Lịch sử, chỉ áp dụng cho đơn
+     đã có kết quả cuối cùng (Đã duyệt/Từ chối). Nếu chưa đánh giá thì hiện form chọn sao + góp
+     ý; nếu đã đánh giá rồi thì hiện lại dạng chỉ xem. ═══ -->
+<div class="overlay hidden" id="modal-feedback">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="fb-title">Feedback</h3>
+      </div>
+      <button class="modal-close" data-close="modal-feedback">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div id="subm-feedback-form">
+        <div class="fi">
+          <label>Mức độ hài lòng<span class="decl-field-required">*</span></label>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;min-height:60px;padding:8px 0">
+            <div id="subm-feedback-stars" style="display:flex;gap:6px;font-size:32px;cursor:pointer"></div>
+            <span id="subm-feedback-stars-label" style="font-size:12.5px;font-weight:500;color:var(--text-2)"></span>
+          </div>
+        </div>
+        <div class="fi" style="margin-bottom:0">
+          <label>Kiến nghị, đề xuất</label>
+          <textarea class="fc" id="subm-feedback-comment" rows="3" placeholder="Chia sẻ trải nghiệm của bạn về quá trình xử lý đơn này…"></textarea>
+        </div>
+      </div>
+      <div id="subm-feedback-readonly" style="display:none">
+        <div class="fi-view">
+          <label>Mức độ hài lòng<span class="decl-field-required">*</span></label>
+          <div id="subm-feedback-readonly-stars" style="display:flex;flex-direction:column;align-items:center;gap:8px;min-height:60px;padding:8px 0"></div>
+        </div>
+        <div class="fi-view" style="margin-top:14px;margin-bottom:0">
+          <label>Kiến nghị, đề xuất</label>
+          <div class="fi-view-box" id="subm-feedback-readonly-comment" style="min-height:70px;align-items:flex-start;white-space:pre-wrap"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-feedback">Đóng</button>
+      <button class="btn btn-primary" id="fb-btn-submit" onclick="submitFeedback()">Gửi feedback</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tài liệu đính kèm — copy nguyên từ mh-admin-03 ═══ -->
+<div class="overlay hidden" id="modal-attachments">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Tài liệu đính kèm</h3>
+      <button class="modal-close" data-close="modal-attachments">✕</button>
+    </div>
+    <div class="modal-bd">
+      <ul class="attach-list" id="attach-list"></ul>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-attachments">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Xem trước nội dung đơn ═══ -->
+<div class="overlay hidden" id="modal-preview-form">
+  <div class="modal-box w700">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="preview-title">Preview đơn</h3>
+      </div>
+      <button class="modal-close" data-close="modal-preview-form">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="adet-content-preview" id="preview-content"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-preview-form">Đóng</button>
+      <button class="btn btn-default" onclick="downloadSubmitFormWord()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Tải đơn
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* == Dropdown thông báo == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'✅', title:'Đơn "Xin xác nhận sinh viên" đã được duyệt', time:'2 giờ trước' },
+  { id:'n2', unread:true, ico:'📝', title:'Đơn "Đăng ký ở ký túc xá" cần bổ sung minh chứng', time:'Hôm qua' },
+  { id:'n3', unread:false, ico:'ℹ️', title:'Biểu mẫu "Đơn phúc khảo điểm thi" vừa mở đăng ký', time:'2 ngày trước' },
+];
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+updateNotifBadge();
+
+/* ============================================================
+   DATA — hồ sơ sinh viên đang đăng nhập. Các trường này chính là
+   tiêu chí lọc "biểu mẫu áp dụng cho tôi": đơn vị (unitId khớp
+   applyUnits của biểu mẫu), hệ đào tạo (scope khớp scopes của
+   biểu mẫu) và trạng thái sinh viên (khớp studentStatuses).
+   Cùng cấu trúc điều kiện áp dụng với FORMS ở mh-admin-02.
+   ============================================================ */
+const CURRENT_STUDENT = {
+  name: 'Trần Thị Bích',
+  mssv: '20120045',
+  cccd: '038204012345',
+  phone: '0912345678',
+  lopHanhChinh: 'CT4501',
+  khoa: 'Khoa CNTT',
+  unitId: 'u-cntt-httt',   // Bộ môn Hệ thống Thông tin (Khoa CNTT)
+  scope: 'chinhquy',       // Hệ đào tạo — khớp SCOPE_LABEL ở mh-admin-02
+  status: 'danghoc',       // Trạng thái sinh viên — khớp studentStatuses ở mh-admin-02
+};
+
+/* Đơn vị áp dụng, quy về đúng 3 cấp như UNITS ở mh-admin-02/03 để applyUnits
+   ở cấp cao hơn (VD Khoa CNTT) vẫn áp dụng được cho SV thuộc bộ môn con */
+const UNITS = [
+  { id:'u-dh', level:1, parent:null, name:'Đại học' },
+  { id:'u-ctsv', level:1, parent:null, name:'Ban Công tác Sinh viên' },
+  { id:'u-daotao', level:1, parent:null, name:'Ban Đào tạo' },
+  { id:'u-sdh', level:1, parent:null, name:'Phòng Sau đại học' },
+  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
+  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
+  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
+  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
+];
+function unitById(id){ return UNITS.find(u => u.id === id); }
+
+/* Sinh viên thuộc unitId có nằm trong phạm vi của 1 đơn vị áp dụng hay không —
+   đệ quy qua các cấp cha (bộ môn → khoa → đại học), giống unitIsWithin ở mh-admin-03 */
+function studentInUnit(studentUnitId, applyUnitId){
+  let u = unitById(studentUnitId);
+  while (u){
+    if (u.id === applyUnitId) return true;
+    u = u.parent ? unitById(u.parent) : null;
+  }
+  return false;
+}
+
+const SCOPE_LABEL = {
+  chinhquy: 'Đại học chính quy',
+  vlvh:     'Vừa làm vừa học',
+  lienthong:'Liên thông',
+  saudaihoc:'Sau đại học',
+};
+
+/* ============================================================
+   DATA — danh mục biểu mẫu (rút gọn từ FORMS ở mh-admin-02),
+   mỗi biểu mẫu có applyUnits/scopes/studentStatuses để lọc đúng
+   theo hồ sơ CURRENT_STUDENT. status:'inactive' không hiển thị
+   cho sinh viên dù có khớp điều kiện.
+   ============================================================ */
+const FORMS = [
+  { id:'f15', code:'BM15', name:'Đơn xin xác nhận sinh viên',
+    desc:'Dùng cho vay vốn ngân hàng, xin visa, xác nhận với cơ quan/tổ chức khác',
+    ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy','vlvh','lienthong','saudaihoc'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'mucDichXacNhan', label:'Mục đích xin xác nhận', type:'Select', required:true,
+        options:['Vay vốn ngân hàng','Xin visa','Xác nhận với cơ quan/tổ chức khác','Xét miễn/giảm học phí'] },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN XÁC NHẬN LÀ SINH VIÊN</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Công tác Sinh viên</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Mục đích xin xác nhận: #mucDichXacNhan</p>
+      <p>Kính đề nghị Nhà trường xác nhận cho tôi hiện đang là sinh viên đang theo học tại trường để tôi hoàn thiện thủ tục nêu trên.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f16', code:'BM16', name:'Đơn đăng ký ở ký túc xá',
+    desc:'Nộp trước ngày 15/08 hằng năm',
+    ownerUnitName:'Ban Quản lý Ký túc xá', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'loaiPhongDangKy', label:'Loại phòng đăng ký', type:'Select', required:true,
+        options:['Phòng 4 người','Phòng 6 người','Phòng 8 người'] },
+      { code:'soHoKhau', label:'Sổ hộ khẩu (bản chụp)', type:'File upload', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN ĐĂNG KÝ Ở KÝ TÚC XÁ</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Quản lý Ký túc xá</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Loại phòng đăng ký: #loaiPhongDangKy</p>
+      <p>Kính đề nghị Ban Quản lý Ký túc xá xem xét, bố trí chỗ ở cho tôi trong thời gian học tập tại trường.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f3', code:'BM3', name:'Đơn xin bảo lưu kết quả học tập',
+    desc:'Áp dụng khi sinh viên tạm dừng học tối đa 2 học kỳ',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy','vlvh'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'lyDoBaoLuu', label:'Lý do bảo lưu', type:'Textarea', required:true },
+      { code:'thoiGianBaoLuu', label:'Thời gian bảo lưu', type:'Select', required:true, options:['1 học kỳ','2 học kỳ'] },
+      { code:'giayKhamSucKhoe', label:'Giấy khám sức khoẻ (nếu lý do sức khoẻ)', type:'File upload', required:false },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN BẢO LƯU KẾT QUẢ HỌC TẬP</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Đào tạo</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Lý do bảo lưu: #lyDoBaoLuu</p>
+      <p>Thời gian bảo lưu: #thoiGianBaoLuu</p>
+      <p>Kính đề nghị Nhà trường xem xét, giải quyết cho tôi được bảo lưu kết quả học tập theo thời gian nêu trên.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-diemthi', code:'BM06', name:'Đơn phúc khảo điểm thi',
+    desc:'Nộp trong vòng 7 ngày kể từ ngày công bố điểm',
+    ownerUnitName:'Khoa CNTT', applyUnits:['u-cntt'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    extraFields:[
+      { code:'monHocPhucKhao', label:'Tên học phần', type:'Text', required:true },
+      { code:'diemHienTai', label:'Điểm hiện tại', type:'Text', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN PHÚC KHẢO ĐIỂM THI</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Khoa CNTT</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Tên học phần: #monHocPhucKhao</p>
+      <p>Điểm hiện tại: #diemHienTai</p>
+      <p>Kính đề nghị Khoa xem xét, tổ chức phúc khảo điểm thi học phần nêu trên cho tôi.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-httt-xacnhan', code:'BM13', name:'Đơn xin xác nhận (Bộ môn HTTT)',
+    desc:'Bản tuỳ chỉnh riêng của Bộ môn Hệ thống Thông tin — bổ sung xác nhận của giảng viên hướng dẫn',
+    ownerUnitName:'Bộ môn Hệ thống Thông tin', applyUnits:['u-cntt-httt'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'gvHuongDan', label:'Giảng viên hướng dẫn', type:'Text', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN XÁC NHẬN</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Bộ môn Hệ thống Thông tin</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Giảng viên hướng dẫn: #gvHuongDan</p>
+      <p>Kính đề nghị Bộ môn xác nhận nội dung nêu trên để tôi hoàn thiện thủ tục liên quan.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-totnghiep', code:'BM11', name:'Đơn xin công nhận tốt nghiệp',
+    desc:'Áp dụng cho sinh viên đã hoàn thành chương trình đào tạo',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['totnghiep'], status:'active',
+    extraFields:[
+      { code:'diemTBTichLuy', label:'Điểm TB tích luỹ', type:'Text', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN CÔNG NHẬN TỐT NGHIỆP</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Đào tạo</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Điểm trung bình tích luỹ: #diemTBTichLuy</p>
+      <p>Kính đề nghị Nhà trường xem xét, công nhận tốt nghiệp cho tôi theo chương trình đào tạo đã hoàn thành.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-hocvuot', code:'BM5', name:'Đơn đăng ký học vượt',
+    desc:'Yêu cầu GPA tích lũy ≥ 3.2',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'inactive',
+    extraFields:[] },
+  { id:'f-trocap', code:'BM6', name:'Đơn xin trợ cấp khó khăn',
+    desc:'Kèm minh chứng hoàn cảnh gia đình để xét trợ cấp học kỳ này',
+    ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy','vlvh'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'hoanCanhGiaDinh', label:'Hoàn cảnh gia đình', type:'Textarea', required:true },
+      { code:'minhChungHoanCanh', label:'Minh chứng hoàn cảnh (sổ hộ nghèo, xác nhận địa phương…)', type:'File upload', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN TRỢ CẤP KHÓ KHĂN</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Công tác Sinh viên</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Hoàn cảnh gia đình: #hoanCanhGiaDinh</p>
+      <p>Kính đề nghị Nhà trường xem xét, hỗ trợ trợ cấp khó khăn cho tôi trong học kỳ này.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-khenthuong', code:'BM4', name:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)',
+    desc:'Kèm minh chứng thành tích học tập/rèn luyện nổi bật trong học kỳ hoặc năm học',
+    ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active',
+    extraFields:[
+      { code:'thanhTichNoiBat', label:'Thành tích nổi bật', type:'Textarea', required:true },
+      { code:'minhChungThanhTich', label:'Minh chứng thành tích (bằng khen/giấy chứng nhận)', type:'File upload', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN ĐỀ NGHỊ KHEN THƯỞNG</b></p>
+      <p style="text-align:center">(Danh hiệu Sinh viên 5 tốt)</p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Công tác Sinh viên</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Thành tích nổi bật: #thanhTichNoiBat</p>
+      <p>Kính đề nghị Nhà trường xem xét, công nhận danh hiệu Sinh viên 5 tốt cho tôi theo thành tích nêu trên.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-chuyennganh', code:'BM2', name:'Đơn xin chuyển ngành',
+    desc:'Nộp trước khi kết thúc học kỳ 2 của năm nhất, cần đạt điều kiện GPA theo quy chế',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    extraFields:[
+      { code:'nganhMuonChuyen', label:'Ngành muốn chuyển đến', type:'Text', required:true },
+      { code:'lyDoChuyenNganh', label:'Lý do chuyển ngành', type:'Textarea', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN CHUYỂN NGÀNH</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Đào tạo</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Ngành muốn chuyển đến: #nganhMuonChuyen</p>
+      <p>Lý do chuyển ngành: #lyDoChuyenNganh</p>
+      <p>Kính đề nghị Nhà trường xem xét, giải quyết cho tôi được chuyển sang ngành nêu trên.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-caithien', code:'BM3b', name:'Đơn xin học cải thiện điểm',
+    desc:'Áp dụng với học phần đã có điểm chữ từ D trở lên, đăng ký theo đợt học lại',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy','vlvh','lienthong'],
+    studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    extraFields:[
+      { code:'hocPhanCaiThien', label:'Tên học phần muốn học cải thiện', type:'Text', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN HỌC CẢI THIỆN ĐIỂM</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Đào tạo</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Tên học phần muốn học cải thiện: #hocPhanCaiThien</p>
+      <p>Kính đề nghị Nhà trường xem xét, cho phép tôi đăng ký học cải thiện học phần nêu trên theo đợt học lại gần nhất.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+  { id:'f-rutmon', code:'BM4b', name:'Đơn xin rút học phần',
+    desc:'Hạn chót nộp đơn là tuần thứ 3 kể từ đầu học kỳ',
+    ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
+    studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    extraFields:[
+      { code:'hocPhanMuonRut', label:'Tên học phần muốn rút', type:'Text', required:true },
+    ],
+    content:`
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>ĐƠN XIN RÚT HỌC PHẦN</b></p>
+      <p style="text-align:center">___________</p>
+      <p style="text-align:center"><b>Kính gửi: Ban Đào tạo</b></p>
+      <p>Họ và tên: #hoTen&nbsp;&nbsp;&nbsp;Mã sinh viên: #maSinhVien</p>
+      <p>Lớp: #lopHanhChinh&nbsp;&nbsp;Khoa: #donViQuanLy</p>
+      <p>Tên học phần muốn rút: #hocPhanMuonRut</p>
+      <p>Kính đề nghị Nhà trường xem xét, cho phép tôi rút học phần nêu trên trong học kỳ này.</p>
+      <p>Tôi xin trân trọng cảm ơn.</p>
+      <p style="text-align:right">……, ngày…….tháng…….năm 2026</p>
+      <p style="text-align:right"><b>NGƯỜI LÀM ĐƠN</b></p>
+      <p style="text-align:right"><i>(Ký tên và ghi rõ họ tên)</i></p>
+    ` },
+];
+
+/* ============================================================
+   DATA — lịch sử đơn đã nộp của CURRENT_STUDENT
+   ============================================================ */
+const HISTORY = [
+  { formId:'f15', code:'BM15-000231', name:'Đơn xin xác nhận sinh viên', submitted:'17/07/2026', status:'Chờ duyệt',
+    returned:'Chưa trả', handler:'', returnedDate:'', copies:2,
+    steps:[
+      { step:'Nộp yêu cầu', note:'Đã nộp qua cổng thông tin', time:'17/07/2026 09:12' },
+      { step:'Phòng CTSV xác nhận', note:'Đang chờ xử lý', time:'—', approvers:['Nguyễn Văn Admin','Chuyên viên CTSV'] },
+    ] },
+  { formId:'f15', code:'BM15-000180', name:'Đơn xin xác nhận sinh viên', submitted:'05/07/2026', status:'Đã duyệt',
+    returned:'Đã trả', handler:'Cán bộ Trần Thị Loan', returnedDate:'06/07/2026', copies:1,
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'05/07/2026 10:00' },
+      { step:'Phòng CTSV xác nhận', note:'Duyệt và trả kết quả', time:'06/07/2026 14:20' },
+    ] },
+  { formId:'f3', code:'BM03-000077', name:'Đơn xin bảo lưu kết quả học tập', submitted:'20/06/2026', status:'Từ chối',
+    returned:'Chưa trả', handler:'', returnedDate:'', copies:1,
+    attachments:[
+      { name:'giay-kham-suc-khoe.pdf', size:'980 KB' },
+    ],
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'20/06/2026 11:00' },
+      { step:'Khoa xét duyệt', note:'Thiếu giấy xác nhận của cơ sở y tế', time:'22/06/2026 16:30' },
+    ] },
+  { formId:'f16', code:'—', name:'Đơn đăng ký ở ký túc xá', submitted:'21/07/2026', status:'Lưu nháp',
+    returned:'—', handler:'', returnedDate:'', copies:1,
+    attachments:[
+      { name:'so-ho-khau.pdf', size:'1.2 MB' },
+    ],
+    steps:[
+      { step:'Lưu nháp', note:'Chưa nộp — có thể tiếp tục hoàn thiện', time:'21/07/2026' },
+    ] },
+  { formId:'f-trocap', code:'—', name:'Đơn xin trợ cấp khó khăn', submitted:'19/07/2026', status:'Lưu nháp',
+    returned:'—', handler:'', returnedDate:'',
+    steps:[
+      { step:'Lưu nháp', note:'Chưa nộp — có thể tiếp tục hoàn thiện', time:'19/07/2026' },
+    ] },
+  { formId:'f-diemthi', code:'BM06-000042', name:'Đơn phúc khảo điểm thi', submitted:'15/07/2026', status:'Chờ duyệt',
+    returned:'—', handler:'', returnedDate:'',
+    steps:[
+      { step:'Nộp yêu cầu', note:'Đã nộp qua cổng thông tin', time:'15/07/2026 08:40' },
+      { step:'Bộ môn chấm phúc khảo', note:'Đang chờ xử lý', time:'—', approvers:['GV. Đỗ Thị Hằng'] },
+    ] },
+  { formId:'f-chuyennganh', code:'BM02-000015', name:'Đơn xin chuyển ngành', submitted:'02/07/2026', status:'Đã duyệt',
+    returned:'—', handler:'', returnedDate:'',
+    feedback:{ rating:5, comment:'Xử lý nhanh, hướng dẫn rõ ràng.' },
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'02/07/2026 09:00' },
+      { step:'Ban Đào tạo xét duyệt', note:'Đủ điều kiện GPA, đồng ý chuyển ngành', time:'08/07/2026 15:10' },
+    ] },
+  { formId:'f-caithien', code:'BM03B-000009', name:'Đơn xin học cải thiện điểm', submitted:'28/06/2026', status:'Đã duyệt',
+    returned:'—', handler:'', returnedDate:'',
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'28/06/2026 13:20' },
+      { step:'Ban Đào tạo xét duyệt', note:'Đồng ý cho đăng ký học cải thiện', time:'01/07/2026 10:00' },
+    ] },
+  { formId:'f-rutmon', code:'BM04B-000003', name:'Đơn xin rút học phần', submitted:'10/06/2026', status:'Từ chối',
+    returned:'—', handler:'', returnedDate:'',
+    feedback:{ rating:2, comment:'Lý do từ chối chưa được giải thích rõ.' },
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'10/06/2026 08:00' },
+      { step:'Ban Đào tạo xét duyệt', note:'Đã quá hạn tuần thứ 3 của học kỳ', time:'12/06/2026 09:30' },
+    ] },
+  { formId:'f-khenthuong', code:'BM04-000028', name:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', submitted:'05/06/2026', status:'Chờ duyệt',
+    returned:'Chưa trả', handler:'', returnedDate:'', copies:1,
+    steps:[
+      { step:'Nộp yêu cầu', note:'Đã nộp qua cổng thông tin', time:'05/06/2026 10:15' },
+      { step:'Ban Công tác Sinh viên xét duyệt', note:'Đang chờ xử lý', time:'—', approvers:['Nguyễn Văn Admin'] },
+    ] },
+  { formId:'f-totnghiep', code:'BM11-000061', name:'Đơn xin công nhận tốt nghiệp', submitted:'22/05/2026', status:'Yêu cầu chỉnh sửa',
+    returned:'Chưa trả', handler:'', returnedDate:'', copies:3,
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'22/05/2026 09:00' },
+      { step:'Ban Đào tạo xét duyệt', note:'Thiếu bảng điểm tích luỹ học kỳ cuối, bổ sung lại', time:'25/05/2026 14:00' },
+    ] },
+  { formId:'f15', code:'BM15-000099', name:'Đơn xin xác nhận sinh viên', submitted:'18/05/2026', status:'Đã duyệt',
+    returned:'Đã trả', handler:'Cán bộ Trần Thị Loan', returnedDate:'19/05/2026', copies:1,
+    feedback:{ rating:4, comment:'' },
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'18/05/2026 08:30' },
+      { step:'Phòng CTSV xác nhận', note:'Duyệt và trả kết quả', time:'19/05/2026 11:00' },
+    ] },
+  { formId:'f16', code:'BM16-000012', name:'Đơn đăng ký ở ký túc xá', submitted:'10/05/2026', status:'Từ chối',
+    returned:'Chưa trả', handler:'', returnedDate:'', copies:1,
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'10/05/2026 09:00' },
+      { step:'Ban Quản lý Ký túc xá xét duyệt', note:'Đã hết chỉ tiêu phòng đăng ký', time:'14/05/2026 16:45' },
+    ] },
+  { formId:'f-trocap', code:'BM06-000005', name:'Đơn xin trợ cấp khó khăn', submitted:'02/05/2026', status:'Đã duyệt',
+    returned:'Đã trả', handler:'Cán bộ Trần Thị Loan', returnedDate:'06/05/2026', copies:1,
+    attachments:[
+      { name:'so-ho-ngheo.pdf', size:'860 KB' },
+      { name:'xac-nhan-dia-phuong.pdf', size:'540 KB' },
+    ],
+    steps:[
+      { step:'Nộp yêu cầu', note:'', time:'02/05/2026 08:00' },
+      { step:'Ban Công tác Sinh viên xét duyệt', note:'Duyệt và trả kết quả', time:'06/05/2026 10:30' },
+    ] },
+];
+
+const STATUS_TAG_CLASS = { 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Từ chối':'tag-error', 'Yêu cầu chỉnh sửa':'tag-blue', 'Lưu nháp':'tag-default' };
+
+/* Nhãn mức độ hài lòng — đồng bộ SATISFACTION_LABEL ở mh-admin-03, dùng cho popup Chi tiết đánh giá */
+const SATISFACTION_LABEL = { 1:'Rất không hài lòng', 2:'Không hài lòng', 3:'Bình thường', 4:'Hài lòng', 5:'Rất hài lòng' };
+
+/* == Tabs điều hướng == */
+function pickPortalTab(tabId){
+  document.querySelectorAll('.portal-tab').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tabId));
+  document.querySelectorAll('.portal-pane').forEach(p => p.classList.toggle('active', p.id === tabId));
+}
+
+/* == Biểu mẫu khả dụng — chỉ hiện biểu mẫu active VÀ khớp cả 3 điều kiện của CURRENT_STUDENT == */
+function formAppliesToStudent(f){
+  if (f.status !== 'active') return false;
+  const unitMatch = f.applyUnits.some(u => studentInUnit(CURRENT_STUDENT.unitId, u));
+  const scopeMatch = f.scopes.includes(CURRENT_STUDENT.scope);
+  const statusMatch = f.studentStatuses.includes(CURRENT_STUDENT.status);
+  return unitMatch && scopeMatch && statusMatch;
+}
+
+function initFormUnitSelect(){
+  const applicable = FORMS.filter(formAppliesToStudent);
+  const units = [...new Set(applicable.map(f => f.ownerUnitName))].sort((a,b) => a.localeCompare(b,'vi'));
+  const select = document.getElementById('form-unit-select');
+  select.innerHTML = '<option value="all">Tất cả đơn vị phụ trách</option>' +
+    units.map(u => `<option value="${u}">${u}</option>`).join('');
+}
+
+/* Giới hạn số card hiển thị, tránh trang dài vô hạn khi danh mục biểu mẫu áp dụng cho sinh
+   viên có nhiều lựa chọn — không phân trang/xem thêm, chỉ cắt bớt các card vượt quá. */
+const FORM_GRID_MAX = 10;
+
+function renderFormGrid(){
+  const q = (document.getElementById('form-search').value || '').trim().toLowerCase();
+  const unitFilter = document.getElementById('form-unit-select').value;
+
+  const applicable = FORMS.filter(formAppliesToStudent).filter(f => {
+    if (q && !f.name.toLowerCase().includes(q)) return false;
+    if (unitFilter !== 'all' && f.ownerUnitName !== unitFilter) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('form-grid');
+  if (!applicable.length){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-ico">🔍</div><div>Không có biểu mẫu nào phù hợp bộ lọc, hoặc hiện chưa có biểu mẫu nào áp dụng cho hồ sơ của bạn.</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = applicable.slice(0, FORM_GRID_MAX).map(f => `
+    <div class="form-card">
+      <div class="form-card-hd">
+        <div class="form-card-name" title="${f.name}">${f.name}</div>
+        <div class="form-card-code">${f.code}</div>
+      </div>
+      <div class="form-card-desc" title="${f.desc}">${f.desc}</div>
+      <div class="form-card-unit">🏢 ${f.ownerUnitName}</div>
+      <div class="form-card-ft">
+        <span class="tag tag-blue">${SCOPE_LABEL[CURRENT_STUDENT.scope]}</span>
+        <button class="btn btn-primary btn-sm" onclick="openSubmitForm('${f.id}')">Đăng ký</button>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('form-search').addEventListener('input', renderFormGrid);
+document.getElementById('form-unit-select').addEventListener('change', renderFormGrid);
+
+/* == Popup Nộp đơn == */
+/* Nhãn loại trường — đồng bộ với DECL_FIELD_TYPE_LABEL ở mh-admin-03 */
+/* Mặc định biểu mẫu cần trả bản cứng trừ khi cấu hình rõ needsReturn:false ở mh-admin-02 */
+function formNeedsReturn(f){ return f.needsReturn !== false; }
+
+let currentSubmitForm = null;
+
+let currentHistoryIndex = null;
+
+function openSubmitForm(id, viewOnly, historyIndex){
+  const f = FORMS.find(x => x.id === id);
+  if (!f) return;
+  currentSubmitForm = f;
+  currentHistoryIndex = typeof historyIndex === 'number' ? historyIndex : null;
+  document.getElementById('subm-title').textContent = viewOnly ? `Xem đơn: ${f.name}` : f.name;
+  document.getElementById('subm-guide').innerHTML = f.desc ? `<p>${f.desc}</p>` : '<p class="text-muted">Chưa có nội dung/hướng dẫn cho biểu mẫu này.</p>';
+
+  const extraTitle = document.getElementById('subm-extra-title');
+  const extraWrap = document.getElementById('subm-extra-fields');
+  const extraEmpty = document.getElementById('subm-extra-empty');
+
+  if (!f.extraFields.length){
+    extraTitle.style.display = 'none';
+    extraWrap.innerHTML = '';
+    extraEmpty.style.display = '';
+  } else {
+    extraTitle.style.display = '';
+    extraEmpty.style.display = 'none';
+    extraWrap.innerHTML = f.extraFields.map(ef => {
+      const reqMark = ef.required ? '<span class="decl-field-required">*</span>' : '';
+      const label = `<label>${ef.label}${reqMark}</label>`;
+      const fieldId = 'subm-extra-' + ef.code;
+      if (ef.type === 'Select'){
+        return `<div class="fi">${label}<select class="fc" id="${fieldId}">${ef.options.map(o => `<option>${o}</option>`).join('')}</select></div>`;
+      }
+      if (ef.type === 'Textarea'){
+        return `<div class="fi">${label}<textarea class="fc" id="${fieldId}" rows="3"></textarea></div>`;
+      }
+      if (ef.type === 'File upload'){
+        const inputId = 'subm-file-' + ef.code;
+        return `<div class="fi">${label}
+          <div class="filepick" id="${inputId}-pick">
+            <div class="filepick-empty">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>Bấm để chọn tệp đính kèm…</span>
+            </div>
+            <div class="filepick-picked">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span class="filepick-picked-name" id="${inputId}-name"></span>
+              <button type="button" class="filepick-remove" title="Xoá file" onclick="removeSubmFile(event,'${inputId}')">✕</button>
+            </div>
+            <input type="file" id="${inputId}" onchange="onSubmFileChange('${inputId}')">
+          </div>
+        </div>`;
+      }
+      return `<div class="fi">${label}<input class="fc" id="${fieldId}" type="text"></div>`;
+    }).join('');
+  }
+
+  const receiveSection = document.getElementById('subm-receive-section');
+  if (formNeedsReturn(f)){
+    receiveSection.style.display = '';
+    document.getElementById('subm-method').value = 'Sinh viên tự lấy';
+    document.getElementById('subm-copies').value = 1;
+    applySubmRecipientInfo();
+  } else {
+    receiveSection.style.display = 'none';
+  }
+
+  applySubmViewOnlyMode(viewOnly);
+  openModal('modal-submit-form');
+}
+
+/* Chế độ chỉ xem — dùng khi mở lại đơn đã nộp (Chờ duyệt/Đã duyệt/Từ chối...) từ Lịch sử:
+   khoá toàn bộ input của phần đơn, chỉ còn xem/Preview/Tải đơn, ẩn "Lưu nháp" và "Nộp".
+   Feedback đã tách thành popup riêng (modal-feedback), mở từ cột Feedback trong bảng Lịch sử. */
+function applySubmViewOnlyMode(viewOnly){
+  const modalBd = document.querySelector('#modal-submit-form .modal-bd');
+  // CCCD/SĐT người nhận có logic readonly riêng theo phương thức nhận (applySubmRecipientInfo),
+  // chỉ khoá cứng khi viewOnly — không đụng tới khi đang soạn thảo (viewOnly=false) để tránh
+  // ghi đè sai lên trạng thái readonly mà applySubmRecipientInfo vừa set.
+  modalBd.querySelectorAll('#subm-extra-fields input, #subm-extra-fields select, #subm-extra-fields textarea, #subm-receive-section select').forEach(el => {
+    el.disabled = !!viewOnly && el.tagName === 'SELECT';
+    if (el.tagName !== 'SELECT') el.readOnly = !!viewOnly;
+  });
+  document.getElementById('subm-copies').readOnly = !!viewOnly;
+  if (viewOnly){
+    document.getElementById('subm-recipient-cccd').readOnly = true;
+    document.getElementById('subm-recipient-phone').readOnly = true;
+  }
+  modalBd.querySelectorAll('#subm-extra-fields input[type=file]').forEach(el => { el.disabled = !!viewOnly; });
+  document.getElementById('subm-btn-draft').style.display = viewOnly ? 'none' : '';
+  document.getElementById('subm-btn-confirm').style.display = viewOnly ? 'none' : '';
+  document.getElementById('subm-btn-close').textContent = viewOnly ? 'Đóng' : 'Huỷ';
+
+  const progressSection = document.getElementById('subm-progress-section');
+  const h = viewOnly && currentHistoryIndex !== null ? HISTORY[currentHistoryIndex] : null;
+
+  if (h){
+    progressSection.style.display = 'none';
+    document.getElementById('subm-progress-tbody').innerHTML = (h.steps || []).map((s, i) => `
+      <tr>
+        <td class="text-muted">${i + 1}</td>
+        <td>${s.step}</td>
+        <td class="text-muted">${s.note || ''}</td>
+        <td class="text-muted">${s.time}</td>
+      </tr>`).join('');
+  } else {
+    progressSection.style.display = 'none';
+  }
+}
+
+/* Popup Feedback — mở nhanh từ cột Feedback trong bảng Lịch sử, chỉ áp dụng cho đơn đã có kết
+   quả cuối cùng (Đã duyệt/Từ chối). Nếu chưa đánh giá, hiện form chọn sao + góp ý; nếu đã đánh
+   giá rồi thì hiện lại dạng chỉ xem (không cho sửa lại feedback đã gửi). */
+let selectedFeedbackRating = 0;
+let currentFeedbackIndex = null;
+
+function openFeedback(historyIndex){
+  const h = HISTORY[historyIndex];
+  if (!h) return;
+  if (h.status !== 'Đã duyệt' && h.status !== 'Từ chối'){
+    showToast('Chỉ có thể đánh giá khi đơn đã có kết quả cuối cùng.', 'err');
+    return;
+  }
+  currentFeedbackIndex = historyIndex;
+  document.getElementById('fb-title').textContent = h.feedback ? 'Chi tiết đánh giá' : 'Đánh giá';
+  renderFeedbackBlock(h);
+  openModal('modal-feedback');
+}
+
+function renderFeedbackBlock(h){
+  const formEl = document.getElementById('subm-feedback-form');
+  const readonlyEl = document.getElementById('subm-feedback-readonly');
+  const submitBtn = document.getElementById('fb-btn-submit');
+  if (h.feedback){
+    formEl.style.display = 'none';
+    readonlyEl.style.display = '';
+    submitBtn.style.display = 'none';
+    const level = h.feedback.rating;
+    document.getElementById('subm-feedback-readonly-stars').innerHTML = `<span class="stars stars-lg">${renderStarIcons(level)}</span>` +
+      (level ? `<span style="font-size:12.5px;font-weight:500;color:var(--text-2)">${SATISFACTION_LABEL[level]}</span>` : '');
+    document.getElementById('subm-feedback-readonly-comment').textContent = h.feedback.comment || '';
+  } else {
+    formEl.style.display = '';
+    readonlyEl.style.display = 'none';
+    submitBtn.style.display = '';
+    selectedFeedbackRating = 0;
+    document.getElementById('subm-feedback-comment').value = '';
+    renderFeedbackStarsInput();
+  }
+}
+
+function renderStarIcons(rating){
+  let html = '';
+  for (let i = 1; i <= 5; i++) html += `<span class="${i <= rating ? 'filled' : ''}">★</span>`;
+  return html;
+}
+
+function renderFeedbackStarsInput(){
+  const wrap = document.getElementById('subm-feedback-stars');
+  wrap.innerHTML = [1,2,3,4,5].map(i => `<span class="${i <= selectedFeedbackRating ? 'filled' : ''}" onclick="pickFeedbackRating(${i})">★</span>`).join('');
+  document.getElementById('subm-feedback-stars-label').textContent = selectedFeedbackRating ? SATISFACTION_LABEL[selectedFeedbackRating] : '';
+}
+
+function pickFeedbackRating(rating){
+  selectedFeedbackRating = rating;
+  renderFeedbackStarsInput();
+}
+
+function submitFeedback(){
+  if (currentFeedbackIndex === null) return;
+  if (!selectedFeedbackRating){
+    showToast('Vui lòng chọn mức độ hài lòng trước khi gửi.', 'err');
+    return;
+  }
+  const comment = document.getElementById('subm-feedback-comment').value.trim();
+  const h = HISTORY[currentFeedbackIndex];
+  h.feedback = { rating: selectedFeedbackRating, comment };
+  document.getElementById('fb-title').textContent = 'Chi tiết đánh giá';
+  renderFeedbackBlock(h);
+  renderHistoryTable();
+  showToast('Đã gửi feedback. Cảm ơn bạn đã đóng góp ý kiến!', 'ok');
+}
+
+/* Sinh viên tự lấy → người nhận chính là sinh viên, tự điền CCCD/SĐT và khoá không cho sửa.
+   Người lấy hộ → để trống cho sinh viên tự nhập thông tin người nhận hộ. */
+function applySubmRecipientInfo(){
+  const isProxy = document.getElementById('subm-method').value === 'Người lấy hộ';
+  const cccdInput = document.getElementById('subm-recipient-cccd');
+  const phoneInput = document.getElementById('subm-recipient-phone');
+  if (isProxy){
+    cccdInput.value = '';
+    phoneInput.value = '';
+    cccdInput.readOnly = false;
+    phoneInput.readOnly = false;
+    cccdInput.classList.remove('readonly');
+    phoneInput.classList.remove('readonly');
+  } else {
+    cccdInput.value = CURRENT_STUDENT.cccd;
+    phoneInput.value = CURRENT_STUDENT.phone;
+    cccdInput.readOnly = true;
+    phoneInput.readOnly = true;
+    cccdInput.classList.add('readonly');
+    phoneInput.classList.add('readonly');
+  }
+}
+
+function onSubmMethodChange(){
+  applySubmRecipientInfo();
+  document.getElementById('subm-recipient-cccd-block').classList.remove('err');
+}
+
+document.getElementById('subm-recipient-cccd').addEventListener('input', () => {
+  document.getElementById('subm-recipient-cccd-block').classList.remove('err');
+});
+
+function onSubmFileChange(inputId){
+  const input = document.getElementById(inputId);
+  const picker = document.getElementById(inputId + '-pick');
+  if (input.files.length){
+    document.getElementById(inputId + '-name').textContent = input.files[0].name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+
+function removeSubmFile(event, inputId){
+  event.stopPropagation();
+  document.getElementById(inputId).value = '';
+  document.getElementById(inputId + '-pick').classList.remove('has-file');
+}
+
+/* Đọc giá trị các trường kê khai thêm (extraFields) đang hiển thị trong popup,
+   dùng chung cho cả "Tải đơn" (thay token trong content) và sau này khi nộp thật. */
+function collectSubmExtraValues(f){
+  const values = {};
+  f.extraFields.forEach(ef => {
+    if (ef.type === 'File upload'){
+      const input = document.getElementById('subm-file-' + ef.code);
+      values[ef.code] = input && input.files.length ? input.files[0].name : '';
+    } else {
+      const el = document.getElementById('subm-extra-' + ef.code);
+      values[ef.code] = el ? el.value : '';
+    }
+  });
+  return values;
+}
+
+/* Thay các token #code trong content mẫu bằng dữ liệu sinh viên cố định + giá trị
+   đã kê khai — token không có giá trị (chưa điền) giữ nguyên gạch chân trống. */
+function fillSubmFormContent(f){
+  const extraValues = collectSubmExtraValues(f);
+  const tokens = {
+    hoTen: CURRENT_STUDENT.name,
+    maSinhVien: CURRENT_STUDENT.mssv,
+    lopHanhChinh: CURRENT_STUDENT.lopHanhChinh,
+    donViQuanLy: CURRENT_STUDENT.khoa,
+    ...extraValues,
+  };
+  return (f.content || '').replace(/#(\w+)/g, (match, code) => {
+    const val = tokens[code];
+    return val ? val : '……………………';
+  });
+}
+
+/* Xem trước nội dung đơn ngay trong popup — cùng dữ liệu (mẫu + kê khai) với "Tải đơn",
+   để sinh viên kiểm tra lại trước khi tải file hoặc nộp. */
+function previewSubmitForm(){
+  const f = currentSubmitForm;
+  if (!f) return;
+  if (!f.content){
+    showToast('Biểu mẫu này chưa có nội dung mẫu để xem trước.', 'err');
+    return;
+  }
+  document.getElementById('preview-title').textContent = f.name;
+  document.getElementById('preview-content').innerHTML = fillSubmFormContent(f);
+  openModal('modal-preview-form');
+}
+
+/* Xuất file Word (.doc) chứa nội dung đơn theo mẫu đã cấu hình ở mh-admin-02,
+   điền sẵn dữ liệu sinh viên + các trường vừa kê khai. Dùng kỹ thuật HTML-to-Word
+   (MIME application/msword) — không cần thư viện ngoài, hoạt động offline. */
+function downloadSubmitFormWord(){
+  const f = currentSubmitForm;
+  if (!f) return;
+  if (!f.content){
+    showToast('Biểu mẫu này chưa có nội dung mẫu để tải.', 'err');
+    return;
+  }
+  const filledContent = fillSubmFormContent(f);
+  const docContent = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--></head>
+<body style="font-family:'Times New Roman',serif;font-size:14px">${filledContent}</body></html>`;
+
+  const blob = new Blob(['﻿' + docContent], { type: 'application/msword;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${f.code}-${CURRENT_STUDENT.mssv}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Đã tải file đơn (.doc) về máy.', 'ok');
+}
+
+/* Lưu nháp — thêm 1 bản ghi trạng thái "Lưu nháp" ngay vào bảng Lịch sử chung
+   (không tách bảng/tab riêng), formId giữ lại để "Tiếp tục" mở lại đúng biểu mẫu. */
+function saveSubmitFormDraft(){
+  const f = currentSubmitForm;
+  if (!f) return;
+  const now = new Date();
+  const savedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  const copies = formNeedsReturn(f) ? (Number(document.getElementById('subm-copies').value) || 1) : null;
+  HISTORY.unshift({
+    formId: f.id, code: '—', name: f.name, submitted: savedDate, status: 'Lưu nháp',
+    returned: '—', handler: '', returnedDate: '', copies,
+    steps: [{ step: 'Lưu nháp', note: 'Chưa nộp — có thể tiếp tục hoàn thiện', time: savedDate }],
+  });
+  currentHistoryPage = 1;
+  renderHistoryTable();
+
+  closeModal('modal-submit-form');
+  showToast('Đã lưu nháp. Bạn có thể tiếp tục hoàn thiện đơn này ở tab "Lịch sử".', 'ok');
+}
+
+function confirmSubmitForm(){
+  if (currentSubmitForm && formNeedsReturn(currentSubmitForm)){
+    const cccdBlock = document.getElementById('subm-recipient-cccd-block');
+    const cccdInput = document.getElementById('subm-recipient-cccd');
+    const isValid = cccdInput.value.trim().length > 0;
+    cccdBlock.classList.toggle('err', !isValid);
+    if (!isValid){
+      cccdInput.focus();
+      return;
+    }
+  }
+
+  closeModal('modal-submit-form');
+  showToast('Đã nộp đơn thành công. Bạn có thể theo dõi ở tab "Lịch sử".', 'ok');
+}
+
+/* Bước duyệt hiện tại — giống hệt currentApproverLabel() ở mh-admin-03: tên bước ở trên,
+   người/vai trò duyệt bên dưới (từ 2 approver trở lên chỉ hiện tên đầu + "+N", title chứa
+   đầy đủ danh sách). Chuyển đổi từ mô hình steps[] là log các bước ĐÃ qua (không có process
+   cố định + currentStepIdx) — chỉ đơn đang "Chờ duyệt" mới có bước đang xử lý dở dang, lấy
+   bước cuối cùng trong log làm bước hiện tại. Đơn đã có kết quả cuối (Đã duyệt/Từ chối) hoặc
+   còn là Lưu nháp thì không còn bước nào đang chờ xử lý, để trống. */
+function currentStepLabel(h){
+  if (h.status !== 'Chờ duyệt' || !h.steps.length) return '';
+  const step = h.steps[h.steps.length - 1];
+  const approvers = step.approvers || [];
+  const fullText = approvers.length ? approvers.join(', ') : (step.note || '');
+  const displayText = approvers.length > 1 ? `${approvers[0]} <span class="approver-more">+${approvers.length - 1}</span>` : fullText;
+  return `<div class="approver-step" title="${step.step}">${step.step}</div><div class="approver-name" title="${fullText}">${displayText}</div>`;
+}
+
+/* Ô "Feedback" trong bảng Lịch sử — chỉ hiển thị kết quả đánh giá dạng sao, không click được
+   ở đây nữa. Hành động gửi/xem feedback đã chuyển sang icon riêng ở cột Thao tác. */
+function renderFeedbackCell(h){
+  const rating = h.feedback ? h.feedback.rating : 0;
+  return `<td title="${h.feedback ? '' : 'Chưa đánh giá'}"><span class="stars">${renderStarIcons(rating)}</span></td>`;
+}
+
+/* == Lịch sử đăng ký đơn — phân trang giống bảng "Quản lý Đơn từ" ở mh-admin-03
+   (HISTORY_PAGE_SIZE/currentHistoryPage/renderPagination), nhưng vẫn dùng đúng vị trí thực
+   trong mảng HISTORY (không phải vị trí trong trang) cho các hàm openSubmitForm/
+   openWorkflowProgress/openFeedback — vì các hàm đó tra cứu trực tiếp HISTORY[index]. ==*/
+const HISTORY_PAGE_SIZE = 5;
+let currentHistoryPage = 1;
+
+function renderHistoryTable(){
+  const tbody = document.getElementById('history-tbody');
+  if (!HISTORY.length){
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><div class="empty-state-ico">📄</div><div>Bạn chưa nộp đơn nào.</div></div></td></tr>`;
+    document.getElementById('history-pagination').innerHTML = '';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(HISTORY.length / HISTORY_PAGE_SIZE));
+  currentHistoryPage = Math.min(currentHistoryPage, totalPages);
+  const startIdx = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE;
+  const pageItems = HISTORY.slice(startIdx, startIdx + HISTORY_PAGE_SIZE);
+
+  tbody.innerHTML = pageItems.map((h, pageIdx) => {
+    const i = startIdx + pageIdx;
+    const isDraft = h.status === 'Lưu nháp';
+    const onClick = isDraft ? `openSubmitForm('${h.formId}')` : `openSubmitForm('${h.formId}', true, ${i})`;
+    const f = FORMS.find(x => x.id === h.formId);
+    const needsReturn = !f || formNeedsReturn(f);
+    const canFeedback = h.status === 'Đã duyệt' || h.status === 'Từ chối';
+    const attachCount = (h.attachments || []).length;
+    return `
+    <tr>
+      <td class="text-muted">${i + 1}</td>
+      <td><span class="app-form-cell" title="${h.name}" onclick="${onClick}">${h.name}</span></td>
+      <td onclick="event.stopPropagation()">
+        ${attachCount ? `<button class="attach-btn" onclick="openAttachments(${i})">${attachCount} file</button>` : ''}
+      </td>
+      <td class="text-muted">${h.submitted}</td>
+      <td><span class="tag ${STATUS_TAG_CLASS[h.status] || 'tag-default'}">${h.status}</span></td>
+      <td class="text-muted" style="display:none">${currentStepLabel(h)}</td>
+      <td class="text-muted">${needsReturn && h.copies ? h.copies : ''}</td>
+      <td class="text-muted">${needsReturn && !isDraft ? (h.returned === 'Đã trả' ? h.returned : 'Chưa trả') : ''}</td>
+      <td class="text-muted">${needsReturn ? h.returnedDate : ''}</td>
+      ${renderFeedbackCell(h)}
+      <td onclick="event.stopPropagation()">
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Xem tiến trình quy trình" onclick="openWorkflowProgress(${i})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+          <button class="icon-btn" title="${canFeedback ? 'Đánh giá / Xem feedback' : 'Chỉ có thể đánh giá khi đơn đã có kết quả cuối cùng'}" ${canFeedback ? '' : 'disabled'} onclick="openFeedback(${i})">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderHistoryPagination(HISTORY.length, totalPages);
+}
+
+function renderHistoryPagination(totalItems, totalPages){
+  const el = document.getElementById('history-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+  const from = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE + 1;
+  const to = Math.min(currentHistoryPage * HISTORY_PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i === currentHistoryPage ? 'active' : ''}" onclick="goToHistoryPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} đơn</span>
+    <button type="button" class="pg-btn" ${currentHistoryPage <= 1 ? 'disabled' : ''} onclick="goToHistoryPage(${currentHistoryPage - 1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentHistoryPage >= totalPages ? 'disabled' : ''} onclick="goToHistoryPage(${currentHistoryPage + 1})">›</button>`;
+}
+function goToHistoryPage(p){ currentHistoryPage = p; renderHistoryTable(); }
+
+/* Popup "Quy trình phê duyệt" mở từ cột Thao tác — cùng nội dung với bảng "Quy trình duyệt"
+   trong popup Xem đơn (subm-progress-tbody), nhưng xem nhanh không cần mở lại toàn bộ đơn */
+/* Popup "Quy trình phê duyệt" — cùng layout bảng với modal-workflow-progress ở mh-admin-03,
+   nhưng chuyển đổi từ mô hình steps[] là log các bước ĐÃ qua (không có PROCESSES_MINI cố định
+   với dept/role/approvers riêng từng bước như bản quản trị). Bước 0 luôn là "Nộp yêu cầu" do
+   chính sinh viên thực hiện nên để trống Đơn vị/Vai trò duyệt; các bước sau dùng đơn vị phụ
+   trách biểu mẫu (ownerUnitName) làm "Đơn vị duyệt". Bước cuối cùng phản ánh đúng h.status
+   hiện tại (Chờ duyệt/Đã duyệt/Từ chối…); các bước trước đó xem như đã xử lý xong. */
+function openWorkflowProgress(historyIndex){
+  const h = HISTORY[historyIndex];
+  if (!h) return;
+  const f = FORMS.find(x => x.id === h.formId);
+  const steps = h.steps || [];
+
+  document.getElementById('wfp-title').textContent = 'Quy trình phê duyệt';
+  let previousTime = '';
+  document.getElementById('wfp-tbody').innerHTML = steps.map((s, i) => {
+    const isSubmitStep = i === 0;
+    const isLastStep = i === steps.length - 1;
+    const receivedTime = previousTime;
+    const processedTime = s.time && s.time !== '—' ? s.time : '';
+    previousTime = processedTime || previousTime;
+
+    const handlerText = isSubmitStep ? CURRENT_STUDENT.name : (isLastStep && h.handler ? h.handler : (isLastStep ? '—' : 'Đã xử lý'));
+    const resultLabel = isSubmitStep ? 'Đã nộp' : (isLastStep ? h.status : 'Đã duyệt');
+    const resultTagClass = isSubmitStep ? 'tag-default' : (STATUS_TAG_CLASS[resultLabel] || 'tag-success');
+
+    return `
+    <tr>
+      <td class="text-muted">${i + 1}</td>
+      <td>${s.step}</td>
+      <td class="text-muted">${isSubmitStep ? '' : (f ? f.ownerUnitName : '')}</td>
+      <td class="text-muted"></td>
+      <td>${handlerText}</td>
+      <td class="text-muted">${isSubmitStep ? '' : receivedTime}</td>
+      <td class="text-muted">${processedTime}</td>
+      <td><span class="tag ${resultTagClass}">${resultLabel}</span></td>
+      <td class="text-muted">${isSubmitStep ? '' : (s.note || '')}</td>
+    </tr>`;
+  }).join('');
+  openModal('modal-workflow-progress');
+}
+
+/* Popup xem nhanh danh sách tài liệu đã upload kèm đơn — copy nguyên từ mh-admin-03 */
+function openAttachments(historyIndex){
+  const h = HISTORY[historyIndex];
+  if (!h) return;
+  const files = h.attachments || [];
+  const listEl = document.getElementById('attach-list');
+  listEl.innerHTML = files.length ? files.map(f => `
+    <li>
+      <span class="attach-ico">📄</span>
+      <span class="attach-name">${f.name}</span>
+      <button class="icon-btn" title="Tải xuống" onclick="downloadAttachment('${f.name}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </button>
+    </li>`).join('') : '<div class="attach-empty">Đơn này không có tài liệu đính kèm</div>';
+  openModal('modal-attachments');
+}
+
+function downloadAttachment(fileName){
+  showToast(`Đang tải file: ${fileName}`, 'ok');
+}
+
+initFormUnitSelect();
+renderFormGrid();
+renderHistoryTable();
+</script>
+</body>
+</html>

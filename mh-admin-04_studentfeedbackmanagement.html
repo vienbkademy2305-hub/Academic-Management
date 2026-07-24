@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Feedback | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: danh sách feedback sinh viên (MH-ADMIN-04) ========== */
+
+  /* Dropdown thông báo — giống mh-admin-01/02/03 */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Unit search combobox — copy nguyên từ mh-admin-03 để tái sử dụng UI phân cấp */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-group{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px 4px}
+  .unit-combo-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-item .lvl-badge{font-size:10px;color:var(--text-3);background:#f5f5f5;padding:0 6px;border-radius:8px;flex-shrink:0}
+  .unit-combo-item:hover .lvl-badge,.unit-combo-item.hl .lvl-badge{background:#fff;color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Bộ lọc "Tên đơn" — combobox nhiều lựa chọn (checkbox) + tìm kiếm, dùng chung khung .unit-combo-menu */
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
+  .form-combo-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .form-combo-item:hover{background:var(--primary-light);color:var(--primary)}
+  .form-combo-item input[type="checkbox"]{flex-shrink:0;cursor:pointer}
+  .form-combo-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* Thang đánh giá dạng sao — dùng chung cho bảng danh sách + popup chi tiết */
+  .stars{color:#d9d9d9;font-size:14px;letter-spacing:1px;white-space:nowrap}
+  .stars .filled{color:#faad14}
+  .stars-lg{font-size:32px}
+
+  /* Thẻ tổng quan — 6 ô đều nhau: điểm trung bình + 5 mức đánh giá */
+  .fb-stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+  .fb-stat-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;text-align:center}
+  .fb-stat-card .fb-stat-num{font-size:26px;font-weight:700;line-height:32px}
+  .fb-stat-card .fb-stat-label{font-size:12.5px;color:var(--text-2);margin-top:4px}
+  .fb-stat-card.highlight{background:var(--primary-light);border-color:#ffd591}
+  .fb-stat-card.highlight .fb-stat-num{color:var(--primary)}
+
+  /* Bảng danh sách feedback — đồng bộ hành vi/style dòng bảng với mh-admin-03 */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .app-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .app-form-cell{font-size:13.5px;color:var(--primary);display:inline-block;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+  .fb-rating-cell{cursor:pointer}
+  .fb-rating-cell:hover .stars .filled{color:var(--primary)}
+
+  /* Cột nội dung feedback trong bảng — chỉ text thuần, rút gọn 2 dòng. Khung border chỉ dùng ở popup chi tiết (.fi-view-box) */
+  .fb-comment-cell{max-width:360px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:13px;color:var(--text-2)}
+
+  .fb-sv-name{font-size:13.5px;color:var(--text-1)}
+
+  .decl-field-required{font-size:13px;font-weight:700;color:var(--error);margin-left:2px}
+
+  /* Khung view-only cho popup Chi tiết đánh giá — copy nguyên từ mh-admin-03 */
+  .fi-view label{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px}
+  .fi-view-box{padding:7px 11px;border:1px solid var(--border);border-radius:var(--radius);background:#fafafa;font-size:13.5px;color:var(--text-1);min-height:34px;display:flex;align-items:center}
+
+  .empty-state{text-align:center;padding:48px 24px;color:var(--text-3)}
+  .empty-state-ico{font-size:32px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li class="active"><a href="#">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb">Bộ phận một cửa / <b style="color:var(--text-1)">Quản lý Feedback</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH FEEDBACK SINH VIÊN (MH-ADMIN-04)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Quản lý Feedback</h2>
+          </div>
+        </div>
+
+        <!-- Tổng quan mức độ hài lòng — 6 ô: điểm trung bình + 5 mức đánh giá -->
+        <div class="fb-stat-grid" id="fb-stat-grid"><!-- rendered by JS --></div>
+
+        <!-- Bộ lọc -->
+        <div class="filter-bar">
+          <div class="unit-combo" id="unit-combo">
+            <input class="fc" id="unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:230px">
+            <div class="unit-combo-menu" id="unit-combo-menu"></div>
+          </div>
+          <div class="unit-combo" id="form-combo" style="width:220px">
+            <button type="button" class="fc form-combo-trigger" id="form-combo-trigger" onclick="event.stopPropagation();toggleFormMenu()">
+              <span id="form-combo-label">Tất cả tên đơn</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="form-combo-menu">
+              <input class="fc" id="form-search" type="text" placeholder="🔍 Tìm tên đơn…" autocomplete="off" style="margin-bottom:4px">
+              <div id="form-combo-list"></div>
+            </div>
+          </div>
+          <input class="fc" id="fb-search" type="text" placeholder="🔍 Tìm theo MSSV, tên SV hoặc mã đơn…" autocomplete="off" style="width:280px">
+          <select class="fc" id="fb-rating-select" style="width:190px">
+            <option value="all">Tất cả mức đánh giá</option>
+            <option value="5">5 sao — Rất hài lòng</option>
+            <option value="4">4 sao — Hài lòng</option>
+            <option value="3">3 sao — Bình thường</option>
+            <option value="2">2 sao — Không hài lòng</option>
+            <option value="1">1 sao — Rất không hài lòng</option>
+          </select>
+          <select class="fc" id="fb-comment-select" style="width:200px">
+            <option value="all">Tất cả</option>
+            <option value="with-comment">Có kiến nghị/góp ý</option>
+            <option value="no-comment">Không có kiến nghị</option>
+          </select>
+          <div class="date-range-filter" style="display:flex;align-items:center;gap:6px">
+            <input class="fc" id="fb-date-from" type="date" style="width:150px" title="Ngày đánh giá từ">
+            <span class="text-muted text-sm">đến</span>
+            <input class="fc" id="fb-date-to" type="date" style="width:150px" title="Ngày đánh giá đến">
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" id="fb-select-all" onchange="toggleSelectAll(this.checked)"></th>
+                <th style="width:230px">Tên đơn</th>
+                <th style="width:170px">Đơn vị phụ trách</th>
+                <th style="width:110px">Mã sinh viên</th>
+                <th style="width:160px">Họ và tên</th>
+                <th style="width:130px">Đánh giá</th>
+                <th>Kiến nghị, đề xuất</th>
+                <th style="width:150px">Người trả đơn</th>
+                <th style="width:110px">Ngày đánh giá</th>
+              </tr>
+            </thead>
+            <tbody id="fb-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="fb-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết đánh giá ═══ -->
+<div class="overlay hidden" id="modal-feedback-detail">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Chi tiết đánh giá</h3>
+      </div>
+      <button class="modal-close" data-close="modal-feedback-detail">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi-view">
+        <label>Mức độ hài lòng<span class="decl-field-required">*</span></label>
+        <div id="fbd-level" style="display:flex;flex-direction:column;align-items:center;gap:8px;min-height:60px;padding:8px 0"></div>
+      </div>
+      <div class="fi-view" style="margin-top:14px">
+        <label>Kiến nghị, đề xuất</label>
+        <div class="fi-view-box" id="fbd-comment" style="min-height:70px;align-items:flex-start;white-space:pre-wrap"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-feedback-detail">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* == Dropdown thông báo — copy nguyên từ mh-admin-03 để đồng bộ hành vi == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'⭐', title:'SV Trần Ngọc Hà đánh giá 1 sao cho đơn "BM15-000221" — cần xem xét', time:'3 giờ trước' },
+  { id:'n2', unread:true, ico:'📝', title:'Có 2 feedback mới từ sinh viên trong hôm nay', time:'5 giờ trước' },
+  { id:'n3', unread:false, ico:'✅', title:'Đơn "BM06-000054" nhận đánh giá 5 sao', time:'Hôm qua' },
+];
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+updateNotifBadge();
+
+/* ============================================================
+   DATA — mô phỏng feedback sinh viên sau khi nhận kết quả trả đơn.
+   Mỗi bản ghi tương ứng 1 đơn đã có khảo sát mức độ hài lòng (rating 1-5 sao)
+   kèm kiến nghị/góp ý dạng text tự do — cùng cấu trúc returnInfo.satisfaction/
+   comment ở mh-admin-03, tách riêng thành màn hình tổng hợp toàn trường.
+   ============================================================ */
+const FEEDBACKS = [
+  { id:'f1', appCode:'BM16-000198', formName:'Đơn đăng ký ở ký túc xá', svName:'Nguyễn Văn Long', mssv:'20120078', unit:'u-cntt-kthm',
+    rating:4, comment:'Thời gian xử lý hơi lâu, mong bộ phận một cửa rút ngắn thêm.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-10', date:'2026-07-14' },
+  { id:'f2', appCode:'BM09-000018', formName:'Đơn xét cảnh báo học vụ', svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh',
+    rating:3, comment:'', handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-02', date:'2026-07-10' },
+  { id:'f3', appCode:'BM06-000054', formName:'Đơn phúc khảo điểm thi', svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt',
+    rating:5, comment:'Cán bộ hỗ trợ nhiệt tình, quy trình rõ ràng, dễ theo dõi.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-08', date:'2026-07-13' },
+  { id:'f4', appCode:'BM15-000230', formName:'Đơn xin xác nhận sinh viên', svName:'Đỗ Quang Huy', mssv:'20120056', unit:'u-yduoc',
+    rating:2, comment:'Phải bổ sung giấy tờ 2 lần vì hướng dẫn ban đầu không rõ ràng.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-15', date:'2026-07-20' },
+  { id:'f5', appCode:'BM02-000287', formName:'Đơn xin xác nhận vay vốn ngân hàng', svName:'Lý Gia Bảo', mssv:'20120309', unit:'u-kt',
+    rating:5, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-03', date:'2026-07-08' },
+  { id:'f6', appCode:'BM15-000221', formName:'Đơn xin xác nhận sinh viên', svName:'Trần Ngọc Hà', mssv:'20120064', unit:'u-cntt-httt',
+    rating:1, comment:'Chờ quá lâu không thấy phản hồi, phải gọi điện hỏi nhiều lần mới được xử lý.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-06-28', date:'2026-07-05' },
+  { id:'f7', appCode:'BM16-000185', formName:'Đơn đăng ký ở ký túc xá', svName:'Phan Thị Yến', mssv:'20120133', unit:'u-ngoaingu',
+    rating:4, comment:'Nhân viên tư vấn nhiệt tình.', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-06', date:'2026-07-11' },
+  { id:'f8', appCode:'BM04-000098', formName:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', svName:'Đinh Công Vinh', mssv:'20120271', unit:'u-ngoaingu',
+    rating:3, comment:'Biểu mẫu hơi khó điền, nên có hướng dẫn cụ thể hơn.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-06-27', date:'2026-07-02' },
+  { id:'f9', appCode:'BM11-000209', formName:'Đơn xin công nhận tốt nghiệp', svName:'Đặng Thị Kim Ngân', mssv:'20120021', unit:'u-kt-qtkd',
+    rating:5, comment:'Hồ sơ được xử lý nhanh, cán bộ hướng dẫn rõ ràng.',
+    handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-11', date:'2026-07-16' },
+  { id:'f10', appCode:'BM03-000077', formName:'Đơn xin bảo lưu kết quả học tập', svName:'Phạm Thu Hà', mssv:'20120112', unit:'u-kt',
+    rating:2, comment:'Phải nộp lại giấy tờ vì thiếu hướng dẫn cụ thể ban đầu.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-05', date:'2026-07-09' },
+  { id:'f11', appCode:'BM02-000301', formName:'Đơn xin xác nhận vay vốn ngân hàng', svName:'Ngô Bảo Châu', mssv:'20120087', unit:'u-cokhi',
+    rating:4, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-14', date:'2026-07-19' },
+  { id:'f12', appCode:'BM09-000018', formName:'Đơn xét cảnh báo học vụ', svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh',
+    rating:3, comment:'Thời gian trả kết quả đúng hẹn.', handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-01', date:'2026-07-06' },
+  { id:'f13', appCode:'BM06-000054', formName:'Đơn phúc khảo điểm thi', svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt',
+    rating:5, comment:'Kết quả phúc khảo được thông báo sớm hơn dự kiến.',
+    handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-07', date:'2026-07-12' },
+  { id:'f14', appCode:'BM15-000245', formName:'Đơn xin xác nhận sinh viên', svName:'Bùi Thị Thanh Thảo', mssv:'20120302', unit:'u-truongxd',
+    rating:1, comment:'Đơn bị trả lại 2 lần do sai mẫu, mất nhiều thời gian đi lại.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-16', date:'2026-07-21' },
+  { id:'f15', appCode:'BM16-000198', formName:'Đơn đăng ký ở ký túc xá', svName:'Nguyễn Văn Long', mssv:'20120078', unit:'u-cntt-kthm',
+    rating:4, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-06-25', date:'2026-06-30' },
+  { id:'f16', appCode:'BM07-000045', formName:'Đơn kiến nghị xét kỷ luật', svName:'Lê Minh Đức', mssv:'20120199', unit:'u-cntt-mangmt',
+    rating:3, comment:'Cần thông báo tiến độ xử lý thường xuyên hơn.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-06-20', date:'2026-06-26' },
+  { id:'f17', appCode:'BM04-000112', formName:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', svName:'Vũ Thị Mai Anh', mssv:'20120233', unit:'u-ngoaingu',
+    rating:5, comment:'Rất hài lòng với quy trình xét khen thưởng.',
+    handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-07-04', date:'2026-07-09' },
+  { id:'f18', appCode:'BM15-000231', formName:'Đơn xin xác nhận sinh viên', svName:'Trần Thị Bích', mssv:'20120045', unit:'u-cntt-httt',
+    rating:2, comment:'Đơn bị quá hạn xử lý, phải gọi điện nhắc nhở.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-07-12', date:'2026-07-18' },
+  { id:'f19', appCode:'BM16-000185', formName:'Đơn đăng ký ở ký túc xá', svName:'Phan Thị Yến', mssv:'20120133', unit:'u-ngoaingu',
+    rating:5, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-06-15', date:'2026-06-20' },
+  { id:'f20', appCode:'BM09-000018', formName:'Đơn xét cảnh báo học vụ', svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh',
+    rating:4, comment:'Cán bộ giải thích rõ lý do cảnh báo học vụ.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-06-10', date:'2026-06-16' },
+  { id:'f21', appCode:'BM11-000209', formName:'Đơn xin công nhận tốt nghiệp', svName:'Đặng Thị Kim Ngân', mssv:'20120021', unit:'u-kt-qtkd',
+    rating:3, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-06-05', date:'2026-06-11' },
+  { id:'f22', appCode:'BM04-000098', formName:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', svName:'Đinh Công Vinh', mssv:'20120271', unit:'u-ngoaingu',
+    rating:5, comment:'Quy trình xét duyệt nhanh gọn, minh bạch.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-05-28', date:'2026-06-03' },
+  { id:'f23', appCode:'BM15-000230', formName:'Đơn xin xác nhận sinh viên', svName:'Đỗ Quang Huy', mssv:'20120056', unit:'u-yduoc',
+    rating:4, comment:'', handler:'Cán bộ Phạm Văn Kỳ', submitted:'2026-05-20', date:'2026-05-25' },
+  { id:'f24', appCode:'BM06-000054', formName:'Đơn phúc khảo điểm thi', svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt',
+    rating:2, comment:'Thời gian chờ kết quả phúc khảo hơi lâu so với thông báo ban đầu.',
+    handler:'Cán bộ Trần Thị Loan', submitted:'2026-05-15', date:'2026-05-21' },
+];
+
+/* ============================================================
+   DATA — cây đơn vị 3 cấp, copy nguyên từ mh-admin-03 để đồng bộ
+   bộ lọc "Đơn vị phụ trách" giữa 2 màn hình.
+   ============================================================ */
+const UNITS = [
+  { id:'u-dh', level:1, parent:null, name:'Đại học' },
+  { id:'u-ctsv', level:1, parent:null, name:'Ban Công tác Sinh viên' },
+  { id:'u-daotao', level:1, parent:null, name:'Ban Đào tạo' },
+  { id:'u-sdh', level:1, parent:null, name:'Phòng Sau đại học' },
+  { id:'u-khcn', level:1, parent:null, name:'Phòng Khoa học Công nghệ' },
+  { id:'u-thanhtra', level:1, parent:null, name:'Ban Thanh tra Pháp chế' },
+
+  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
+  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
+  { id:'u-truongxd', level:2, parent:'u-dh', name:'Trường Xây dựng' },
+  { id:'u-ngoaingu', level:2, parent:'u-dh', name:'Khoa Ngoại ngữ' },
+  { id:'u-yduoc', level:2, parent:'u-dh', name:'Trường Y Dược' },
+  { id:'u-cokhi', level:2, parent:'u-dh', name:'Khoa Cơ khí' },
+  { id:'u-dienlanh', level:2, parent:'u-dh', name:'Khoa Điện – Điện lạnh' },
+
+  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
+  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
+  { id:'u-cntt-mangmt', level:3, parent:'u-cntt', name:'Bộ môn Mạng máy tính' },
+  { id:'u-kt-qtkd', level:3, parent:'u-kt', name:'Khoa con Quản trị Kinh doanh' },
+  { id:'u-kt-ketoan', level:3, parent:'u-kt', name:'Bộ môn Kế toán' },
+  { id:'u-xd-cauduongtb', level:3, parent:'u-truongxd', name:'Khoa con Cầu đường' },
+];
+function unitById(id){ return UNITS.find(u => u.id === id); }
+const LEVEL_LABEL = { 1:'Cấp 1', 2:'Cấp 2', 3:'Cấp 3' };
+
+let selectedUnitId = null;
+
+/* Mức đánh giá dạng số 1-5, map sang nhãn tiếng Việt — dùng chung cho bảng + popup */
+const SATISFACTION_LABEL = { 1:'Rất không hài lòng', 2:'Không hài lòng', 3:'Bình thường', 4:'Hài lòng', 5:'Rất hài lòng' };
+
+/* Render dạng sao ★ (đã đánh giá) / ☆ (chưa đủ) cho 1 mức 1-5 — dùng chung cho bảng + popup.
+   extraClass cho phép phóng to cỡ sao ở popup (stars-lg) so với bảng danh sách. */
+function renderStars(level, extraClass){
+  let html = '';
+  for (let i = 1; i <= 5; i++) html += `<span class="${i <= level ? 'filled' : ''}">★</span>`;
+  return `<span class="stars ${extraClass || ''}">${html}</span>`;
+}
+
+function formatDateVn(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* Bỏ tiền tố chức danh, chỉ hiển thị tên — đồng bộ với stripHandlerPrefix ở mh-admin-03 */
+function stripHandlerPrefix(name){
+  return (name || '').replace(/^(Cán bộ|GV\.)\s+/, '');
+}
+
+let currentPage = 1;
+const PAGE_SIZE = 10;
+
+/* Đơn vị con (Cấp 3) tính vào đơn vị cha (Cấp 2) khi lọc theo Cấp 2 — đồng bộ mh-admin-03 */
+function unitMatchesFilter(unitId, filterUnitId){
+  if (!filterUnitId) return true;
+  if (unitId === filterUnitId) return true;
+  const u = unitById(unitId);
+  if (u && u.parent === filterUnitId) return true;
+  return false;
+}
+
+function filteredFeedbacks(){
+  const q = (document.getElementById('fb-search').value || '').trim().toLowerCase();
+  const ratingFilter = document.getElementById('fb-rating-select').value;
+  const commentFilter = document.getElementById('fb-comment-select').value;
+  const dateFrom = document.getElementById('fb-date-from').value;
+  const dateTo = document.getElementById('fb-date-to').value;
+
+  return FEEDBACKS.filter(f => {
+    if (q && !(f.mssv.toLowerCase().includes(q) || f.svName.toLowerCase().includes(q) || f.appCode.toLowerCase().includes(q))) return false;
+    if (ratingFilter !== 'all' && String(f.rating) !== ratingFilter) return false;
+    if (commentFilter === 'with-comment' && !f.comment) return false;
+    if (commentFilter === 'no-comment' && f.comment) return false;
+    if (dateFrom && f.date < dateFrom) return false;
+    if (dateTo && f.date > dateTo) return false;
+    if (!unitMatchesFilter(f.unit, selectedUnitId)) return false;
+    if (selectedFormNames.size && !selectedFormNames.has(f.formName)) return false;
+    return true;
+  });
+}
+
+function renderStatGrid(){
+  const total = FEEDBACKS.length;
+  const avg = total ? (FEEDBACKS.reduce((s,f) => s + f.rating, 0) / total) : 0;
+  const counts = { 5:0, 4:0, 3:0, 2:0, 1:0 };
+  FEEDBACKS.forEach(f => counts[f.rating]++);
+
+  const cards = [
+    { label:'Điểm trung bình', num: total ? avg.toFixed(1) : '—', cls:'highlight' },
+    ...[5, 4, 3, 2, 1].map(level => ({
+      label: SATISFACTION_LABEL[level],
+      num: counts[level],
+    })),
+  ];
+  document.getElementById('fb-stat-grid').innerHTML = cards.map(c => `
+    <div class="fb-stat-card ${c.cls || ''}">
+      <div class="fb-stat-num">${c.num}</div>
+      <div class="fb-stat-label">${c.label}</div>
+    </div>`).join('');
+}
+
+const selectedIds = new Set();
+
+function toggleSelectAll(checked){
+  const pageItems = filteredFeedbacks().slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  pageItems.forEach(f => checked ? selectedIds.add(f.id) : selectedIds.delete(f.id));
+  renderFeedbackTable();
+}
+
+function toggleSelectRow(id, checked){
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+  document.getElementById('fb-select-all').checked = false;
+  renderFeedbackTable();
+}
+
+function renderFeedbackTable(){
+  const list = filteredFeedbacks();
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const pageItems = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const tbody = document.getElementById('fb-tbody');
+  if (!pageItems.length){
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-state-ico">💬</div><div>Không có feedback nào phù hợp bộ lọc</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML = pageItems.map(f => `
+      <tr>
+        <td onclick="event.stopPropagation()"><input type="checkbox" ${selectedIds.has(f.id) ? 'checked' : ''} onchange="toggleSelectRow('${f.id}', this.checked)"></td>
+        <td><span class="app-form-cell" title="${f.formName}">${f.formName}</span></td>
+        <td class="text-muted">${unitById(f.unit) ? unitById(f.unit).name : ''}</td>
+        <td><span class="app-code">${f.mssv}</span></td>
+        <td class="fb-sv-name">${f.svName}</td>
+        <td class="fb-rating-cell" onclick="openFeedbackDetail('${f.id}')">${renderStars(f.rating)}</td>
+        <td>${f.comment ? `<div class="fb-comment-cell">${f.comment}</div>` : ''}</td>
+        <td class="text-muted">${stripHandlerPrefix(f.handler)}</td>
+        <td class="text-muted">${formatDateVn(f.date)}</td>
+      </tr>`).join('');
+  }
+
+  const pageAllSelected = pageItems.length > 0 && pageItems.every(f => selectedIds.has(f.id));
+  document.getElementById('fb-select-all').checked = pageAllSelected;
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('fb-pagination');
+  if (totalItems <= PAGE_SIZE){ el.innerHTML = ''; return; }
+  let html = `<span class="pg-info">${totalItems} feedback</span>`;
+  for (let p = 1; p <= totalPages; p++){
+    html += `<button type="button" class="pg-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+  }
+  el.innerHTML = html;
+}
+
+function goToPage(p){ currentPage = p; renderFeedbackTable(); }
+
+function openFeedbackDetail(id){
+  const f = FEEDBACKS.find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('fbd-level').innerHTML = `${renderStars(f.rating, 'stars-lg')}` +
+    (f.rating ? `<div class="text-bold" style="font-size:14px">${SATISFACTION_LABEL[f.rating] || ''}</div>` : '');
+  document.getElementById('fbd-comment').textContent = f.comment || '';
+  openModal('modal-feedback-detail');
+}
+
+function applyFilters(){ currentPage = 1; renderFeedbackTable(); }
+document.getElementById('fb-search').addEventListener('input', applyFilters);
+document.getElementById('fb-rating-select').addEventListener('change', applyFilters);
+document.getElementById('fb-comment-select').addEventListener('change', applyFilters);
+document.getElementById('fb-date-from').addEventListener('change', applyFilters);
+document.getElementById('fb-date-to').addEventListener('change', applyFilters);
+
+/* == Unit search combobox — copy nguyên từ mh-admin-03 == */
+const unitSearchInput = document.getElementById('unit-search');
+const unitComboMenu = document.getElementById('unit-combo-menu');
+
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+function unitDisplayName(u){
+  return u.level === 1 ? u.name : (u.name + ' (' + unitById(u.parent).name + ')');
+}
+function renderUnitMenu(query){
+  const q = (query || '').trim();
+  const matches = q ? UNITS.filter(u => u.name.toLowerCase().includes(q.toLowerCase())) : UNITS;
+
+  let html = '<div class="unit-combo-item" data-id="__all__" onclick="pickUnit(null)"><span>Tất cả đơn vị (toàn trường)</span></div>';
+  if (!matches.length){
+    html += '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
+    unitComboMenu.innerHTML = html;
+    return;
+  }
+  const groups = { 1:[], 2:[], 3:[] };
+  matches.forEach(u => groups[u.level].push(u));
+  [1,2,3].forEach(lvl => {
+    if (!groups[lvl].length) return;
+    html += '<div class="unit-combo-group">' + LEVEL_LABEL[lvl] + '</div>';
+    groups[lvl].forEach(u => {
+      const parentTag = u.level > 1 ? ('<span class="text-muted"> - ' + unitById(u.parent).name + '</span>') : '';
+      html += '<div class="unit-combo-item" data-id="' + u.id + '" onclick="pickUnit(&#39;' + u.id + '&#39;)">'
+        + '<span>' + highlightMatch(u.name, q) + parentTag + '</span>'
+        + '<span class="lvl-badge">' + LEVEL_LABEL[lvl] + '</span></div>';
+    });
+  });
+  unitComboMenu.innerHTML = html;
+}
+function openUnitMenu(){ renderUnitMenu(unitSearchInput.value); unitComboMenu.classList.add('open'); }
+function closeUnitMenu(){ unitComboMenu.classList.remove('open'); }
+
+function pickUnit(id){
+  selectedUnitId = id;
+  unitSearchInput.value = id ? unitDisplayName(unitById(id)) : '';
+  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  closeUnitMenu();
+  currentPage = 1;
+  renderFeedbackTable();
+}
+
+unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
+unitSearchInput.addEventListener('input', () => openUnitMenu());
+document.addEventListener('click', e => {
+  if (!document.getElementById('unit-combo').contains(e.target)) closeUnitMenu();
+});
+
+/* == Bộ lọc "Tên đơn" — combobox nhiều lựa chọn (checkbox) + tìm kiếm == */
+let selectedFormNames = new Set();
+const FORM_NAME_OPTIONS = [...new Set(FEEDBACKS.map(f => f.formName))].sort((x, y) => x.localeCompare(y, 'vi'));
+
+const formSearchInput = document.getElementById('form-search');
+const formComboMenu = document.getElementById('form-combo-menu');
+const formComboList = document.getElementById('form-combo-list');
+const formComboLabel = document.getElementById('form-combo-label');
+
+function renderFormComboList(query){
+  const q = (query || '').trim().toLowerCase();
+  const matches = q ? FORM_NAME_OPTIONS.filter(n => n.toLowerCase().includes(q)) : FORM_NAME_OPTIONS;
+  if (!matches.length){
+    formComboList.innerHTML = '<div class="unit-combo-empty">Không tìm thấy tên đơn nào khớp "' + query.trim() + '"</div>';
+    return;
+  }
+  formComboList.innerHTML = matches.map(name => {
+    const checked = selectedFormNames.has(name) ? 'checked' : '';
+    return `<label class="form-combo-item">
+      <input type="checkbox" ${checked} onchange="toggleFormName(${JSON.stringify(name)}, this.checked)">
+      <span>${highlightMatch(name, query)}</span>
+    </label>`;
+  }).join('');
+}
+
+function updateFormComboLabel(){
+  const total = FORM_NAME_OPTIONS.length;
+  formComboLabel.textContent = selectedFormNames.size === 0 || selectedFormNames.size === total
+    ? 'Tất cả tên đơn'
+    : selectedFormNames.size + ' tên đơn đã chọn';
+}
+updateFormComboLabel();
+
+function toggleFormName(name, checked){
+  if (checked) selectedFormNames.add(name); else selectedFormNames.delete(name);
+  updateFormComboLabel();
+  currentPage = 1;
+  renderFeedbackTable();
+}
+
+function openFormMenu(){ renderFormComboList(formSearchInput.value); formComboMenu.classList.add('open'); }
+function closeFormMenu(){ formComboMenu.classList.remove('open'); }
+function toggleFormMenu(){ formComboMenu.classList.contains('open') ? closeFormMenu() : openFormMenu(); }
+
+formSearchInput.addEventListener('focus', () => openFormMenu());
+formSearchInput.addEventListener('input', () => renderFormComboList(formSearchInput.value));
+document.addEventListener('click', e => {
+  if (!document.getElementById('form-combo').contains(e.target)) closeFormMenu();
+});
+
+renderStatGrid();
+renderFeedbackTable();
+</script>
+</body>
+</html>

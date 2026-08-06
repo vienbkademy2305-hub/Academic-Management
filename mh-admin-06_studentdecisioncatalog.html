@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh mục Quyết định Sinh viên | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: danh mục quyết định sinh viên (MH-ADMIN-06) ========== */
+
+  /* Dropdown thông báo — đồng bộ với các màn admin khác */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Bảng danh mục quyết định */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .dec-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .dec-name-cell{font-size:13.5px;color:var(--text-1)}
+
+  /* Trạng thái mới sau khi ban hành QĐ, hiển thị dạng chip trong bảng */
+  .transition-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);white-space:nowrap}
+  .transition-chip .t-new{color:var(--text-1);font-weight:400}
+  .transition-chip.t-nochange{color:var(--text-3);font-style:italic}
+
+  /* Danh sách trường được cập nhật, rút gọn trong ô bảng */
+  .fields-mini{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px}
+  .fields-mini li{font-size:11.5px;color:var(--text-2);background:#f5f5f5;border-radius:8px;padding:1px 8px;white-space:nowrap}
+
+  /* Form Thêm/Sửa dạng 1 cột phẳng, liền mạch — không khung, không pill,
+     không đường kẻ; chỉ heading nhỏ + khoảng cách để phân đoạn nhẹ nhàng. */
+  .dm-modal-box .modal-bd{padding:24px}
+  .dm-modal-box .fi label{font-weight:600}
+  .dm-section + .dm-section{margin-top:24px}
+  .dm-section-title{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:2px}
+  .dm-section-desc{font-size:12px;color:var(--text-3);margin:0 0 14px}
+
+  /* Khối xổ xuống có nền xám nhạt (dùng cho cấu hình cảnh báo hết hiệu lực) */
+  .transition-drop{margin-top:10px;padding:14px 16px;border-radius:8px;background:#f7f7f8}
+
+  /* Chọn File mẫu (.docx) — pattern filepick từ mh-admin-02, thêm hover rõ hơn
+     để 2 ô Đại học/Sau đại học nổi bật như 1 vùng thả file thật sự. */
+  .f-row.col-2 > .fi{min-width:0}
+  .filepick{position:relative;min-width:0}
+  .filepick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .filepick-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border);border-radius:8px;padding:18px 12px;color:var(--text-3);font-size:12.5px;background:#fafafa;text-align:center;transition:all .15s}
+  .filepick:hover .filepick-empty{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+  .filepick-empty svg{flex-shrink:0}
+  .filepick.has-file .filepick-empty{display:none}
+  .filepick-picked{display:none;align-items:center;gap:10px;border:1px solid #b7eb8f;border-radius:8px;padding:10px 12px;background:#f6ffed}
+  .filepick.has-file .filepick-picked{display:flex}
+  .filepick-picked svg{color:var(--success);flex-shrink:0}
+  .filepick-picked-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--text-1);font-weight:500}
+  .filepick-remove{position:relative;z-index:1;flex-shrink:0;width:24px;height:24px;border-radius:4px;border:1px solid transparent;background:transparent;cursor:pointer;font-size:13px;color:var(--text-3);display:inline-flex;align-items:center;justify-content:center}
+  .filepick-remove:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
+
+  /* Ghi chú kỹ thuật cho dev — chỉ xuất hiện trong file thiết kế, không phải text sản phẩm thật */
+  .dev-note{font-size:11px;color:#ad6800;background:#fffbe6;border:1px dashed #ffe58f;border-radius:4px;padding:6px 8px;margin-bottom:10px}
+
+  /* Popup xem/tải mẫu file xuất quyết định (ĐH + SĐH) */
+  .tpl-file-list{display:flex;flex-direction:column}
+  .tpl-file-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border)}
+  .tpl-file-row:last-child{border-bottom:none}
+  .tpl-file-ico{flex-shrink:0;color:var(--text-3)}
+  .tpl-file-name{flex:1;min-width:0;font-size:13.5px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tpl-file-dl{flex-shrink:0}
+
+  /* Unit search combobox — dùng cho bộ lọc "Đơn vị phụ trách" trên thanh filter-bar,
+     và cho combobox chọn quy trình xử lý trong modal gán quy trình */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Toggle switch nhỏ dùng chung cho bật/tắt gửi thông báo — hành vi vẫn là checkbox thường */
+  .switch{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0;cursor:pointer}
+  .switch input{opacity:0;width:0;height:0}
+  .switch .track{position:absolute;inset:0;background:#d9d9d9;border-radius:20px;transition:.15s}
+  .switch .track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch input:checked + .track{background:var(--primary)}
+  .switch input:checked + .track::before{transform:translateX(14px)}
+
+  /* Khối nhóm nội dung — dùng cho Cảnh báo hết hiệu lực và popup Gán quy trình */
+  .dl-block{border:1px solid var(--border);border-radius:8px;background:#fafafa;padding:14px;margin-bottom:12px}
+  .dl-block-title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+
+  /* Popup Gán quy trình chỉ có nội dung ngắn — bỏ scroll riêng của .modal-bd để dropdown
+     chọn quy trình tràn ra ngoài, hiển thị đè lên trước thanh footer thay vì bị cắt mất */
+  #modal-process-picker .modal-bd{overflow:visible}
+  .dl-check-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;cursor:pointer;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">📜&nbsp; Quyết định SV &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-07_rewarddisciplinecatalog.html">Danh mục Khen thưởng, Kỷ luật</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Cấu hình Quyết định</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH MỤC QUYẾT ĐỊNH SINH VIÊN (MH-ADMIN-06, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Danh mục Quyết định Sinh viên</h2>
+          </div>
+        </div>
+
+        <!-- Bộ lọc: Tìm tên quyết định + Đơn vị phụ trách + Trạng thái -->
+        <div class="filter-bar">
+          <input class="fc" id="dec-name-search" type="text" placeholder="🔍 Tìm tên quyết định…" autocomplete="off" style="width:280px">
+          <div class="unit-combo" id="dec-unit-combo" style="width:220px">
+            <input class="fc" id="dec-unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:220px">
+            <div class="unit-combo-menu" id="dec-unit-combo-menu"></div>
+          </div>
+          <select class="fc" id="status-select" style="width:180px">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:90px">Mã</th>
+                <th>Tên quyết định</th>
+                <th style="width:170px">Đơn vị phụ trách</th>
+                <th style="width:130px">Mẫu file xuất</th>
+                <th style="width:100px">Trạng thái</th>
+                <th style="width:110px">Cập nhật</th>
+                <th style="width:90px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="dec-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="dec-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Mẫu file xuất quyết định (xem/tải) ═══ -->
+<div class="overlay hidden" id="modal-template-files">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title">Mẫu file xuất quyết định</h3>
+      <button class="modal-close" data-close="modal-template-files">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tpl-file-list" id="tpl-file-list"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-template-files">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Sửa cấu hình quyết định — danh mục Quyết định là cấu hình cứng
+     của hệ thống, Admin chỉ được sửa cấu hình (đơn vị phụ trách, cảnh báo, mẫu file…)
+     cho từng loại đã có sẵn, không thêm/xoá loại mới. ═══ -->
+<div class="overlay hidden" id="modal-new-decision">
+  <div class="modal-box w700 dm-modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="new-decision-modal-title">Sửa quyết định</h3>
+      <button class="modal-close" data-close="modal-new-decision">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <!-- Thông tin chung — không tiêu đề nhóm, hiển thị ngay đầu popup -->
+      <div class="dm-section">
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Mã quyết định</label>
+            <input class="fc" id="new-decision-code" readonly style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;background:#fafafa;color:var(--text-3)">
+          </div>
+          <div class="fi">
+            <label>Tên quyết định<span class="req">*</span></label>
+            <input class="fc" id="new-decision-name" placeholder="VD: Quyết định thôi học, Quyết định bảo lưu…">
+          </div>
+        </div>
+
+        <div class="fi" style="margin-bottom:0">
+          <label>Đơn vị phụ trách<span class="req">*</span></label>
+          <select class="fc" id="new-decision-unit">
+            <option value="" selected disabled>— Chọn đơn vị phụ trách —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Sử dụng trong đánh giá ĐRL — bật/tắt bằng switch, xác định quyết định này
+           có được tính vào đánh giá điểm rèn luyện của sinh viên hay không. Bật lên
+           thì nhập Điểm cộng/Điểm trừ áp dụng khi quyết định này được ban hành cho SV. -->
+      <div class="dm-section">
+        <div class="flex justify-between items-center">
+          <div class="dm-section-title" style="margin-bottom:0">Sử dụng trong đánh giá ĐRL</div>
+          <label class="switch" title="Bật/tắt sử dụng trong đánh giá ĐRL">
+            <input type="checkbox" id="new-decision-use-in-drl-switch" onchange="toggleUseInDrlConfig(this.checked)">
+            <span class="track"></span>
+          </label>
+        </div>
+
+        <div class="transition-drop" id="new-decision-drl-drop" style="display:none">
+          <div class="f-row col-2">
+            <div class="fi" style="margin-bottom:0">
+              <label style="font-weight:400">Loại điểm<span class="req">*</span></label>
+              <select class="fc" id="new-decision-drl-type">
+                <option value="" selected disabled>— Chọn loại điểm —</option>
+                <option value="plus">Điểm cộng</option>
+                <option value="minus">Điểm trừ</option>
+              </select>
+            </div>
+            <div class="fi" style="margin-bottom:0">
+              <label style="font-weight:400">Số điểm<span class="req">*</span></label>
+              <input class="fc" id="new-decision-drl-value" type="number" min="0" placeholder="Nhập số điểm" style="text-align:center">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Cảnh báo trước khi hết hiệu lực — mục độc lập, bật/tắt riêng bằng switch,
+           không còn phụ thuộc checkbox "Ngày hết hiệu lực" ở mục trên. -->
+      <div class="dm-section">
+        <div class="flex justify-between items-center" style="margin-bottom:2px">
+          <div class="dm-section-title" style="margin-bottom:0">Cảnh báo trước khi hết hiệu lực</div>
+          <label class="switch" title="Bật/tắt cảnh báo hết hiệu lực">
+            <input type="checkbox" id="expiry-alert-enabled-switch" onchange="toggleExpiryAlertConfig(this.checked)">
+            <span class="track"></span>
+          </label>
+        </div>
+        <div class="dm-section-desc" style="margin-bottom:10px">Hệ thống sẽ cảnh báo trước một số ngày khi quyết định sắp hết hiệu lực, dựa trên Ngày hết hiệu lực đã nhập cho từng sinh viên</div>
+
+        <div class="transition-drop" id="new-decision-expiry-alert-drop" style="display:none">
+          <div class="dl-block" style="margin-bottom:0">
+            <div class="flex items-center gap-8" style="margin-bottom:14px">
+              <span class="text-sm">Cảnh báo trước</span>
+              <input class="fc" id="expiry-alert-lead-days" type="number" min="1" value="30" style="width:80px;text-align:center">
+              <span class="text-sm">ngày khi hết hiệu lực</span>
+            </div>
+
+            <div class="dl-block-title">Cảnh báo cho</div>
+
+            <label class="dl-check-row" style="margin-bottom:10px">
+              <input type="checkbox" id="expiry-staff-enabled" onchange="toggleNotifyChannels('expiry-staff')">
+              Cán bộ
+            </label>
+            <div id="expiry-staff-channels" style="display:none;margin-left:24px;margin-bottom:12px">
+              <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+                <input type="checkbox" id="expiry-staff-bell"> 🔔 Thông báo trên chuông
+              </label>
+              <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:8px">
+                <input type="checkbox" id="expiry-staff-email"> 📧 Email
+              </label>
+              <div class="fi">
+                <label style="font-weight:400">Tiêu đề<span class="req">*</span></label>
+                <input class="fc" id="expiry-staff-title" type="text" placeholder="VD: Cảnh báo sắp hết hiệu lực quyết định">
+              </div>
+              <div class="fi" style="margin-bottom:0">
+                <label style="font-weight:400;display:flex;justify-content:space-between;align-items:center">
+                  <span>Nội dung thông báo<span class="req">*</span></span>
+                  <span class="text-link" style="font-size:12px;display:none" onclick="openDataFieldsModal()">Xem Danh mục Trường dữ liệu →</span>
+                </label>
+                <textarea class="fc" id="expiry-staff-message" rows="2" placeholder="VD: Sinh viên #hoTen (#maSinhVien) sắp hết hiệu lực quyết định vào ngày #ngayHetHieuLuc."></textarea>
+              </div>
+            </div>
+
+            <label class="dl-check-row" style="margin-bottom:10px">
+              <input type="checkbox" id="expiry-student-enabled" onchange="toggleNotifyChannels('expiry-student')">
+              Sinh viên
+            </label>
+            <div id="expiry-student-channels" style="display:none;margin-left:24px">
+              <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:6px">
+                <input type="checkbox" id="expiry-student-bell"> 🔔 Thông báo trên chuông
+              </label>
+              <label class="text-sm" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;margin-bottom:8px">
+                <input type="checkbox" id="expiry-student-email"> 📧 Email
+              </label>
+              <div class="fi">
+                <label style="font-weight:400">Tiêu đề<span class="req">*</span></label>
+                <input class="fc" id="expiry-student-title" type="text" placeholder="VD: Nhắc quyết định sắp hết hiệu lực">
+              </div>
+              <div class="fi" style="margin-bottom:0">
+                <label style="font-weight:400;display:flex;justify-content:space-between;align-items:center">
+                  <span>Nội dung thông báo<span class="req">*</span></span>
+                  <span class="text-link" style="font-size:12px;display:none" onclick="openDataFieldsModal()">Xem Danh mục Trường dữ liệu →</span>
+                </label>
+                <textarea class="fc" id="expiry-student-message" rows="2" placeholder="VD: Quyết định của bạn với #donViPhuTrach sẽ hết hiệu lực vào ngày #ngayHetHieuLuc, vui lòng liên hệ sớm."></textarea>
+              </div>
+            </div>
+
+            <label class="dl-check-row" style="margin-bottom:0">
+              <input type="checkbox" id="expiry-alert-repeat-enabled" onchange="toggleExpiryAlertRepeat(this.checked)"> Lặp lại cảnh báo
+            </label>
+            <div class="flex items-center gap-8" id="expiry-alert-repeat-wrap" style="display:none;margin-top:10px">
+              <span class="text-sm">Nhắc lại mỗi</span>
+              <input class="fc" id="expiry-alert-repeat-days" type="number" min="1" value="7" style="width:80px;text-align:center">
+              <span class="text-sm">ngày</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Mẫu file xuất quyết định — các hệ đào tạo giống nhau về nghiệp vụ,
+           chỉ khác nhau ở file xuất, nên gắn cố định 2 slot ngay trong 1 bản ghi
+           thay vì tách 2 bản ghi song song theo "nhóm hệ đào tạo". -->
+      <div class="dm-section">
+        <div class="flex justify-between items-center" style="margin-bottom:2px">
+          <div class="dm-section-title" style="margin-bottom:0">Mẫu file xuất quyết định</div>
+          <span class="text-link" style="font-size:12.5px" onclick="openDataFieldsModal()">Xem Danh mục Trường dữ liệu →</span>
+        </div>
+        <div class="dm-section-desc" style="display:none">Đại học (Chính quy, VLVH…) dùng chung 1 file; Sau đại học dùng file riêng</div>
+
+        <div class="f-row col-2">
+          <div class="fi">
+            <label style="font-weight:400">File mẫu — Đại học (.docx)</label>
+            <div class="filepick" id="new-decision-filepick-dh">
+              <div class="filepick-empty">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Bấm để chọn file .docx…</span>
+              </div>
+              <div class="filepick-picked">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="filepick-picked-name" id="new-decision-filepick-dh-name"></span>
+                <button type="button" class="filepick-remove" title="Xoá file" onclick="removeDecisionFile(event,'dh')">✕</button>
+              </div>
+              <input type="file" id="new-decision-file-dh" accept=".docx" onchange="onDecisionFileChange(this,'dh')">
+            </div>
+          </div>
+
+          <div class="fi">
+            <label style="font-weight:400">File mẫu — Sau đại học (.docx)</label>
+            <div class="filepick" id="new-decision-filepick-sdh">
+              <div class="filepick-empty">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Bấm để chọn file .docx…</span>
+              </div>
+              <div class="filepick-picked">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="filepick-picked-name" id="new-decision-filepick-sdh-name"></span>
+                <button type="button" class="filepick-remove" title="Xoá file" onclick="removeDecisionFile(event,'sdh')">✕</button>
+              </div>
+              <input type="file" id="new-decision-file-sdh" accept=".docx" onchange="onDecisionFileChange(this,'sdh')">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="fi" style="display:none">
+        <select class="fc" id="new-decision-status"><option value="active">Active</option><option value="inactive" selected>Inactive</option></select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-new-decision">Huỷ</button>
+      <button class="btn btn-primary" id="new-decision-submit-btn" onclick="doSaveDecision()">Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Danh mục Trường dữ liệu (placeholder cho file .docx mẫu) ═══ -->
+<div class="overlay hidden" id="modal-data-fields">
+  <div class="modal-box w640">
+    <div class="modal-hd">
+      <h3 class="modal-title">Danh mục Trường dữ liệu</h3>
+      <button class="modal-close" data-close="modal-data-fields">✕</button>
+    </div>
+    <div class="modal-bd">
+      <input class="fc" id="data-fields-search" type="text" placeholder="🔍 Tìm theo trường thông tin hoặc mã…" autocomplete="off" style="margin-bottom:14px">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Trường thông tin</th><th style="width:200px">Mã</th></tr></thead>
+          <tbody id="data-fields-tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="data-fields-pagination"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-data-fields">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Gán quy trình xử lý cho 1 quyết định — quy trình được xây dựng/sửa
+     bước tập trung tại màn Quản lý Quy trình (mh-admin-01); tại đây Admin CHỈ chọn 1
+     quy trình có sẵn (chức năng "Quyết định sinh viên") để gán, không tạo mới. ═══ -->
+<div class="overlay hidden" id="modal-process-picker">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="process-picker-title">Gán quy trình xử lý</h3>
+      <button class="modal-close" onclick="closeProcessPicker()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Quy trình xử lý<span class="req">*</span></label>
+        <div class="unit-combo" id="process-picker-combo">
+          <input class="fc" id="process-picker-search" type="text" placeholder="🔍 Tìm quy trình…" autocomplete="off">
+          <div class="unit-combo-menu" id="process-picker-combo-menu"></div>
+        </div>
+        <div class="f-hint">Muốn thêm quy trình mới hoặc sửa các bước, vào <a href="mh-admin-01_processmanagement.html">Cấu hình hệ thống → Quản lý Quy trình</a></div>
+      </div>
+
+      <!-- Chỉ xem — dữ liệu bước lấy từ quy trình đã chọn, không sửa được tại đây.
+           Bảng cố định trong khung modal (không tự phình to như popup Cấu hình quy trình
+           ở mh-admin-01); nếu bảng rộng hơn khung thì tự cuộn ngang (.tbl-wrap). -->
+      <div id="process-picker-preview" style="display:none">
+        <div class="dm-section-title" style="margin-bottom:10px">Các bước xử lý</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">STT</th>
+                <th>Tên bước</th>
+                <th>Đơn vị duyệt</th>
+                <th>Loại ĐV</th>
+                <th>Vai trò duyệt</th>
+                <th>Người duyệt</th>
+                <th>Deadline</th>
+              </tr>
+            </thead>
+            <tbody id="process-picker-steps-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" onclick="closeProcessPicker()">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveProcessPicker()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — danh mục quyết định sinh viên (mock)
+   Các hệ đào tạo giống nhau về nghiệp vụ (điều kiện áp dụng,
+   chuyển trạng thái, trường cập nhật) — CHỈ khác nhau ở file
+   xuất, nên mỗi quyết định là 1 bản ghi DUY NHẤT, mang
+   theo 2 file mẫu cố định: fileNameDh (Đại học) và fileNameSdh
+   (Sau đại học). Không tách 2 bản ghi song song theo bậc học.
+   ============================================================ */
+/* Trường dữ liệu (placeholder) hỗ trợ khi soạn file .docx mẫu — hệ thống tự thay bằng dữ liệu thật của SV khi xuất quyết định */
+const DATA_FIELDS = [
+  { name:'Họ tên', code:'#hoTen' },
+  { name:'Họ và tên tiếng Anh', code:'#hoTenTA' },
+  { name:'Mã sinh viên', code:'#maSinhVien' },
+  { name:'Ngày sinh', code:'#ngaySinh' },
+  { name:'Ngày sinh tiếng Anh', code:'#ngaySinhTA' },
+  { name:'Giới tính', code:'#gioiTinh' },
+  { name:'Giới tính tiếng Anh', code:'#gioiTinhTA' },
+  { name:'Nơi sinh', code:'#noiSinh' },
+  { name:'Nơi sinh tiếng Anh', code:'#noiSinhTA' },
+  { name:'Địa chỉ thường trú', code:'#thuongTru' },
+  { name:'Dân tộc', code:'#danToc' },
+  { name:'Tôn giáo', code:'#tonGiao' },
+  { name:'Số CCCD', code:'#soCCCD' },
+  { name:'Ngày cấp CCCD', code:'#ngayCapCCCD' },
+  { name:'Nơi cấp CCCD', code:'#noiCapCCCD' },
+  { name:'Số điện thoại', code:'#soDienThoai' },
+  { name:'Email', code:'#email' },
+  { name:'Lớp hành chính', code:'#lopHanhChinh' },
+  { name:'Khoá học', code:'#khoaHoc' },
+  { name:'Khoa/Trường quản lý', code:'#khoaQuanLy' },
+  { name:'Chương trình đào tạo', code:'#chuongTrinhDaoTao' },
+  { name:'Chương trình đào tạo tiếng Anh', code:'#chuongTrinhDaoTaoTA' },
+  { name:'Hình thức đào tạo', code:'#hinhThucDaoTao' },
+  { name:'Ngành học', code:'#nganhHoc' },
+  { name:'Ngành học tiếng Anh', code:'#nganhHocTA' },
+  { name:'Trạng thái hiện tại', code:'#trangThaiHienTai' },
+  { name:'Trạng thái mới', code:'#trangThaiMoi' },
+  { name:'Số quyết định', code:'#soQuyetDinh' },
+  { name:'Ngày ban hành quyết định', code:'#ngayBanHanh' },
+  { name:'Trích yếu quyết định', code:'#trichYeu' },
+  { name:'Lý do ban hành', code:'#lyDoBanHanh' },
+  { name:'Đơn vị phụ trách ban hành', code:'#donViPhuTrach' },
+  { name:'Người ký quyết định', code:'#nguoiKy' },
+  { name:'Chức vụ người ký', code:'#chucVuNguoiKy' },
+  { name:'Ngày hết hiệu lực', code:'#ngayHetHieuLuc' },
+  { name:'Điểm trung bình tích luỹ', code:'#diemTrungBinhTichLuy' },
+  { name:'Số tín chỉ đã tích luỹ', code:'#soTinChiTichLuy' },
+  { name:'Xếp loại học lực', code:'#xepLoaiHocLuc' },
+  { name:'Xếp loại rèn luyện', code:'#xepLoaiRenLuyen' },
+  { name:'Học kỳ hiện tại', code:'#hocKyHienTai' },
+  { name:'Năm học hiện tại', code:'#namHocHienTai' },
+  { name:'Ngày lập hồ sơ', code:'#ngayLapHoSo' },
+  { name:'Ghi chú', code:'#ghiChu' },
+];
+/* Đơn vị phụ trách — rút gọn từ cây đơn vị 3 cấp dùng chung ở mh-admin-01,
+   chỉ cần Cấp 1/2 để chọn ai được ban hành quyết định này (phân quyền). */
+const UNITS = [
+  { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
+  { value:'u-daotao', label:'Ban Đào tạo' },
+  { value:'u-sdh', label:'Phòng Sau đại học' },
+  { value:'u-thanhtra', label:'Ban Thanh tra Pháp chế' },
+  { value:'u-khaothi', label:'Phòng Khảo thí và Đảm bảo chất lượng' },
+  { value:'u-tuyensinh', label:'Phòng Tuyển sinh và Truyền thông' },
+  { value:'u-cntt', label:'Khoa CNTT' },
+  { value:'u-kt', label:'Khoa Kinh tế' },
+  { value:'u-truongxd', label:'Trường Xây dựng' },
+  { value:'u-ngoaingu', label:'Khoa Ngoại ngữ' },
+  { value:'u-yduoc', label:'Trường Y Dược' },
+];
+const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+
+/* Danh sách 22 quyết định thật, 20 đầu gộp từ 2 nguồn nghiệp vụ và loại bỏ trùng lặp
+   (VD "Khen thưởng", "Kỷ luật", "Nghỉ học tạm thời", "Quay trở lại học tập", "Thôi học",
+   "Xoá tên" xuất hiện ở cả 2 nguồn — chỉ giữ lại 1 bản ghi cho mỗi loại); d21/d22 bổ sung sau. */
+const DECISIONS = [
+  { id:'d1', itemId:1, code:'QĐ01', name:'Quyết định cấp mã SV và phân lớp cho SV', unit:'u-daotao', newStatus:'danghoc', noChange:false, updFields:['status','cohortclass'], status:'active', updated:'20/07/2026', fileNameDh:'mau-qd-cap-ma-sv-phan-lop-dh.docx', fileNameSdh:'mau-qd-cap-ma-sv-phan-lop-sdh.docx', processId: null },
+  { id:'d2', itemId:2, code:'QĐ02', name:'Quyết định công nhận điểm rèn luyện toàn khoá', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'18/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
+  { id:'d3', itemId:3, code:'QĐ03', name:'Quyết định điều chỉnh', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'15/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
+  { id:'d4', itemId:4, code:'QĐ04', name:'Quyết định thay đổi họ tên sinh viên', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'22/07/2026', fileNameDh:'mau-qd-thay-doi-ho-ten-dh.docx', fileNameSdh:'mau-qd-thay-doi-ho-ten-sdh.docx', processId: null },
+  { id:'d5', itemId:5, code:'QĐ05', name:'Quyết định thu hồi quyết định nghỉ học tạm thời', unit:'u-ctsv', newStatus:'danghoc', noChange:false, updFields:['status'], status:'active', updated:'19/07/2026', fileNameDh:'mau-qd-thu-hoi-nghi-hoc-tam-thoi-dh.docx', fileNameSdh:'mau-qd-thu-hoi-nghi-hoc-tam-thoi-sdh.docx', processId: null },
+  { id:'d6', itemId:6, code:'QĐ06', name:'Quyết định buộc thôi học do quá 2 lần cảnh báo', unit:'u-daotao', newStatus:'buocthoihoc', noChange:false, updFields:['status'], status:'active', updated:'12/07/2026', fileNameDh:'mau-qd-buoc-thoi-hoc-canh-bao-dh.docx', fileNameSdh:'mau-qd-buoc-thoi-hoc-canh-bao-sdh.docx', processId: null },
+  { id:'d7', itemId:7, code:'QĐ07', name:'Quyết định chuyển khoá, ngành, lớp', unit:'u-daotao', newStatus:'', noChange:true, updFields:['cohortclass','program'], status:'active', updated:'10/07/2026', fileNameDh:'mau-qd-chuyen-khoa-nganh-lop-dh.docx', fileNameSdh:'mau-qd-chuyen-khoa-nganh-lop-sdh.docx', processId: null },
+  { id:'d8', itemId:8, code:'QĐ08', name:'Quyết định chuyển trường đến', unit:'u-daotao', newStatus:'danghoc', noChange:false, updFields:['status','unit','cohortclass'], status:'active', updated:'09/07/2026', fileNameDh:'mau-qd-chuyen-truong-den-dh.docx', fileNameSdh:'mau-qd-chuyen-truong-den-sdh.docx', processId: null },
+  { id:'d9', itemId:9, code:'QĐ09', name:'Quyết định chuyển trường đi', unit:'u-daotao', newStatus:'chuyentruong', noChange:false, updFields:['status'], status:'active', updated:'09/07/2026', fileNameDh:'mau-qd-chuyen-truong-di-dh.docx', fileNameSdh:'mau-qd-chuyen-truong-di-sdh.docx', processId: null },
+  { id:'d10', itemId:10, code:'QĐ10', name:'Quyết định công nhận điểm từ các cơ sở đào tạo', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'05/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
+  { id:'d11', itemId:11, code:'QĐ11', name:'Quyết định công nhận tốt nghiệp', unit:'u-daotao', newStatus:'totnghiep', noChange:false, updFields:['status'], status:'active', updated:'28/06/2026', fileNameDh:'mau-qd-cong-nhan-tot-nghiep-dh.docx', fileNameSdh:'mau-qd-cong-nhan-tot-nghiep-sdh.docx', processId: 'p2' },
+  { id:'d12', itemId:12, code:'QĐ12', name:'Quyết định cử đi thực tập tốt nghiệp', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'03/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
+  { id:'d13', itemId:13, code:'QĐ13', name:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', unit:'u-khaothi', newStatus:'', noChange:true, updFields:[], status:'active', updated:'14/07/2026', fileNameDh:'mau-qd-xu-ly-hoc-vu-dh.docx', fileNameSdh:'mau-qd-xu-ly-hoc-vu-sdh.docx', processId: 'p1' },
+  { id:'d14', itemId:14, code:'QĐ14', name:'Quyết định khen thưởng', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'16/07/2026', fileNameDh:'mau-qd-khen-thuong-dh.docx', fileNameSdh:'mau-qd-khen-thuong-sdh.docx', processId: null },
+  { id:'d15', itemId:15, code:'QĐ15', name:'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'16/07/2026', fileNameDh:'mau-qd-ky-luat-dh.docx', fileNameSdh:'mau-qd-ky-luat-sdh.docx', processId: null },
+  { id:'d16', itemId:16, code:'QĐ16', name:'Quyết định nghỉ học tạm thời/bảo lưu', unit:'u-ctsv', newStatus:'baoluu', noChange:false, updFields:['status'],
+    expiryAlert:{ enabled:true, leadDays:30,
+      staff:{ enabled:true, bell:true, email:true, title:'Cảnh báo sắp hết hiệu lực quyết định bảo lưu', message:'Sinh viên #hoTen (#maSinhVien) sắp hết hiệu lực quyết định bảo lưu vào ngày #ngayHetHieuLuc.' },
+      student:{ enabled:true, bell:true, email:true, title:'Nhắc quyết định bảo lưu sắp hết hiệu lực', message:'Quyết định bảo lưu của bạn sẽ hết hiệu lực vào ngày #ngayHetHieuLuc, vui lòng liên hệ #donViPhuTrach để làm thủ tục quay trở lại học tập.' },
+      repeat:{ enabled:true, everyDays:7 } },
+    status:'active', updated:'21/07/2026', fileNameDh:'mau-qd-bao-luu-dh.docx', fileNameSdh:'mau-qd-bao-luu-sdh.docx', processId: 'p3' },
+  { id:'d17', itemId:17, code:'QĐ17', name:'Quyết định nhập trường/trúng tuyển', unit:'u-tuyensinh', newStatus:'danghoc', noChange:false, updFields:['status','unit','cohortclass','program'], status:'active', updated:'01/07/2026', fileNameDh:'mau-qd-nhap-truong-trung-tuyen-dh.docx', fileNameSdh:'mau-qd-nhap-truong-trung-tuyen-sdh.docx', processId: null },
+  { id:'d18', itemId:18, code:'QĐ18', name:'Quyết định quay trở lại học tập', unit:'u-ctsv', newStatus:'danghoc', noChange:false, updFields:['status'], status:'active', updated:'11/07/2026', fileNameDh:'mau-qd-tiep-nhan-tro-lai-dh.docx', fileNameSdh:'mau-qd-tiep-nhan-tro-lai-sdh.docx', processId: null },
+  { id:'d19', itemId:19, code:'QĐ19', name:'Quyết định thôi học', unit:'u-ctsv', newStatus:'thoihoc', noChange:false, updFields:['status'], status:'active', updated:'12/07/2026', fileNameDh:'mau-qd-thoi-hoc-dh.docx', fileNameSdh:'mau-qd-thoi-hoc-sdh.docx', processId: null },
+  { id:'d20', itemId:20, code:'QĐ20', name:'Quyết định xoá tên', unit:'u-ctsv', newStatus:'xoaten', noChange:false, updFields:['status'], status:'active', updated:'07/07/2026', fileNameDh:'mau-qd-xoa-ten-dh.docx', fileNameSdh:'mau-qd-xoa-ten-sdh.docx', processId: null },
+  { id:'d21', itemId:21, code:'QĐ21', name:'Quyết định thay đổi đơn vị đào tạo', unit:'u-daotao', newStatus:'', noChange:true, updFields:['unit'], status:'active', updated:'31/07/2026', fileNameDh:'mau-qd-thay-doi-don-vi-dao-tao-dh.docx', fileNameSdh:'mau-qd-thay-doi-don-vi-dao-tao-sdh.docx', processId: null },
+  { id:'d22', itemId:22, code:'QĐ22', name:'Quyết định giao đề tài và phân công GVHD', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'04/08/2026', fileNameDh:'mau-qd-giao-de-tai-phan-cong-gvhd-dh.docx', fileNameSdh:'mau-qd-giao-de-tai-phan-cong-gvhd-sdh.docx', processId: null },
+];
+
+let editingDecisionId = null;
+
+/* == Dropdown thông báo (chuông trên header) == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'📝', title:'"Quyết định thôi học" vừa được cập nhật mẫu file', time:'20 phút trước' },
+  { id:'n2', unread:true, ico:'⚠️', title:'"Quyết định điều chỉnh" chưa gắn mẫu file', time:'3 giờ trước' },
+  { id:'n3', unread:false, ico:'✅', title:'"Quyết định nghỉ học tạm thời/bảo lưu" vừa được bật cảnh báo hết hiệu lực', time:'Hôm qua' },
+];
+
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+
+updateNotifBadge();
+
+/* == Bảng danh mục quyết định == */
+const DEC_PAGE_SIZE = 20;
+let currentPage = 1;
+
+function currentStatusFilter(){ return document.getElementById('status-select').value; }
+function currentNameSearch(){ return document.getElementById('dec-name-search').value.trim().toLowerCase(); }
+
+function unitsHtml(d){
+  if (!d.unit) return '<span class="dec-name-cell">Đại học Phenikaa</span>';
+  return `<span class="dec-name-cell">${UNIT_LABEL[d.unit]}</span>`;
+}
+
+function templateFilesHtml(d){
+  const count = (d.fileNameDh ? 1 : 0) + (d.fileNameSdh ? 1 : 0);
+  if (!count) return '<span class="text-muted text-sm">—</span>';
+  return `<span class="text-link" onclick="event.stopPropagation();openTemplateFilesModal('${d.id}')">${count} file</span>`;
+}
+
+/* == Popup xem/tải mẫu file xuất quyết định == */
+function tplFileRowHtml(fileName){
+  return `<div class="tpl-file-row">
+    <svg class="tpl-file-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span class="tpl-file-name">${fileName}</span>
+    <button type="button" class="icon-btn tpl-file-dl" title="Tải xuống" onclick="downloadTemplateFile('${fileName}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+  </div>`;
+}
+
+function openTemplateFilesModal(id){
+  const d = decById(id);
+  const files = [d.fileNameDh, d.fileNameSdh].filter(Boolean);
+  document.getElementById('tpl-file-list').innerHTML = files.map(tplFileRowHtml).join('');
+  openModal('modal-template-files');
+}
+
+function downloadTemplateFile(fileName){
+  showToast(`Đang tải xuống "${fileName}"…`, 'ok');
+}
+
+/* == Popup Danh mục Trường dữ liệu (placeholder cho file .docx mẫu) == */
+const DATA_FIELDS_PAGE_SIZE = 10;
+let dataFieldsPage = 1;
+
+function openDataFieldsModal(){
+  dataFieldsPage = 1;
+  document.getElementById('data-fields-search').value = '';
+  renderDataFieldsGrid();
+  openModal('modal-data-fields');
+}
+
+function renderDataFieldsGrid(){
+  const query = document.getElementById('data-fields-search').value.trim().toLowerCase();
+  let list = DATA_FIELDS;
+  if (query) list = list.filter(f => f.name.toLowerCase().includes(query) || f.code.toLowerCase().includes(query));
+
+  const totalPages = Math.max(1, Math.ceil(list.length / DATA_FIELDS_PAGE_SIZE));
+  dataFieldsPage = Math.min(dataFieldsPage, totalPages);
+  const pageList = list.slice((dataFieldsPage-1)*DATA_FIELDS_PAGE_SIZE, dataFieldsPage*DATA_FIELDS_PAGE_SIZE);
+
+  document.getElementById('data-fields-tbody').innerHTML = pageList.map(f => `
+    <tr>
+      <td>${f.name}</td>
+      <td><span class="dec-code">${f.code}</span></td>
+    </tr>`).join('') || `<tr><td colspan="2"><div class="tbl-empty">Không tìm thấy trường dữ liệu phù hợp</div></td></tr>`;
+
+  renderDataFieldsPagination(list.length, totalPages);
+}
+
+function renderDataFieldsPagination(totalItems, totalPages){
+  const el = document.getElementById('data-fields-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (dataFieldsPage-1)*DATA_FIELDS_PAGE_SIZE + 1;
+  const to = Math.min(dataFieldsPage*DATA_FIELDS_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===dataFieldsPage?'active':''}" onclick="goToDataFieldsPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">${from}–${to} trong ${totalItems} trường</span>
+    <button type="button" class="pg-btn" ${dataFieldsPage<=1?'disabled':''} onclick="goToDataFieldsPage(${dataFieldsPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${dataFieldsPage>=totalPages?'disabled':''} onclick="goToDataFieldsPage(${dataFieldsPage+1})">›</button>`;
+}
+
+function goToDataFieldsPage(p){ dataFieldsPage = p; renderDataFieldsGrid(); }
+
+document.getElementById('data-fields-search').addEventListener('input', () => { dataFieldsPage = 1; renderDataFieldsGrid(); });
+
+function renderDecGrid(){
+  const tbody = document.getElementById('dec-tbody');
+  const statusFilter = currentStatusFilter();
+  const nameQuery = currentNameSearch();
+
+  let list = DECISIONS.slice();
+  if (statusFilter !== 'all') list = list.filter(d => d.status === statusFilter);
+  if (nameQuery) list = list.filter(d => d.name.toLowerCase().includes(nameQuery));
+  if (selectedDecUnitId) list = list.filter(d => selectedDecUnitId === '__dh__' ? !d.unit : d.unit === selectedDecUnitId);
+
+  const totalPages = Math.max(1, Math.ceil(list.length / DEC_PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*DEC_PAGE_SIZE, currentPage*DEC_PAGE_SIZE);
+
+  tbody.innerHTML = pageList.map((d, idx) => `
+    <tr class="dec-row" style="cursor:pointer" onclick="openEditDecisionModal('${d.id}')">
+      <td class="text-muted">${(currentPage-1)*DEC_PAGE_SIZE + idx + 1}</td>
+      <td><span class="dec-code">${d.code}</span></td>
+      <td><span class="dec-name-cell">${d.name}</span></td>
+      <td>${unitsHtml(d)}</td>
+      <td>${templateFilesHtml(d)}</td>
+      <td><span class="tag ${d.status==='active'?'tag-success':'tag-default'}">${d.status==='active'?'Active':'Inactive'}</span></td>
+      <td class="text-muted">${d.updated}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Gán quy trình xử lý" onclick="openProcessPicker('${d.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </button>
+          <button class="icon-btn" title="Sửa quyết định" onclick="openEditDecisionModal('${d.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          ${d.status==='active' ? `
+          <button class="icon-btn" title="Chuyển sang Inactive" onclick="confirmToggleDecisionStatus('${d.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>` : `
+          <button class="icon-btn" title="Chuyển sang Active" onclick="confirmToggleDecisionStatus('${d.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          </button>`}
+        </div>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có quyết định nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('dec-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (currentPage-1)*DEC_PAGE_SIZE + 1;
+  const to = Math.min(currentPage*DEC_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} quyết định</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+
+function goToPage(p){ currentPage = p; renderDecGrid(); }
+
+function decById(id){ return DECISIONS.find(d => d.id === id); }
+
+document.getElementById('status-select').addEventListener('change', () => { currentPage = 1; renderDecGrid(); });
+document.getElementById('dec-name-search').addEventListener('input', () => { currentPage = 1; renderDecGrid(); });
+
+/* == Combobox tìm kiếm "Đơn vị phụ trách" trên thanh filter-bar == */
+let selectedDecUnitId = null;
+const decUnitSearchInput = document.getElementById('dec-unit-search');
+const decUnitComboMenu = document.getElementById('dec-unit-combo-menu');
+
+function renderDecUnitMenu(query){
+  const q = (query || '').trim();
+  let html = '<div class="unit-combo-item" data-id="__all__" onclick="pickDecUnit(null)"><span>Tất cả đơn vị phụ trách</span></div>';
+  if (!q || 'đại học phenikaa'.includes(q.toLowerCase())){
+    html += '<div class="unit-combo-item" data-id="__dh__" onclick="pickDecUnit(&#39;__dh__&#39;)"><span>' + highlightMatch('Đại học Phenikaa', q) + '</span></div>';
+  }
+  const matches = q ? UNITS.filter(u => u.label.toLowerCase().includes(q.toLowerCase())) : UNITS;
+  if (matches.length){
+    matches.forEach(u => {
+      html += '<div class="unit-combo-item" data-id="' + u.value + '" onclick="pickDecUnit(&#39;' + u.value + '&#39;)"><span>' + highlightMatch(u.label, q) + '</span></div>';
+    });
+  } else if (q){
+    html += '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
+  }
+  decUnitComboMenu.innerHTML = html;
+}
+function openDecUnitMenu(){ renderDecUnitMenu(decUnitSearchInput.value); decUnitComboMenu.classList.add('open'); }
+function closeDecUnitMenu(){ decUnitComboMenu.classList.remove('open'); }
+
+function pickDecUnit(id){
+  selectedDecUnitId = id;
+  decUnitSearchInput.value = id === '__dh__' ? 'Đại học Phenikaa' : (id ? UNIT_LABEL[id] : '');
+  decUnitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  closeDecUnitMenu();
+  currentPage = 1;
+  renderDecGrid();
+}
+
+decUnitSearchInput.addEventListener('focus', () => { decUnitSearchInput.select(); openDecUnitMenu(); });
+decUnitSearchInput.addEventListener('input', () => openDecUnitMenu());
+document.addEventListener('click', e => {
+  if (!document.getElementById('dec-unit-combo').contains(e.target)) closeDecUnitMenu();
+});
+
+renderDecGrid();
+
+document.getElementById('new-decision-unit').insertAdjacentHTML('beforeend',
+  UNITS.map(u => `<option value="${u.value}">${u.label}</option>`).join(''));
+
+/* == Switch "Sử dụng trong đánh giá ĐRL" — bật → xổ xuống chọn Loại điểm (Điểm cộng
+   HOẶC Điểm trừ, chỉ 1 trong 2) và nhập Số điểm tương ứng; tắt → ẩn đi và trả về
+   giá trị mặc định == */
+function toggleUseInDrlConfig(checked){
+  document.getElementById('new-decision-drl-drop').style.display = checked ? 'block' : 'none';
+  if (!checked){
+    document.getElementById('new-decision-drl-type').value = '';
+    document.getElementById('new-decision-drl-value').value = '';
+  }
+}
+
+/* == Switch "Cảnh báo trước khi hết hiệu lực" — mục độc lập, không còn phụ thuộc checkbox
+   "Ngày hết hiệu lực". Bật → xổ xuống cấu hình (số ngày cảnh báo trước, Cán bộ / Sinh viên,
+   kênh nhận, mẫu tin tự soạn); tắt → ẩn đi và xoá lựa chọn đã nhập == */
+const EXPIRY_ALERT_RECIPIENTS = [
+  { prefix:'expiry-staff', key:'staff', label:'Cán bộ' },
+  { prefix:'expiry-student', key:'student', label:'Sinh viên' },
+];
+
+function toggleExpiryAlertConfig(checked){
+  document.getElementById('new-decision-expiry-alert-drop').style.display = checked ? 'block' : 'none';
+  if (!checked){
+    EXPIRY_ALERT_RECIPIENTS.forEach(({prefix}) => {
+      document.getElementById(prefix + '-enabled').checked = false;
+      document.getElementById(prefix + '-bell').checked = false;
+      document.getElementById(prefix + '-email').checked = false;
+      document.getElementById(prefix + '-title').value = '';
+      document.getElementById(prefix + '-message').value = '';
+      toggleNotifyChannels(prefix);
+    });
+    document.getElementById('expiry-alert-lead-days').value = 30;
+    document.getElementById('expiry-alert-repeat-enabled').checked = false;
+    toggleExpiryAlertRepeat(false);
+  }
+}
+
+/* == Tick "Lặp lại cảnh báo" → xổ xuống ô "Nhắc lại mỗi X ngày";
+   bỏ tick → ẩn đi và trả về giá trị mặc định == */
+function toggleExpiryAlertRepeat(checked){
+  document.getElementById('expiry-alert-repeat-wrap').style.display = checked ? 'flex' : 'none';
+  if (!checked){
+    document.getElementById('expiry-alert-repeat-days').value = 7;
+  }
+}
+
+function loadExpiryAlertConfig(config){
+  const enabled = !!(config && config.enabled);
+  document.getElementById('expiry-alert-enabled-switch').checked = enabled;
+  toggleExpiryAlertConfig(enabled);
+  EXPIRY_ALERT_RECIPIENTS.forEach(({prefix, key}) => {
+    const c = (config && config[key]) || { enabled:false, bell:false, email:false, title:'', message:'' };
+    document.getElementById(prefix + '-enabled').checked = c.enabled;
+    document.getElementById(prefix + '-bell').checked = c.bell;
+    document.getElementById(prefix + '-email').checked = c.email;
+    document.getElementById(prefix + '-title').value = c.title || '';
+    document.getElementById(prefix + '-message').value = c.message || '';
+    toggleNotifyChannels(prefix);
+  });
+  document.getElementById('expiry-alert-lead-days').value = (config && config.leadDays) || 30;
+  const repeat = (config && config.repeat) || { enabled:false, everyDays:7 };
+  document.getElementById('expiry-alert-repeat-enabled').checked = repeat.enabled;
+  toggleExpiryAlertRepeat(repeat.enabled);
+  document.getElementById('expiry-alert-repeat-days').value = repeat.everyDays || 7;
+}
+
+function readExpiryAlertConfig(){
+  const config = { enabled: document.getElementById('expiry-alert-enabled-switch').checked };
+  EXPIRY_ALERT_RECIPIENTS.forEach(({prefix, key}) => {
+    config[key] = {
+      enabled: document.getElementById(prefix + '-enabled').checked,
+      bell: document.getElementById(prefix + '-bell').checked,
+      email: document.getElementById(prefix + '-email').checked,
+      title: document.getElementById(prefix + '-title').value.trim(),
+      message: document.getElementById(prefix + '-message').value.trim(),
+    };
+  });
+  config.leadDays = Number(document.getElementById('expiry-alert-lead-days').value) || 30;
+  config.repeat = {
+    enabled: document.getElementById('expiry-alert-repeat-enabled').checked,
+    everyDays: Number(document.getElementById('expiry-alert-repeat-days').value) || 7,
+  };
+  return config;
+}
+
+/* == Filepick mẫu file — 2 slot cố định (dh/sdh) trong cùng 1 bản ghi == */
+function onDecisionFileChange(input, kind){
+  const picker = document.getElementById('new-decision-filepick-' + kind);
+  if (input.files.length){
+    document.getElementById('new-decision-filepick-' + kind + '-name').textContent = input.files[0].name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+function removeDecisionFile(e, kind){
+  e.stopPropagation();
+  document.getElementById('new-decision-file-' + kind).value = '';
+  document.getElementById('new-decision-filepick-' + kind).classList.remove('has-file');
+}
+function showExistingFileInPicker(kind, fileName){
+  if (!fileName) return;
+  document.getElementById('new-decision-filepick-' + kind + '-name').textContent = fileName;
+  document.getElementById('new-decision-filepick-' + kind).classList.add('has-file');
+}
+
+/* == Mở modal Sửa — nạp lại dữ liệu bản ghi đang chọn. Danh mục Quyết định là cấu
+   hình cứng của hệ thống nên không có modal/hàm "Thêm mới" — Admin chỉ sửa cấu hình
+   của các loại đã có sẵn. == */
+function openEditDecisionModal(id){
+  const d = decById(id);
+  editingDecisionId = id;
+  document.getElementById('new-decision-modal-title').textContent = 'Sửa quyết định';
+  document.getElementById('new-decision-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('new-decision-code').value = d.code;
+  document.getElementById('new-decision-name').value = d.name;
+  document.getElementById('new-decision-unit').value = d.unit || '';
+  document.getElementById('new-decision-use-in-drl-switch').checked = !!d.useInDrl;
+  toggleUseInDrlConfig(!!d.useInDrl);
+  document.getElementById('new-decision-drl-type').value = d.drlType || '';
+  document.getElementById('new-decision-drl-value').value = d.useInDrl ? (d.drlValue != null ? d.drlValue : '') : '';
+  loadExpiryAlertConfig(d.expiryAlert);
+  ['dh','sdh'].forEach(kind => {
+    document.getElementById('new-decision-file-' + kind).value = '';
+    document.getElementById('new-decision-filepick-' + kind).classList.remove('has-file');
+  });
+  showExistingFileInPicker('dh', d.fileNameDh);
+  showExistingFileInPicker('sdh', d.fileNameSdh);
+  document.getElementById('new-decision-status').value = d.status;
+  openModal('modal-new-decision');
+}
+
+/* == Lưu cấu hình quyết định đang sửa == */
+function doSaveDecision(){
+  const name = document.getElementById('new-decision-name').value.trim();
+  const unit = document.getElementById('new-decision-unit').value;
+
+  if (!name){ showToast('Vui lòng nhập tên quyết định', 'err'); return; }
+  if (!unit){ showToast('Vui lòng chọn đơn vị phụ trách', 'err'); return; }
+
+  if (document.getElementById('new-decision-use-in-drl-switch').checked){
+    const drlType = document.getElementById('new-decision-drl-type').value;
+    const drlValueRaw = document.getElementById('new-decision-drl-value').value;
+    if (!drlType){ showToast('Vui lòng chọn Loại điểm cho đánh giá ĐRL', 'err'); return; }
+    if (drlValueRaw === '' || Number(drlValueRaw) <= 0){ showToast('Vui lòng nhập Số điểm cho đánh giá ĐRL', 'err'); return; }
+  }
+
+  if (document.getElementById('expiry-alert-enabled-switch').checked){
+    for (const {prefix, label} of EXPIRY_ALERT_RECIPIENTS){
+      const enabled = document.getElementById(prefix + '-enabled').checked;
+      const bell = document.getElementById(prefix + '-bell').checked;
+      const email = document.getElementById(prefix + '-email').checked;
+      if (!enabled) continue;
+      if (!bell && !email){
+        showToast(`Vui lòng chọn ít nhất 1 nơi gửi cảnh báo (Chuông/Email) cho ${label}`, 'err');
+        return;
+      }
+      const title = document.getElementById(prefix + '-title').value.trim();
+      const message = document.getElementById(prefix + '-message').value.trim();
+      if (!title){
+        showToast(`Vui lòng nhập Tiêu đề cảnh báo cho ${label}`, 'err');
+        return;
+      }
+      if (!message){
+        showToast(`Vui lòng nhập Nội dung thông báo cho ${label}`, 'err');
+        return;
+      }
+    }
+  }
+
+  const fileNameDh = document.getElementById('new-decision-filepick-dh-name').textContent;
+  const fileNameSdh = document.getElementById('new-decision-filepick-sdh-name').textContent;
+  const expiryAlert = readExpiryAlertConfig();
+
+  const d = decById(editingDecisionId);
+  d.name = name;
+  d.unit = unit;
+  d.useInDrl = document.getElementById('new-decision-use-in-drl-switch').checked;
+  d.drlType = d.useInDrl ? document.getElementById('new-decision-drl-type').value : '';
+  d.drlValue = d.useInDrl ? Number(document.getElementById('new-decision-drl-value').value) : 0;
+  d.expiryAlert = expiryAlert;
+  d.fileNameDh = fileNameDh;
+  d.fileNameSdh = fileNameSdh;
+  d.status = document.getElementById('new-decision-status').value;
+  d.updated = 'Hôm nay';
+  showToast('Đã lưu thay đổi quyết định', 'ok');
+
+  closeModal('modal-new-decision');
+  renderDecGrid();
+}
+
+function confirmToggleDecisionStatus(id){
+  const d = decById(id);
+  const toActive = d.status !== 'active';
+  const msg = toActive
+    ? `Chuyển quyết định "${d.name}" sang Active?`
+    : `Chuyển quyết định "${d.name}" sang Inactive?`;
+  showConfirm(msg, () => {
+    d.status = toActive ? 'active' : 'inactive';
+    d.updated = 'Hôm nay';
+    showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
+    renderDecGrid();
+  }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
+}
+
+/* ============================================================
+   GÁN QUY TRÌNH XỬ LÝ — quy trình (các bước, đơn vị/người duyệt,
+   rẽ nhánh, deadline, thông báo…) được xây dựng và chỉnh sửa tập
+   trung tại màn Quản lý Quy trình (mh-admin-01). Ở Danh mục Quyết
+   định, Admin CHỈ chọn 1 quy trình có sẵn (chức năng "Quyết định
+   sinh viên") để gán cho từng quyết định — không tạo/sửa
+   bước ở màn này nữa.
+   ============================================================ */
+
+/* Đồng bộ id với PROCESSES (func:'qdsv') ở mh-admin-01 để việc gán quy trình nhất
+   quán giữa 2 màn — muốn đổi tên/bước của quy trình phải sửa ở mh-admin-01. */
+const QDSV_PROCESSES = [
+  { id:'p1', name:'Quy trình xét học vụ (cảnh báo học vụ)', status:'active', steps:[
+    { title:'Nộp yêu cầu', unit:'', role:'', person:'Sinh viên', deadline:'—' },
+    { title:'Cố vấn học tập duyệt', unit:'Khoa CNTT', role:'Cố vấn học tập', person:'', deadline:'48 giờ' },
+    { title:'Trưởng bộ môn duyệt', unit:'Bộ môn Hệ thống Thông tin', role:'Trưởng đơn vị', person:'', deadline:'48 giờ' },
+    { title:'Phòng Đào tạo duyệt', unit:'Phòng Đào tạo', role:'Trưởng đơn vị', person:'', deadline:'72 giờ' },
+    { title:'Ban hành quyết định', unit:'Phòng Đào tạo', role:'', person:'lan.nt@phenika.edu.vn', deadline:'24 giờ' },
+  ] },
+  { id:'p2', name:'Quy trình công nhận tốt nghiệp', status:'active', steps:[
+    { title:'Nộp yêu cầu', unit:'', role:'', person:'Sinh viên', deadline:'—' },
+    { title:'Khoa duyệt', unit:'Khoa CNTT', role:'Trưởng đơn vị', person:'', deadline:'48 giờ' },
+    { title:'Phòng Đào tạo duyệt', unit:'Phòng Đào tạo', role:'Trưởng đơn vị', person:'', deadline:'72 giờ' },
+    { title:'Ban hành quyết định', unit:'Phòng Đào tạo', role:'', person:'binh.tv@phenika.edu.vn', deadline:'24 giờ' },
+  ] },
+  { id:'p3', name:'Quy trình bảo lưu kết quả học tập', status:'inactive', steps:[
+    { title:'Nộp yêu cầu', unit:'', role:'', person:'Sinh viên', deadline:'—' },
+    { title:'Phòng CTSV duyệt', unit:'Phòng CTSV', role:'Trưởng đơn vị', person:'', deadline:'48 giờ' },
+    { title:'Ban hành quyết định', unit:'Phòng CTSV', role:'', person:'hoa.pt@phenika.edu.vn', deadline:'24 giờ' },
+  ] },
+];
+
+/* "Không áp dụng quy trình" — lựa chọn cố định (không phải quy trình thật sự lấy từ
+   mh-admin-01), dùng khi quyết định được ban hành trực tiếp, không qua bước duyệt nào. */
+const NO_PROCESS_ID = 'none';
+
+function processById(id){
+  if (id === NO_PROCESS_ID) return { id: NO_PROCESS_ID, name: 'Không áp dụng quy trình', steps: [] };
+  return QDSV_PROCESSES.find(p => p.id === id);
+}
+
+let pickerDecisionId = null;
+let pickerSelectedProcessId = null;
+
+function openProcessPicker(decisionId){
+  const d = decById(decisionId);
+  if (!d) return;
+  pickerDecisionId = decisionId;
+  pickerSelectedProcessId = d.processId || null;
+
+  document.getElementById('process-picker-title').textContent = 'Gán quy trình xử lý — ' + d.name;
+  document.getElementById('process-picker-search').value = pickerSelectedProcessId ? processById(pickerSelectedProcessId).name : '';
+  renderProcessPickerPreview();
+  openModal('modal-process-picker');
+}
+
+function closeProcessPicker(){ closeModal('modal-process-picker'); }
+
+/* Quy trình Inactive không được gán mới — chỉ hiện các quy trình Active trong danh sách chọn.
+   "Không áp dụng quy trình" luôn được ghim đầu danh sách (khớp theo tên như 1 lựa chọn thật). */
+function renderProcessPickerMenu(query){
+  const q = (query || '').trim();
+  const menu = document.getElementById('process-picker-combo-menu');
+
+  let html = '';
+  if (!q || 'không áp dụng quy trình'.includes(q.toLowerCase())){
+    html += `<div class="unit-combo-item" onclick="pickProcess('${NO_PROCESS_ID}')">${highlightMatch('Không áp dụng quy trình', q)}</div>`;
+  }
+  const active = QDSV_PROCESSES.filter(p => p.status === 'active');
+  const matches = q ? active.filter(p => p.name.toLowerCase().includes(q.toLowerCase())) : active;
+  html += matches.map(p => `
+    <div class="unit-combo-item" onclick="pickProcess('${p.id}')">${highlightMatch(p.name, q)}</div>`).join('');
+
+  menu.innerHTML = html || `<div class="unit-combo-empty">Không tìm thấy quy trình nào khớp "${q}"</div>`;
+}
+
+function openProcessPickerMenu(){
+  renderProcessPickerMenu(document.getElementById('process-picker-search').value);
+  document.getElementById('process-picker-combo-menu').classList.add('open');
+}
+function closeProcessPickerMenu(){ document.getElementById('process-picker-combo-menu').classList.remove('open'); }
+
+function pickProcess(id){
+  pickerSelectedProcessId = id;
+  document.getElementById('process-picker-search').value = processById(id).name;
+  closeProcessPickerMenu();
+  renderProcessPickerPreview();
+}
+
+/* Bảng chỉ xem — hiển thị đúng dữ liệu bước của quy trình đã chọn, không có input/nút sửa.
+   Khi chọn "Không áp dụng quy trình" thì không có bước nào để xem, ẩn cả khối xem trước. */
+function renderProcessPickerPreview(){
+  const wrap = document.getElementById('process-picker-preview');
+  const p = pickerSelectedProcessId ? processById(pickerSelectedProcessId) : null;
+  const isNoProcess = p && p.id === NO_PROCESS_ID;
+  if (!p || isNoProcess){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  document.getElementById('process-picker-steps-tbody').innerHTML = p.steps.map((s, i) => `
+    <tr>
+      <td class="text-muted">${i+1}</td>
+      <td>${s.title}</td>
+      <td>${s.unit || '—'}</td>
+      <td>—</td>
+      <td>${s.role || '—'}</td>
+      <td>${s.person || '—'}</td>
+      <td>${s.deadline}</td>
+    </tr>`).join('');
+}
+
+function saveProcessPicker(){
+  if (!pickerSelectedProcessId){ showToast('Vui lòng chọn quy trình xử lý', 'err'); return; }
+  const d = decById(pickerDecisionId);
+  d.processId = pickerSelectedProcessId;
+  d.updated = 'Hôm nay';
+  closeProcessPicker();
+  renderDecGrid();
+  showToast('Đã gán quy trình xử lý', 'ok');
+}
+
+document.getElementById('process-picker-search').addEventListener('focus', openProcessPickerMenu);
+document.getElementById('process-picker-search').addEventListener('input', e => {
+  renderProcessPickerMenu(e.target.value);
+  document.getElementById('process-picker-combo-menu').classList.add('open');
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('process-picker-combo').contains(e.target)) closeProcessPickerMenu();
+});
+
+/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng chung bởi combobox Đơn vị phụ trách và combobox Quy trình xử lý */
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+
+/* toggleNotifyChannels — dùng chung bởi khối "Cảnh báo trước khi hết hiệu lực" trong modal Sửa quyết định */
+function toggleNotifyChannels(prefix){
+  const enabled = document.getElementById(prefix + '-enabled').checked;
+  document.getElementById(prefix + '-channels').style.display = enabled ? '' : 'none';
+}
+</script>
+</body>
+</html>

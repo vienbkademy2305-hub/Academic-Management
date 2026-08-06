@@ -36,7 +36,7 @@ document.addEventListener('click', e => {
 });
 
 // ── Confirm dialog ──
-function showConfirm(message, onOk, okText='Xác nhận', okClass='btn-primary') {
+function showConfirm(message, onOk, okText='Xác nhận', okClass='btn-primary', desc='', cancelText='Huỷ') {
   let overlay = document.getElementById('confirm-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -46,13 +46,16 @@ function showConfirm(message, onOk, okText='Xác nhận', okClass='btn-primary')
       <div class="confirm-title" id="conf-title"></div>
       <div class="confirm-desc" id="conf-desc"></div>
       <div class="confirm-actions">
-        <button class="btn btn-default" onclick="closeModal('confirm-overlay')">Huỷ</button>
+        <button class="btn btn-default" id="conf-cancel" onclick="closeModal('confirm-overlay')"></button>
         <button class="btn" id="conf-ok"></button>
       </div></div>`;
     document.body.appendChild(overlay);
   }
   document.getElementById('conf-title').textContent = message;
-  document.getElementById('conf-desc').textContent = '';
+  const descEl = document.getElementById('conf-desc');
+  descEl.textContent = desc;
+  descEl.style.display = desc ? '' : 'none';
+  document.getElementById('conf-cancel').textContent = cancelText;
   const okBtn = document.getElementById('conf-ok');
   okBtn.textContent = okText;
   okBtn.className = 'btn ' + okClass;

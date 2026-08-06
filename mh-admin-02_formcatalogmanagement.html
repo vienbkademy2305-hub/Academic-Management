@@ -62,8 +62,6 @@
   #view-list table.tbl th{background:#f0f0f0}
   .form-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
   .form-name-cell{font-size:13.5px;color:var(--text-1)}
-  tr.form-row{cursor:pointer}
-  tr.form-row:hover td{background:var(--primary-light)}
 
   /* Cảnh báo ngữ cảnh khi đang xem 1 đơn vị Cấp 2/3 — giống unit-copy-alert của mh-admin-01 */
   #unit-copy-alert .alert-title{margin-bottom:2px}
@@ -317,7 +315,14 @@
         <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
         <ul class="sb-sub open">
           <li class="active"><a href="#">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
         </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định SV &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li><li><a href="mh-admin-07_rewarddisciplinecatalog.html">Danh mục Khen thưởng, Kỷ luật</a></li><li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li></ul>
       </li>
       <li>
         <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
@@ -566,6 +571,14 @@
           </div>
         </div>
 
+        <label class="flex items-center gap-8" style="margin-top:16px;margin-bottom:0;cursor:pointer">
+          <label class="switch">
+            <input type="checkbox" id="new-form-needs-return" checked>
+            <span class="track"></span>
+          </label>
+          Cần trả bản in cứng cho sinh viên sau khi xử lý xong
+        </label>
+
       </div>
 
       <div class="wizard-pane" data-step="2">
@@ -714,6 +727,14 @@
           <div class="fdet-field-val" id="fdet-scope"></div>
         </div>
       </div>
+
+      <label class="flex items-center gap-8" style="margin-bottom:16px;cursor:pointer">
+        <label class="switch">
+          <input type="checkbox" id="fdet-needs-return" onchange="saveFormNeedsReturn()">
+          <span class="track"></span>
+        </label>
+        Cần trả bản in cứng cho sinh viên sau khi xử lý xong
+      </label>
 
       <div class="fi">
         <label style="font-size:13px;font-weight:600;color:var(--text-1)">File mẫu</label>
@@ -1372,7 +1393,7 @@ function renderFormGrid() {
       const st = STATUS_TAG[f.status];
       const deptTd = `<td>${ownerLabel(f.ownerUnit)}</td>`;
       return `
-        <tr class="form-row" onclick="openFormDetail('${f.id}')">
+        <tr>
           <td>${(currentPage - 1) * FORM_PAGE_SIZE + i + 1}</td>
           <td class="form-code">${f.code}</td>
           <td>
@@ -1382,18 +1403,18 @@ function renderFormGrid() {
           <td><span class="tag ${st.cls}">${st.label}</span></td>
           <td class="text-muted text-sm">${f.updated}</td>
           <td class="tbl-actions">
-            <button class="icon-btn" title="Cấu hình quy trình" onclick="event.stopPropagation();openFormBuilder('${f.id}')">
+            <button class="icon-btn" title="Cấu hình quy trình" onclick="openFormBuilder('${f.id}')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
             </button>
-            <button class="icon-btn" title="Chỉnh sửa" onclick="event.stopPropagation();openFormEdit('${f.id}')">
+            <button class="icon-btn" title="Chỉnh sửa" onclick="openFormEdit('${f.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            <button class="icon-btn" title="${f.status==='active' ? 'Chuyển sang Inactive' : 'Chuyển sang Active'}" onclick="event.stopPropagation();confirmToggleFormStatus('${f.id}')">
+            <button class="icon-btn" title="${f.status==='active' ? 'Chuyển sang Inactive' : 'Chuyển sang Active'}" onclick="confirmToggleFormStatus('${f.id}')">
               ${f.status==='active'
                 ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>'
                 : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'}
             </button>
-            <button class="icon-btn danger" title="Xoá" onclick="event.stopPropagation();confirmDeleteForm('${f.id}')">
+            <button class="icon-btn danger" title="Xoá" onclick="confirmDeleteForm('${f.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             </button>
           </td>
@@ -1448,6 +1469,7 @@ function openFormDetail(id) {
   document.getElementById('fdet-dept').textContent = ownerLabel(f.ownerUnit);
   document.getElementById('fdet-scope').textContent = scopeText(f.scopes);
   document.getElementById('fdet-filename').textContent = f.file;
+  document.getElementById('fdet-needs-return').checked = f.needsReturn !== false;
 
   let accessHtml = `
     <div class="access-row">
@@ -1525,6 +1547,13 @@ function saveFormCode(){
   f.code = newCode;
   renderFormGrid();
   closeModal('modal-form-detail');
+  showToast('Đã lưu thay đổi.', 'ok');
+}
+
+function saveFormNeedsReturn(){
+  const f = formById(fdetCurrentId);
+  if (!f) return;
+  f.needsReturn = document.getElementById('fdet-needs-return').checked;
   showToast('Đã lưu thay đổi.', 'ok');
 }
 
@@ -2077,6 +2106,7 @@ function openFormEdit(id){
   document.getElementById('new-form-content').innerHTML = f.content || '';
   showExistingFileInPicker(f.file);
   document.getElementById('new-form-status').value = f.status;
+  document.getElementById('new-form-needs-return').checked = f.needsReturn !== false;
 
   newFormExtraFields = (f.extraFields || []).map(ef => ({ ...ef, options: (ef.options || []).slice() }));
   renderExtraFields();
@@ -2138,6 +2168,7 @@ function doCreateForm() {
   }
 
   const status = document.getElementById('new-form-status').value;
+  const needsReturn = document.getElementById('new-form-needs-return').checked;
   const today = new Date();
   const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
   const file = hasNewFile ? fileInput.files[0].name : newFormExistingFileName;
@@ -2149,7 +2180,7 @@ function doCreateForm() {
   if (forkTargetForm){
     Object.assign(forkTargetForm, {
       name, guide, scopes, programs, applyUnits, cohorts,
-      studentStatuses, allowCopy, content, extraFields, status, updated, file,
+      studentStatuses, allowCopy, content, extraFields, status, updated, file, needsReturn,
     });
   } else if (willForkAsCopy){
     const maxItemId = FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
@@ -2160,12 +2191,12 @@ function doCreateForm() {
       name: name + ' (' + unitById(ownerUnit).name + ')',
       desc: editingForm.desc, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
-      status, updated, file, originId: editingForm.id,
+      status, updated, file, needsReturn, originId: editingForm.id,
     });
   } else if (editingForm){
     Object.assign(editingForm, {
       code, name, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
-      studentStatuses, allowCopy, content, extraFields, status, updated, file,
+      studentStatuses, allowCopy, content, extraFields, status, updated, file, needsReturn,
     });
   } else {
     const maxItemId = FORMS.reduce((max, f) => Math.max(max, f.itemId), 0);
@@ -2174,7 +2205,7 @@ function doCreateForm() {
       itemId: maxItemId + 1,
       code, name, desc: '', guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
-      status, updated, file, originId: null,
+      status, updated, file, needsReturn, originId: null,
     });
   }
 

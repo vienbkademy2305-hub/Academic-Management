@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Popup Xác nhận nộp nguyện vọng — PU-SV-02 (Design System thật EduOne)</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* Ghi chú: mở rộng nhỏ ngoài _styles.css gốc, chỉ để dựng khung trang demo quanh popup thật */
+  .nv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .nv-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--border);border-radius:8px}
+  .nv-rank{width:26px;height:26px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .nv-info{flex:1;min-width:0}
+  .nv-name{font-size:13.5px;font-weight:600;color:var(--text-1)}
+  .nv-gv{font-size:12px;color:var(--text-3);margin-top:2px}
+  .nv-remove{flex-shrink:0}
+  .nv-footer{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+  .nv-hint{font-size:12px;color:var(--text-3)}
+  .hint-note{font-size:12px;color:var(--text-3);margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══ SIDEBAR (đúng _sidebar.html / _styles.css gốc) ═══ -->
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Cổng Sinh viên</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av">BT</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Bùi Thị Trang</div>
+        <div style="font-size:11px;color:var(--text-3)">B22DCCN045</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li class="active">
+        <span class="mn-group">📋&nbsp; Đề tài &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Đăng ký nguyện vọng</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+    <header class="app-header">
+      <span class="h-breadcrumb">Đề tài &gt; Đăng ký nguyện vọng</span>
+      <div class="h-right">
+        <div class="bw"><button class="btn btn-link" style="font-size:18px">🔔</button><span class="bc">2</span></div>
+        <div class="av">BT</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="card" style="max-width:640px;margin:0 auto">
+        <div class="card-hd">
+          <h3 class="card-title" id="nv-card-title">Nguyện vọng đề tài đã đăng ký</h3>
+          <span class="tag tag-warning" id="nv-status">Nháp</span>
+        </div>
+
+        <ul class="nv-list" id="nv-list">
+          <li class="nv-item">
+            <div class="nv-rank">1</div>
+            <div class="nv-info">
+              <div class="nv-name">Xây dựng hệ thống gợi ý đề tài dựa trên học máy</div>
+              <div class="nv-gv">GVHD: TS. Nguyễn Minh Tuấn — Khoa CNTT</div>
+            </div>
+            <button class="icon-btn danger nv-remove" title="Xoá nguyện vọng" onclick="removeWish(this)">🗑</button>
+          </li>
+          <li class="nv-item">
+            <div class="nv-rank">2</div>
+            <div class="nv-info">
+              <div class="nv-name">Ứng dụng xử lý ngôn ngữ tự nhiên trong chatbot hỗ trợ sinh viên</div>
+              <div class="nv-gv">GVHD: ThS. Lê Quốc Cường — Khoa CNTT</div>
+            </div>
+            <button class="icon-btn danger nv-remove" title="Xoá nguyện vọng" onclick="removeWish(this)">🗑</button>
+          </li>
+          <li class="nv-item">
+            <div class="nv-rank">3</div>
+            <div class="nv-info">
+              <div class="nv-name">Phân tích dữ liệu điểm rèn luyện sinh viên</div>
+              <div class="nv-gv">GVHD: TS. Vũ Thanh Long — Khoa CNTT</div>
+            </div>
+            <button class="icon-btn danger nv-remove" title="Xoá nguyện vọng" onclick="removeWish(this)">🗑</button>
+          </li>
+        </ul>
+
+        <div class="nv-footer">
+          <span class="nv-hint" id="nv-hint">3 nguyện vọng đã chọn (tối đa 3)</span>
+          <button class="btn btn-primary" id="nv-submit-btn" onclick="submitWishes()">Nộp nguyện vọng</button>
+        </div>
+      </div>
+
+      <p class="hint-note">Nhấn <b>Nộp nguyện vọng</b> để mở popup <code>showConfirm()</code> — dùng đúng component thật trong <code>_utils.js</code></p>
+    </main>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+  function updateHint() {
+    const n = document.querySelectorAll('#nv-list .nv-item').length;
+    document.getElementById('nv-hint').textContent = `${n} nguyện vọng đã chọn (tối đa 3)`;
+  }
+
+  function removeWish(btn) {
+    btn.closest('.nv-item').remove();
+    updateHint();
+  }
+
+  function submitWishes() {
+    const n = document.querySelectorAll('#nv-list .nv-item').length;
+    if (n === 0) { showToast('Chưa có nguyện vọng nào để nộp', 'warn'); return; }
+
+    showConfirm(
+      'Xác nhận nộp',
+      () => {
+        document.querySelectorAll('.nv-remove').forEach(b => b.remove());
+        document.getElementById('nv-submit-btn').remove();
+        document.getElementById('nv-status').textContent = 'Đã nộp';
+        document.getElementById('nv-status').className = 'tag tag-success';
+        showToast('Nộp nguyện vọng thành công');
+      },
+      'Xác nhận',
+      'btn-primary',
+      `Sau khi nộp sinh viên sẽ không được chỉnh sửa nguyện vọng nữa. Xác nhận nộp ${n} nguyện vọng?`,
+      'Quay lại'
+    );
+  }
+</script>
+</body>
+</html>

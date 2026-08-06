@@ -211,6 +211,10 @@
         </ul>
       </li>
       <li>
+        <span class="mn-group">📜&nbsp; Quyết định SV &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li><li><a href="mh-admin-07_rewarddisciplinecatalog.html">Danh mục Khen thưởng, Kỷ luật</a></li><li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li></ul>
+      </li>
+      <li>
         <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
         <ul class="sb-sub">
           <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
@@ -346,9 +350,12 @@
           <button type="button" class="status-tab" data-status="Từ chối" onclick="pickStatusTab('Từ chối')">
             Từ chối <span class="status-tab-badge error" id="badge-Từ chối">0</span>
           </button>
+          <!-- Tạm ẩn tab trạng thái "Yêu cầu chỉnh sửa" theo yêu cầu chỉnh sửa. Giữ nguyên
+               #badge-Yêu cầu chỉnh sửa trong JS (renderBadges/pickStatusTab...) để dễ khôi phục.
           <button type="button" class="status-tab" data-status="Yêu cầu chỉnh sửa" onclick="pickStatusTab('Yêu cầu chỉnh sửa')">
             Yêu cầu chỉnh sửa <span class="status-tab-badge blue" id="badge-Yêu cầu chỉnh sửa">0</span>
           </button>
+          -->
         </div>
 
 
@@ -360,6 +367,7 @@
                 <th class="col-optional" data-col="formName" style="width:160px">Tên Đơn</th>
                 <th class="col-optional" data-col="mssv" style="width:110px">Mã sinh viên</th>
                 <th class="col-optional" data-col="svName" style="width:180px">Họ và tên</th>
+                <th class="col-optional" data-col="ctdt" style="width:90px;display:none">CTĐT</th>
                 <th class="col-optional" data-col="lopHC" style="width:100px">Lớp HC</th>
                 <th class="col-optional" data-col="attachments" style="width:90px">Tài liệu</th>
                 <th class="col-optional" data-col="recipientCccd" style="width:130px">CCCD người nhận</th>
@@ -832,7 +840,7 @@ const PROCESSES_MINI = {
 const APPLICATIONS = [
   { id:'a1', code:'BM15-000231', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
     processId:'p-xacnhan', currentStepIdx:1, status:'Chờ duyệt', overdue:true,
-    svName:'Trần Thị Bích', mssv:'20120045', unit:'u-cntt-httt', submitted:'17/07/2026',
+    svName:'Trần Thị Bích', mssv:'20120045', unit:'u-cntt-httt', ctdt:'HTTT', submitted:'17/07/2026',
     invoice:{ code:'HD-000231', reason:'Lệ phí xác nhận sinh viên', amount:20000, status:'Chưa thanh toán' },
     fields:{ hoTen:'Trần Thị Bích', ngaySinh:'12/03/2004', maSinhVien:'20120045', soCCCD:'038204012345',
       lopHanhChinh:'CT4501', khoaDaoTao:'K45', donViQuanLy:'Khoa CNTT', heDaoTao:'Chính quy',
@@ -843,7 +851,7 @@ const APPLICATIONS = [
     ] },
   { id:'a2', code:'BM16-000198', formCode:'BM16', formName:'Đơn đăng ký ở ký túc xá', func:'bieumau',
     processId:'p-ktx', currentStepIdx:2, status:'Đã duyệt', overdue:false,
-    svName:'Nguyễn Văn Long', mssv:'20120078', unit:'u-cntt-kthm', submitted:'10/07/2026',
+    svName:'Nguyễn Văn Long', mssv:'20120078', unit:'u-cntt-kthm', ctdt:'KHMT', submitted:'10/07/2026',
     invoice:{ code:'HD-000198', reason:'Phí ở ký túc xá học kỳ 1', amount:1500000, status:'Đã thanh toán', paidDate:'12/07/2026 16:00' },
     returnInfo:{ method:'Người lấy hộ', copies:2, recipientCccd:'038204011122', recipientPhone:'0977123456', appointmentDate:'14/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'14/07/2026 10:20', satisfaction:4, comment:'Thời gian xử lý hơi lâu, mong bộ phận một cửa rút ngắn thêm.' },
     attachments:[
@@ -860,7 +868,7 @@ const APPLICATIONS = [
     ] },
   { id:'a3', code:'BM03-000077', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
     processId:'p-baoluu', currentStepIdx:1, status:'Từ chối', overdue:false,
-    svName:'Phạm Thu Hà', mssv:'20120112', unit:'u-kt', submitted:'05/07/2026',
+    svName:'Phạm Thu Hà', mssv:'20120112', unit:'u-kt', ctdt:'QTKD', submitted:'05/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'12/07/2026', done:false, satisfaction:null },
     attachments:[
       { name:'giay-kham-suc-khoe.pdf', size:'890 KB' },
@@ -873,7 +881,7 @@ const APPLICATIONS = [
     ] },
   { id:'a4', code:'BM07-000045', formCode:'BM07', formName:'Đơn kiến nghị xét kỷ luật', func:'kyluat',
     processId:'p-kyluat', currentStepIdx:2, status:'Chờ duyệt', overdue:false,
-    svName:'Lê Minh Đức', mssv:'20120199', unit:'u-cntt-mangmt', submitted:'01/07/2026',
+    svName:'Lê Minh Đức', mssv:'20120199', unit:'u-cntt-mangmt', ctdt:'CNTT', submitted:'01/07/2026',
     submittedBy:'GV. Nguyễn Thanh Sơn',
     fields:{ hoTen:'Lê Minh Đức', maSinhVien:'20120199', soCCCD:'038204019902', lopHanhChinh:'CT4504', khoaDaoTao:'K45',
       donViQuanLy:'Khoa CNTT', noiDungViPham:'Vi phạm quy chế thi' },
@@ -884,7 +892,7 @@ const APPLICATIONS = [
     ] },
   { id:'a5', code:'BM15-000230', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
     processId:'p-xacnhan', currentStepIdx:1, status:'Đã duyệt', overdue:false,
-    svName:'Đỗ Quang Huy', mssv:'20120056', unit:'u-yduoc', submitted:'15/07/2026',
+    svName:'Đỗ Quang Huy', mssv:'20120056', unit:'u-yduoc', ctdt:'YDK', submitted:'15/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, recipientCccd:'', recipientPhone:'', appointmentDate:'20/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'20/07/2026 11:00', satisfaction:null, comment:'' },
     fields:{ hoTen:'Đỗ Quang Huy', ngaySinh:'20/01/2004', maSinhVien:'20120056', soCCCD:'038204054321',
       lopHanhChinh:'YD4501', khoaDaoTao:'K45', donViQuanLy:'Trường Y Dược', heDaoTao:'Chính quy',
@@ -895,7 +903,7 @@ const APPLICATIONS = [
     ] },
   { id:'a6', code:'BM04-000112', formCode:'BM04', formName:'Đơn đề nghị khen thưởng (Sinh viên 5 tốt)', func:'khenthuong',
     processId:'p-khenthuong', currentStepIdx:1, status:'Chờ duyệt', overdue:false,
-    svName:'Vũ Thị Mai Anh', mssv:'20120233', unit:'u-ngoaingu', submitted:'16/07/2026',
+    svName:'Vũ Thị Mai Anh', mssv:'20120233', unit:'u-ngoaingu', ctdt:'NNA', submitted:'16/07/2026',
     submittedBy:'GV. Đặng Thu Trang',
     invoice:{ code:'HD-000112', reason:'Phí làm hồ sơ khen thưởng', amount:50000, status:'Chưa thanh toán' },
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'22/07/2026', done:false, satisfaction:null },
@@ -907,7 +915,7 @@ const APPLICATIONS = [
     ] },
   { id:'a7', code:'BM02-000301', formCode:'BM02', formName:'Đơn xin xác nhận vay vốn ngân hàng', func:'bieumau',
     processId:'p-xacnhan', currentStepIdx:1, status:'Yêu cầu chỉnh sửa', overdue:false,
-    svName:'Ngô Bảo Châu', mssv:'20120087', unit:'u-cokhi', submitted:'14/07/2026',
+    svName:'Ngô Bảo Châu', mssv:'20120087', unit:'u-cokhi', ctdt:'CK', submitted:'14/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'18/07/2026', done:false, satisfaction:null },
     fields:{ hoTen:'Ngô Bảo Châu', maSinhVien:'20120087', soCCCD:'038204008701', lopHanhChinh:'CK4502', khoaDaoTao:'K45',
       donViQuanLy:'Khoa Cơ khí', mucDichXacNhan:'Vay vốn ngân hàng' },
@@ -917,7 +925,7 @@ const APPLICATIONS = [
     ] },
   { id:'a8', code:'BM09-000018', formCode:'BM09', formName:'Đơn xét cảnh báo học vụ', func:'qdsv',
     processId:'p-hocvu', currentStepIdx:3, status:'Đã duyệt', overdue:false,
-    svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh', submitted:'02/07/2026',
+    svName:'Hoàng Anh Tuấn', mssv:'20120145', unit:'u-dienlanh', ctdt:'DDL', submitted:'02/07/2026',
     returnInfo:{ method:'Người lấy hộ', copies:1, recipientCccd:'038204020088', recipientPhone:'0966112233', appointmentDate:'10/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'10/07/2026 09:15', satisfaction:3, comment:'' },
     fields:{ hoTen:'Hoàng Anh Tuấn', maSinhVien:'20120145', soCCCD:'038204014501', lopHanhChinh:'DL4503', khoaDaoTao:'K45',
       donViQuanLy:'Khoa Điện – Điện lạnh', lyDoCanhBao:'Điểm trung bình học kỳ dưới 1.0' },
@@ -929,7 +937,7 @@ const APPLICATIONS = [
     ] },
   { id:'a9', code:'BM11-000209', formCode:'BM11', formName:'Đơn xin công nhận tốt nghiệp', func:'qdsv',
     processId:'p-totnghiep', currentStepIdx:1, status:'Chờ duyệt', overdue:true,
-    svName:'Đặng Thị Kim Ngân', mssv:'20120021', unit:'u-kt-qtkd', submitted:'11/07/2026',
+    svName:'Đặng Thị Kim Ngân', mssv:'20120021', unit:'u-kt-qtkd', ctdt:'QTKD', submitted:'11/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'15/07/2026', done:false, satisfaction:null },
     fields:{ hoTen:'Đặng Thị Kim Ngân', maSinhVien:'20120021', soCCCD:'038204002101', lopHanhChinh:'QTKD4501', khoaDaoTao:'K45',
       donViQuanLy:'Khoa Kinh tế', diemTBTichLuy:'3.42' },
@@ -939,7 +947,7 @@ const APPLICATIONS = [
     ] },
   { id:'a10', code:'BM06-000054', formCode:'BM06', formName:'Đơn phúc khảo điểm thi', func:'bieumau',
     processId:'p-diemthi', currentStepIdx:2, status:'Đã duyệt', overdue:false,
-    svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt', submitted:'08/07/2026',
+    svName:'Trịnh Văn Hiếu', mssv:'20120167', unit:'u-cntt-httt', ctdt:'HTTT', submitted:'08/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'13/07/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'13/07/2026 14:00', satisfaction:5, comment:'Cán bộ hỗ trợ nhiệt tình, quy trình rõ ràng, dễ theo dõi.' },
     fields:{ hoTen:'Trịnh Văn Hiếu', maSinhVien:'20120167', soCCCD:'038204016701', lopHanhChinh:'CT4501', khoaDaoTao:'K45',
       donViQuanLy:'Khoa CNTT', monHocPhucKhao:'Cơ sở dữ liệu', diemHienTai:'4.5' },
@@ -950,7 +958,7 @@ const APPLICATIONS = [
     ] },
   { id:'a11', code:'BM15-000245', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
     processId:'p-xacnhan', currentStepIdx:0, status:'Chờ duyệt', overdue:false,
-    svName:'Bùi Thị Thanh Thảo', mssv:'20120302', unit:'u-truongxd', submitted:'18/07/2026',
+    svName:'Bùi Thị Thanh Thảo', mssv:'20120302', unit:'u-truongxd', ctdt:'XD', submitted:'18/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'25/07/2026', done:false, satisfaction:null },
     fields:{ hoTen:'Bùi Thị Thanh Thảo', ngaySinh:'02/11/2004', maSinhVien:'20120302', soCCCD:'038204099887',
       lopHanhChinh:'XD4502', khoaDaoTao:'K45', donViQuanLy:'Trường Xây dựng', heDaoTao:'Chính quy',
@@ -960,7 +968,7 @@ const APPLICATIONS = [
     ] },
   { id:'a12', code:'BM16-000199', formCode:'BM16', formName:'Đơn đăng ký ở ký túc xá', func:'bieumau',
     processId:'p-ktx', currentStepIdx:1, status:'Từ chối', overdue:false,
-    svName:'Phan Đình Khoa', mssv:'20120290', unit:'u-xd-cauduongtb', submitted:'09/07/2026',
+    svName:'Phan Đình Khoa', mssv:'20120290', unit:'u-xd-cauduongtb', ctdt:'CDCT', submitted:'09/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'16/07/2026', done:false, satisfaction:null },
     fields:{ hoTen:'Phan Đình Khoa', gioiTinh:'Nam', maSinhVien:'20120290', ngaySinh:'14/06/2004', soCCCD:'038204029001',
       lopHanhChinh:'CD4503', khoaDaoTao:'K45', donViQuanLy:'Trường Xây dựng', soDienThoai:'0987654321',
@@ -971,7 +979,7 @@ const APPLICATIONS = [
     ] },
   { id:'a13', code:'BM04-000113', formCode:'BM04', formName:'Đơn đề nghị khen thưởng (NCKH)', func:'khenthuong',
     processId:'p-khenthuong', currentStepIdx:2, status:'Đã duyệt', overdue:false,
-    svName:'Lâm Gia Bảo', mssv:'20120311', unit:'u-cntt-kthm', submitted:'20/06/2026',
+    svName:'Lâm Gia Bảo', mssv:'20120311', unit:'u-cntt-kthm', ctdt:'KHMT', submitted:'20/06/2026',
     returnInfo:{ method:'Người lấy hộ', copies:1, recipientCccd:'038204031199', recipientPhone:'0933445566', appointmentDate:'24/06/2026', done:true, handler:'Cán bộ Trần Thị Loan', returnedDate:'26/06/2026 09:30', satisfaction:4, comment:'' },
     fields:{ hoTen:'Lâm Gia Bảo', maSinhVien:'20120311', soCCCD:'038204031101', lopHanhChinh:'CT4505', khoaDaoTao:'K45',
       donViQuanLy:'Khoa CNTT', thanhTichNoiBat:'Giải Nhất cuộc thi Nghiên cứu Khoa học sinh viên cấp Trường' },
@@ -982,7 +990,7 @@ const APPLICATIONS = [
     ] },
   { id:'a14', code:'BM03-000078', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
     processId:'p-baoluu', currentStepIdx:2, status:'Chờ duyệt', overdue:true,
-    svName:'Nguyễn Hải Đăng', mssv:'20120356', unit:'u-kt-ketoan', submitted:'03/07/2026',
+    svName:'Nguyễn Hải Đăng', mssv:'20120356', unit:'u-kt-ketoan', ctdt:'KTOAN', submitted:'03/07/2026',
     returnInfo:{ method:'Sinh viên tự lấy', copies:1, appointmentDate:'09/07/2026', done:false, satisfaction:null },
     fields:{ hoTen:'Nguyễn Hải Đăng', maSinhVien:'20120356', soCCCD:'038204035601', lopHanhChinh:'KTOAN4502', khoaDaoTao:'K45',
       donViQuanLy:'Khoa Kinh tế', lyDoBaoLuu:'Đi nghĩa vụ quân sự', thoiGianBaoLuu:'2 học kỳ' },
@@ -993,7 +1001,7 @@ const APPLICATIONS = [
     ] },
   { id:'a15', code:'BM07-000046', formCode:'BM07', formName:'Đơn kiến nghị xét kỷ luật', func:'kyluat',
     processId:'p-kyluat', currentStepIdx:3, status:'Đã duyệt', overdue:false,
-    svName:'Tô Ngọc Lan', mssv:'20120378', unit:'u-cntt-mangmt', submitted:'25/06/2026',
+    svName:'Tô Ngọc Lan', mssv:'20120378', unit:'u-cntt-mangmt', ctdt:'CNTT', submitted:'25/06/2026',
     fields:{ hoTen:'Tô Ngọc Lan', maSinhVien:'20120378', soCCCD:'038204037801', lopHanhChinh:'CT4506', khoaDaoTao:'K45',
       donViQuanLy:'Khoa CNTT', noiDungViPham:'Sử dụng tài liệu trái phép trong phòng thi' },
     history:[
@@ -1006,7 +1014,7 @@ const APPLICATIONS = [
      các bước 4-7 chưa tới lượt nên hiển thị "Chưa xử lý" trong popup Quy trình phê duyệt */
   { id:'a16', code:'BM15-000260', formCode:'BM15', formName:'Đơn xin xác nhận sinh viên', func:'bieumau',
     processId:'p-demo7', currentStepIdx:2, status:'Chờ duyệt', overdue:false,
-    svName:'Đinh Thị Hương Giang', mssv:'20120401', unit:'u-cntt-httt', submitted:'19/07/2026',
+    svName:'Đinh Thị Hương Giang', mssv:'20120401', unit:'u-cntt-httt', ctdt:'HTTT', submitted:'19/07/2026',
     fields:{ hoTen:'Đinh Thị Hương Giang', ngaySinh:'08/02/2004', maSinhVien:'20120401', soCCCD:'038204040101',
       lopHanhChinh:'CT4507', khoaDaoTao:'K45', donViQuanLy:'Khoa CNTT', heDaoTao:'Chính quy',
       nganhDaoTao:'Hệ thống Thông tin', thuongTru:'Hưng Yên', mucDichXacNhan:'Xin visa' },
@@ -1019,7 +1027,7 @@ const APPLICATIONS = [
      xử lý nên hiển thị "Bỏ qua" trong popup Quy trình phê duyệt */
   { id:'a17', code:'BM03-000090', formCode:'BM03', formName:'Đơn xin bảo lưu kết quả học tập', func:'qdsv',
     processId:'p-demo5-tuchoi', currentStepIdx:1, status:'Từ chối', overdue:false,
-    svName:'Trương Công Minh', mssv:'20120422', unit:'u-kt', submitted:'15/07/2026',
+    svName:'Trương Công Minh', mssv:'20120422', unit:'u-kt', ctdt:'QTKD', submitted:'15/07/2026',
     fields:{ hoTen:'Trương Công Minh', maSinhVien:'20120422', soCCCD:'038204042201', lopHanhChinh:'KT4504', khoaDaoTao:'K45',
       donViQuanLy:'Khoa Kinh tế', lyDoBaoLuu:'Lý do cá nhân', thoiGianBaoLuu:'1 học kỳ' },
     history:[
@@ -1065,7 +1073,8 @@ function pickStatusTab(status){
 function updateStatusTabBadges(baseList){
   document.getElementById('badge-all').textContent = baseList.length;
   ['Đã duyệt','Từ chối','Yêu cầu chỉnh sửa'].forEach(s => {
-    document.getElementById('badge-' + s).textContent = baseList.filter(a => a.status === s).length;
+    const badgeEl = document.getElementById('badge-' + s);
+    if (badgeEl) badgeEl.textContent = baseList.filter(a => a.status === s).length;
   });
   // Admin (CURRENT_USER_UNIT_ID = null) xem "Chờ duyệt" theo nghĩa chung — mọi đơn còn xử lý dở
   // trên toàn hệ thống. Người duyệt cụ thể (có unit riêng) chỉ thấy đơn đang thực sự cần họ duyệt.
@@ -1320,6 +1329,7 @@ function renderAppGrid(){
       <td class="col-optional" data-col="formName"><span class="app-form-cell" title="${a.formName}">${a.formName}</span></td>
       <td class="col-optional" data-col="mssv"><span class="app-code">${a.mssv}</span></td>
       <td class="col-optional" data-col="svName"><span class="app-sv-name">${a.svName}</span></td>
+      <td class="text-muted col-optional" data-col="ctdt">${a.ctdt || '—'}</td>
       <td class="text-muted col-optional" data-col="lopHC">${a.fields.lopHanhChinh || '—'}</td>
       <td class="col-optional" data-col="attachments" onclick="event.stopPropagation()">
         ${attachCount
@@ -1604,6 +1614,7 @@ const OPTIONAL_COLUMNS = [
   { key:'formName', label:'Tên Đơn', pinned:true },
   { key:'mssv', label:'Mã sinh viên', pinned:true },
   { key:'svName', label:'Họ và tên', pinned:true },
+  { key:'ctdt', label:'CTĐT' },
   { key:'lopHC', label:'Lớp HC', pinned:true },
   { key:'attachments', label:'Tài liệu', pinned:true },
   { key:'recipientCccd', label:'CCCD người nhận', pinned:true },

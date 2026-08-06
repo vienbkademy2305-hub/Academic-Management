@@ -369,7 +369,7 @@
 <div class="overlay hidden" id="modal-attachments">
   <div class="modal-box w640">
     <div class="modal-hd">
-      <h3 class="modal-title">Tài liệu đính kèm</h3>
+      <h3 class="modal-title" id="attach-title">Tài liệu đính kèm</h3>
       <button class="modal-close" data-close="modal-attachments">✕</button>
     </div>
     <div class="modal-bd">
@@ -507,6 +507,9 @@ const FORMS = [
     desc:'Dùng cho vay vốn ngân hàng, xin visa, xác nhận với cơ quan/tổ chức khác',
     ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy','vlvh','lienthong','saudaihoc'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm15-don-xac-nhan-sinh-vien.docx', size:'32 KB' },
+    ],
     extraFields:[
       { code:'mucDichXacNhan', label:'Mục đích xin xác nhận', type:'Select', required:true,
         options:['Vay vốn ngân hàng','Xin visa','Xác nhận với cơ quan/tổ chức khác','Xét miễn/giảm học phí'] },
@@ -530,6 +533,10 @@ const FORMS = [
     desc:'Nộp trước ngày 15/08 hằng năm',
     ownerUnitName:'Ban Quản lý Ký túc xá', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm16-don-dang-ky-ktx.docx', size:'34 KB' },
+      { name:'huong-dan-dien-don-ktx.pdf', size:'210 KB' },
+    ],
     extraFields:[
       { code:'loaiPhongDangKy', label:'Loại phòng đăng ký', type:'Select', required:true,
         options:['Phòng 4 người','Phòng 6 người','Phòng 8 người'] },
@@ -554,6 +561,9 @@ const FORMS = [
     desc:'Áp dụng khi sinh viên tạm dừng học tối đa 2 học kỳ',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy','vlvh'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm3-don-bao-luu-ket-qua-hoc-tap.docx', size:'30 KB' },
+    ],
     extraFields:[
       { code:'lyDoBaoLuu', label:'Lý do bảo lưu', type:'Textarea', required:true },
       { code:'thoiGianBaoLuu', label:'Thời gian bảo lưu', type:'Select', required:true, options:['1 học kỳ','2 học kỳ'] },
@@ -579,6 +589,9 @@ const FORMS = [
     desc:'Nộp trong vòng 7 ngày kể từ ngày công bố điểm',
     ownerUnitName:'Khoa CNTT', applyUnits:['u-cntt'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    templateFiles:[
+      { name:'mau-bm06-don-phuc-khao-diem-thi.docx', size:'28 KB' },
+    ],
     extraFields:[
       { code:'monHocPhucKhao', label:'Tên học phần', type:'Text', required:true },
       { code:'diemHienTai', label:'Điểm hiện tại', type:'Text', required:true },
@@ -603,6 +616,9 @@ const FORMS = [
     desc:'Bản tuỳ chỉnh riêng của Bộ môn Hệ thống Thông tin — bổ sung xác nhận của giảng viên hướng dẫn',
     ownerUnitName:'Bộ môn Hệ thống Thông tin', applyUnits:['u-cntt-httt'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm13-don-xac-nhan-httt.docx', size:'29 KB' },
+    ],
     extraFields:[
       { code:'gvHuongDan', label:'Giảng viên hướng dẫn', type:'Text', required:true },
     ],
@@ -625,6 +641,9 @@ const FORMS = [
     desc:'Áp dụng cho sinh viên đã hoàn thành chương trình đào tạo',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['totnghiep'], status:'active',
+    templateFiles:[
+      { name:'mau-bm11-don-cong-nhan-tot-nghiep.docx', size:'31 KB' },
+    ],
     extraFields:[
       { code:'diemTBTichLuy', label:'Điểm TB tích luỹ', type:'Text', required:true },
     ],
@@ -647,11 +666,17 @@ const FORMS = [
     desc:'Yêu cầu GPA tích lũy ≥ 3.2',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'inactive',
+    templateFiles:[
+      { name:'mau-bm5-don-dang-ky-hoc-vuot.docx', size:'27 KB' },
+    ],
     extraFields:[] },
   { id:'f-trocap', code:'BM6', name:'Đơn xin trợ cấp khó khăn',
     desc:'Kèm minh chứng hoàn cảnh gia đình để xét trợ cấp học kỳ này',
     ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy','vlvh'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm6-don-tro-cap-kho-khan.docx', size:'30 KB' },
+    ],
     extraFields:[
       { code:'hoanCanhGiaDinh', label:'Hoàn cảnh gia đình', type:'Textarea', required:true },
       { code:'minhChungHoanCanh', label:'Minh chứng hoàn cảnh (sổ hộ nghèo, xác nhận địa phương…)', type:'File upload', required:true },
@@ -675,6 +700,9 @@ const FORMS = [
     desc:'Kèm minh chứng thành tích học tập/rèn luyện nổi bật trong học kỳ hoặc năm học',
     ownerUnitName:'Ban Công tác Sinh viên', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active',
+    templateFiles:[
+      { name:'mau-bm4-don-de-nghi-khen-thuong.docx', size:'29 KB' },
+    ],
     extraFields:[
       { code:'thanhTichNoiBat', label:'Thành tích nổi bật', type:'Textarea', required:true },
       { code:'minhChungThanhTich', label:'Minh chứng thành tích (bằng khen/giấy chứng nhận)', type:'File upload', required:true },
@@ -699,6 +727,9 @@ const FORMS = [
     desc:'Nộp trước khi kết thúc học kỳ 2 của năm nhất, cần đạt điều kiện GPA theo quy chế',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    templateFiles:[
+      { name:'mau-bm2-don-xin-chuyen-nganh.docx', size:'28 KB' },
+    ],
     extraFields:[
       { code:'nganhMuonChuyen', label:'Ngành muốn chuyển đến', type:'Text', required:true },
       { code:'lyDoChuyenNganh', label:'Lý do chuyển ngành', type:'Textarea', required:true },
@@ -723,6 +754,9 @@ const FORMS = [
     desc:'Áp dụng với học phần đã có điểm chữ từ D trở lên, đăng ký theo đợt học lại',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy','vlvh','lienthong'],
     studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    templateFiles:[
+      { name:'mau-bm3b-don-hoc-cai-thien-diem.docx', size:'27 KB' },
+    ],
     extraFields:[
       { code:'hocPhanCaiThien', label:'Tên học phần muốn học cải thiện', type:'Text', required:true },
     ],
@@ -745,6 +779,9 @@ const FORMS = [
     desc:'Hạn chót nộp đơn là tuần thứ 3 kể từ đầu học kỳ',
     ownerUnitName:'Ban Đào tạo', applyUnits:['u-dh'], scopes:['chinhquy'],
     studentStatuses:['danghoc'], status:'active', needsReturn:false,
+    templateFiles:[
+      { name:'mau-bm4b-don-rut-hoc-phan.docx', size:'26 KB' },
+    ],
     extraFields:[
       { code:'hocPhanMuonRut', label:'Tên học phần muốn rút', type:'Text', required:true },
     ],
@@ -914,7 +951,9 @@ function renderFormGrid(){
     return;
   }
 
-  grid.innerHTML = applicable.slice(0, FORM_GRID_MAX).map(f => `
+  grid.innerHTML = applicable.slice(0, FORM_GRID_MAX).map(f => {
+    const fileCount = (f.templateFiles || []).length;
+    return `
     <div class="form-card">
       <div class="form-card-hd">
         <div class="form-card-name" title="${f.name}">${f.name}</div>
@@ -923,10 +962,33 @@ function renderFormGrid(){
       <div class="form-card-desc" title="${f.desc}">${f.desc}</div>
       <div class="form-card-unit">🏢 ${f.ownerUnitName}</div>
       <div class="form-card-ft">
-        <span class="tag tag-blue">${SCOPE_LABEL[CURRENT_STUDENT.scope]}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="tag tag-blue">${SCOPE_LABEL[CURRENT_STUDENT.scope]}</span>
+          ${fileCount ? `<button class="attach-btn" onclick="openFormTemplates('${f.id}')">📄 ${fileCount} file</button>` : ''}
+        </div>
         <button class="btn btn-primary btn-sm" onclick="openSubmitForm('${f.id}')">Đăng ký</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+/* Popup xem/tải file mẫu (Word/hướng dẫn) của 1 biểu mẫu — dùng chung modal "Tài liệu đính
+   kèm" với openAttachments, chỉ đổi tiêu đề và nguồn dữ liệu từ FORMS.templateFiles */
+function openFormTemplates(formId){
+  const f = FORMS.find(x => x.id === formId);
+  if (!f) return;
+  const files = f.templateFiles || [];
+  document.getElementById('attach-title').textContent = 'File mẫu';
+  const listEl = document.getElementById('attach-list');
+  listEl.innerHTML = files.length ? files.map(file => `
+    <li>
+      <span class="attach-ico">📄</span>
+      <span class="attach-name">${file.name}</span>
+      <button class="icon-btn" title="Tải xuống" onclick="downloadAttachment('${file.name}')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      </button>
+    </li>`).join('') : '<div class="attach-empty">Biểu mẫu này chưa có file mẫu đính kèm</div>';
+  openModal('modal-attachments');
 }
 
 document.getElementById('form-search').addEventListener('input', renderFormGrid);
@@ -1421,6 +1483,7 @@ function openAttachments(historyIndex){
   const h = HISTORY[historyIndex];
   if (!h) return;
   const files = h.attachments || [];
+  document.getElementById('attach-title').textContent = 'Tài liệu đính kèm';
   const listEl = document.getElementById('attach-list');
   listEl.innerHTML = files.length ? files.map(f => `
     <li>

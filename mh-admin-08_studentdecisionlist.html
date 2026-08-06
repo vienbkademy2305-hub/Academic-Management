@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh sách Quyết định Sinh viên | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: danh sách quyết định sinh viên (MH-ADMIN-08) ========== */
+
+  /* Dropdown thông báo — đồng bộ với các màn admin khác */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Unit search combobox — copy từ mh-admin-06, dùng cho bộ lọc "Đơn vị phụ trách" */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  /* Nhãn nhóm "Năm học" trong dropdown Lớp HC mới (cd-reassign-lop) — gom lớp theo năm học để phân
+     biệt các lớp trùng tên nhưng khác năm (VD CT4501 của năm học 2024-2025 khác CT4501 của
+     2025-2026), không phải mục chọn được nên không có hover/cursor như .unit-combo-item. */
+  .unit-combo-group-label{padding:8px 10px 4px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em}
+  .unit-combo-group-label:not(:first-child){margin-top:4px;border-top:1px solid var(--border);padding-top:10px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+  /* Loại quyết định trong popup Tạo quyết định — tên loại dài (VD "Quyết định xử lý học vụ
+     (Khiển trách/Cảnh cáo/Đình chỉ thi)") nên cho phép xuống dòng, khác với combobox đơn vị/sinh
+     viên (tên ngắn, giữ nguyên 1 dòng). */
+  #cd-type-menu .unit-combo-item{white-space:normal;line-height:1.4}
+
+  /* Tabs trạng thái — lọc nhanh kiểu AMIS (Tất cả/Chờ duyệt/Đã duyệt/Từ chối), copy từ mh-admin-03 */
+  .status-tabs{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .status-tab{display:flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .status-tab:hover{color:var(--primary)}
+  .status-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .status-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:12px;font-weight:600;background:#f0f0f0;color:var(--text-2)}
+  .status-tab-badge.warn{background:#fffbe6;color:var(--warning)}
+  .status-tab-badge.success{background:#f6ffed;color:var(--success)}
+  .status-tab-badge.error{background:#fff2f0;color:var(--error)}
+  .status-tab-badge.purple{background:#f9f0ff;color:#531dab}
+  .status-tab.active .status-tab-badge{background:var(--primary);color:#fff}
+
+  /* Bảng danh sách quyết định */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .di-sv-name{font-size:13.5px;color:var(--text-1)}
+  tr.di-row{cursor:pointer}
+  tr.di-row:hover td{background:var(--primary-light)}
+  tr.di-row.overdue td{background:#fff2f0}
+  tr.di-row.overdue:hover td{background:#ffe1de}
+
+  /* Cột "Bước hiện tại" — tên bước ở trên, người/vai trò duyệt bên dưới (copy pattern từ mh-admin-03) */
+  .approver-step{font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-name{font-size:11.5px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-more{color:var(--primary);font-weight:600}
+
+  /* Modal Chi tiết quyết định — thông tin chung dạng lưới + bảng các bước xử lý (chỉ xem,
+     trừ Đồng ý/Từ chối ở bước hiện tại nếu CURRENT_USER đúng là người duyệt của bước đó) */
+  .dm-section-title{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:10px}
+  .ddet-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+  .adet-field{background:#fafafa;border:1px solid var(--border);border-radius:6px;padding:10px 12px}
+  .adet-field-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .adet-field-val{font-size:13.5px;color:var(--text-1)}
+
+  /* Modal Tạo quyết định — 3 khối đánh số (Thông tin/File/Danh sách SV), dùng chung .sec-block/
+     .sec-title/.sec-badge đã có sẵn ở _styles.css (trước giờ chưa màn nào dùng tới). Bỏ viền khối
+     và viền dưới tiêu đề riêng cho modal này — chỉ còn khoảng cách giữa các khối, không viền bao. */
+  #modal-create-decision .sec-block{border:none;padding:0 0 20px}
+  #modal-create-decision .sec-title{border-bottom:none}
+  .cd-filepick{position:relative;border:1.5px dashed var(--border);border-radius:8px;padding:14px 16px;background:#fafafa;transition:all .15s}
+  .cd-filepick:hover{border-color:var(--primary);background:var(--primary-light)}
+  .cd-filepick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .cd-filepick-empty{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cd-filepick-picked{display:none;align-items:center;justify-content:space-between;gap:12px}
+  .cd-filepick.has-file{border-style:solid;border-color:#b7eb8f;background:#f6ffed}
+  .cd-filepick.has-file .cd-filepick-empty{display:none}
+  .cd-filepick.has-file .cd-filepick-picked{display:flex}
+  .cd-filepick-info{display:flex;align-items:center;gap:10px;min-width:0}
+  .cd-filepick-info svg{flex-shrink:0;color:var(--text-3)}
+  .cd-filepick.has-file .cd-filepick-info svg{color:var(--success)}
+  .cd-filepick-name{font-size:13.5px;color:var(--text-1);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cd-filepick-hint{font-size:12px;color:var(--text-3);margin-top:2px}
+
+  /* Ô chọn file import — dạng gọn 1 dòng (icon + text), khác với .cd-filepick 2 dòng + nút
+     riêng ở mục Tài liệu, dùng riêng cho popup Import danh sách sinh viên. */
+  .cd-import-pick{position:relative;border:1.5px dashed var(--border);border-radius:8px;padding:14px 16px;background:#fafafa;transition:all .15s}
+  .cd-import-pick:hover{border-color:var(--primary);background:var(--primary-light)}
+  .cd-import-pick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .cd-import-pick-empty{display:flex;align-items:center;gap:8px;color:var(--text-3);font-size:13px}
+  .cd-import-pick-picked{display:none;align-items:center;justify-content:space-between;gap:12px}
+  .cd-import-pick.has-file{border-style:solid;border-color:#b7eb8f;background:#f6ffed}
+  .cd-import-pick.has-file .cd-import-pick-empty{display:none}
+  .cd-import-pick.has-file .cd-import-pick-picked{display:flex}
+  .cd-import-pick-info{display:flex;align-items:center;gap:10px;min-width:0}
+  .cd-import-pick-info svg{flex-shrink:0;color:var(--success)}
+  .cd-import-pick-name{font-size:13.5px;color:var(--text-1);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* Dòng có vấn đề trong bảng xem trước import (không khớp danh bạ/nhiều CTĐT/thiếu MSSV) */
+  tr.cd-import-row-issue td{background:#fff2f0}
+
+  /* Popup Tạo quyết định rộng hơn cỡ .w960 có sẵn — bảng Danh sách SV ở khối 3 đổi bộ cột theo Loại
+     quyết định (xem CD_SV_THEAD_HTML): mặc định 11 cột (STT, MSSV, Họ tên, Lớp HC, Đơn vị, Ngành,
+     CTĐT, Trạng thái hiện tại, Phân loại lý do, Ghi chú, xoá); TYPE_TRAINING_SCORE 12 cột do "Phân
+     loại lý do" tách thành "ĐTB niên khoá" + "Xếp loại toàn khoá"; TYPE_INTERNSHIP 11 cột riêng
+     (STT, MSSV, Họ tên, Ngày sinh, Lớp HC, CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng dẫn, Ghi
+     chú, xoá); TYPE_TOPIC_ASSIGNMENT 10 cột riêng (STT, MSSV, Họ tên, Lớp HC, CTĐT, Tên đề tài,
+     Giảng viên hướng dẫn, Đơn vị công tác, Ghi chú, xoá); TYPE_TOPIC_CHANGE dùng lại đúng bộ cột
+     của TYPE_TOPIC_ASSIGNMENT, chỉ đổi "Tên đề tài" thành "Đề tài"; TYPE_DISCIPLINE 10 cột riêng
+     (STT, MSSV, CTĐT, Loại kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý
+     do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG SV (khác SV có thể bị đình chỉ thời hạn khác
+     nhau trong cùng 1 đợt), tách biệt với Năm học/Học kỳ CHUNG ở khối 1 (áp dụng cho cả quyết
+     định) — nên cần rộng hơn để đỡ phải cuộn ngang. */
+  #modal-create-decision .modal-box{width:calc(100vw - 320px)}
+  .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
+  .cd-sv-reason-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-1);background:#fff;font-family:inherit}
+
+  /* Popup xem/tải mẫu file (.docx quyết định + .xlsx import danh sách SV) — copy pattern từ mh-admin-06 */
+  .tpl-file-list{display:flex;flex-direction:column}
+  .tpl-file-row{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border)}
+  .tpl-file-row:last-child{border-bottom:none}
+  .tpl-file-ico{flex-shrink:0;color:var(--text-3)}
+  .tpl-file-name{flex:1;min-width:0;font-size:13.5px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tpl-file-dl{flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">📜&nbsp; Quyết định SV &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-07_rewarddisciplinecatalog.html">Danh mục Khen thưởng, Kỷ luật</a></li>
+          <li class="active"><a href="#">Danh sách Quyết định</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Danh sách Quyết định</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH QUYẾT ĐỊNH SINH VIÊN (MH-ADMIN-08, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Danh sách Quyết định Sinh viên</h2>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateDecisionModal()">＋ Tạo quyết định</button>
+        </div>
+
+        <!-- Bộ lọc: Tìm theo SV/MSSV/Mã QĐ + Loại quyết định + Đơn vị phụ trách + Ngày tạo -->
+        <div class="filter-bar">
+          <input class="fc" id="di-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã quyết định…" autocomplete="off" style="width:280px">
+          <select class="fc" id="di-type-select" style="width:260px">
+            <option value="all">Tất cả loại quyết định</option>
+          </select>
+          <div class="unit-combo" id="di-unit-combo" style="width:220px">
+            <input class="fc" id="di-unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:220px">
+            <div class="unit-combo-menu" id="di-unit-combo-menu"></div>
+          </div>
+          <div class="flex items-center gap-8">
+            <input class="fc" id="di-created-from" type="date" style="width:150px" title="Ngày tạo từ">
+            <span class="text-muted text-sm">đến</span>
+            <input class="fc" id="di-created-to" type="date" style="width:150px" title="Ngày tạo đến">
+          </div>
+        </div>
+
+        <!-- Tabs trạng thái — lọc nhanh, mỗi tab có badge đếm số lượng -->
+        <div class="status-tabs" id="status-tabs">
+          <button type="button" class="status-tab active" data-status="all" onclick="pickStatusTab('all')">
+            Tất cả <span class="status-tab-badge" id="badge-all">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Chờ duyệt" onclick="pickStatusTab('Chờ duyệt')">
+            Chờ duyệt <span class="status-tab-badge warn" id="badge-Chờ duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Yêu cầu chỉnh sửa" onclick="pickStatusTab('Yêu cầu chỉnh sửa')">
+            Yêu cầu chỉnh sửa <span class="status-tab-badge purple" id="badge-Yêu cầu chỉnh sửa">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Đã duyệt" onclick="pickStatusTab('Đã duyệt')">
+            Đã duyệt <span class="status-tab-badge success" id="badge-Đã duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Từ chối" onclick="pickStatusTab('Từ chối')">
+            Từ chối <span class="status-tab-badge error" id="badge-Từ chối">0</span>
+          </button>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:110px">Mã</th>
+                <th style="width:170px">Sinh viên</th>
+                <th>Loại quyết định</th>
+                <th style="width:180px">Quy trình</th>
+                <th style="width:170px">Bước hiện tại</th>
+                <th style="width:110px">Trạng thái</th>
+                <th style="width:100px">Ngày tạo</th>
+                <th style="width:70px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="di-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="di-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết quyết định — thông tin chung + các bước xử lý (chỉ xem, trừ
+     Đồng ý/Từ chối ở đúng bước hiện tại nếu CURRENT_USER là người duyệt của bước đó) ═══ -->
+<div class="overlay hidden" id="modal-decision-detail">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="ddet-title">Chi tiết quyết định</h3>
+      </div>
+      <button class="modal-close" data-close="modal-decision-detail">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="ddet-grid">
+        <div class="adet-field"><div class="adet-field-label">Số sinh viên áp dụng</div><div class="adet-field-val" id="ddet-sv-count"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Loại quyết định</div><div class="adet-field-val" id="ddet-type"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Đơn vị phụ trách</div><div class="adet-field-val" id="ddet-unit"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Quy trình áp dụng</div><div class="adet-field-val" id="ddet-process"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Ngày tạo</div><div class="adet-field-val" id="ddet-created"></div></div>
+        <div class="adet-field"><div class="adet-field-label">Trạng thái</div><div class="adet-field-val" id="ddet-status"></div></div>
+      </div>
+
+      <!-- Danh sách sinh viên áp dụng — 1 quyết định có thể ban hành cho hàng chục/hàng trăm SV
+           cùng lúc (VD công nhận tốt nghiệp theo khoá), nên cần ô tìm kiếm riêng để dò 1 SV cụ
+           thể trong danh sách thay vì phải kéo cuộn thủ công. -->
+      <div class="dm-section-title" id="ddet-sv-title">Danh sách sinh viên áp dụng</div>
+      <input class="fc" id="ddet-sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="margin-bottom:12px">
+      <div class="tbl-wrap" style="max-height:220px;overflow-y:auto;margin-bottom:20px">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:40px">STT</th>
+              <th style="width:130px">MSSV</th>
+              <th>Họ và tên</th>
+              <th style="width:170px">CTĐT</th>
+              <th style="width:180px">Phân loại lý do</th>
+            </tr>
+          </thead>
+          <tbody id="ddet-sv-tbody"></tbody>
+        </table>
+      </div>
+
+      <div id="ddet-steps-block">
+        <div class="dm-section-title">Các bước xử lý</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">STT</th>
+                <th>Tên bước</th>
+                <th>Đơn vị duyệt</th>
+                <th>Vai trò duyệt</th>
+                <th>Người xử lý</th>
+                <th>Thời gian xử lý</th>
+                <th>Trạng thái</th>
+                <th>Ghi chú / Lý do</th>
+              </tr>
+            </thead>
+            <tbody id="ddet-steps-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-decision-detail">Đóng</button>
+      <button class="btn btn-primary" id="ddet-btn-resubmit" style="display:none" onclick="resubmitDecision()">Nộp lại</button>
+      <button class="btn btn-warning" id="ddet-btn-revise" style="display:none" onclick="approveDecision('revise')">Yêu cầu chỉnh sửa</button>
+      <button class="btn btn-danger" id="ddet-btn-reject" style="display:none" onclick="approveDecision('reject')">Từ chối</button>
+      <button class="btn btn-primary" id="ddet-btn-approve" style="display:none" onclick="approveDecision('approve')">Đồng ý</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Xác nhận Đồng ý/Từ chối quyết định ở đúng bước hiện tại ═══ -->
+<div class="overlay hidden" id="modal-decision-approve-confirm">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="dac-title">Đồng ý quyết định</h3>
+        <p class="text-muted text-sm" style="margin:6px 0 0 0" id="dac-sub"></p>
+      </div>
+      <button class="modal-close" data-close="modal-decision-approve-confirm">✕</button>
+    </div>
+    <div class="modal-bd">
+      <!-- Chỉ hiện khi Đồng ý ở ĐÚNG bước cuối (ban hành) — lúc này quyết định mới thật sự có số
+           và ngày hiệu lực, xem approveDecision()/confirmApproveDecision(). -->
+      <div id="dac-issue-fields" style="display:none">
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Số quyết định<span class="req">*</span></label>
+            <input class="fc" id="dac-code" placeholder="VD: 125/QĐ-ĐHPĐ">
+          </div>
+          <div class="fi">
+            <label>Ngày QĐ có hiệu lực<span class="req">*</span></label>
+            <input class="fc" id="dac-effective-date" type="date">
+          </div>
+        </div>
+        <div class="fi">
+          <label>Ngày QĐ hết hiệu lực</label>
+          <input class="fc" id="dac-expiry-date" type="date">
+        </div>
+      </div>
+      <div class="fi" style="margin-bottom:0">
+        <label id="dac-note-label">Ghi chú (không bắt buộc)</label>
+        <textarea class="fc" id="dac-note" rows="3" placeholder="Nhập ghi chú/lý do…"></textarea>
+        <div class="fe" id="dac-note-err">Vui lòng nhập lý do từ chối để đơn vị liên quan biết nguyên nhân.</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-decision-approve-confirm">Huỷ</button>
+      <button class="btn btn-primary" id="dac-confirm-btn" onclick="confirmApproveDecision()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tạo quyết định mới cho 1 danh sách sinh viên — quy trình áp dụng, đơn vị ban hành,
+     mẫu file lấy tự động theo Loại quyết định chọn (đồng bộ DECISION_CATALOG với Danh mục Quyết
+     định đã cấu hình ở mh-admin-06/DECISIONS[]). Khối 1 chỉ gồm các trường CHUNG cho mọi loại
+     quyết định — các trường riêng theo từng loại sẽ bổ sung sau. ═══ -->
+<div class="overlay hidden" id="modal-create-decision">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title">Tạo quyết định</h3>
+      <button class="modal-close" data-close="modal-create-decision">✕</button>
+    </div>
+    <div class="modal-bd">
+
+      <div class="sec-block">
+        <div class="sec-title"><span class="sec-badge">1</span> Thông tin Quyết định</div>
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Loại quyết định<span class="req">*</span></label>
+            <div class="unit-combo" id="cd-type-combo">
+              <input class="fc" id="cd-type-search" type="text" placeholder="🔍 Tìm loại quyết định…" autocomplete="off">
+              <input type="hidden" id="cd-type">
+              <div class="unit-combo-menu" id="cd-type-menu"></div>
+            </div>
+          </div>
+          <div class="fi">
+            <label>Năm học<span class="req">*</span></label>
+            <select class="fc" id="cd-academic-year">
+              <option value="" selected disabled>— Chọn năm học —</option>
+              <option value="2024-2025">2024-2025</option>
+              <option value="2025-2026">2025-2026</option>
+              <option value="2026-2027">2026-2027</option>
+              <option value="2027-2028">2027-2028</option>
+            </select>
+          </div>
+        </div>
+        <div class="f-row col-2" style="margin-bottom:0">
+          <div class="fi" style="margin-bottom:0">
+            <label>Học kỳ bắt đầu<span class="req">*</span></label>
+            <select class="fc" id="cd-semester-start">
+              <option value="" selected disabled>— Chọn học kỳ —</option>
+              <option value="Học kỳ 1">Học kỳ 1</option>
+              <option value="Học kỳ 2">Học kỳ 2</option>
+              <option value="Học kỳ hè">Học kỳ hè</option>
+            </select>
+          </div>
+          <div class="fi" style="margin-bottom:0">
+            <label>Học kỳ kết thúc</label>
+            <select class="fc" id="cd-semester-end">
+              <option value="" selected>— Không áp dụng —</option>
+              <option value="Học kỳ 1">Học kỳ 1</option>
+              <option value="Học kỳ 2">Học kỳ 2</option>
+              <option value="Học kỳ hè">Học kỳ hè</option>
+            </select>
+          </div>
+        </div>
+        <div class="fi" id="cd-new-status-block" style="display:none;margin-top:16px;margin-bottom:0">
+          <label>Trạng thái mới</label>
+          <div class="adet-field"><div class="adet-field-val" id="cd-new-status-value"></div></div>
+        </div>
+        <!-- Chỉ hiện với "Quyết định chuyển khoá, ngành, lớp" — nơi ghi nhận Khoá/CTĐT/Lớp HC MỚI
+             mà cả danh sách SV trong quyết định này sẽ được chuyển tới, xem onCreateDecisionTypeChange().
+             3 trường đều KHÔNG bắt buộc riêng lẻ — chỉ cần chọn ít nhất 1 trong 3 (VD SV chỉ đổi lớp,
+             không đổi khoá/ngành), validate ở submitCreateDecision(). -->
+        <div id="cd-transfer-fields-block" style="display:none;margin-top:16px;margin-bottom:0">
+          <div class="f-row col-3" style="margin-bottom:0">
+            <div class="fi" style="margin-bottom:0">
+              <label>Niên khoá mới</label>
+              <div class="unit-combo" id="cd-new-khoa-combo">
+                <input class="fc" id="cd-new-khoa-search" type="text" placeholder="🔍 Tìm niên khoá…" autocomplete="off">
+                <input type="hidden" id="cd-new-khoa">
+                <div class="unit-combo-menu" id="cd-new-khoa-menu"></div>
+              </div>
+            </div>
+            <div class="fi" style="margin-bottom:0">
+              <label>CTĐT mới</label>
+              <div class="unit-combo" id="cd-new-ctdt-combo">
+                <input class="fc" id="cd-new-ctdt-search" type="text" placeholder="🔍 Tìm CTĐT…" autocomplete="off">
+                <input type="hidden" id="cd-new-ctdt">
+                <div class="unit-combo-menu" id="cd-new-ctdt-menu"></div>
+              </div>
+            </div>
+            <div class="fi" style="margin-bottom:0">
+              <label>Lớp HC mới</label>
+              <div class="unit-combo" id="cd-new-lophc-combo">
+                <input class="fc" id="cd-new-lophc-search" type="text" placeholder="🔍 Tìm lớp HC…" autocomplete="off">
+                <input type="hidden" id="cd-new-lophc">
+                <div class="unit-combo-menu" id="cd-new-lophc-menu"></div>
+              </div>
+            </div>
+          </div>
+          <div class="f-hint">Chọn ít nhất 1 trong 3 trường trên — không cần điền cả 3 nếu quyết định chỉ thay đổi 1 trong 3 (VD chỉ đổi lớp hành chính) - ẩn khi dev nhé.</div>
+        </div>
+        <!-- Chỉ hiện với "Quyết định quay trở lại học tập" — hỏi trước có phân lớp mới cho SV không,
+             chỉ hiện ô chọn Lớp HC mới khi chọn "Có", xem onCreateDecisionTypeChange()/onReassignClassToggleChange() -->
+        <div id="cd-reassign-class-block" style="display:none;margin-top:16px;margin-bottom:0">
+          <div class="f-row col-2" style="margin-bottom:0">
+            <div class="fi" style="margin-bottom:0">
+              <label>Có phân lớp mới cho sinh viên không?<span class="req">*</span></label>
+              <select class="fc" id="cd-reassign-class-toggle" onchange="onReassignClassToggleChange()">
+                <option value="" selected disabled>— Chọn —</option>
+                <option value="khong">Không</option>
+                <option value="co">Có</option>
+              </select>
+            </div>
+            <div class="fi" id="cd-reassign-lop-field" style="display:none;margin-bottom:0">
+              <label>Lớp HC mới<span class="req">*</span></label>
+              <div class="unit-combo" id="cd-reassign-lop-combo">
+                <input class="fc" id="cd-reassign-lop-search" type="text" placeholder="🔍 Tìm lớp…" autocomplete="off">
+                <input type="hidden" id="cd-reassign-lop">
+                <div class="unit-combo-menu" id="cd-reassign-lop-menu"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Chỉ hiện với "Quyết định thay đổi đơn vị đào tạo" — ghi nhận đơn vị đào tạo (Khoa) mới
+             mà CẢ danh sách SV trong quyết định này sẽ được chuyển tới, xem onCreateDecisionTypeChange() -->
+        <div id="cd-unit-change-block" style="display:none;margin-top:16px;margin-bottom:0">
+          <div class="fi" style="margin-bottom:0">
+            <label>Đơn vị đào tạo mới<span class="req">*</span></label>
+            <div class="unit-combo" id="cd-new-donvi-combo">
+              <input class="fc" id="cd-new-donvi-search" type="text" placeholder="🔍 Tìm đơn vị đào tạo…" autocomplete="off">
+              <input type="hidden" id="cd-new-donvi">
+              <div class="unit-combo-menu" id="cd-new-donvi-menu"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Chỉ hiện với "Quyết định khen thưởng" — ghi nhận Hình thức khen thưởng áp dụng chung cho
+             cả danh sách SV trong quyết định này (Phần thưởng hoặc Giấy khen), bắt buộc chọn, xem
+             onCreateDecisionTypeChange(). -->
+        <div id="cd-reward-form-block" style="display:none;margin-top:16px;margin-bottom:0">
+          <div class="fi" style="margin-bottom:0">
+            <label>Hình thức khen thưởng<span class="req">*</span></label>
+            <select class="fc" id="cd-reward-form">
+              <option value="" selected disabled>— Chọn hình thức —</option>
+              <option value="Phần thưởng">Phần thưởng</option>
+              <option value="Giấy khen">Giấy khen</option>
+            </select>
+          </div>
+        </div>
+        <div class="fi" style="margin-bottom:0;margin-top:16px">
+          <label>Nội dung</label>
+          <textarea class="fc" id="cd-content" rows="3" placeholder="Nhập nội dung tóm tắt của quyết định (không bắt buộc)…"></textarea>
+        </div>
+      </div>
+
+      <div class="sec-block">
+        <div class="flex justify-between items-center" style="margin-bottom:16px">
+          <div class="sec-title" style="margin-bottom:0;padding-bottom:0;border-bottom:none"><span class="sec-badge">2</span> Tài liệu đính kèm</div>
+          <!-- Tạm ẩn "Tải file mẫu" theo yêu cầu — giữ nguyên modal-cd-template-files và hàm
+               openCreateDecisionTemplateFiles() để dễ khôi phục khi cần bật lại.
+          <span class="text-link" onclick="openCreateDecisionTemplateFiles()">Tải file mẫu →</span>
+          -->
+        </div>
+        <div class="cd-filepick" id="cd-filepick">
+          <div class="cd-filepick-empty">
+            <div class="cd-filepick-info">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div>
+                <div class="cd-filepick-name">Chưa có file — kéo thả hoặc nhấn chọn file</div>
+                <div class="cd-filepick-hint">Chấp nhận: Excel, Word, PDF · Tối đa 10 MB</div>
+              </div>
+            </div>
+            <span class="btn btn-default">Chọn file</span>
+          </div>
+          <div class="cd-filepick-picked">
+            <div class="cd-filepick-info">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div class="cd-filepick-name" id="cd-filepick-picked-name"></div>
+            </div>
+            <button type="button" class="icon-btn danger" style="position:relative;z-index:1;background:#fff" title="Xoá file" onclick="removeCreateDecisionFile(event)">✕</button>
+          </div>
+          <input type="file" id="cd-file" accept=".xlsx,.xls,.doc,.docx,.pdf" onchange="onCreateDecisionFileChange(this)">
+        </div>
+      </div>
+
+      <div class="sec-block" style="margin-bottom:0">
+        <div class="sec-title"><span class="sec-badge">3</span> Danh sách sinh viên <span class="tag tag-default" id="cd-sv-count" style="margin-left:6px">0 SV</span></div>
+
+        <div class="cd-sv-toolbar">
+          <div class="unit-combo" id="cd-sv-add-combo" style="flex:1">
+            <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV để thêm…" autocomplete="off">
+            <div class="unit-combo-menu" id="cd-sv-add-menu"></div>
+          </div>
+          <button type="button" class="btn btn-default" onclick="openCreateDecisionImportModal()">Import danh sách</button>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl" style="min-width:1150px">
+            <thead>
+              <tr id="cd-sv-thead-row"></tr>
+            </thead>
+            <tbody id="cd-sv-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="cd-sv-pagination"></div>
+      </div>
+
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-create-decision">Huỷ</button>
+      <button class="btn btn-primary" onclick="submitCreateDecision()">Xác nhận ban hành</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Mẫu file quyết định (.docx) theo Loại quyết định đang chọn — đồng bộ tên file
+     với Mẫu file xuất quyết định đã cấu hình ở mh-admin-06 (fileNameDh/fileNameSdh) ═══ -->
+<div class="overlay hidden" id="modal-cd-template-files">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title">Mẫu file quyết định</h3>
+      <button class="modal-close" data-close="modal-cd-template-files">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tpl-file-list" id="cd-tpl-file-list"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-cd-template-files">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Import danh sách sinh viên từ file Excel (.xlsx) — tách riêng khỏi modal Tạo quyết
+     định để có đủ chỗ cho file picker + hướng dẫn định dạng cột, không chen vào giữa bảng danh sách ═══ -->
+<div class="overlay hidden" id="modal-cd-import-students">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title">Import danh sách sinh viên</h3>
+      <button class="modal-close" data-close="modal-cd-import-students">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="flex justify-between items-center" style="margin-bottom:8px">
+        <label style="font-weight:600">File Excel (.xlsx)<span class="req">*</span></label>
+        <span class="text-link" onclick="downloadImportTemplateXlsx()">Tải file mẫu →</span>
+      </div>
+      <div class="cd-import-pick" id="cd-import-filepick">
+        <div class="cd-import-pick-empty">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Bấm để chọn file .xlsx…</span>
+        </div>
+        <div class="cd-import-pick-picked">
+          <div class="cd-import-pick-info">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span class="cd-import-pick-name" id="cd-import-filepick-name"></span>
+          </div>
+          <button type="button" class="icon-btn danger" style="position:relative;z-index:1;background:#fff" title="Xoá file" onclick="removeCreateImportFile(event)">✕</button>
+        </div>
+        <input type="file" id="cd-sv-import-file" accept=".xlsx" onchange="onCreateImportFileChange(this)">
+      </div>
+      <!-- Tạm ẩn ghi chú định dạng cột theo yêu cầu — giữ nguyên để dễ khôi phục khi cần bật lại.
+      <div class="f-hint">File gồm 4 cột: Mã sinh viên (bắt buộc), Mã CTĐT, Phân loại lý do, Ghi chú. Bỏ trống Mã CTĐT nếu MSSV chỉ học 1 CTĐT — MSSV học nhiều CTĐT mà bỏ trống sẽ được báo lại để chọn tay, không tự suy đoán.</div>
+      -->
+
+      <!-- Xem trước kết quả đọc file trước khi thêm/cập nhật thật vào danh sách — hiện ngay sau khi
+           chọn file, đánh dấu rõ dòng nào hợp lệ / dòng nào có vấn đề (không khớp danh bạ, nhiều
+           CTĐT cần chọn tay, thiếu MSSV) để Admin xem lại trước khi bấm Import thật sự. Dòng SV đã
+           có sẵn trong danh sách không phải lỗi — chỉ đánh dấu "Sẽ cập nhật" (xem cột Lỗi). -->
+      <div id="cd-import-preview" style="display:none;margin-top:20px">
+        <div class="dm-section-title" style="margin-bottom:10px">Xem trước danh sách sinh viên</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr id="cd-import-preview-thead-row"></tr>
+            </thead>
+            <tbody id="cd-import-preview-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="cd-import-preview-pagination"></div>
+        <div class="fe" id="cd-import-error-hint" style="display:none;margin-top:8px">File còn dòng lỗi (xem cột "Lỗi") — vui lòng sửa lại file rồi chọn lại trước khi Import.</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-cd-import-students">Huỷ</button>
+      <button class="btn btn-primary" id="cd-import-commit-btn" onclick="commitImportPreview()">Import</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<!-- SheetJS (nhúng local, không gọi CDN) — dùng để đọc thật file .xlsx nhị phân ở popup Import
+     danh sách sinh viên; các popup/màn khác trong dự án không cần thư viện này. -->
+<script src="_vendor-xlsx.min.js"></script>
+<script>
+/* ============================================================
+   DATA — Đơn vị phụ trách, đồng bộ rút gọn với mh-admin-06
+   ============================================================ */
+const UNITS = [
+  { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
+  { value:'u-daotao', label:'Ban Đào tạo' },
+  { value:'u-sdh', label:'Phòng Sau đại học' },
+  { value:'u-thanhtra', label:'Ban Thanh tra Pháp chế' },
+  { value:'u-khaothi', label:'Phòng Khảo thí và Đảm bảo chất lượng' },
+  { value:'u-tuyensinh', label:'Phòng Tuyển sinh và Truyền thông' },
+  { value:'u-cntt', label:'Khoa CNTT' },
+  { value:'u-kt', label:'Khoa Kinh tế' },
+  { value:'u-truongxd', label:'Trường Xây dựng' },
+  { value:'u-ngoaingu', label:'Khoa Ngoại ngữ' },
+  { value:'u-yduoc', label:'Trường Y Dược' },
+];
+const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+
+/* Người dùng đang đăng nhập (mock) — chỉ người có tên trong approvers của ĐÚNG bước hiện tại
+   mới thấy nút Đồng ý/Từ chối khi mở chi tiết quyết định. */
+const CURRENT_USER = 'Nguyễn Văn Admin';
+
+/* ============================================================
+   DATA — quy trình xử lý quyết định SV, đồng bộ tên/bước với QDSV_PROCESSES
+   ở mh-admin-06 (id p1/p2/p3); ở đây bổ sung approvers cụ thể cho từng bước
+   để mô phỏng quyền Đồng ý/Từ chối theo đúng người phụ trách bước đó.
+   ============================================================ */
+const DECISION_PROCESSES = {
+  p1: { name:'Quy trình xét học vụ (cảnh báo học vụ)', steps:[
+    { name:'Nộp yêu cầu', dept:'', role:'Sinh viên', approvers:[] },
+    { name:'Cố vấn học tập duyệt', dept:'Khoa CNTT', role:'Cố vấn học tập', approvers:['ThS. Vũ Thị Mai'] },
+    { name:'Trưởng bộ môn duyệt', dept:'Bộ môn Hệ thống Thông tin', role:'Trưởng đơn vị', approvers:['TS. Nguyễn Quang Vinh'] },
+    { name:'Phòng Đào tạo duyệt', dept:'Phòng Đào tạo', role:'Trưởng đơn vị', approvers:['Nguyễn Văn Admin'] },
+    { name:'Ban hành quyết định', dept:'Phòng Đào tạo', role:'Chuyên viên', approvers:['Cán bộ Nguyễn Thị Lan'] },
+  ] },
+  p2: { name:'Quy trình công nhận tốt nghiệp', steps:[
+    { name:'Nộp yêu cầu', dept:'', role:'Sinh viên', approvers:[] },
+    { name:'Khoa duyệt', dept:'Khoa CNTT', role:'Trưởng đơn vị', approvers:['PGS.TS. Lê Văn Hùng'] },
+    { name:'Phòng Đào tạo duyệt', dept:'Phòng Đào tạo', role:'Trưởng đơn vị', approvers:['Nguyễn Văn Admin'] },
+    { name:'Ban hành quyết định', dept:'Phòng Đào tạo', role:'Chuyên viên', approvers:['Cán bộ Trần Văn Bình'] },
+  ] },
+  p3: { name:'Quy trình bảo lưu kết quả học tập', steps:[
+    { name:'Nộp yêu cầu', dept:'', role:'Sinh viên', approvers:[] },
+    { name:'Phòng CTSV duyệt', dept:'Ban Công tác Sinh viên', role:'Trưởng đơn vị', approvers:['Nguyễn Văn Admin'] },
+    { name:'Ban hành quyết định', dept:'Ban Công tác Sinh viên', role:'Chuyên viên', approvers:['Cán bộ Phạm Thị Hoa'] },
+  ] },
+};
+
+/* ============================================================
+   DATA — danh sách quyết định (mock) đã phát sinh cho từng sinh viên,
+   currentStepIdx trỏ vào DECISION_PROCESSES[processId].steps.
+   processId = null ứng với loại quyết định cấu hình "Không áp dụng quy
+   trình" ở mh-admin-06 — quyết định này được ban hành trực tiếp, không
+   có bước duyệt nào nên không hiển thị khối "Các bước xử lý".
+   ============================================================ */
+/* Mỗi quyết định gắn với 1 DANH SÁCH sinh viên (students[]), không phải 1 sinh viên duy nhất —
+   thực tế 1 quyết định (VD công nhận tốt nghiệp, buộc thôi học theo đợt cảnh báo học vụ) thường
+   ban hành 1 lần cho cả một nhóm/khoá sinh viên, không phải tách riêng từng SV một bản ghi.
+   Quy trình duyệt áp dụng cho CẢ danh sách cùng lúc (1 văn bản, 1 chữ ký, 1 luồng duyệt) — không
+   có chuyện 1 phần danh sách được duyệt còn phần khác bị từ chối trong cùng 1 quyết định. */
+/* Mỗi sinh viên trong students[] luôn kèm ctdt (chương trình đào tạo) — 1 MSSV có thể học song
+   song nhiều CTĐT (VD học chính + song bằng), nên (mssv, ctdt) mới là khoá xác định duy nhất
+   "sinh viên này, theo chương trình này" áp dụng quyết định, không phải riêng mssv. */
+const DECISION_INSTANCES = [
+  { id:'i1', code:'QDSV-000231', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', processId:'p1',
+    unit:'u-daotao', created:'10/07/2026', currentStepIdx:2, status:'Chờ duyệt', overdue:true,
+    students:[
+      { mssv:'20120201', name:'Trần Thị Bích', ctdt:'Công nghệ thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120202', name:'Phạm Văn Đông', ctdt:'Khoa học máy tính', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120203', name:'Lê Hoàng Nam', ctdt:'Công nghệ thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 3 sinh viên bị cảnh báo học vụ lần 2 trong học kỳ theo kết quả học tập', time:'08:30 10/07/2026' },
+      { step:'Cố vấn học tập duyệt', status:'Đã duyệt', handler:'ThS. Vũ Thị Mai', note:'Xác nhận đúng danh sách, đủ điều kiện xem xét', time:'09:15 11/07/2026' },
+    ] },
+  { id:'i2', code:'QDSV-000198', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', processId:'p1',
+    unit:'u-daotao', created:'05/07/2026', currentStepIdx:3, status:'Chờ duyệt', overdue:false,
+    students:[
+      { mssv:'20120204', name:'Nguyễn Văn Long', ctdt:'Kỹ thuật phần mềm', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120205', name:'Đinh Thị Hoài', ctdt:'Hệ thống thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120206', name:'Trương Văn Kiên', ctdt:'Công nghệ thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 3 sinh viên bị cảnh báo học vụ lần 2 trong học kỳ', time:'08:00 05/07/2026' },
+      { step:'Cố vấn học tập duyệt', status:'Đã duyệt', handler:'ThS. Vũ Thị Mai', note:'Xác nhận đúng danh sách', time:'10:20 06/07/2026' },
+      { step:'Trưởng bộ môn duyệt', status:'Đã duyệt', handler:'TS. Nguyễn Quang Vinh', note:'Đề nghị cảnh cáo học vụ cho cả 3 sinh viên', time:'14:00 07/07/2026' },
+    ] },
+  { id:'i3', code:'QDSV-000150', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', processId:'p1',
+    unit:'u-daotao', created:'20/06/2026', currentStepIdx:4, status:'Đã duyệt', overdue:false,
+    students:[
+      { mssv:'20120207', name:'Lê Thị Hạnh', ctdt:'Công nghệ thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120208', name:'Phan Văn Đạt', ctdt:'An toàn thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120209', name:'Ngô Thị Bảo', ctdt:'Hệ thống thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120210', name:'Đỗ Văn Chiến', ctdt:'Khoa học máy tính', lyDo:'Cảnh báo học vụ lần 2' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 4 sinh viên bị cảnh báo học vụ lần 2 trong học kỳ', time:'08:00 20/06/2026' },
+      { step:'Cố vấn học tập duyệt', status:'Đã duyệt', handler:'ThS. Vũ Thị Mai', note:'Xác nhận đúng danh sách', time:'09:00 21/06/2026' },
+      { step:'Trưởng bộ môn duyệt', status:'Đã duyệt', handler:'TS. Nguyễn Quang Vinh', note:'Đề nghị cảnh cáo học vụ cho cả 4 sinh viên', time:'11:00 22/06/2026' },
+      { step:'Phòng Đào tạo duyệt', status:'Đã duyệt', handler:'Nguyễn Văn Admin', note:'Đồng ý theo đề nghị của Khoa', time:'09:30 24/06/2026' },
+      { step:'Ban hành quyết định', status:'Đã duyệt', handler:'Cán bộ Nguyễn Thị Lan', note:'Đã ban hành quyết định xử lý học vụ', time:'10:00 25/06/2026' },
+    ] },
+  { id:'i4', code:'QDSV-000102', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', processId:'p1',
+    unit:'u-daotao', created:'15/06/2026', currentStepIdx:1, status:'Từ chối', overdue:false,
+    students:[
+      { mssv:'20120211', name:'Phạm Văn Đức', ctdt:'Công nghệ thông tin', lyDo:'Cảnh báo học vụ lần 2' },
+      { mssv:'20120212', name:'Vũ Thị Yến', ctdt:'Kỹ thuật phần mềm', lyDo:'Cảnh báo học vụ lần 2' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 2 sinh viên bị cảnh báo học vụ lần 2 trong học kỳ', time:'08:00 15/06/2026' },
+      { step:'Cố vấn học tập duyệt', status:'Từ chối', handler:'ThS. Vũ Thị Mai', note:'Chưa đủ căn cứ xét học vụ ở thời điểm này, đề nghị bổ sung minh chứng học tập', time:'09:40 16/06/2026' },
+    ] },
+
+  { id:'i5', code:'QDSV-000260', typeName:'Quyết định công nhận tốt nghiệp', processId:'p2',
+    unit:'u-daotao', created:'12/07/2026', currentStepIdx:2, status:'Chờ duyệt', overdue:true,
+    students:[
+      { mssv:'20120213', name:'Vũ Thị Ngọc', ctdt:'Công nghệ thông tin', lyDo:'Tốt nghiệp loại Giỏi' },
+      { mssv:'20120214', name:'Đỗ Văn Hải', ctdt:'Khoa học máy tính', lyDo:'Tốt nghiệp loại Khá' },
+      { mssv:'20120215', name:'Bùi Thị Lan', ctdt:'Hệ thống thông tin', lyDo:'Tốt nghiệp loại Xuất sắc' },
+      { mssv:'20120216', name:'Hồ Văn Thịnh', ctdt:'Kỹ thuật phần mềm', lyDo:'Tốt nghiệp loại Trung bình' },
+      { mssv:'20120217', name:'Dương Thị Mỹ', ctdt:'Công nghệ thông tin', lyDo:'Tốt nghiệp loại Giỏi' },
+      { mssv:'20120218', name:'Lý Văn Phát', ctdt:'An toàn thông tin', lyDo:'Tốt nghiệp loại Khá' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 6 sinh viên đủ điều kiện xét tốt nghiệp đợt tháng 7/2026', time:'08:00 12/07/2026' },
+      { step:'Khoa duyệt', status:'Đã duyệt', handler:'PGS.TS. Lê Văn Hùng', note:'Đủ điều kiện tốt nghiệp theo Khoa', time:'15:00 13/07/2026' },
+    ] },
+  { id:'i6', code:'QDSV-000241', typeName:'Quyết định công nhận tốt nghiệp', processId:'p2',
+    unit:'u-daotao', created:'01/07/2026', currentStepIdx:3, status:'Đã duyệt', overdue:false,
+    students:[
+      { mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', lyDo:'Tốt nghiệp loại Giỏi' },
+      { mssv:'20120220', name:'Trần Văn Khoa', ctdt:'Khoa học máy tính', lyDo:'Tốt nghiệp loại Khá' },
+      { mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin', lyDo:'Tốt nghiệp loại Xuất sắc' },
+      { mssv:'20120222', name:'Phạm Văn Tùng', ctdt:'Kỹ thuật phần mềm', lyDo:'Tốt nghiệp loại Trung bình' },
+      { mssv:'20120223', name:'Hoàng Thị Nga', ctdt:'Công nghệ thông tin', lyDo:'Tốt nghiệp loại Giỏi' },
+      { mssv:'20120224', name:'Vũ Văn Hiếu', ctdt:'An toàn thông tin', lyDo:'Tốt nghiệp loại Khá' },
+      { mssv:'20120225', name:'Đặng Thị Kim', ctdt:'Khoa học máy tính', lyDo:'Tốt nghiệp loại Giỏi' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 7 sinh viên đủ điều kiện xét tốt nghiệp đợt tháng 6/2026', time:'08:00 01/07/2026' },
+      { step:'Khoa duyệt', status:'Đã duyệt', handler:'PGS.TS. Lê Văn Hùng', note:'Đủ điều kiện tốt nghiệp theo Khoa', time:'10:00 02/07/2026' },
+      { step:'Phòng Đào tạo duyệt', status:'Đã duyệt', handler:'Nguyễn Văn Admin', note:'Đủ điều kiện tốt nghiệp toàn trường', time:'09:00 03/07/2026' },
+      { step:'Ban hành quyết định', status:'Đã duyệt', handler:'Cán bộ Trần Văn Bình', note:'Đã ban hành quyết định công nhận tốt nghiệp', time:'14:00 04/07/2026' },
+    ] },
+  { id:'i7', code:'QDSV-000275', typeName:'Quyết định công nhận tốt nghiệp', processId:'p2',
+    unit:'u-daotao', created:'08/07/2026', currentStepIdx:1, status:'Chờ duyệt', overdue:false,
+    students:[
+      { mssv:'20120226', name:'Bùi Văn Sang', ctdt:'Công nghệ thông tin', lyDo:'Tốt nghiệp loại Khá' },
+      { mssv:'20120227', name:'Ngô Thị Yên', ctdt:'Hệ thống thông tin', lyDo:'Tốt nghiệp loại Giỏi' },
+      { mssv:'20120228', name:'Đỗ Văn Quân', ctdt:'Khoa học máy tính', lyDo:'Tốt nghiệp loại Trung bình' },
+      { mssv:'20120229', name:'Trịnh Thị Loan', ctdt:'Kỹ thuật phần mềm', lyDo:'Tốt nghiệp loại Xuất sắc' },
+    ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Phòng Đào tạo', note:'Lập danh sách 4 sinh viên đủ điều kiện xét tốt nghiệp đợt tháng 7/2026', time:'08:00 08/07/2026' },
+    ] },
+
+  { id:'i8', code:'QDSV-000290', typeName:'Quyết định nghỉ học tạm thời/bảo lưu', processId:'p3',
+    unit:'u-ctsv', created:'18/07/2026', currentStepIdx:1, status:'Chờ duyệt', overdue:false,
+    students:[ { mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', lyDo:'Lý do sức khoẻ' } ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Ngô Thị Thu', note:'Sinh viên nộp đơn xin bảo lưu kết quả học tập', time:'08:00 18/07/2026' },
+    ] },
+  { id:'i9', code:'QDSV-000180', typeName:'Quyết định nghỉ học tạm thời/bảo lưu', processId:'p3',
+    unit:'u-ctsv', created:'22/06/2026', currentStepIdx:2, status:'Đã duyệt', overdue:false,
+    students:[ { mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', lyDo:'Lý do gia đình' } ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Hoàng Văn Nam', note:'Sinh viên nộp đơn xin bảo lưu kết quả học tập', time:'08:00 22/06/2026' },
+      { step:'Phòng CTSV duyệt', status:'Đã duyệt', handler:'Nguyễn Văn Admin', note:'Đủ điều kiện bảo lưu', time:'09:30 23/06/2026' },
+      { step:'Ban hành quyết định', status:'Đã duyệt', handler:'Cán bộ Phạm Thị Hoa', note:'Đã ban hành quyết định bảo lưu', time:'10:00 24/06/2026' },
+    ] },
+  { id:'i10', code:'QDSV-000165', typeName:'Quyết định nghỉ học tạm thời/bảo lưu', processId:'p3',
+    unit:'u-ctsv', created:'25/06/2026', currentStepIdx:1, status:'Từ chối', overdue:false,
+    students:[ { mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin', lyDo:'Lý do sức khoẻ' } ],
+    history:[
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler:'Đặng Thị Quỳnh', note:'Sinh viên nộp đơn xin bảo lưu kết quả học tập', time:'08:00 25/06/2026' },
+      { step:'Phòng CTSV duyệt', status:'Từ chối', handler:'Nguyễn Văn Admin', note:'Hồ sơ xin bảo lưu chưa có xác nhận lý do y tế hợp lệ', time:'09:00 26/06/2026' },
+    ] },
+
+  { id:'i11', code:'QDSV-000310', typeName:'Quyết định thôi học', processId:null,
+    unit:'u-ctsv', created:'19/07/2026', currentStepIdx:null, status:'Đã duyệt', overdue:false,
+    students:[
+      { mssv:'20120230', name:'Trịnh Văn Sơn', ctdt:'Công nghệ thông tin', lyDo:'Buộc thôi học do kết quả học tập' },
+      { mssv:'20120231', name:'Mai Văn Cường', ctdt:'Kỹ thuật phần mềm', lyDo:'Buộc thôi học do kết quả học tập' },
+      { mssv:'20120232', name:'Lâm Thị Hồng', ctdt:'Khoa học máy tính', lyDo:'Quá thời hạn đào tạo tối đa' },
+    ], history:[] },
+  { id:'i12', code:'QDSV-000318', typeName:'Quyết định thôi học', processId:null,
+    unit:'u-ctsv', created:'21/07/2026', currentStepIdx:null, status:'Đã duyệt', overdue:false,
+    students:[ { mssv:'20120071', name:'Lý Thị Hương', ctdt:'Hệ thống thông tin', lyDo:'Tự nguyện thôi học' } ], history:[] },
+];
+
+function decById(id){ return DECISION_INSTANCES.find(d => d.id === id); }
+
+/* "HH:mm dd/mm/yyyy" — dùng chung cho mọi mốc thời gian ghi lại ngay lúc thao tác (duyệt/từ
+   chối/tạo mới), dùng chung bởi confirmApproveDecision và submitCreateDecision. */
+function nowTimeLabel(){
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+}
+
+/* "yyyy-mm-dd" (giá trị input[type=date]) -> "dd/mm/yyyy" (định dạng hiển thị dùng chung toàn màn) */
+function toVnDate(isoStr){
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+function todayVnDate(){
+  const now = new Date();
+  return `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+}
+
+const STATUS_TAG_CLASS = { 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Từ chối':'tag-error', 'Yêu cầu chỉnh sửa':'tag-purple' };
+
+/* == Dropdown thông báo (chuông trên header) == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'⏰', title:'Quyết định "QDSV-000231" (3 sinh viên) đang quá hạn xử lý 10 giờ', time:'10 giờ trước' },
+  { id:'n2', unread:true, ico:'⏰', title:'Quyết định "QDSV-000260" (6 sinh viên) đang quá hạn xử lý', time:'1 ngày trước' },
+  { id:'n3', unread:false, ico:'✅', title:'Quyết định "QDSV-000150" (4 sinh viên) đã hoàn tất xét duyệt', time:'Hôm qua' },
+];
+
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+updateNotifBadge();
+
+/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng cho combobox Đơn vị phụ trách */
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+
+/* == Combobox tìm kiếm "Đơn vị phụ trách" trên thanh filter-bar == */
+let selectedUnitId = null;
+const unitSearchInput = document.getElementById('di-unit-search');
+const unitComboMenu = document.getElementById('di-unit-combo-menu');
+
+function renderUnitMenu(query){
+  const q = (query || '').trim();
+  let html = '<div class="unit-combo-item" onclick="pickUnitFilter(null)">Tất cả đơn vị phụ trách</div>';
+  const matches = q ? UNITS.filter(u => u.label.toLowerCase().includes(q.toLowerCase())) : UNITS;
+  if (matches.length){
+    matches.forEach(u => {
+      html += '<div class="unit-combo-item" onclick="pickUnitFilter(&#39;' + u.value + '&#39;)">' + highlightMatch(u.label, q) + '</div>';
+    });
+  } else if (q){
+    html += '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
+  }
+  unitComboMenu.innerHTML = html;
+}
+function openUnitMenu(){ renderUnitMenu(unitSearchInput.value); unitComboMenu.classList.add('open'); }
+function closeUnitMenu(){ unitComboMenu.classList.remove('open'); }
+
+function pickUnitFilter(id){
+  selectedUnitId = id;
+  unitSearchInput.value = id ? UNIT_LABEL[id] : '';
+  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  closeUnitMenu();
+  currentPage = 1;
+  renderGrid();
+}
+unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
+unitSearchInput.addEventListener('input', () => openUnitMenu());
+document.addEventListener('click', e => {
+  if (!document.getElementById('di-unit-combo').contains(e.target)) closeUnitMenu();
+});
+
+/* Nạp danh sách Loại quyết định vào select — lấy theo các loại có thật trong DECISION_INSTANCES */
+const DECISION_TYPE_NAMES = [...new Set(DECISION_INSTANCES.map(d => d.typeName))];
+document.getElementById('di-type-select').insertAdjacentHTML('beforeend',
+  DECISION_TYPE_NAMES.map(t => `<option value="${t}">${t}</option>`).join(''));
+
+/* ============================================================
+   TẠO QUYẾT ĐỊNH — ban hành 1 quyết định mới cho 1 danh sách SV.
+   Quy trình áp dụng, đơn vị ban hành, mẫu file lấy tự động theo
+   Loại quyết định chọn.
+   ============================================================ */
+/* Danh mục Loại quyết định — ĐỒNG BỘ với Danh mục Quyết định đã cấu hình ở mh-admin-06
+   (DECISIONS[]), chỉ giữ lại các trường cần dùng ở đây: unit (đơn vị ban hành mặc định),
+   processId (quy trình áp dụng, null = ban hành trực tiếp không qua duyệt), fileNameDh/fileNameSdh
+   (mẫu file quyết định .docx). Sửa danh mục ở mh-admin-06 thì phải cập nhật lại đúng ở đây. */
+const DECISION_CATALOG = [
+  { name:'Quyết định cấp mã SV và phân lớp cho SV', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-cap-ma-sv-phan-lop-dh.docx', fileNameSdh:'mau-qd-cap-ma-sv-phan-lop-sdh.docx' },
+  { name:'Quyết định công nhận điểm rèn luyện toàn khoá', unit:'u-ctsv', processId:null, fileNameDh:'', fileNameSdh:'' },
+  { name:'Quyết định điều chỉnh', unit:'u-daotao', processId:null, fileNameDh:'', fileNameSdh:'' },
+  { name:'Quyết định thay đổi họ tên sinh viên', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-thay-doi-ho-ten-dh.docx', fileNameSdh:'mau-qd-thay-doi-ho-ten-sdh.docx' },
+  { name:'Quyết định thu hồi quyết định nghỉ học tạm thời', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-thu-hoi-nghi-hoc-tam-thoi-dh.docx', fileNameSdh:'mau-qd-thu-hoi-nghi-hoc-tam-thoi-sdh.docx' },
+  { name:'Quyết định buộc thôi học do quá 2 lần cảnh báo', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-buoc-thoi-hoc-canh-bao-dh.docx', fileNameSdh:'mau-qd-buoc-thoi-hoc-canh-bao-sdh.docx' },
+  { name:'Quyết định chuyển khoá, ngành, lớp', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-chuyen-khoa-nganh-lop-dh.docx', fileNameSdh:'mau-qd-chuyen-khoa-nganh-lop-sdh.docx' },
+  { name:'Quyết định chuyển trường đến', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-chuyen-truong-den-dh.docx', fileNameSdh:'mau-qd-chuyen-truong-den-sdh.docx' },
+  { name:'Quyết định chuyển trường đi', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-chuyen-truong-di-dh.docx', fileNameSdh:'mau-qd-chuyen-truong-di-sdh.docx' },
+  { name:'Quyết định công nhận điểm từ các cơ sở đào tạo', unit:'u-daotao', processId:null, fileNameDh:'', fileNameSdh:'' },
+  { name:'Quyết định công nhận tốt nghiệp', unit:'u-daotao', processId:'p2', fileNameDh:'mau-qd-cong-nhan-tot-nghiep-dh.docx', fileNameSdh:'mau-qd-cong-nhan-tot-nghiep-sdh.docx' },
+  { name:'Quyết định cử đi thực tập tốt nghiệp', unit:'u-daotao', processId:null, fileNameDh:'', fileNameSdh:'' },
+  { name:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', unit:'u-khaothi', processId:'p1', fileNameDh:'mau-qd-xu-ly-hoc-vu-dh.docx', fileNameSdh:'mau-qd-xu-ly-hoc-vu-sdh.docx' },
+  { name:'Quyết định khen thưởng', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-khen-thuong-dh.docx', fileNameSdh:'mau-qd-khen-thuong-sdh.docx' },
+  { name:'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-ky-luat-dh.docx', fileNameSdh:'mau-qd-ky-luat-sdh.docx' },
+  { name:'Quyết định nghỉ học tạm thời/bảo lưu', unit:'u-ctsv', processId:'p3', fileNameDh:'mau-qd-bao-luu-dh.docx', fileNameSdh:'mau-qd-bao-luu-sdh.docx' },
+  { name:'Quyết định nhập trường/trúng tuyển', unit:'u-tuyensinh', processId:null, fileNameDh:'mau-qd-nhap-truong-trung-tuyen-dh.docx', fileNameSdh:'mau-qd-nhap-truong-trung-tuyen-sdh.docx' },
+  { name:'Quyết định quay trở lại học tập', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-tiep-nhan-tro-lai-dh.docx', fileNameSdh:'mau-qd-tiep-nhan-tro-lai-sdh.docx' },
+  { name:'Quyết định thôi học', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-thoi-hoc-dh.docx', fileNameSdh:'mau-qd-thoi-hoc-sdh.docx' },
+  { name:'Quyết định xoá tên', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-xoa-ten-dh.docx', fileNameSdh:'mau-qd-xoa-ten-sdh.docx' },
+  { name:'Quyết định thay đổi đơn vị đào tạo', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-thay-doi-don-vi-dao-tao-dh.docx', fileNameSdh:'mau-qd-thay-doi-don-vi-dao-tao-sdh.docx' },
+  { name:'Quyết định giao đề tài và phân công GVHD', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-giao-de-tai-phan-cong-gvhd-dh.docx', fileNameSdh:'mau-qd-giao-de-tai-phan-cong-gvhd-sdh.docx' },
+  { name:'Quyết định thay đổi đề tài', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-thay-doi-de-tai-dh.docx', fileNameSdh:'mau-qd-thay-doi-de-tai-sdh.docx' },
+];
+function decisionCatalogByName(name){ return DECISION_CATALOG.find(d => d.name === name); }
+
+/* "Trạng thái mới" — chỉ hiện với các loại quyết định có làm thay đổi trạng thái sinh viên (đồng
+   bộ DECISIONS[].newStatus ở mh-admin-06, đúng 10 loại theo yêu cầu); tự động hiển thị theo Loại
+   quyết định đang chọn, KHÔNG cho sửa tay. */
+const NEW_STATUS_LABEL = {
+  danghoc:'Đang học', buocthoihoc:'Buộc thôi học', chuyentruong:'Chuyển trường đi',
+  totnghiep:'Tốt nghiệp', baoluu:'Bảo lưu', thoihoc:'Thôi học', xoaten:'Xoá tên',
+};
+/* Màu tag cho "Trạng thái hiện tại" của SV trong bảng Danh sách SV (khối 3) — dùng chung nhãn
+   với NEW_STATUS_LABEL vì cùng 1 tập giá trị trạng thái SV. */
+const STUDENT_STATUS_TAG_CLASS = {
+  danghoc:'tag-success', buocthoihoc:'tag-error', chuyentruong:'tag-purple',
+  totnghiep:'tag-blue', baoluu:'tag-warning', thoihoc:'tag-error', xoaten:'tag-error',
+};
+function studentStatusTagHtml(statusCode){
+  if (!statusCode) return '<span class="text-muted">—</span>';
+  return `<span class="tag ${STUDENT_STATUS_TAG_CLASS[statusCode] || 'tag-default'}">${NEW_STATUS_LABEL[statusCode] || statusCode}</span>`;
+}
+const TYPE_NEW_STATUS = {
+  'Quyết định thu hồi quyết định nghỉ học tạm thời': 'danghoc',
+  'Quyết định buộc thôi học do quá 2 lần cảnh báo': 'buocthoihoc',
+  'Quyết định chuyển trường đến': 'danghoc',
+  'Quyết định chuyển trường đi': 'chuyentruong',
+  'Quyết định công nhận tốt nghiệp': 'totnghiep',
+  'Quyết định nghỉ học tạm thời/bảo lưu': 'baoluu',
+  'Quyết định nhập trường/trúng tuyển': 'danghoc',
+  'Quyết định quay trở lại học tập': 'danghoc',
+  'Quyết định thôi học': 'thoihoc',
+  'Quyết định xoá tên': 'xoaten',
+};
+
+/* Loại quyết định duy nhất cần khối "Niên khoá mới/CTĐT mới/Lớp HC mới" (cd-transfer-fields-block) —
+   ghi nhận nơi CẢ danh sách SV trong quyết định này sẽ được chuyển tới. */
+const TYPE_TRANSFER_FIELDS = 'Quyết định chuyển khoá, ngành, lớp';
+
+/* Loại quyết định duy nhất cần khối "Đơn vị đào tạo mới" (cd-unit-change-block) — ghi nhận đơn vị
+   đào tạo (Khoa) mà CẢ danh sách SV trong quyết định này sẽ được chuyển tới. */
+const TYPE_UNIT_CHANGE = 'Quyết định thay đổi đơn vị đào tạo';
+
+/* Loại quyết định duy nhất cần khối "Hình thức khen thưởng" (cd-reward-form-block) — bắt buộc chọn
+   1 trong 2 hình thức (Phần thưởng/Giấy khen), áp dụng chung cho cả danh sách SV trong quyết định
+   này (không phải riêng theo từng SV). */
+const TYPE_REWARD = 'Quyết định khen thưởng';
+
+/* Loại quyết định duy nhất thay cột "Phân loại lý do" trong bảng Danh sách sinh viên (khối 3) bằng
+   2 cột riêng "ĐTB niên khoá" và "Xếp loại toàn khoá" — mỗi SV có điểm/xếp loại rèn luyện khác nhau
+   nên cần nhập theo từng dòng, không dùng chung 1 danh mục lý do như các loại quyết định khác. */
+const TYPE_TRAINING_SCORE = 'Quyết định công nhận điểm rèn luyện toàn khoá';
+const XEP_LOAI_TOAN_KHOA_OPTIONS = ['Xuất sắc', 'Tốt', 'Khá', 'Trung bình', 'Yếu', 'Kém'];
+
+/* Loại quyết định duy nhất dùng bộ cột riêng hoàn toàn ở bảng Danh sách sinh viên (khối 3) — theo
+   đúng mẫu biểu mẫu thật (BM.ĐT.18.07: cử SV đi thực tập tốt nghiệp), không dùng chung bố cục cột
+   với các loại quyết định khác: STT, MSSV, Họ và tên, Ngày sinh, Lớp HC, CTĐT, Cơ sở thực tập (field
+   cstt), Địa chỉ, Giảng viên hướng dẫn, Ghi chú — bỏ hẳn Đơn vị/Ngành/Trạng thái hiện tại/Phân loại
+   lý do vì không liên quan đến việc cử đi thực tập. Cơ sở thực tập/Địa chỉ/GVHD nhập tay riêng cho
+   từng SV (mỗi SV có thể thực tập ở nơi khác nhau), xem renderCreateDecisionStudents(). */
+const TYPE_INTERNSHIP = 'Quyết định cử đi thực tập tốt nghiệp';
+
+/* Loại quyết định duy nhất dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3) cho việc giao đề
+   tài & phân công GVHD: STT, MSSV, Họ và tên, Lớp HC, CTĐT, Tên đề tài, Giảng viên hướng dẫn, Đơn
+   vị công tác, Ghi chú — không dùng Phân loại lý do vì không liên quan. Tên đề tài/GVHD/Đơn vị công
+   tác nhập tay riêng cho từng SV (mỗi SV có thể làm đề tài khác nhau, GVHD khác nhau), xem
+   renderCreateDecisionStudents(). Cố tình KHÔNG dùng lại field "gvhd" của TYPE_INTERNSHIP dù cùng
+   nhãn "Giảng viên hướng dẫn" — 2 loại quyết định độc lập nhau, tách field riêng (gvhdDeTai) để đổi
+   loại quyết định không vô tình làm rối logic reset của nhau. */
+const TYPE_TOPIC_ASSIGNMENT = 'Quyết định giao đề tài và phân công GVHD';
+
+/* Quyết định thay đổi đề tài — dùng LẠI đúng bộ cột/field của TYPE_TOPIC_ASSIGNMENT ở bảng Danh
+   sách sinh viên (tenDeTai/gvhdDeTai/donViCongTac, xem renderCreateDecisionStudents()), chỉ đổi
+   nhãn cột đầu thành "Đề tài" cho đúng ngữ nghĩa (ghi nhận đề tài MỚI thay cho đề tài đã giao
+   trước đó), nên có riêng key 'topicChange' trong CD_SV_THEAD_HTML/CD_SV_COL_COUNT nhưng dùng
+   chung nhánh render với 'topicAssignment'. */
+const TYPE_TOPIC_CHANGE = 'Quyết định thay đổi đề tài';
+
+/* Quyết định kỷ luật — dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3): STT, MSSV, CTĐT, Loại
+   kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do — vì mỗi SV trong CÙNG 1
+   đợt kỷ luật có thể bị áp hình thức khác nhau (SV này Khiển trách, SV khác Đình chỉ 2 học kỳ) nên
+   Loại kỷ luật + thời hạn phải khai theo TỪNG dòng, không dùng chung 1 giá trị như khối 1. Khối 1
+   (Năm học/Học kỳ bắt đầu/kết thúc chung) VẪN giữ nguyên, không ẩn — theo yêu cầu, không lược bỏ. */
+const TYPE_DISCIPLINE = 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)';
+const DISCIPLINE_TYPE_OPTIONS = [
+  'Khiển trách cấp Trường/Khoa', 'Cảnh cáo cấp Trường/Khoa', 'Khiển trách cấp ĐH', 'Cảnh cáo cấp ĐH',
+  'Buộc thôi học', 'Đình chỉ học tập 1 học kỳ', 'Đình chỉ học tập 2 học kỳ', 'Đình chỉ học tập 3 học kỳ',
+  'Đình chỉ học tập 1 năm học',
+];
+/* Năm học/Học kỳ theo từng SV — dùng LẠI đúng danh sách giá trị đã hiển thị ở khối 1 (cd-academic-year/
+   cd-semester-start/cd-semester-end) để không tạo thêm 1 bộ danh mục khác biệt dễ lệch nhau. */
+const DISCIPLINE_ACADEMIC_YEAR_OPTIONS = ['2024-2025', '2025-2026', '2026-2027', '2027-2028'];
+const DISCIPLINE_SEMESTER_OPTIONS = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ hè'];
+
+/* Loại quyết định duy nhất cần khối "Có phân lớp mới cho SV không?" (cd-reassign-class-block) —
+   SV quay trở lại học tập có thể được xếp vào lớp HC mới, hoặc giữ nguyên lớp cũ (không bắt buộc
+   phải đổi lớp), nên cần hỏi trước rồi mới hiện ô chọn Lớp HC mới nếu có. */
+const TYPE_REASSIGN_CLASS = 'Quyết định quay trở lại học tập';
+
+/* Phân loại lý do — mỗi loại quyết định có 1 bộ lý do riêng để gắn cho TỪNG sinh viên trong danh
+   sách (VD cùng 1 quyết định xử lý học vụ nhưng SV này bị cảnh báo lần 1, SV khác lần 2). Hiện mới
+   cấu hình cho 4 loại đã có quy trình xử lý; các loại còn lại sẽ bổ sung sau. */
+const TYPE_REASON_CATEGORIES = {
+  'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)': [
+    'Cảnh báo học vụ lần 1', 'Cảnh báo học vụ lần 2', 'Đình chỉ học tập có thời hạn', 'Vi phạm quy chế thi',
+  ],
+  'Quyết định công nhận tốt nghiệp': [
+    'Tốt nghiệp loại Xuất sắc', 'Tốt nghiệp loại Giỏi', 'Tốt nghiệp loại Khá', 'Tốt nghiệp loại Trung bình',
+  ],
+  'Quyết định nghỉ học tạm thời/bảo lưu': [
+    'Lý do sức khoẻ', 'Lý do gia đình', 'Lý do kinh tế', 'Đi nghĩa vụ quân sự',
+  ],
+  'Quyết định thôi học': [
+    'Tự nguyện thôi học', 'Buộc thôi học do kết quả học tập', 'Buộc thôi học do vi phạm quy chế', 'Quá thời hạn đào tạo tối đa',
+  ],
+  [TYPE_DISCIPLINE]: [
+    'Vi phạm quy chế thi', 'Gian lận trong học tập', 'Vi phạm nội quy ký túc xá', 'Vi phạm pháp luật', 'Vi phạm khác',
+  ],
+};
+
+/* Combobox tìm "Loại quyết định" — 20 loại trong danh mục nên cần gõ tìm thay vì cuộn dropdown dài */
+function renderCdTypeMenu(query){
+  const q = (query || '').trim();
+  const menu = document.getElementById('cd-type-menu');
+  const matches = q ? DECISION_CATALOG.filter(d => d.name.toLowerCase().includes(q.toLowerCase())) : DECISION_CATALOG;
+  menu.innerHTML = matches.length ? matches.map(d => `
+    <div class="unit-combo-item" onclick="pickCdType('${d.name.replace(/'/g, "\\'")}')">${highlightMatch(d.name, q)}</div>`).join('')
+    : `<div class="unit-combo-empty">Không tìm thấy loại quyết định nào khớp "${q}"</div>`;
+}
+function openCdTypeMenu(){ renderCdTypeMenu(document.getElementById('cd-type-search').value); document.getElementById('cd-type-menu').classList.add('open'); }
+function closeCdTypeMenu(){ document.getElementById('cd-type-menu').classList.remove('open'); }
+function pickCdType(name){
+  document.getElementById('cd-type').value = name;
+  document.getElementById('cd-type-search').value = name;
+  closeCdTypeMenu();
+  onCreateDecisionTypeChange();
+}
+document.getElementById('cd-type-search').addEventListener('focus', openCdTypeMenu);
+document.getElementById('cd-type-search').addEventListener('input', openCdTypeMenu);
+document.addEventListener('click', e => {
+  if (!document.getElementById('cd-type-combo').contains(e.target)) closeCdTypeMenu();
+});
+
+/* Combobox tìm-để-chọn dùng chung cho các trường riêng theo từng loại quyết định (Niên khoá mới/
+   CTĐT mới/Lớp HC mới ở cd-transfer-fields-block, Lớp HC mới ở cd-reassign-class-block, Đơn vị đào
+   tạo mới ở cd-unit-change-block) — cùng kiểu
+   combobox như "Loại quyết định" ở trên, gộp chung logic vì các ô đều giống hệt nhau, chỉ khác
+   idPrefix (tiền tố id 3 phần tử search/hidden/menu) và danh sách lựa chọn. CTĐT/Lớp HC/Đơn vị đào
+   tạo lấy động (Set khử trùng lặp) từ STUDENT_DIRECTORY thay vì tự liệt kê cứng — sửa danh bạ SV thì danh sách
+   lựa chọn ở đây tự cập nhật theo, không cần sửa nhiều nơi. "options" khai báo dạng hàm () => [...]
+   để tránh lỗi tham chiếu STUDENT_DIRECTORY trước khi nó được khai báo (const bên dưới) — hàm chỉ
+   thực sự chạy khi user mở combobox, lúc đó STUDENT_DIRECTORY đã có giá trị. Niên khoá chưa có
+   nguồn dữ liệu tương ứng trong dự án nên vẫn liệt kê cứng theo quy ước "K" + 2 số cuối năm nhập
+   học (K44-K48), giống khoaDaoTao ở mh-admin-03.
+   "Lớp HC mới" (lophc) và "Lớp HC mới" (reassignLop) dùng "groups" thay vì "options" phẳng — gom theo
+   Năm học vì mã lớp có thể trùng tên giữa các năm khác nhau (VD lớp CT4501 của năm học 2024-2025
+   khác hẳn lớp CT4501 mới lập ở năm học 2025-2026); giá trị chọn ghép cả năm học vào để không bị
+   lẫn 2 lớp trùng tên. Cả 2 dùng chung LOP_BY_YEAR_GROUPS() để không lặp lại danh sách lớp 2 nơi. */
+const LOP_BY_YEAR_GROUPS = () => [
+  { year:'2024-2025', classes:['CT4501','CT4502','CT4503','CT4504','CT4505','CT4506'] },
+  { year:'2025-2026', classes:['CT4501','CT4601','CT4602','CT4603'] },
+  { year:'2026-2027', classes:['CT4701','CT4702'] },
+];
+const CD_SEARCH_COMBOS = {
+  khoa: { idPrefix:'cd-new-khoa', options: () => ['K44','K45','K46','K47','K48'] },
+  ctdt: { idPrefix:'cd-new-ctdt', options: () => [...new Set(STUDENT_DIRECTORY.map(s => s.ctdt))] },
+  lophc: { idPrefix:'cd-new-lophc', groups: LOP_BY_YEAR_GROUPS },
+  reassignLop: { idPrefix:'cd-reassign-lop', groups: LOP_BY_YEAR_GROUPS },
+  donvidaotao: { idPrefix:'cd-new-donvi', options: () => [...new Set(STUDENT_DIRECTORY.map(s => s.donViQuanLy))] },
+};
+function renderSearchComboMenu(key, query){
+  const q = (query || '').trim();
+  const cfg = CD_SEARCH_COMBOS[key];
+  const menu = document.getElementById(`${cfg.idPrefix}-menu`);
+
+  if (cfg.groups){
+    const groups = cfg.groups()
+      .map(g => ({ year: g.year, classes: q ? g.classes.filter(c => c.toLowerCase().includes(q.toLowerCase())) : g.classes }))
+      .filter(g => g.classes.length);
+    menu.innerHTML = groups.length ? groups.map(g => `
+      <div class="unit-combo-group-label">Năm học ${g.year}</div>
+      ${g.classes.map(c => `<div class="unit-combo-item" onclick="pickSearchCombo('${key}', '${c} (${g.year})')">${highlightMatch(c, q)}</div>`).join('')}
+    `).join('') : `<div class="unit-combo-empty">Không tìm thấy "${q}"</div>`;
+    return;
+  }
+
+  const options = cfg.options();
+  const matches = q ? options.filter(o => o.toLowerCase().includes(q.toLowerCase())) : options;
+  menu.innerHTML = matches.length ? matches.map(o => `
+    <div class="unit-combo-item" onclick="pickSearchCombo('${key}', '${o.replace(/'/g, "\\'")}')">${highlightMatch(o, q)}</div>`).join('')
+    : `<div class="unit-combo-empty">Không tìm thấy "${q}"</div>`;
+}
+function openSearchComboMenu(key){
+  const cfg = CD_SEARCH_COMBOS[key];
+  renderSearchComboMenu(key, document.getElementById(`${cfg.idPrefix}-search`).value);
+  document.getElementById(`${cfg.idPrefix}-menu`).classList.add('open');
+}
+function closeSearchComboMenu(key){ document.getElementById(`${CD_SEARCH_COMBOS[key].idPrefix}-menu`).classList.remove('open'); }
+function pickSearchCombo(key, value){
+  const cfg = CD_SEARCH_COMBOS[key];
+  document.getElementById(cfg.idPrefix).value = value;
+  document.getElementById(`${cfg.idPrefix}-search`).value = value;
+  closeSearchComboMenu(key);
+}
+function resetSearchCombo(key){
+  const cfg = CD_SEARCH_COMBOS[key];
+  document.getElementById(cfg.idPrefix).value = '';
+  document.getElementById(`${cfg.idPrefix}-search`).value = '';
+}
+Object.keys(CD_SEARCH_COMBOS).forEach(key => {
+  const cfg = CD_SEARCH_COMBOS[key];
+  document.getElementById(`${cfg.idPrefix}-search`).addEventListener('focus', () => openSearchComboMenu(key));
+  document.getElementById(`${cfg.idPrefix}-search`).addEventListener('input', () => openSearchComboMenu(key));
+});
+document.addEventListener('click', e => {
+  Object.keys(CD_SEARCH_COMBOS).forEach(key => {
+    if (!document.getElementById(`${CD_SEARCH_COMBOS[key].idPrefix}-combo`).contains(e.target)) closeSearchComboMenu(key);
+  });
+});
+
+function onCreateDecisionTypeChange(){
+  const type = document.getElementById('cd-type').value;
+
+  // Trạng thái mới — tự động hiện theo Loại quyết định, không cho sửa (xem TYPE_NEW_STATUS)
+  const newStatusCode = TYPE_NEW_STATUS[type];
+  document.getElementById('cd-new-status-block').style.display = newStatusCode ? 'block' : 'none';
+  if (newStatusCode) document.getElementById('cd-new-status-value').textContent = NEW_STATUS_LABEL[newStatusCode];
+
+  // Niên khoá mới/CTĐT mới/Lớp HC mới — chỉ hiện với TYPE_TRANSFER_FIELDS; đổi sang loại quyết định
+  // khác thì đặt lại về trống, tránh giữ lựa chọn cũ không còn liên quan.
+  const showTransferFields = type === TYPE_TRANSFER_FIELDS;
+  document.getElementById('cd-transfer-fields-block').style.display = showTransferFields ? 'block' : 'none';
+  if (!showTransferFields){
+    resetSearchCombo('khoa');
+    resetSearchCombo('ctdt');
+    resetSearchCombo('lophc');
+  }
+
+  // "Có phân lớp mới cho SV không" — chỉ hiện với TYPE_REASSIGN_CLASS, bắt buộc trả lời (không có
+  // giá trị mặc định); đổi sang loại quyết định khác thì đặt lại về chưa chọn và ẩn/xoá Lớp HC mới.
+  const showReassignClass = type === TYPE_REASSIGN_CLASS;
+  document.getElementById('cd-reassign-class-block').style.display = showReassignClass ? 'block' : 'none';
+  if (!showReassignClass){
+    document.getElementById('cd-reassign-class-toggle').value = '';
+    document.getElementById('cd-reassign-lop-field').style.display = 'none';
+    resetSearchCombo('reassignLop');
+  }
+
+  // Đơn vị đào tạo mới — chỉ hiện với TYPE_UNIT_CHANGE; đổi sang loại quyết định khác thì đặt lại
+  // về trống, tránh giữ lựa chọn cũ không còn liên quan.
+  const showUnitChange = type === TYPE_UNIT_CHANGE;
+  document.getElementById('cd-unit-change-block').style.display = showUnitChange ? 'block' : 'none';
+  if (!showUnitChange) resetSearchCombo('donvidaotao');
+
+  // Hình thức khen thưởng — chỉ hiện & bắt buộc với TYPE_REWARD; đổi sang loại quyết định khác thì
+  // đặt lại về chưa chọn, tránh giữ lựa chọn cũ không còn liên quan.
+  const showRewardForm = type === TYPE_REWARD;
+  document.getElementById('cd-reward-form-block').style.display = showRewardForm ? 'block' : 'none';
+  if (!showRewardForm) document.getElementById('cd-reward-form').value = '';
+
+  // Đổi loại quyết định thì bộ Phân loại lý do cũng đổi theo — lý do đã gán trước đó (theo loại
+  // cũ) không còn hợp lệ, đặt lại về trống để tránh hiển thị nhầm lý do của loại quyết định khác.
+  if (createDecisionStudents.some(s => s.lyDo)){
+    createDecisionStudents.forEach(s => s.lyDo = '');
+    showToast('Đã đặt lại Phân loại lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+  }
+
+  // Rời khỏi TYPE_TRAINING_SCORE thì ĐTB niên khoá/Xếp loại toàn khoá đã nhập trước đó cũng không
+  // còn hợp lệ (loại quyết định khác không có 2 cột này) — đặt lại về trống.
+  if (type !== TYPE_TRAINING_SCORE && createDecisionStudents.some(s => s.dtbNienKhoa || s.xepLoaiToanKhoa)){
+    createDecisionStudents.forEach(s => { s.dtbNienKhoa = ''; s.xepLoaiToanKhoa = ''; });
+    showToast('Đã đặt lại ĐTB niên khoá/Xếp loại toàn khoá của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+  }
+
+  // Rời khỏi TYPE_INTERNSHIP thì Cơ sở thực tập/Địa chỉ/GVHD đã nhập trước đó cũng không còn hợp lệ — đặt lại về trống.
+  if (type !== TYPE_INTERNSHIP && createDecisionStudents.some(s => s.cstt || s.diaChiCstt || s.gvhd)){
+    createDecisionStudents.forEach(s => { s.cstt = ''; s.diaChiCstt = ''; s.gvhd = ''; });
+    showToast('Đã đặt lại Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+  }
+
+  // Rời khỏi TYPE_TOPIC_ASSIGNMENT/TYPE_TOPIC_CHANGE thì Tên đề tài (hoặc Đề tài)/GVHD/Đơn vị công tác đã nhập trước đó cũng không còn hợp lệ — đặt lại về trống.
+  if (type !== TYPE_TOPIC_ASSIGNMENT && type !== TYPE_TOPIC_CHANGE && createDecisionStudents.some(s => s.tenDeTai || s.gvhdDeTai || s.donViCongTac)){
+    createDecisionStudents.forEach(s => { s.tenDeTai = ''; s.gvhdDeTai = ''; s.donViCongTac = ''; });
+    showToast('Đã đặt lại Tên đề tài/Giảng viên hướng dẫn/Đơn vị công tác của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+  }
+
+  // Rời khỏi TYPE_DISCIPLINE thì Loại kỷ luật/Năm học/Học kỳ bắt đầu-kết thúc/Lý do của từng SV đã
+  // nhập trước đó cũng không còn hợp lệ — đặt lại về trống.
+  if (type !== TYPE_DISCIPLINE && createDecisionStudents.some(s => s.disciplineType || s.disciplineYear || s.disciplineSemesterStart || s.disciplineSemesterEnd || s.disciplineReasonText)){
+    createDecisionStudents.forEach(s => { s.disciplineType = ''; s.disciplineYear = ''; s.disciplineSemesterStart = ''; s.disciplineSemesterEnd = ''; s.disciplineReasonText = ''; });
+    showToast('Đã đặt lại Loại kỷ luật/Năm học/Học kỳ/Lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+  }
+  renderCreateDecisionStudents();
+}
+
+/* Chỉ hiện ô "Lớp HC mới" khi Admin chọn "Có" ở cd-reassign-class-toggle; chọn lại "Không" thì ẩn và
+   xoá Lớp HC mới đã chọn trước đó (không giữ lựa chọn không còn liên quan). */
+function onReassignClassToggleChange(){
+  const showLopField = document.getElementById('cd-reassign-class-toggle').value === 'co';
+  document.getElementById('cd-reassign-lop-field').style.display = showLopField ? 'block' : 'none';
+  if (!showLopField) resetSearchCombo('reassignLop');
+}
+
+/* Popup xem/tải mẫu file quyết định (.docx) — cần chọn Loại quyết định trước để biết tải file nào */
+function tplFileRowHtml(fileName){
+  return `<div class="tpl-file-row">
+    <svg class="tpl-file-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span class="tpl-file-name">${fileName}</span>
+    <button type="button" class="icon-btn tpl-file-dl" title="Tải xuống" onclick="downloadTemplateFile('${fileName}')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </button>
+  </div>`;
+}
+function downloadTemplateFile(fileName){
+  showToast(`Đang tải xuống "${fileName}"…`, 'ok');
+}
+function openCreateDecisionTemplateFiles(){
+  const type = document.getElementById('cd-type').value;
+  if (!type){ showToast('Vui lòng chọn Loại quyết định trước khi tải file mẫu', 'err'); return; }
+  const entry = decisionCatalogByName(type);
+  document.getElementById('cd-tpl-file-list').innerHTML = [entry.fileNameDh, entry.fileNameSdh].filter(Boolean).map(tplFileRowHtml).join('');
+  openModal('modal-cd-template-files');
+}
+
+/* Danh bạ sinh viên (mock) — nguồn tra cứu để thêm từng SV hoặc import vào 1 quyết định mới.
+   Khoá duy nhất thật sự là "id" (không phải mssv) vì 1 MSSV có thể học song song nhiều CTĐT
+   (VD 20120301 và 20120310 dưới đây đều có 2 dòng, 2 CTĐT khác nhau) — chọn nhầm CTĐT nghĩa là
+   gán quyết định cho sai chương trình đào tạo của đúng sinh viên đó.
+   "status" — trạng thái hiện tại của SV, hiển thị ở cột "Trạng thái hiện tại" (Phần 3) khi Loại
+   quyết định đang chọn có làm thay đổi trạng thái (xem TYPE_NEW_STATUS/STUDENT_STATUS_TAG_CLASS). Toàn bộ
+   đang 'danghoc' trừ sd23 (20120088, Hoàng Văn Nam) = 'baoluu' — khớp với quyết định bảo lưu i9 đã
+   Đã duyệt của SV này ở DECISION_INSTANCES; sd24 (20120044, Đặng Thị Quỳnh) giữ 'danghoc' vì quyết
+   định bảo lưu i10 của SV đó đã bị Từ chối.
+   "ngaySinh" — dùng cho cột "Ngày sinh" ở bảng Danh sách SV khi TYPE_INTERNSHIP (xem
+   renderCreateDecisionStudents()); 2 dòng cùng 1 người (sd01/sd02, sd11/sd12) giữ chung 1 ngày sinh. */
+const STUDENT_DIRECTORY = [
+  { id:'sd01', mssv:'20120301', name:'Hoàng Minh Đức', ngaySinh:'14/08/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd02', mssv:'20120301', name:'Hoàng Minh Đức', ngaySinh:'14/08/2003', lop:'QK4501', donViQuanLy:'Khoa Kinh tế', ctdt:'Quản trị kinh doanh (song bằng)', nganh:'Quản trị kinh doanh', status:'danghoc', ctdtCode:'QTKD-SB' },
+  { id:'sd03', mssv:'20120302', name:'Nguyễn Hoàng Nam', ngaySinh:'12/10/2005', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd04', mssv:'20120303', name:'Lý Thị Thu Hương', ngaySinh:'25/05/2002', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd05', mssv:'20120304', name:'Hoàng Thị Bích Ngọc', ngaySinh:'10/12/2003', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd06', mssv:'20120305', name:'Trần Văn Bảo', ngaySinh:'23/07/2004', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd07', mssv:'20120306', name:'Nguyễn Thị Mai Anh', ngaySinh:'08/02/2005', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd08', mssv:'20120307', name:'Phạm Văn Hùng', ngaySinh:'21/09/2002', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd09', mssv:'20120308', name:'Vũ Thị Kim Ngân', ngaySinh:'06/04/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd10', mssv:'20120309', name:'Đặng Văn Thành', ngaySinh:'19/11/2004', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd11', mssv:'20120310', name:'Bùi Thị Ánh Tuyết', ngaySinh:'04/06/2005', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd12', mssv:'20120310', name:'Bùi Thị Ánh Tuyết', ngaySinh:'04/06/2005', lop:'NN4503', donViQuanLy:'Khoa Ngoại ngữ', ctdt:'Ngôn ngữ Anh (song bằng)', nganh:'Ngôn ngữ Anh', status:'danghoc', ctdtCode:'NNA-SB' },
+  { id:'sd13', mssv:'20120311', name:'Lê Văn Quyết', ngaySinh:'02/08/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd14', mssv:'20120312', name:'Hồ Thị Diệu Linh', ngaySinh:'15/03/2004', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd15', mssv:'20120313', name:'Ngô Văn Tiến', ngaySinh:'28/10/2005', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd16', mssv:'20120314', name:'Dương Thị Thanh Hà', ngaySinh:'13/05/2002', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd17', mssv:'20120315', name:'Trịnh Văn Nghĩa', ngaySinh:'26/12/2003', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd18', mssv:'20120316', name:'Mai Thị Hồng Nhung', ngaySinh:'11/07/2004', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd19', mssv:'20120317', name:'Đỗ Văn Khánh', ngaySinh:'24/02/2005', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd20', mssv:'20120318', name:'Lâm Thị Ngọc Anh', ngaySinh:'09/09/2002', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd21', mssv:'20120319', name:'Vương Văn Đạt', ngaySinh:'22/04/2003', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd22', mssv:'20120320', name:'Cao Thị Yến Nhi', ngaySinh:'07/11/2004', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd23', mssv:'20120088', name:'Hoàng Văn Nam', ngaySinh:'20/06/2005', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'baoluu', ctdtCode:'KHMT' },
+  { id:'sd24', mssv:'20120044', name:'Đặng Thị Quỳnh', ngaySinh:'05/01/2002', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd25', mssv:'20120321', name:'Nguyễn Văn Long', ngaySinh:'18/08/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd26', mssv:'20120322', name:'Trần Ngọc Nhi', ngaySinh:'03/03/2004', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd27', mssv:'20120323', name:'Lê Đình Sơn', ngaySinh:'16/10/2005', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd28', mssv:'20120324', name:'Phạm Kim My', ngaySinh:'01/05/2002', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd29', mssv:'20120325', name:'Hoàng Minh Phong', ngaySinh:'14/12/2003', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd30', mssv:'20120326', name:'Huỳnh Thanh Linh', ngaySinh:'27/07/2004', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd31', mssv:'20120327', name:'Phan Anh Hiếu', ngaySinh:'12/02/2005', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd32', mssv:'20120328', name:'Vũ Bích Uyên', ngaySinh:'25/09/2002', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd33', mssv:'20120329', name:'Võ Văn Kiên', ngaySinh:'10/04/2003', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd34', mssv:'20120330', name:'Đặng Ngọc Nga', ngaySinh:'23/11/2004', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd35', mssv:'20120331', name:'Bùi Đình Bảo', ngaySinh:'08/06/2005', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd36', mssv:'20120332', name:'Đỗ Kim Nhi', ngaySinh:'21/01/2002', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd37', mssv:'20120333', name:'Hồ Minh Dũng', ngaySinh:'06/08/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd38', mssv:'20120334', name:'Ngô Thanh My', ngaySinh:'19/03/2004', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd39', mssv:'20120335', name:'Dương Anh Chiến', ngaySinh:'04/10/2005', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd40', mssv:'20120336', name:'Lý Bích Linh', ngaySinh:'17/05/2002', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd41', mssv:'20120337', name:'Nguyễn Văn Khoa', ngaySinh:'02/12/2003', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd42', mssv:'20120338', name:'Trần Ngọc Uyên', ngaySinh:'15/07/2004', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd43', mssv:'20120339', name:'Lê Đình Tuấn', ngaySinh:'28/02/2005', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd44', mssv:'20120340', name:'Phạm Kim Nga', ngaySinh:'13/09/2002', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd45', mssv:'20120341', name:'Hoàng Minh Trung', ngaySinh:'26/04/2003', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd46', mssv:'20120342', name:'Huỳnh Thanh Nhi', ngaySinh:'11/11/2004', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd47', mssv:'20120343', name:'Phan Anh Đạt', ngaySinh:'24/06/2005', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd48', mssv:'20120344', name:'Vũ Bích My', ngaySinh:'09/01/2002', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd49', mssv:'20120345', name:'Võ Văn Vinh', ngaySinh:'22/08/2003', lop:'CT4501', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+  { id:'sd50', mssv:'20120346', name:'Đặng Ngọc Linh', ngaySinh:'07/03/2004', lop:'CT4502', donViQuanLy:'Khoa CNTT', ctdt:'Công nghệ thông tin', nganh:'Công nghệ thông tin', status:'danghoc', ctdtCode:'CNTT' },
+  { id:'sd51', mssv:'20120347', name:'Bùi Đình Nam', ngaySinh:'20/10/2005', lop:'CT4503', donViQuanLy:'Khoa CNTT', ctdt:'Khoa học máy tính', nganh:'Khoa học máy tính', status:'danghoc', ctdtCode:'KHMT' },
+  { id:'sd52', mssv:'20120348', name:'Đỗ Kim Uyên', ngaySinh:'05/05/2002', lop:'CT4504', donViQuanLy:'Khoa CNTT', ctdt:'Hệ thống thông tin', nganh:'Hệ thống thông tin', status:'danghoc', ctdtCode:'HTTT' },
+  { id:'sd53', mssv:'20120349', name:'Hồ Minh Hùng', ngaySinh:'18/12/2003', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
+  { id:'sd54', mssv:'20120350', name:'Ngô Thanh Nga', ngaySinh:'03/07/2004', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
+];
+
+let createDecisionStudents = [];
+const CD_SV_PAGE_SIZE = 10;
+let cdSvPage = 1;
+
+function openCreateDecisionModal(){
+  document.getElementById('cd-type').value = '';
+  document.getElementById('cd-type-search').value = '';
+  document.getElementById('cd-academic-year').value = '';
+  document.getElementById('cd-semester-start').value = '';
+  document.getElementById('cd-semester-end').value = '';
+  document.getElementById('cd-new-status-block').style.display = 'none';
+  document.getElementById('cd-transfer-fields-block').style.display = 'none';
+  resetSearchCombo('khoa');
+  resetSearchCombo('ctdt');
+  resetSearchCombo('lophc');
+  document.getElementById('cd-reassign-class-block').style.display = 'none';
+  document.getElementById('cd-reassign-class-toggle').value = '';
+  document.getElementById('cd-reassign-lop-field').style.display = 'none';
+  resetSearchCombo('reassignLop');
+  document.getElementById('cd-unit-change-block').style.display = 'none';
+  resetSearchCombo('donvidaotao');
+  document.getElementById('cd-reward-form-block').style.display = 'none';
+  document.getElementById('cd-reward-form').value = '';
+  document.getElementById('cd-content').value = '';
+  document.getElementById('cd-file').value = '';
+  document.getElementById('cd-filepick').classList.remove('has-file');
+  document.getElementById('cd-sv-add-search').value = '';
+  document.getElementById('cd-sv-import-file').value = '';
+  document.getElementById('cd-import-filepick').classList.remove('has-file');
+  createDecisionStudents = [];
+  cdSvPage = 1;
+  renderCreateDecisionStudents();
+  openModal('modal-create-decision');
+}
+
+/* == Tài liệu đính kèm (Excel/Word/PDF, tối đa 10 MB) == */
+const CD_FILE_MAX_SIZE = 10 * 1024 * 1024;
+function onCreateDecisionFileChange(input){
+  const picker = document.getElementById('cd-filepick');
+  if (input.files.length){
+    const file = input.files[0];
+    if (file.size > CD_FILE_MAX_SIZE){
+      showToast('File vượt quá dung lượng tối đa 10 MB, vui lòng chọn file khác.', 'err');
+      input.value = '';
+      picker.classList.remove('has-file');
+      return;
+    }
+    document.getElementById('cd-filepick-picked-name').textContent = file.name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+function removeCreateDecisionFile(e){
+  e.stopPropagation();
+  document.getElementById('cd-file').value = '';
+  document.getElementById('cd-filepick').classList.remove('has-file');
+}
+
+/* == Danh sách sinh viên trong quyết định đang tạo ==
+   Khoá theo s.id (không phải s.mssv) xuyên suốt — 1 MSSV có thể xuất hiện 2 lần trong danh sách
+   này nếu là 2 CTĐT khác nhau của cùng 1 sinh viên, đó là hợp lệ, không phải trùng lặp.
+   Mỗi dòng có thêm "lyDo" — Phân loại lý do riêng của sinh viên đó trong quyết định này, chọn
+   theo bộ lý do của Loại quyết định đang chọn (TYPE_REASON_CATEGORIES), có thể để trống.
+   Riêng TYPE_TRAINING_SCORE thay cột "Phân loại lý do" bằng "ĐTB niên khoá" (dtbNienKhoa, nhập tay)
+   + "Xếp loại toàn khoá" (xepLoaiToanKhoa, chọn theo XEP_LOAI_TOAN_KHOA_OPTIONS); riêng TYPE_INTERNSHIP
+   dùng hẳn 1 bộ cột khác (xem CD_SV_THEAD_HTML/CD_SV_COL_COUNT) — vì cột không chỉ khác nội dung mà
+   còn khác cả VỊ TRÍ (Ngày sinh chen giữa Họ và tên/Lớp HC) nên không thể ẩn/hiện cột tĩnh như
+   TYPE_TRAINING_SCORE, phải dựng lại toàn bộ header theo "mode" mỗi lần render. */
+const CD_SV_THEAD_HTML = {
+  default: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:80px">Lớp HC</th>
+    <th style="width:120px">Đơn vị</th>
+    <th style="width:150px">Ngành</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:110px">Trạng thái hiện tại</th>
+    <th style="width:170px">Phân loại lý do</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:50px"></th>`,
+  trainingScore: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:80px">Lớp HC</th>
+    <th style="width:120px">Đơn vị</th>
+    <th style="width:150px">Ngành</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:110px">Trạng thái hiện tại</th>
+    <th style="width:110px">ĐTB niên khoá</th>
+    <th style="width:140px">Xếp loại toàn khoá</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:50px"></th>`,
+  internship: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:100px">Ngày sinh</th>
+    <th style="width:80px">Lớp HC</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:180px">Cơ sở thực tập</th>
+    <th style="width:200px">Địa chỉ</th>
+    <th style="width:170px">Giảng viên hướng dẫn</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:50px"></th>`,
+  topicAssignment: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:80px">Lớp HC</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:200px">Tên đề tài</th>
+    <th style="width:170px">Giảng viên hướng dẫn</th>
+    <th style="width:170px">Đơn vị công tác</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:50px"></th>`,
+  topicChange: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:80px">Lớp HC</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:200px">Đề tài</th>
+    <th style="width:170px">Giảng viên hướng dẫn</th>
+    <th style="width:170px">Đơn vị công tác</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:50px"></th>`,
+  discipline: `
+    <th style="width:48px">STT</th>
+    <th style="width:110px">MSSV</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:190px">Loại kỷ luật</th>
+    <th style="width:110px">Năm học</th>
+    <th style="width:120px">Học kỳ bắt đầu</th>
+    <th style="width:120px">Học kỳ kết thúc</th>
+    <th style="width:170px">Lý do</th>
+    <th style="width:170px">Phân loại lý do</th>
+    <th style="width:50px"></th>`,
+};
+const CD_SV_COL_COUNT = { default:11, trainingScore:12, internship:11, topicAssignment:10, topicChange:10, discipline:10 };
+
+/* 2 cột cuối bảng ("Ghi chú" + nút xoá) giống hệt nhau ở cả 3 mode nên tách riêng để không lặp lại
+   3 lần trong 3 nhánh render bên dưới. */
+function cdSvNoteAndDeleteCellsHtml(s){
+  return `
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập ghi chú…" value="${s.lyDoText || ''}" onchange="setCreateDecisionStudentLyDoText('${s.id}', this.value)"></td>
+      <td><button type="button" class="icon-btn danger" title="Bỏ khỏi danh sách" onclick="removeCreateDecisionStudent('${s.id}')">✕</button></td>`;
+}
+
+function renderCreateDecisionStudents(){
+  const type = document.getElementById('cd-type').value;
+  const reasons = TYPE_REASON_CATEGORIES[type] || [];
+  const mode = type === TYPE_INTERNSHIP ? 'internship' : (type === TYPE_TRAINING_SCORE ? 'trainingScore' : (type === TYPE_TOPIC_ASSIGNMENT ? 'topicAssignment' : (type === TYPE_TOPIC_CHANGE ? 'topicChange' : (type === TYPE_DISCIPLINE ? 'discipline' : 'default'))));
+
+  document.getElementById('cd-sv-thead-row').innerHTML = CD_SV_THEAD_HTML[mode];
+
+  document.getElementById('cd-sv-count').textContent = createDecisionStudents.length + ' SV';
+
+  const totalPages = Math.max(1, Math.ceil(createDecisionStudents.length / CD_SV_PAGE_SIZE));
+  if (cdSvPage > totalPages) cdSvPage = totalPages;
+  const pageStart = (cdSvPage - 1) * CD_SV_PAGE_SIZE;
+  const pageStudents = createDecisionStudents.slice(pageStart, pageStart + CD_SV_PAGE_SIZE);
+
+  document.getElementById('cd-sv-tbody').innerHTML = pageStudents.length ? pageStudents.map((s, i) => {
+    const stt = pageStart + i + 1;
+
+    if (mode === 'internship') return `
+    <tr>
+      <td class="text-muted">${stt}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td>${s.name}</td>
+      <td class="text-muted">${s.ngaySinh || '—'}</td>
+      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập cơ sở thực tập…" value="${s.cstt || ''}" onchange="setCreateDecisionStudentCstt('${s.id}', this.value)"></td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập địa chỉ…" value="${s.diaChiCstt || ''}" onchange="setCreateDecisionStudentDiaChiCstt('${s.id}', this.value)"></td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập GVHD…" value="${s.gvhd || ''}" onchange="setCreateDecisionStudentGvhd('${s.id}', this.value)"></td>
+      ${cdSvNoteAndDeleteCellsHtml(s)}
+    </tr>`;
+
+    if (mode === 'topicAssignment' || mode === 'topicChange') return `
+    <tr>
+      <td class="text-muted">${stt}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td>${s.name}</td>
+      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="${mode === 'topicChange' ? 'Nhập đề tài…' : 'Nhập tên đề tài…'}" value="${s.tenDeTai || ''}" onchange="setCreateDecisionStudentTenDeTai('${s.id}', this.value)"></td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập GVHD…" value="${s.gvhdDeTai || ''}" onchange="setCreateDecisionStudentGvhdDeTai('${s.id}', this.value)"></td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập đơn vị công tác…" value="${s.donViCongTac || ''}" onchange="setCreateDecisionStudentDonViCongTac('${s.id}', this.value)"></td>
+      ${cdSvNoteAndDeleteCellsHtml(s)}
+    </tr>`;
+
+    if (mode === 'trainingScore') return `
+    <tr>
+      <td class="text-muted">${stt}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td>${s.name}</td>
+      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.donViQuanLy || '—'}</td>
+      <td class="text-muted">${s.nganh || '—'}</td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td>${studentStatusTagHtml(s.status)}</td>
+      <td><input class="cd-sv-reason-select" type="text" inputmode="decimal" placeholder="Nhập ĐTB…" value="${s.dtbNienKhoa || ''}" onchange="setCreateDecisionStudentDtb('${s.id}', this.value)"></td>
+      <td>
+        <select class="cd-sv-reason-select" onchange="setCreateDecisionStudentXepLoai('${s.id}', this.value)">
+          <option value="">— Chưa xếp loại —</option>
+          ${XEP_LOAI_TOAN_KHOA_OPTIONS.map(x => `<option value="${x}" ${s.xepLoaiToanKhoa === x ? 'selected' : ''}>${x}</option>`).join('')}
+        </select>
+      </td>
+      ${cdSvNoteAndDeleteCellsHtml(s)}
+    </tr>`;
+
+    if (mode === 'discipline') return `
+    <tr>
+      <td class="text-muted">${stt}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td>
+        <select class="cd-sv-reason-select" onchange="setCreateDecisionStudentDisciplineType('${s.id}', this.value)">
+          <option value="">— Chọn loại kỷ luật —</option>
+          ${DISCIPLINE_TYPE_OPTIONS.map(o => `<option value="${o}" ${s.disciplineType === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="cd-sv-reason-select" onchange="setCreateDecisionStudentDisciplineYear('${s.id}', this.value)">
+          <option value="">— Năm học —</option>
+          ${DISCIPLINE_ACADEMIC_YEAR_OPTIONS.map(y => `<option value="${y}" ${s.disciplineYear === y ? 'selected' : ''}>${y}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="cd-sv-reason-select" onchange="setCreateDecisionStudentDisciplineSemesterStart('${s.id}', this.value)">
+          <option value="">— Chọn học kỳ —</option>
+          ${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterStart === sm ? 'selected' : ''}>${sm}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="cd-sv-reason-select" onchange="setCreateDecisionStudentDisciplineSemesterEnd('${s.id}', this.value)">
+          <option value="">— Không áp dụng —</option>
+          ${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterEnd === sm ? 'selected' : ''}>${sm}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập lý do…" value="${s.disciplineReasonText || ''}" onchange="setCreateDecisionStudentDisciplineReasonText('${s.id}', this.value)"></td>
+      <td>
+        <select class="cd-sv-reason-select" ${reasons.length ? '' : 'disabled'} onchange="setCreateDecisionStudentReason('${s.id}', this.value)">
+          <option value="">${reasons.length ? '— Chưa phân loại —' : '— Chọn loại QĐ trước —'}</option>
+          ${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </td>
+      <td><button type="button" class="icon-btn danger" title="Bỏ khỏi danh sách" onclick="removeCreateDecisionStudent('${s.id}')">✕</button></td>
+    </tr>`;
+
+    return `
+    <tr>
+      <td class="text-muted">${stt}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td>${s.name}</td>
+      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.donViQuanLy || '—'}</td>
+      <td class="text-muted">${s.nganh || '—'}</td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td>${studentStatusTagHtml(s.status)}</td>
+      <td>
+        <select class="cd-sv-reason-select" ${reasons.length ? '' : 'disabled'} onchange="setCreateDecisionStudentReason('${s.id}', this.value)">
+          <option value="">${reasons.length ? '— Chưa phân loại —' : '— Chọn loại QĐ trước —'}</option>
+          ${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </td>
+      ${cdSvNoteAndDeleteCellsHtml(s)}
+    </tr>`;
+  }).join('') : `<tr><td colspan="${CD_SV_COL_COUNT[mode]}"><div class="tbl-empty">Chưa có sinh viên nào trong danh sách</div></td></tr>`;
+
+  renderCreateDecisionStudentsPagination(createDecisionStudents.length, totalPages);
+}
+
+function renderCreateDecisionStudentsPagination(totalItems, totalPages){
+  const el = document.getElementById('cd-sv-pagination');
+  if (totalPages <= 1){ el.innerHTML = ''; return; }
+
+  const from = (cdSvPage - 1) * CD_SV_PAGE_SIZE + 1;
+  const to = Math.min(cdSvPage * CD_SV_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i === cdSvPage ? 'active' : ''}" onclick="goToCdSvPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} sinh viên</span>
+    <button type="button" class="pg-btn" ${cdSvPage <= 1 ? 'disabled' : ''} onclick="goToCdSvPage(${cdSvPage - 1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${cdSvPage >= totalPages ? 'disabled' : ''} onclick="goToCdSvPage(${cdSvPage + 1})">›</button>`;
+}
+
+function goToCdSvPage(p){ cdSvPage = p; renderCreateDecisionStudents(); }
+
+function setCreateDecisionStudentReason(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.lyDo = value;
+}
+
+function setCreateDecisionStudentLyDoText(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.lyDoText = value;
+}
+
+function setCreateDecisionStudentDtb(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.dtbNienKhoa = value;
+}
+
+function setCreateDecisionStudentXepLoai(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.xepLoaiToanKhoa = value;
+}
+
+function setCreateDecisionStudentCstt(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.cstt = value;
+}
+
+function setCreateDecisionStudentDiaChiCstt(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.diaChiCstt = value;
+}
+
+function setCreateDecisionStudentGvhd(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.gvhd = value;
+}
+
+function setCreateDecisionStudentTenDeTai(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.tenDeTai = value;
+}
+
+function setCreateDecisionStudentGvhdDeTai(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.gvhdDeTai = value;
+}
+
+function setCreateDecisionStudentDonViCongTac(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.donViCongTac = value;
+}
+
+function setCreateDecisionStudentDisciplineType(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.disciplineType = value;
+}
+
+function setCreateDecisionStudentDisciplineYear(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.disciplineYear = value;
+}
+
+function setCreateDecisionStudentDisciplineSemesterStart(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.disciplineSemesterStart = value;
+}
+
+function setCreateDecisionStudentDisciplineSemesterEnd(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.disciplineSemesterEnd = value;
+}
+
+function setCreateDecisionStudentDisciplineReasonText(id, value){
+  const s = createDecisionStudents.find(x => x.id === id);
+  if (s) s.disciplineReasonText = value;
+}
+
+function addCreateDecisionStudent(id){
+  if (createDecisionStudents.some(s => s.id === id)){ showToast('Sinh viên (đúng CTĐT này) đã có trong danh sách', 'warn'); return; }
+  const s = STUDENT_DIRECTORY.find(x => x.id === id);
+  if (!s) return;
+  createDecisionStudents.push({ ...s, lyDo:'', lyDoText:'', dtbNienKhoa:'', xepLoaiToanKhoa:'', cstt:'', diaChiCstt:'', gvhd:'', tenDeTai:'', gvhdDeTai:'', donViCongTac:'', disciplineType:'', disciplineYear:'', disciplineSemesterStart:'', disciplineSemesterEnd:'', disciplineReasonText:'' });
+  cdSvPage = Math.ceil(createDecisionStudents.length / CD_SV_PAGE_SIZE);
+  renderCreateDecisionStudents();
+}
+
+function removeCreateDecisionStudent(id){
+  createDecisionStudents = createDecisionStudents.filter(s => s.id !== id);
+  renderCreateDecisionStudents();
+}
+
+/* Combobox tìm + thêm từng sinh viên — gõ tên hoặc MSSV; nếu MSSV đó học nhiều CTĐT thì mỗi CTĐT
+   hiện thành 1 dòng riêng trong gợi ý (kèm tên CTĐT) để Admin chọn đúng chương trình cần áp dụng,
+   không gộp chung thành 1 "sinh viên" mập mờ. */
+function renderCreateDecisionAddMenu(query){
+  const q = (query || '').trim();
+  const menu = document.getElementById('cd-sv-add-menu');
+  const matches = q ? STUDENT_DIRECTORY.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.mssv.toLowerCase().includes(q.toLowerCase())) : STUDENT_DIRECTORY;
+  menu.innerHTML = matches.length ? matches.map(s => `
+    <div class="unit-combo-item" onclick="pickCreateDecisionStudent('${s.id}')">${highlightMatch(s.name, q)} <span class="text-muted">— ${s.mssv} · ${s.ctdt}</span></div>`).join('')
+    : `<div class="unit-combo-empty">Không tìm thấy sinh viên nào khớp "${q}"</div>`;
+}
+function openCreateDecisionAddMenu(){ renderCreateDecisionAddMenu(document.getElementById('cd-sv-add-search').value); document.getElementById('cd-sv-add-menu').classList.add('open'); }
+function closeCreateDecisionAddMenu(){ document.getElementById('cd-sv-add-menu').classList.remove('open'); }
+function pickCreateDecisionStudent(id){
+  addCreateDecisionStudent(id);
+  document.getElementById('cd-sv-add-search').value = '';
+  closeCreateDecisionAddMenu();
+}
+document.getElementById('cd-sv-add-search').addEventListener('focus', openCreateDecisionAddMenu);
+document.getElementById('cd-sv-add-search').addEventListener('input', openCreateDecisionAddMenu);
+document.addEventListener('click', e => {
+  if (!document.getElementById('cd-sv-add-combo').contains(e.target)) closeCreateDecisionAddMenu();
+});
+
+/* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Phân loại lý do, Ghi chú) — giải quyết
+   bài toán 1 quyết định áp dụng cho hàng chục/hàng trăm SV cùng lúc, và Mã CTĐT trong file tự giải
+   quyết luôn ca mập mờ (MSSV học nhiều CTĐT) thay vì phải báo lại rồi chọn tay như khi thêm từng SV.
+   Chỉ báo lại (không chặn các dòng còn lại) khi: thiếu Mã sinh viên, không khớp danh bạ, MSSV có
+   nhiều CTĐT mà bỏ trống Mã CTĐT, hoặc Phân loại lý do không khớp danh mục của Loại quyết định. */
+function openCreateDecisionImportModal(){
+  document.getElementById('cd-sv-import-file').value = '';
+  document.getElementById('cd-import-filepick').classList.remove('has-file');
+  clearImportPreview();
+  openModal('modal-cd-import-students');
+}
+function onCreateImportFileChange(input){
+  const picker = document.getElementById('cd-import-filepick');
+  if (input.files.length){
+    document.getElementById('cd-import-filepick-name').textContent = input.files[0].name;
+    picker.classList.add('has-file');
+    previewImportFile(input.files[0]);
+  } else {
+    picker.classList.remove('has-file');
+    clearImportPreview();
+  }
+}
+function removeCreateImportFile(e){
+  e.stopPropagation();
+  document.getElementById('cd-sv-import-file').value = '';
+  document.getElementById('cd-import-filepick').classList.remove('has-file');
+  clearImportPreview();
+}
+
+/* Tải file mẫu import — file .xlsx thật (dựng bằng SheetJS, không phải mock). Định dạng cột phụ
+   thuộc Loại quyết định đang chọn ở modal Tạo quyết định (đồng bộ với buildImportPreview()):
+   - Mặc định 4 cột: Mã sinh viên, Mã CTĐT, Phân loại lý do, Ghi chú.
+   - TYPE_INTERNSHIP 6 cột riêng: Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
+     dẫn, Ghi chú — không có Phân loại lý do vì loại quyết định này không dùng khái niệm đó.
+   Cả 2 bộ dữ liệu mẫu đều khớp sẵn với STUDENT_DIRECTORY (đã test import ra 10/10 "Hợp lệ"), minh
+   hoạ đủ tình huống: MSSV 1 CTĐT bỏ trống Mã CTĐT, MSSV học song song 2 CTĐT phải ghi rõ Mã CTĐT
+   (20120301 lặp lại 2 dòng), và các cột không bắt buộc vừa để trống vừa điền. */
+function downloadImportTemplateXlsx(){
+  const type = document.getElementById('cd-type').value;
+  const isInternship = type === TYPE_INTERNSHIP;
+
+  const header = isInternship
+    ? ['Mã sinh viên', 'Mã CTĐT', 'Cơ sở thực tập', 'Địa chỉ', 'Giảng viên hướng dẫn', 'Ghi chú']
+    : ['Mã sinh viên', 'Mã CTĐT', 'Phân loại lý do', 'Ghi chú'];
+  const sampleRows = isInternship ? [
+    ['20120302', '', 'Công ty TNHH FPT Software', 'Toà nhà FPT, Q. Cầu Giấy, Hà Nội', 'ThS. Nguyễn Văn A', ''],
+    ['20120303', '', 'Tập đoàn Viettel', 'Số 1 Trần Hữu Dực, Q. Nam Từ Liêm, Hà Nội', 'TS. Trần Thị B', ''],
+    ['20120305', '', 'Công ty CP VNG', '182 Lê Đại Hành, Q.11, TP.HCM', 'ThS. Lê Văn C', 'Thực tập từ xa 2 buổi/tuần'],
+    ['20120306', '', '', '', '', ''],
+    ['20120301', 'CNTT', 'Công ty TNHH Samsung Electronics VN', 'KCN Yên Phong, Bắc Ninh', 'ThS. Phạm Thị D', ''],
+    ['20120301', 'QTKD-SB', '', '', '', ''],
+    ['20120310', 'HTTT', 'Ngân hàng TMCP Ngoại thương VN', '198 Trần Quang Khải, Hà Nội', 'TS. Hoàng Văn E', ''],
+    ['20120088', 'KHMT', '', '', '', ''],
+    ['20120044', 'HTTT', 'Công ty CP MISA', 'Tòa nhà MISA, Q. Từ Liêm, Hà Nội', 'ThS. Đỗ Thị G', ''],
+    ['20120320', '', '', '', '', ''],
+  ] : [
+    ['20120302', '', 'Cảnh báo học vụ lần 1', ''],
+    ['20120303', '', 'Cảnh báo học vụ lần 2', ''],
+    ['20120305', '', '', 'Nghỉ học không phép quá số buổi quy định'],
+    ['20120306', '', '', ''],
+    ['20120301', 'CNTT', '', ''],
+    ['20120301', 'QTKD-SB', 'Vi phạm quy chế thi', 'Sử dụng tài liệu trái phép trong phòng thi'],
+    ['20120310', 'HTTT', '', ''],
+    ['20120088', 'KHMT', '', ''],
+    ['20120044', 'HTTT', '', ''],
+    ['20120320', '', 'Đình chỉ học tập có thời hạn', ''],
+  ];
+  const fileName = isInternship ? 'mau-import-danh-sach-thuc-tap-tot-nghiep.xlsx' : 'mau-import-danh-sach-sinh-vien.xlsx';
+
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...sampleRows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet, 'Danh sách SV');
+  XLSX.writeFile(wb, fileName);
+  showToast(`Đã tải xuống "${fileName}"`, 'ok');
+}
+
+/* Xem trước import — đọc file NGAY khi chọn (chưa thêm thật vào danh sách), phân loại từng dòng
+   thành hợp lệ/có vấn đề để Admin xem lại trước khi bấm Import (commitImportPreview) mới thật sự
+   thêm vào danh sách. Chỉ nhận file .xlsx thật (nhị phân), đọc bằng thư viện SheetJS
+   (_vendor-xlsx.min.js, nhúng local — không gọi CDN để vẫn dùng offline được như các file khác
+   trong dự án). */
+let importPreviewRows = [];
+/* Bộ cột của lần import gần nhất — quyết định header/ô hiển thị ở renderImportPreview() và các
+   trường được ghi lại khi commitImportPreview(). 'internship' khi Loại quyết định = TYPE_INTERNSHIP
+   (đọc Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn thay vì Phân loại lý do), còn lại dùng 'default'. */
+let importPreviewMode = 'default';
+const CD_IMPORT_PREVIEW_PAGE_SIZE = 20;
+let cdImportPreviewPage = 1;
+
+function previewImportFile(file){
+  const type = document.getElementById('cd-type').value;
+  if (!type){
+    showToast('Vui lòng chọn Loại quyết định trước khi import', 'err');
+    document.getElementById('cd-sv-import-file').value = '';
+    document.getElementById('cd-import-filepick').classList.remove('has-file');
+    return;
+  }
+  if (!/\.xlsx$/i.test(file.name)){
+    showToast('Chỉ hỗ trợ file Excel (.xlsx), vui lòng chọn đúng định dạng.', 'err');
+    document.getElementById('cd-sv-import-file').value = '';
+    document.getElementById('cd-import-filepick').classList.remove('has-file');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onerror = () => showToast('Không đọc được file, vui lòng thử lại.', 'err');
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      // Đọc rộng ra 6 cột (đủ cho cả 2 định dạng: mặc định dùng 4 cột đầu, TYPE_INTERNSHIP dùng đủ 6)
+      const rows = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', blankrows:false })
+        .map(r => [r[0], r[1], r[2], r[3], r[4], r[5]].map(v => (v === undefined || v === null) ? '' : String(v).trim()));
+      buildImportPreview(rows, type);
+    } catch (err){
+      showToast('File .xlsx không hợp lệ hoặc bị lỗi, vui lòng kiểm tra lại file.', 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* TYPE_INTERNSHIP đọc file 6 cột (Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
+   dẫn, Ghi chú) — không có Phân loại lý do vì loại quyết định này không dùng khái niệm đó, xem
+   TYPE_INTERNSHIP ở phần khai báo hằng số. Các loại quyết định còn lại giữ nguyên 4 cột như cũ. */
+function buildImportPreview(rows, type){
+  importPreviewMode = type === TYPE_INTERNSHIP ? 'internship' : 'default';
+  const reasons = TYPE_REASON_CATEGORIES[type] || [];
+  rows = rows.filter(r => r.some(c => (c || '').trim() !== ''));
+  // Bỏ dòng tiêu đề nếu dòng đầu là header (VD "Mã sinh viên,Mã CTĐT,Phân loại lý do"), không phải dữ liệu thật
+  if (rows.length && /mã sinh viên|mssv/i.test(rows[0][0] || '')) rows = rows.slice(1);
+
+  importPreviewRows = rows.map(row => {
+    const mssvRaw = (row[0] || '').trim();
+    const ctdtCodeRaw = (row[1] || '').trim();
+    if (!mssvRaw) return { mssv:'—', status:'missingMssv' };
+
+    let matches = STUDENT_DIRECTORY.filter(x => x.mssv.toLowerCase() === mssvRaw.toLowerCase());
+    if (ctdtCodeRaw){
+      matches = matches.filter(x => x.ctdtCode.toLowerCase() === ctdtCodeRaw.toLowerCase());
+      if (!matches.length) return { mssv:mssvRaw, status:'notFound' };
+    } else if (matches.length > 1){
+      return { mssv:mssvRaw, status:'ambiguous' };
+    } else if (!matches.length){
+      return { mssv:mssvRaw, status:'notFound' };
+    }
+
+    const s = matches[0];
+    // SV đã có sẵn trong danh sách (khối 3) — không còn chặn import nữa, để dòng đi tiếp như bình
+    // thường và đánh dấu isUpdate để commitImportPreview() CẬP NHẬT lại thông tin của đúng dòng đó
+    // thay vì thêm trùng, xem comment ở commitImportPreview(). Admin vẫn thấy rõ dòng nào sẽ ghi đè
+    // qua nhãn "Sẽ cập nhật" (không phải lỗi, không tô đỏ, vẫn tính vào Import được).
+    const isUpdate = createDecisionStudents.some(x => x.id === s.id);
+
+    if (importPreviewMode === 'internship'){
+      const cstt = (row[2] || '').trim();
+      const diaChiCstt = (row[3] || '').trim();
+      const gvhd = (row[4] || '').trim();
+      const lyDoText = (row[5] || '').trim();
+      return { mssv:s.mssv, name:s.name, ctdt:s.ctdt, cstt, diaChiCstt, gvhd, lyDoText, student:s, status:'valid', selected:true, isUpdate };
+    }
+
+    const lyDoRaw = (row[2] || '').trim();
+    const lyDoTextRaw = (row[3] || '').trim();
+    let lyDo = '';
+    if (lyDoRaw){
+      const matched = reasons.find(r => r.toLowerCase() === lyDoRaw.toLowerCase());
+      if (matched) lyDo = matched;
+    }
+    return { mssv:s.mssv, name:s.name, ctdt:s.ctdt, lyDo, lyDoText:lyDoTextRaw, student:s, status:'valid', selected:true, isUpdate };
+  });
+
+  cdImportPreviewPage = 1;
+  renderImportPreview();
+}
+
+const IMPORT_STATUS_LABEL = {
+  notFound:'Không khớp danh bạ',
+  ambiguous:'Nhiều CTĐT — cần chọn tay', missingMssv:'Thiếu Mã sinh viên',
+};
+const CD_IMPORT_THEAD_HTML = {
+  default: `
+    <th style="width:32px"><input type="checkbox" id="cd-import-preview-check-all" onchange="toggleAllImportPreviewSelection(this.checked)"></th>
+    <th style="width:120px">Mã SV</th>
+    <th style="width:170px">Họ và tên</th>
+    <th style="width:150px">CTĐT</th>
+    <th style="width:150px">Phân loại lý do</th>
+    <th style="width:170px">Ghi chú</th>
+    <th style="width:170px">Lỗi</th>`,
+  internship: `
+    <th style="width:32px"><input type="checkbox" id="cd-import-preview-check-all" onchange="toggleAllImportPreviewSelection(this.checked)"></th>
+    <th style="width:110px">Mã SV</th>
+    <th style="width:150px">Họ và tên</th>
+    <th style="width:120px">CTĐT</th>
+    <th style="width:160px">Cơ sở thực tập</th>
+    <th style="width:180px">Địa chỉ</th>
+    <th style="width:150px">Giảng viên hướng dẫn</th>
+    <th style="width:150px">Ghi chú</th>
+    <th style="width:150px">Lỗi</th>`,
+};
+function renderImportPreview(){
+  const wrap = document.getElementById('cd-import-preview');
+  if (!importPreviewRows.length){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  document.getElementById('cd-import-preview-thead-row').innerHTML = CD_IMPORT_THEAD_HTML[importPreviewMode];
+
+  const validRows = importPreviewRows.filter(r => r.status === 'valid');
+  const selectedCount = validRows.filter(r => r.selected).length;
+
+  const totalPages = Math.max(1, Math.ceil(importPreviewRows.length / CD_IMPORT_PREVIEW_PAGE_SIZE));
+  if (cdImportPreviewPage > totalPages) cdImportPreviewPage = totalPages;
+  const pageStart = (cdImportPreviewPage - 1) * CD_IMPORT_PREVIEW_PAGE_SIZE;
+  const pageRows = importPreviewRows.slice(pageStart, pageStart + CD_IMPORT_PREVIEW_PAGE_SIZE);
+
+  document.getElementById('cd-import-preview-tbody').innerHTML = pageRows.map((r, i) => {
+    const idx = pageStart + i;
+    // "Sẽ cập nhật" không phải lỗi (không tô đỏ, dòng vẫn chọn được bình thường) — chỉ để Admin biết
+    // dòng này đã có sẵn trong danh sách nên Import sẽ GHI ĐÈ thông tin thay vì thêm dòng mới.
+    const errCellHtml = `<td>${r.status !== 'valid' ? `<span style="color:var(--error)">${IMPORT_STATUS_LABEL[r.status]}</span>` : (r.isUpdate ? `<span style="color:var(--warning)">Sẽ cập nhật</span>` : '')}</td>`;
+
+    if (importPreviewMode === 'internship') return `
+    <tr class="${r.status === 'valid' ? '' : 'cd-import-row-issue'}">
+      <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
+      <td><span class="di-code">${r.mssv}</span></td>
+      <td style="white-space:nowrap">${r.name || '—'}</td>
+      <td class="text-muted">${r.ctdt || '—'}</td>
+      <td class="text-muted">${r.cstt || ''}</td>
+      <td class="text-muted">${r.diaChiCstt || ''}</td>
+      <td class="text-muted">${r.gvhd || ''}</td>
+      <td class="text-muted">${r.lyDoText || ''}</td>
+      ${errCellHtml}
+    </tr>`;
+
+    return `
+    <tr class="${r.status === 'valid' ? '' : 'cd-import-row-issue'}">
+      <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
+      <td><span class="di-code">${r.mssv}</span></td>
+      <td style="white-space:nowrap">${r.name || '—'}</td>
+      <td class="text-muted">${r.ctdt || '—'}</td>
+      <td class="text-muted">${r.lyDo || ''}</td>
+      <td class="text-muted">${r.lyDoText || ''}</td>
+      ${errCellHtml}
+    </tr>`;
+  }).join('');
+
+  const checkAll = document.getElementById('cd-import-preview-check-all');
+  checkAll.checked = validRows.length > 0 && selectedCount === validRows.length;
+
+  renderImportPreviewPagination(importPreviewRows.length, totalPages);
+
+  // File còn dòng lỗi thì chặn Import toàn bộ — không cho nhập một phần (bỏ qua dòng lỗi) để tránh
+  // admin lỡ thiếu sinh viên trong quyết định mà không để ý, phải sửa lại file rồi chọn lại.
+  const hasErrorRows = importPreviewRows.some(r => r.status !== 'valid');
+  document.getElementById('cd-import-error-hint').style.display = hasErrorRows ? 'block' : 'none';
+  document.getElementById('cd-import-commit-btn').disabled = hasErrorRows;
+}
+
+function renderImportPreviewPagination(totalItems, totalPages){
+  const el = document.getElementById('cd-import-preview-pagination');
+  if (totalPages <= 1){ el.innerHTML = ''; return; }
+
+  const from = (cdImportPreviewPage - 1) * CD_IMPORT_PREVIEW_PAGE_SIZE + 1;
+  const to = Math.min(cdImportPreviewPage * CD_IMPORT_PREVIEW_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i === cdImportPreviewPage ? 'active' : ''}" onclick="goToImportPreviewPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} dòng</span>
+    <button type="button" class="pg-btn" ${cdImportPreviewPage <= 1 ? 'disabled' : ''} onclick="goToImportPreviewPage(${cdImportPreviewPage - 1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${cdImportPreviewPage >= totalPages ? 'disabled' : ''} onclick="goToImportPreviewPage(${cdImportPreviewPage + 1})">›</button>`;
+}
+
+function goToImportPreviewPage(p){ cdImportPreviewPage = p; renderImportPreview(); }
+
+function toggleImportPreviewRowSelection(idx, checked){
+  importPreviewRows[idx].selected = checked;
+  renderImportPreview();
+}
+
+function toggleAllImportPreviewSelection(checked){
+  importPreviewRows.forEach(r => { if (r.status === 'valid') r.selected = checked; });
+  renderImportPreview();
+}
+
+function clearImportPreview(){
+  importPreviewRows = [];
+  importPreviewMode = 'default';
+  cdImportPreviewPage = 1;
+  document.getElementById('cd-import-preview').style.display = 'none';
+  document.getElementById('cd-import-error-hint').style.display = 'none';
+  document.getElementById('cd-import-commit-btn').disabled = false;
+}
+
+/* SV đã có sẵn trong danh sách (r.isUpdate, xem buildImportPreview()) — CẬP NHẬT lại đúng dòng đó
+   bằng dữ liệu mới import thay vì thêm trùng; các trường không thuộc phạm vi cột đang import (VD
+   Tên đề tài/GVHD của TYPE_TOPIC_ASSIGNMENT khi đang import theo mode 'default') được giữ nguyên,
+   không bị xoá theo. SV chưa có thì thêm dòng mới như cũ. */
+function applyImportedStudentRow(r, fields){
+  if (r.isUpdate){
+    const existing = createDecisionStudents.find(x => x.id === r.student.id);
+    if (existing) Object.assign(existing, fields);
+    return;
+  }
+  createDecisionStudents.push({ ...r.student, lyDo:'', lyDoText:'', dtbNienKhoa:'', xepLoaiToanKhoa:'', cstt:'', diaChiCstt:'', gvhd:'', tenDeTai:'', gvhdDeTai:'', donViCongTac:'', disciplineType:'', disciplineYear:'', disciplineSemesterStart:'', disciplineSemesterEnd:'', disciplineReasonText:'', ...fields });
+}
+
+/* Import thật — chỉ cho phép khi TOÀN BỘ file đã xem trước không còn dòng lỗi nào (không khớp danh
+   bạ/nhiều CTĐT/thiếu MSSV) — chặn import một phần để tránh admin lỡ thiếu sinh viên trong quyết
+   định mà không để ý; nút Import cũng đã bị disable sẵn ở renderImportPreview(), đây là lớp chặn dự
+   phòng. Trong các dòng hợp lệ, chỉ xử lý dòng đang được tick chọn (mặc định tick sẵn tất cả, Admin
+   có thể bỏ tick dòng nào không muốn thêm/cập nhật). SV đã có sẵn trong danh sách không còn bị chặn
+   như lỗi nữa — sẽ được CẬP NHẬT thông tin thay vì báo lỗi đỏ không cho lưu, xem applyImportedStudentRow(). */
+function commitImportPreview(){
+  if (!importPreviewRows.length){ showToast('Vui lòng chọn file để xem trước trước khi import', 'err'); return; }
+
+  if (importPreviewRows.some(r => r.status !== 'valid')){
+    showToast('File còn dòng lỗi, vui lòng sửa lại file rồi chọn lại trước khi Import', 'err');
+    return;
+  }
+
+  const selectedRows = importPreviewRows.filter(r => r.selected);
+  if (!selectedRows.length){ showToast('Vui lòng chọn ít nhất 1 dòng để import', 'err'); return; }
+
+  if (importPreviewMode === 'internship'){
+    selectedRows.forEach(r => applyImportedStudentRow(r, { cstt: r.cstt || '', diaChiCstt: r.diaChiCstt || '', gvhd: r.gvhd || '', lyDoText: r.lyDoText || '' }));
+  } else {
+    selectedRows.forEach(r => applyImportedStudentRow(r, { lyDo: r.lyDo, lyDoText: r.lyDoText || '' }));
+  }
+  cdSvPage = Math.ceil(createDecisionStudents.length / CD_SV_PAGE_SIZE);
+  renderCreateDecisionStudents();
+
+  const addedCount = selectedRows.filter(r => !r.isUpdate).length;
+  const updatedCount = selectedRows.filter(r => r.isUpdate).length;
+  const skipped = importPreviewRows.length - selectedRows.length;
+  const parts = [];
+  if (addedCount) parts.push(`thêm ${addedCount} sinh viên`);
+  if (updatedCount) parts.push(`cập nhật ${updatedCount} sinh viên`);
+  showToast(`Đã ${parts.join(', ')}${skipped ? `, bỏ qua ${skipped} dòng không được chọn` : ''}.`, skipped ? 'warn' : 'ok');
+
+  document.getElementById('cd-sv-import-file').value = '';
+  document.getElementById('cd-import-filepick').classList.remove('has-file');
+  clearImportPreview();
+  closeModal('modal-cd-import-students');
+}
+
+/* == Ban hành ==
+   Số quyết định, Ngày QĐ có hiệu lực, Ngày QĐ hết hiệu lực KHÔNG nhập ở bước tạo này — với loại
+   có quy trình duyệt, 3 trường này được nhập ở popup "Đồng ý" tại đúng bước cuối (xem
+   approveDecision()/confirmApproveDecision()); với loại ban hành trực tiếp (không quy trình), tạm
+   để trống, sẽ bổ sung sau bằng thao tác khác (ngoài phạm vi hiện tại). */
+function submitCreateDecision(){
+  const type = document.getElementById('cd-type').value;
+  const academicYear = document.getElementById('cd-academic-year').value;
+  const semesterStart = document.getElementById('cd-semester-start').value;
+  const semesterEnd = document.getElementById('cd-semester-end').value;
+  const content = document.getElementById('cd-content').value.trim();
+
+  if (!type){ showToast('Vui lòng chọn Loại quyết định', 'err'); return; }
+  if (!academicYear){ showToast('Vui lòng chọn Năm học', 'err'); return; }
+  if (!semesterStart){ showToast('Vui lòng chọn Học kỳ bắt đầu', 'err'); return; }
+  if (!createDecisionStudents.length){ showToast('Vui lòng thêm ít nhất 1 sinh viên vào danh sách', 'err'); return; }
+
+  let newKhoa = '', newCtdt = '', newLopHc = '';
+  if (type === TYPE_TRANSFER_FIELDS){
+    newKhoa = document.getElementById('cd-new-khoa').value;
+    newCtdt = document.getElementById('cd-new-ctdt').value;
+    newLopHc = document.getElementById('cd-new-lophc').value;
+    // 3 trường không bắt buộc riêng lẻ — chỉ cần chọn ít nhất 1 (VD SV chỉ đổi lớp, không đổi khoá/ngành)
+    if (!newKhoa && !newCtdt && !newLopHc){
+      showToast('Vui lòng chọn ít nhất 1 trong 3: Niên khoá mới, CTĐT mới, Lớp HC mới', 'err');
+      return;
+    }
+  }
+
+  let hasReassignClass = false, reassignLop = '';
+  if (type === TYPE_REASSIGN_CLASS){
+    const reassignClassToggle = document.getElementById('cd-reassign-class-toggle').value;
+    if (!reassignClassToggle){ showToast('Vui lòng chọn Có/Không phân lớp mới cho sinh viên', 'err'); return; }
+    hasReassignClass = reassignClassToggle === 'co';
+    if (hasReassignClass){
+      reassignLop = document.getElementById('cd-reassign-lop').value;
+      if (!reassignLop){ showToast('Vui lòng chọn Lớp HC mới', 'err'); return; }
+    }
+  }
+
+  let newDonViDaoTao = '';
+  if (type === TYPE_UNIT_CHANGE){
+    newDonViDaoTao = document.getElementById('cd-new-donvi').value;
+    if (!newDonViDaoTao){ showToast('Vui lòng chọn Đơn vị đào tạo mới', 'err'); return; }
+  }
+
+  let rewardForm = '';
+  if (type === TYPE_REWARD){
+    rewardForm = document.getElementById('cd-reward-form').value;
+    if (!rewardForm){ showToast('Vui lòng chọn Hình thức khen thưởng', 'err'); return; }
+  }
+
+  const catalogEntry = decisionCatalogByName(type);
+  const processId = catalogEntry.processId;
+  const unit = catalogEntry.unit;
+  const newDecision = {
+    id: 'new-' + Date.now(), code:'', typeName: type, processId, unit, created: todayVnDate(),
+    academicYear, semesterStart, semesterEnd: semesterEnd || null, content,
+    effectiveDate: null, expiryDate: null,
+    students: createDecisionStudents.slice(), overdue: false,
+  };
+  if (type === TYPE_TRANSFER_FIELDS){
+    newDecision.newKhoa = newKhoa;
+    newDecision.newCtdt = newCtdt;
+    newDecision.newLopHc = newLopHc;
+  }
+  if (type === TYPE_REASSIGN_CLASS){
+    newDecision.reassignLop = hasReassignClass ? reassignLop : '';
+  }
+  if (type === TYPE_UNIT_CHANGE){
+    newDecision.newDonViDaoTao = newDonViDaoTao;
+  }
+  if (type === TYPE_REWARD){
+    newDecision.rewardForm = rewardForm;
+  }
+
+  if (processId){
+    newDecision.currentStepIdx = 1;
+    newDecision.status = 'Chờ duyệt';
+    newDecision.history = [
+      { step:'Nộp yêu cầu', status:'Đã nộp', handler: UNIT_LABEL[unit],
+        note: content || `Lập danh sách ${createDecisionStudents.length} sinh viên áp dụng`, time: nowTimeLabel() },
+    ];
+  } else {
+    newDecision.currentStepIdx = null;
+    newDecision.status = 'Đã duyệt';
+    newDecision.history = [];
+  }
+
+  DECISION_INSTANCES.unshift(newDecision);
+  closeModal('modal-create-decision');
+  pickStatusTab('all');
+  showToast('Đã tạo quyết định mới', 'ok');
+}
+
+/* == Tabs trạng thái — lọc nhanh + badge đếm số lượng theo từng trạng thái == */
+let currentStatusTab = 'all';
+
+function pickStatusTab(status){
+  currentStatusTab = status;
+  document.querySelectorAll('.status-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === status);
+  });
+  currentPage = 1;
+  renderGrid();
+}
+
+function updateStatusTabBadges(baseList){
+  document.getElementById('badge-all').textContent = baseList.length;
+  ['Chờ duyệt','Yêu cầu chỉnh sửa','Đã duyệt','Từ chối'].forEach(s => {
+    document.getElementById('badge-' + s).textContent = baseList.filter(d => d.status === s).length;
+  });
+}
+
+/* == Danh sách quyết định == */
+const DI_PAGE_SIZE = 20;
+let currentPage = 1;
+
+function currentSearchTerms(){
+  return document.getElementById('di-search').value
+    .split(/[,;\n\s]+/)
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+function currentTypeFilter(){ return document.getElementById('di-type-select').value; }
+
+/* "dd/MM/yyyy" (dữ liệu mock) -> Date, dùng để so khớp khoảng ngày tạo */
+function parseVnDate(s){
+  if (!s) return null;
+  const [d, m, y] = s.split('/').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/* Cột "Sinh viên" — 1 quyết định áp dụng cho 1 danh sách SV, không phải 1 SV duy nhất. Chỉ 1 SV
+   thì hiện luôn tên + MSSV như trước; từ 2 SV trở lên hiện số lượng, mở chi tiết mới xem hết danh
+   sách (tránh liệt kê hàng chục/hàng trăm tên ngay trong bảng, không đọc được). */
+function studentsCell(d){
+  if (d.students.length === 1){
+    const s = d.students[0];
+    return `<div class="di-sv-name">${s.name}</div><div class="text-muted text-sm">${s.mssv}</div>`;
+  }
+  return `<div class="di-sv-name">${d.students.length} sinh viên</div><div class="text-muted text-sm">${d.students[0].name} và ${d.students.length - 1} SV khác</div>`;
+}
+
+/* Quy trình áp dụng của quyết định — "Không áp dụng quy trình" (in nghiêng, nhạt màu) nếu
+   loại quyết định được cấu hình không qua bước duyệt nào ở mh-admin-06 */
+function processLabel(d){
+  if (!d.processId) return '<span class="text-muted" style="font-style:italic">Không áp dụng quy trình</span>';
+  return DECISION_PROCESSES[d.processId].name;
+}
+
+/* Cột "Bước hiện tại" — Chờ duyệt hiện tên bước + người/vai trò đang cần xử lý; Đã duyệt/Từ chối
+   hiện tên bước cuối cùng (nơi kết thúc) để biết quyết định dừng ở đâu; không có quy trình thì để trống */
+function currentStepCell(d){
+  if (!d.processId) return '<span class="text-muted">—</span>';
+  const proc = DECISION_PROCESSES[d.processId];
+  const step = proc.steps[d.currentStepIdx];
+  if (d.status === 'Chờ duyệt'){
+    const approvers = step.approvers;
+    const fullText = approvers.length ? approvers.join(', ') : (step.role || '');
+    const displayText = approvers.length > 1 ? `${approvers[0]} <span class="approver-more">+${approvers.length - 1}</span>` : fullText;
+    return `<div class="approver-step" title="${step.name}">${step.name}</div><div class="approver-name" title="${fullText}">${displayText}</div>`;
+  }
+  if (d.status === 'Yêu cầu chỉnh sửa'){
+    return `<div class="approver-step" style="color:#531dab">${step.name}</div>`;
+  }
+  if (d.status === 'Từ chối'){
+    return `<div class="approver-step" style="color:var(--error)">${step.name}</div>`;
+  }
+  return `<div class="approver-step text-muted">${step.name}</div>`;
+}
+
+function renderGrid(){
+  const tbody = document.getElementById('di-tbody');
+  const searchTerms = currentSearchTerms();
+  const typeFilter = currentTypeFilter();
+  const createdFromStr = document.getElementById('di-created-from').value;
+  const createdToStr = document.getElementById('di-created-to').value;
+  const createdFrom = createdFromStr ? new Date(createdFromStr + 'T00:00:00') : null;
+  const createdTo = createdToStr ? new Date(createdToStr + 'T23:59:59') : null;
+
+  let baseList = DECISION_INSTANCES.slice();
+  if (typeFilter !== 'all') baseList = baseList.filter(d => d.typeName === typeFilter);
+  if (selectedUnitId) baseList = baseList.filter(d => d.unit === selectedUnitId);
+  if (createdFrom) baseList = baseList.filter(d => parseVnDate(d.created) >= createdFrom);
+  if (createdTo) baseList = baseList.filter(d => parseVnDate(d.created) <= createdTo);
+  if (searchTerms.length) baseList = baseList.filter(d => searchTerms.some(term =>
+    d.code.toLowerCase().includes(term) ||
+    d.students.some(s => s.name.toLowerCase().includes(term) || s.mssv.toLowerCase().includes(term))));
+
+  updateStatusTabBadges(baseList);
+
+  const list = currentStatusTab === 'all' ? baseList : baseList.filter(d => d.status === currentStatusTab);
+
+  const totalPages = Math.max(1, Math.ceil(list.length / DI_PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*DI_PAGE_SIZE, currentPage*DI_PAGE_SIZE);
+
+  if (!pageList.length){
+    tbody.innerHTML = `<tr><td colspan="9"><div class="tbl-empty">Không tìm thấy quyết định nào khớp bộ lọc đang chọn</div></td></tr>`;
+    renderPagination(list.length, totalPages);
+    return;
+  }
+
+  tbody.innerHTML = pageList.map((d, idx) => {
+    const tagClass = STATUS_TAG_CLASS[d.status] || 'tag-default';
+    return `
+    <tr class="di-row ${d.overdue ? 'overdue' : ''}" onclick="openDecisionDetail('${d.id}')">
+      <td class="text-muted">${(currentPage-1)*DI_PAGE_SIZE + idx + 1}</td>
+      <td><span class="di-code">${d.code || 'Chưa cấp số'}</span></td>
+      <td>${studentsCell(d)}</td>
+      <td><span class="di-sv-name">${d.typeName}</span></td>
+      <td>${processLabel(d)}</td>
+      <td>${currentStepCell(d)}</td>
+      <td><span class="tag ${tagClass}">${d.status}</span></td>
+      <td class="text-muted">${d.created}</td>
+      <td onclick="event.stopPropagation()">
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Xem chi tiết" onclick="openDecisionDetail('${d.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('di-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (currentPage-1)*DI_PAGE_SIZE + 1;
+  const to = Math.min(currentPage*DI_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} quyết định</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+
+function goToPage(p){ currentPage = p; renderGrid(); }
+
+document.getElementById('di-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
+document.getElementById('di-type-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+document.getElementById('di-created-from').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+document.getElementById('di-created-to').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+
+renderGrid();
+
+/* ============================================================
+   MODAL CHI TIẾT QUYẾT ĐỊNH — thông tin chung + bảng các bước xử lý,
+   kèm Đồng ý/Từ chối ngay tại bước hiện tại nếu CURRENT_USER đúng là
+   người duyệt của bước đó (giống popup chi tiết đơn ở mh-admin-03).
+   ============================================================ */
+let openingDecisionId = null;
+
+/* Bảng các bước xử lý — mỗi bước lấy lịch sử thật nếu đã xử lý; bước hiện tại (Chờ duyệt) hiện
+   người/vai trò đang cần xử lý; các bước sau khi bị từ chối hiện "Bỏ qua"; các bước chưa tới
+   lượt (quyết định đang Chờ duyệt ở bước trước) vẫn hiện sẵn người phụ trách để biết còn phải qua ai. */
+function renderDecisionSteps(d){
+  const proc = DECISION_PROCESSES[d.processId];
+  document.getElementById('ddet-steps-tbody').innerHTML = proc.steps.map((step, idx) => {
+    // Lấy entry GẦN NHẤT khớp tên bước, không phải entry đầu tiên — 1 bước có thể bị "Yêu cầu
+    // chỉnh sửa" rồi được nộp lại và duyệt sau đó, nên lịch sử có thể có nhiều dòng cùng tên bước.
+    const historyEntry = [...d.history].reverse().find(h => h.step === step.name);
+    const isSubmitStep = idx === 0;
+    const isCurrentStep = idx === d.currentStepIdx;
+
+    let handler = '—', time = '—', label = 'Chưa tới lượt', tagClass = 'tag-default', note = '';
+
+    if (isCurrentStep && d.status === 'Chờ duyệt'){
+      // Bước đang chờ duyệt NGAY BÂY GIỜ — luôn ưu tiên hiển thị trạng thái sống này thay vì 1 lần
+      // "Yêu cầu chỉnh sửa" trước đó của cùng bước (đã được nộp lại), tránh hiện nhầm tag cũ.
+      handler = step.approvers.length ? step.approvers.join(', ') : (step.role || 'Chưa gán người duyệt');
+      label = 'Chờ duyệt';
+      tagClass = 'tag-warning';
+    } else if (historyEntry){
+      handler = historyEntry.handler || '—';
+      time = historyEntry.time || '—';
+      label = historyEntry.status;
+      tagClass = STATUS_TAG_CLASS[historyEntry.status] || 'tag-default';
+      note = historyEntry.note || '';
+    } else if (d.status === 'Từ chối'){
+      handler = step.approvers.length ? step.approvers.join(', ') : '—';
+      label = 'Bỏ qua';
+      tagClass = 'tag-default';
+    } else if (step.approvers.length){
+      handler = step.approvers.join(', ');
+    }
+
+    return `
+    <tr>
+      <td class="text-muted">${idx + 1}</td>
+      <td>${step.name}</td>
+      <td class="text-muted">${isSubmitStep ? '' : (step.dept || '')}</td>
+      <td class="text-muted">${isSubmitStep ? '' : (step.role || '')}</td>
+      <td>${handler}</td>
+      <td class="text-muted">${time === '—' ? '' : time}</td>
+      <td><span class="tag ${tagClass}">${label}</span></td>
+      <td class="text-muted">${note}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* Bảng danh sách sinh viên trong popup chi tiết — lọc theo ô tìm kiếm riêng (tên/MSSV/CTĐT), không
+   phụ thuộc bộ lọc chính của màn danh sách, vì đây là tìm NGAY TRONG danh sách của 1 quyết định.
+   Hiện cả cột CTĐT vì 1 MSSV có thể học nhiều CTĐT — cần phân biệt quyết định áp dụng cho đúng
+   chương trình nào của sinh viên đó, không chỉ riêng MSSV. */
+function renderDecisionStudents(d, query){
+  const q = (query || '').trim().toLowerCase();
+  const list = q ? d.students.filter(s => s.name.toLowerCase().includes(q) || s.mssv.toLowerCase().includes(q) || (s.ctdt || '').toLowerCase().includes(q)) : d.students;
+
+  document.getElementById('ddet-sv-tbody').innerHTML = list.length ? list.map((s, idx) => `
+    <tr>
+      <td class="text-muted">${idx + 1}</td>
+      <td><span class="di-code">${s.mssv}</span></td>
+      <td>${s.name}</td>
+      <td class="text-muted">${s.ctdt || '—'}</td>
+      <td class="text-muted">${s.lyDo || '—'}</td>
+    </tr>`).join('') : `<tr><td colspan="5"><div class="tbl-empty">Không tìm thấy sinh viên nào khớp "${query}"</div></td></tr>`;
+}
+
+function openDecisionDetail(id){
+  openingDecisionId = id;
+  const d = decById(id);
+
+  document.getElementById('ddet-title').textContent = `${d.code || 'Chưa cấp số'} — ${d.typeName}`;
+  document.getElementById('ddet-sv-count').textContent = d.students.length;
+  document.getElementById('ddet-sv-title').textContent = `Danh sách sinh viên áp dụng (${d.students.length})`;
+  document.getElementById('ddet-sv-search').value = '';
+  renderDecisionStudents(d, '');
+  document.getElementById('ddet-type').textContent = d.typeName;
+  document.getElementById('ddet-unit').textContent = UNIT_LABEL[d.unit] || '—';
+  document.getElementById('ddet-process').innerHTML = processLabel(d);
+  document.getElementById('ddet-created').textContent = d.created;
+  document.getElementById('ddet-status').innerHTML = `<span class="tag ${STATUS_TAG_CLASS[d.status] || 'tag-default'}">${d.status}</span>`;
+
+  const hasProcess = !!d.processId;
+  document.getElementById('ddet-steps-block').style.display = hasProcess ? '' : 'none';
+  if (hasProcess) renderDecisionSteps(d);
+
+  const canApprove = hasProcess && d.status === 'Chờ duyệt' &&
+    DECISION_PROCESSES[d.processId].steps[d.currentStepIdx].approvers.includes(CURRENT_USER);
+  document.getElementById('ddet-btn-approve').style.display = canApprove ? '' : 'none';
+  document.getElementById('ddet-btn-reject').style.display = canApprove ? '' : 'none';
+  document.getElementById('ddet-btn-revise').style.display = canApprove ? '' : 'none';
+  // Nộp lại — quyết định đang ở đúng trạng thái "Yêu cầu chỉnh sửa", đơn vị phụ trách xem lại
+  // lý do rồi nộp lại để tiếp tục xét duyệt ở đúng bước đang dừng (không lùi về bước đầu).
+  document.getElementById('ddet-btn-resubmit').style.display = d.status === 'Yêu cầu chỉnh sửa' ? '' : 'none';
+
+  openModal('modal-decision-detail');
+}
+
+document.getElementById('ddet-sv-search').addEventListener('input', () => {
+  renderDecisionStudents(decById(openingDecisionId), document.getElementById('ddet-sv-search').value);
+});
+
+/* Bấm Đồng ý/Từ chối/Yêu cầu chỉnh sửa ở popup chi tiết — không xử lý ngay, mở popup xác nhận để
+   nhập ghi chú/lý do trước khi chốt (bắt buộc khi Từ chối hoặc Yêu cầu chỉnh sửa), giống mh-admin-03.
+   action: 'approve' | 'reject' | 'revise'. */
+let pendingApproveAction = null;
+let pendingApproveIsFinalStep = false;
+
+const APPROVE_ACTION_LABEL = { approve:'Đồng ý quyết định', reject:'Từ chối quyết định', revise:'Yêu cầu chỉnh sửa quyết định' };
+const APPROVE_ACTION_BTN_CLASS = { approve:'btn-primary', reject:'btn-danger', revise:'btn-warning' };
+
+function approveDecision(action){
+  pendingApproveAction = action;
+  const d = decById(openingDecisionId);
+  const proc = DECISION_PROCESSES[d.processId];
+  const step = proc.steps[d.currentStepIdx];
+  const isFinalStep = action === 'approve' && d.currentStepIdx === proc.steps.length - 1;
+  pendingApproveIsFinalStep = isFinalStep;
+
+  document.getElementById('dac-title').textContent = APPROVE_ACTION_LABEL[action];
+  document.getElementById('dac-sub').textContent = `${d.code || 'Chưa cấp số'} — ${d.typeName} (${d.students.length} sinh viên) · Bước: ${step.name}`;
+  document.getElementById('dac-note-label').textContent = action === 'approve' ? 'Ghi chú (không bắt buộc)' : (action === 'revise' ? 'Nội dung cần chỉnh sửa (bắt buộc)' : 'Lý do từ chối (bắt buộc)');
+  document.getElementById('dac-note').value = '';
+  document.getElementById('dac-note').closest('.fi').classList.remove('err');
+  const confirmBtn = document.getElementById('dac-confirm-btn');
+  confirmBtn.textContent = action === 'approve' ? 'Đồng ý' : (action === 'revise' ? 'Yêu cầu chỉnh sửa' : 'Từ chối');
+  confirmBtn.className = 'btn ' + APPROVE_ACTION_BTN_CLASS[action];
+
+  // Đây là bước duyệt cuối cùng (ban hành) — hiện thêm 3 ô nhập Số quyết định/Ngày hiệu lực để
+  // Admin điền ngay lúc chốt, thay vì phải nhập từ lúc tạo (xem submitCreateDecision()).
+  document.getElementById('dac-issue-fields').style.display = isFinalStep ? 'block' : 'none';
+  if (isFinalStep){
+    document.getElementById('dac-code').value = d.code || '';
+    document.getElementById('dac-effective-date').value = '';
+    document.getElementById('dac-expiry-date').value = '';
+    document.getElementById('dac-code').closest('.fi').classList.remove('err');
+    document.getElementById('dac-effective-date').closest('.fi').classList.remove('err');
+  }
+
+  openModal('modal-decision-approve-confirm');
+}
+
+function confirmApproveDecision(){
+  const action = pendingApproveAction;
+  const isFinalStep = pendingApproveIsFinalStep;
+  const noteField = document.getElementById('dac-note');
+  const note = noteField.value.trim();
+
+  if (action !== 'approve' && !note){
+    noteField.closest('.fi').classList.add('err');
+    noteField.focus();
+    return;
+  }
+
+  let code, effectiveDateStr, expiryDateStr;
+  if (isFinalStep){
+    code = document.getElementById('dac-code').value.trim();
+    effectiveDateStr = document.getElementById('dac-effective-date').value;
+    expiryDateStr = document.getElementById('dac-expiry-date').value;
+    const codeField = document.getElementById('dac-code').closest('.fi');
+    const effectiveField = document.getElementById('dac-effective-date').closest('.fi');
+    codeField.classList.remove('err');
+    effectiveField.classList.remove('err');
+    if (!code){ codeField.classList.add('err'); showToast('Vui lòng nhập Số quyết định', 'err'); return; }
+    if (!effectiveDateStr){ effectiveField.classList.add('err'); showToast('Vui lòng chọn Ngày QĐ có hiệu lực', 'err'); return; }
+    if (expiryDateStr && expiryDateStr <= effectiveDateStr){ showToast('Ngày QĐ hết hiệu lực phải sau Ngày QĐ có hiệu lực', 'err'); return; }
+  }
+
+  const d = decById(openingDecisionId);
+  const proc = DECISION_PROCESSES[d.processId];
+  const step = proc.steps[d.currentStepIdx];
+  const timeLabel = nowTimeLabel();
+
+  if (action === 'approve'){
+    d.history.push({ step:step.name, status:'Đã duyệt', handler:CURRENT_USER, note: note || 'Đã duyệt', time:timeLabel });
+    if (d.currentStepIdx < proc.steps.length - 1){
+      d.currentStepIdx += 1;
+      d.status = 'Chờ duyệt';
+    } else {
+      d.status = 'Đã duyệt';
+      d.code = code;
+      d.effectiveDate = toVnDate(effectiveDateStr);
+      d.expiryDate = expiryDateStr ? toVnDate(expiryDateStr) : null;
+    }
+    showToast('Đã duyệt quyết định.', 'ok');
+  } else if (action === 'revise'){
+    // Dừng lại ở ĐÚNG bước hiện tại (không lùi về bước đầu, không đổi currentStepIdx) — chờ đơn
+    // vị phụ trách xem lý do rồi bấm "Nộp lại" (xem resubmitDecision()) để tiếp tục xét duyệt.
+    d.history.push({ step:step.name, status:'Yêu cầu chỉnh sửa', handler:CURRENT_USER, note, time:timeLabel });
+    d.status = 'Yêu cầu chỉnh sửa';
+    showToast('Đã yêu cầu chỉnh sửa quyết định.', 'warn');
+  } else {
+    d.history.push({ step:step.name, status:'Từ chối', handler:CURRENT_USER, note, time:timeLabel });
+    d.status = 'Từ chối';
+    showToast('Đã từ chối quyết định.', 'warn');
+  }
+  d.overdue = false;
+
+  closeModal('modal-decision-approve-confirm');
+  closeModal('modal-decision-detail');
+  renderGrid();
+}
+
+/* Nộp lại quyết định đang ở trạng thái "Yêu cầu chỉnh sửa" — quay về Chờ duyệt ở đúng bước đang
+   dừng (không lùi về bước đầu) để người duyệt xét lại. Mockup này chưa có form sửa nội dung quyết
+   định riêng, thao tác nộp lại chỉ chuyển trạng thái; nội dung cần sửa xem ở lý do trong "Các bước
+   xử lý" phía trên. */
+function resubmitDecision(){
+  const d = decById(openingDecisionId);
+  d.status = 'Chờ duyệt';
+  showToast('Đã nộp lại quyết định để tiếp tục xét duyệt.', 'ok');
+  closeModal('modal-decision-detail');
+  renderGrid();
+}
+</script>
+</body>
+</html>

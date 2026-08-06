@@ -1,0 +1,184 @@
+<title>Sidebar Design System — HTQT Đại học</title>
+<style>
+  :root {
+    --primary:       #FA8C16;
+    --primary-h:     #FFA940;
+    --primary-light: #FFF7E6;
+    --text-1:        #262626;
+    --text-2:        #595959;
+    --text-3:        #8c8c8c;
+    --border:        #d9d9d9;
+    --bg:            #f5f5f5;
+    --sidebar-w:     260px;
+    --panel:         #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --panel:   #1c1c1c;
+    --bg:      #141414;
+    --border:  #333333;
+    --text-1:  #f0f0f0;
+    --text-2:  #b0b0b0;
+    --text-3:  #7a7a7a;
+    --primary-light: rgba(250,140,22,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --panel:   #1c1c1c;
+      --bg:      #141414;
+      --border:  #333333;
+      --text-1:  #f0f0f0;
+      --text-2:  #b0b0b0;
+      --text-3:  #7a7a7a;
+      --primary-light: rgba(250,140,22,.14);
+    }
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:14px;color:var(--text-1);background:var(--bg);line-height:1.5715;
+  }
+
+  .shell{display:flex;min-height:100vh}
+
+  /* ===== Sidebar (the actual reusable component) ===== */
+  .sidebar{
+    width:var(--sidebar-w);flex-shrink:0;background:var(--panel);
+    border-right:1px solid var(--border);
+    position:sticky;top:0;height:100vh;overflow-y:auto;
+    display:flex;flex-direction:column;
+  }
+  .sb-logo{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .sb-logo-icon{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .sb-logo-text{font-weight:700;font-size:14px;color:var(--text-1)}
+  .text-muted{color:var(--text-3)}
+  .text-sm{font-size:12px}
+
+  .sb-user{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .av{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0;background:var(--primary)}
+
+  .sb-menu{list-style:none;margin:8px 0;padding:0}
+  .sb-menu>li>a{display:flex;align-items:center;gap:8px;padding:10px 20px;font-size:13px;color:var(--text-1);cursor:pointer;transition:background .15s;text-decoration:none}
+  .sb-menu>li>a:hover{background:var(--primary-light);color:var(--primary)}
+  .sb-menu>li.active>a{background:var(--primary-light);color:var(--primary);font-weight:600;border-right:2px solid var(--primary)}
+
+  .mn-group{display:flex;align-items:center;gap:8px;padding:10px 20px;font-size:13px;color:var(--text-2);font-weight:500;cursor:default;user-select:none;letter-spacing:.01em}
+
+  .sb-sub{list-style:none;padding:0 0 4px;margin:0;display:none}
+  .sb-sub.open{display:block}
+  .sb-sub li>a{display:flex;align-items:center;padding:7px 20px 7px 36px;font-size:13px;color:var(--text-2);transition:background .15s;border-right:2px solid transparent;text-decoration:none}
+  .sb-sub li>a:hover{background:var(--primary-light);color:var(--primary)}
+  .sb-sub li.active>a{color:var(--primary);font-weight:600;background:var(--primary-light);border-right-color:var(--primary)}
+
+  /* ===== Page chrome around the sidebar (context only) ===== */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .app-header{height:56px;background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;flex-shrink:0}
+  .h-breadcrumb{font-size:13px;color:var(--text-3)}
+  .content{flex:1;padding:28px;overflow-y:auto}
+
+  .doc h1{font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+  .doc .lede{color:var(--text-2);font-size:13.5px;margin:0 0 24px;max-width:60ch}
+
+  .token-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:28px}
+  .token-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px}
+  .token-swatch{width:36px;height:36px;border-radius:6px;flex-shrink:0;border:1px solid var(--border)}
+  .token-name{font-size:12.5px;font-weight:600;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .token-val{font-size:11px;color:var(--text-3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .rule-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .rule-table th,.rule-table td{padding:10px 14px;border-bottom:1px solid var(--border);text-align:left}
+  .rule-table th{background:var(--bg);font-weight:600;color:var(--text-2);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .rule-table tr:last-child td{border-bottom:none}
+  .swatch-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;border:1px solid var(--border)}
+
+  .theme-toggle{position:fixed;top:16px;right:16px;background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--text-2)}
+
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+
+<button class="theme-toggle" onclick="const r=document.documentElement;const cur=r.getAttribute('data-theme');r.setAttribute('data-theme', cur==='dark'?'light':'dark')">☾ / ☀ toggle theme</button>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div>
+        <div class="sb-logo-text">HTQT Đại học</div>
+        <div class="text-muted text-sm">Khoa CNTT</div>
+      </div>
+    </div>
+    <div class="sb-user">
+      <div class="av">KC</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">TS. Trần Văn Bình</div>
+        <div style="font-size:11px;color:var(--text-3)">Giáo vụ Khoa</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">Danh sách đợt</a></li>
+          <li><a href="#">DS Xét điều kiện</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">📋&nbsp; Đề tài &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">DS đề tài</a></li>
+          <li class="active"><a href="#">DS nguyện vọng đề tài</a></li>
+          <li><a href="#">Xét duyệt đề tài GV</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">👨‍🏫&nbsp; Hướng dẫn &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">Quản lý ĐATN &amp; KLTN</a></li>
+          <li><a href="#">QL DS thực tập</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚖️&nbsp; Hội đồng &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="#">Quản lý hội đồng</a></li>
+          <li><a href="#">Chi tiết &amp; Chấm điểm</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <header class="app-header">
+      <span class="h-breadcrumb">Design System &gt; Sidebar Reference</span>
+    </header>
+    <main class="content">
+      <div class="doc">
+        <h1>Sidebar — nền trắng · chữ đen · nhấn cam</h1>
+        <p class="lede">Trích từ <code>mh-kcm-06_studenttopicapproval</code> (vienthao.netlify.app) — dùng làm chuẩn tái sử dụng cho mọi màn hình khác trong hệ thống.</p>
+
+        <div class="token-grid">
+          <div class="token-card"><div class="token-swatch" style="background:#FA8C16"></div><div><div class="token-name">--primary</div><div class="token-val">#FA8C16</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#FFA940"></div><div><div class="token-name">--primary-h</div><div class="token-val">#FFA940</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#FFF7E6;border-color:#FFD591"></div><div><div class="token-name">--primary-light</div><div class="token-val">#FFF7E6</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#262626"></div><div><div class="token-name">--text-1</div><div class="token-val">#262626</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#595959"></div><div><div class="token-name">--text-2</div><div class="token-val">#595959</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#8c8c8c"></div><div><div class="token-name">--text-3</div><div class="token-val">#8c8c8c</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#ffffff"></div><div><div class="token-name">panel bg</div><div class="token-val">#ffffff</div></div></div>
+          <div class="token-card"><div class="token-swatch" style="background:#d9d9d9"></div><div><div class="token-name">--border</div><div class="token-val">#d9d9d9</div></div></div>
+        </div>
+
+        <table class="rule-table">
+          <thead><tr><th>Trạng thái</th><th>Nền</th><th>Chữ</th><th>Viền phải</th></tr></thead>
+          <tbody>
+            <tr><td>Mặc định</td><td><span class="swatch-dot" style="background:#fff"></span>trắng</td><td>#262626 / #595959</td><td>—</td></tr>
+            <tr><td>Hover</td><td><span class="swatch-dot" style="background:#FFF7E6"></span>#FFF7E6</td><td>#FA8C16</td><td>—</td></tr>
+            <tr><td>Active</td><td><span class="swatch-dot" style="background:#FFF7E6"></span>#FFF7E6</td><td>#FA8C16 (600)</td><td>2px solid #FA8C16</td></tr>
+            <tr><td>Logo icon / Avatar</td><td><span class="swatch-dot" style="background:#FA8C16"></span>#FA8C16</td><td>trắng</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>

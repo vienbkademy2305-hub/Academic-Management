@@ -1,15 +1,16 @@
 ---
 name: ba-skills
 description: >
-  Nhóm skills phân tích nghiệp vụ (Business Analysis). Entry point cho
-  toàn bộ pipeline BA từ brainstorm đến distribution. Trigger khi có bất
-  kỳ yêu cầu nào liên quan đến: phân tích tính năng, viết BA, viết specs,
-  PRD, BRD, tài liệu kỹ thuật, đặc tả API, test case, brainstorm ý tưởng,
-  hoặc paste mô tả yêu cầu thô. Load skill con phù hợp dựa trên intent
-  và tech stack. Không xử lý trực tiếp — luôn delegate sang skill con.
+  Bản đồ tổng quan (map/README) của nhóm skills phân tích nghiệp vụ (Business
+  Analysis) — KHÔNG phải entry point thực thi. Mỗi skill con
+  (ba-brainstorm, ba-orchestrator, ba-user-story, ba-db-schema, ba-srs) đã
+  là skill độc lập, gọi trực tiếp qua tên riêng (VD: /ba-brainstorm,
+  /ba-orchestrator). Dùng skill này khi người dùng chưa biết nên bắt đầu
+  từ skill BA nào, cần xem toàn cảnh pipeline BA, hoặc hỏi "có những BA
+  skill nào".
 ---
 
-# BA Skills Group
+# BA Skills Group — Map tổng quan
 
 Pipeline BA chuẩn: Brainstorm → Orchestrator → Analysis/Spec → Verify → Distribution.
 Tích hợp: Confluence, Nexus qua MCP. Task/US/Sub-task quản lý **local trong playground** — không kết nối Jira.
@@ -21,6 +22,8 @@ Phạm vi BA: chỉ phân tích nghiệp vụ và tạo BA Spec, không implemen
 - Dev FE
 - Tester
 
+**Lưu ý cấu trúc:** Các skill con dưới đây là skill **độc lập, ngang hàng** (top-level trong `skills/`), không còn nằm lồng trong `ba-skills/`. Gọi trực tiếp bằng tên riêng (`/ba-brainstorm`, `/ba-orchestrator`, `/ba-user-story`, `/ba-db-schema`, `/ba-srs`) thay vì qua `ba-skills` trước.
+
 ---
 
 ## Skills trong nhóm
@@ -31,6 +34,7 @@ Phạm vi BA: chỉ phân tích nghiệp vụ và tạo BA Spec, không implemen
 | `ba-orchestrator` | Điều phối toàn bộ pipeline | Sau brainstorm confirm, hoặc input đã có scope rõ |
 | `ba-user-story` | Viết User Story + AC theo INVEST/Gherkin | Tạo US, viết AC, refine/split story |
 | `ba-db-schema` | Thiết kế DB Schema (Section 4 BE) | Cần tạo bảng mới — tra context trước, dialog nếu thiếu engine/prefix |
+| `ba-srs` | Viết SRS chi tiết cho 1 tính năng/màn hình — UC, Fields, Validation, Interactions, State Transition | Viết SRS, đặc tả màn hình, spec field chi tiết cho Dev/Tester |
 
 ---
 
@@ -137,10 +141,11 @@ Template map theo domain:
 ## Routing từ group này
 
 ```
-Input chưa rõ scope / ý tưởng thô   → ba-brainstorm/SKILL.md
-Input đã có Feature Brief            → ba-orchestrator/SKILL.md
-Input cần viết User Story / AC       → ba-user-story/SKILL.md
-Input cần thiết kế bảng DB mới       → ba-db-schema/SKILL.md
+Input chưa rõ scope / ý tưởng thô   → ba-brainstorm
+Input đã có Feature Brief            → ba-orchestrator
+Input cần viết User Story / AC       → ba-user-story
+Input cần thiết kế bảng DB mới       → ba-db-schema
+Input cần viết SRS chi tiết màn hình → ba-srs
 
 Mọi luồng phân tích/spec chính thức:
   → đi qua ba-orchestrator

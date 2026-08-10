@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đề xuất Kỷ luật | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: đề xuất kỷ luật (MH-ADMIN-13) ========== */
+
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+
+  .status-tabs{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+  .status-tab{display:flex;align-items:center;gap:8px;padding:10px 18px;font-size:14px;font-family:inherit;color:var(--text-2);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:all .15s;white-space:nowrap}
+  .status-tab:hover{color:var(--primary)}
+  .status-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+  .status-tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:12px;font-weight:600;background:#f0f0f0;color:var(--text-2)}
+  .status-tab-badge.warn{background:#fffbe6;color:var(--warning)}
+  .status-tab-badge.success{background:#f6ffed;color:var(--success)}
+  .status-tab-badge.error{background:#fff2f0;color:var(--error)}
+  .status-tab.active .status-tab-badge{background:var(--primary);color:#fff}
+
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  tr.di-row{cursor:pointer}
+  tr.di-row:hover td{background:var(--primary-light)}
+  .approver-step{font-size:13px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .approver-name{font-size:11.5px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  #view-detail{display:none}
+  .ddet-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+  .ddet-hd-left{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+  .ddet-breadcrumb{font-size:13px;color:var(--text-3);cursor:pointer}
+  .ddet-breadcrumb:hover{color:var(--primary)}
+  .ddet-hd h2{margin:0;font-size:18px}
+  .adet-groups{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .adet-group{background:#fafafa;border:1px solid #f0f0f0;border-radius:8px;padding:14px 16px;height:100%}
+  .adet-field-inline{margin-bottom:12px}
+  .adet-field-inline:last-child{margin-bottom:0}
+  .adet-field-inline label{display:block;font-size:11.5px;color:var(--text-3);margin-bottom:2px}
+  .adet-field-inline .adet-field-val{font-size:13.5px;color:var(--text-1)}
+  @media (max-width:900px){.adet-groups{grid-template-columns:1fr}}
+  .ddet-action-bar{position:sticky;bottom:0;left:0;right:0;display:flex;justify-content:flex-end;gap:10px;padding:14px 0;margin-top:24px;background:var(--bg);border-top:1px solid var(--border)}
+
+  .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
+  .cd-sv-reason-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-1);background:#fff;font-family:inherit}
+  .drl-hint{font-size:12px;color:var(--text-3);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li>
+          <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
+          <li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li class="active"><a href="#">Đề xuất Kỷ luật</a></li>
+          <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Quản lý Kỷ luật / <b style="color:var(--text-1)">Đề xuất Kỷ luật</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH ĐỀ XUẤT KỶ LUẬT (MH-ADMIN-13, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Đề xuất Kỷ luật</h2>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateProposal()">＋ Tạo đề xuất</button>
+        </div>
+
+        <div class="filter-bar">
+          <input class="fc" id="pr-search" type="text" placeholder="🔍 Tìm theo tên đề xuất, SV…" autocomplete="off" style="width:280px">
+          <select class="fc" id="pr-type-select" style="width:220px">
+            <option value="all">Tất cả hình thức</option>
+          </select>
+          <div class="unit-combo" id="pr-unit-combo" style="width:220px">
+            <input class="fc" id="pr-unit-search" type="text" placeholder="🔍 Đơn vị đề xuất…" autocomplete="off" style="width:220px">
+            <div class="unit-combo-menu" id="pr-unit-combo-menu"></div>
+          </div>
+        </div>
+
+        <div class="status-tabs" id="status-tabs">
+          <button type="button" class="status-tab active" data-status="all" onclick="pickStatusTab('all')">
+            Tất cả <span class="status-tab-badge" id="badge-all">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Nháp" onclick="pickStatusTab('Nháp')">
+            Nháp <span class="status-tab-badge" id="badge-Nháp">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Chờ duyệt" onclick="pickStatusTab('Chờ duyệt')">
+            Chờ duyệt <span class="status-tab-badge warn" id="badge-Chờ duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Đã duyệt" onclick="pickStatusTab('Đã duyệt')">
+            Đã duyệt <span class="status-tab-badge success" id="badge-Đã duyệt">0</span>
+          </button>
+          <button type="button" class="status-tab" data-status="Từ chối" onclick="pickStatusTab('Từ chối')">
+            Từ chối <span class="status-tab-badge error" id="badge-Từ chối">0</span>
+          </button>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:110px">Mã</th>
+                <th>Tên đề xuất</th>
+                <th style="width:160px">Hình thức</th>
+                <th style="width:90px">Số SV</th>
+                <th style="width:170px">Bước hiện tại</th>
+                <th style="width:110px">Trạng thái</th>
+                <th style="width:100px">Ngày tạo</th>
+                <th style="width:70px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="pr-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pr-pagination"><!-- rendered by JS --></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — CHI TIẾT / TẠO MỚI ĐỀ XUẤT (MH-ADMIN-13, view: detail)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-detail">
+
+        <div class="ddet-hd">
+          <div class="ddet-hd-left">
+            <div class="ddet-breadcrumb" onclick="closeDetail()">← Quay lại</div>
+            <h2 id="ddet-title">Chi tiết đề xuất</h2>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-default" id="ddet-btn-history" onclick="openHistory()">🕐 Lịch sử</button>
+          </div>
+        </div>
+
+        <div class="sec-block">
+          <div class="sec-title"><span class="sec-badge">1</span> Thông tin Đề xuất</div>
+
+          <div class="adet-groups" id="ddet-view-fields">
+            <div class="adet-group">
+              <div class="adet-field-inline"><label>Tên đề xuất</label><div class="adet-field-val" id="ddet-name"></div></div>
+              <div class="adet-field-inline"><label>Hình thức kỷ luật</label><div class="adet-field-val" id="ddet-type"></div></div>
+              <div class="adet-field-inline"><label>Đơn vị đề xuất</label><div class="adet-field-val" id="ddet-unit"></div></div>
+              <div class="adet-field-inline"><label>Quy trình duyệt</label><div class="adet-field-val" id="ddet-process"></div></div>
+              <div class="adet-field-inline"><label>Người tạo</label><div class="adet-field-val" id="ddet-created-by"></div></div>
+            </div>
+            <div class="adet-group">
+              <div class="adet-field-inline"><label>Mô tả vi phạm</label><div class="adet-field-val" id="ddet-reason">—</div></div>
+              <div class="adet-field-inline"><label>Ghi chú</label><div class="adet-field-val" id="ddet-note">—</div></div>
+            </div>
+          </div>
+
+          <div id="ddet-edit-fields" style="display:none">
+            <div class="f-row col-2">
+              <div class="fi">
+                <label>Tên đề xuất<span class="req">*</span></label>
+                <input class="fc" id="cd-name" placeholder="VD: Xử lý kỷ luật SV vi phạm quy chế thi HK2 2025-2026">
+              </div>
+              <div class="fi">
+                <label>Hình thức kỷ luật<span class="req">*</span></label>
+                <select class="fc" id="cd-type" onchange="onCdTypeChange()"></select>
+              </div>
+            </div>
+            <div class="fi">
+              <label>Quy trình duyệt<span class="req">*</span></label>
+              <select class="fc" id="cd-process"></select>
+              <div class="drl-hint">Danh sách quy trình đang Active đã cấu hình ở Quản lý Quy trình (nhóm Kỷ luật). Hội đồng Kỷ luật họp xét ngoài hệ thống — các bước dưới đây chỉ ghi nhận kết quả duyệt.</div>
+            </div>
+            <div class="fi">
+              <label>Mô tả vi phạm</label>
+              <textarea class="fc" id="cd-reason" rows="2" placeholder="Mô tả ngắn gọn hành vi vi phạm dẫn tới đề xuất kỷ luật…"></textarea>
+            </div>
+            <div class="fi" style="margin-bottom:0">
+              <label>Ghi chú</label>
+              <textarea class="fc" id="cd-note" rows="2" placeholder="Ghi chú thêm (không bắt buộc)…"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-block" style="margin-bottom:0">
+          <div class="sec-title"><span class="sec-badge">2</span> Danh sách sinh viên <span class="tag tag-default" id="cd-sv-count">0</span></div>
+
+          <div id="ddet-sv-view">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th><th>Phân loại lý do</th></tr></thead>
+                <tbody id="ddet-sv-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="ddet-sv-edit" style="display:none">
+            <div class="cd-sv-toolbar">
+              <div class="unit-combo" id="cd-sv-add-combo" style="flex:1">
+                <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV để thêm…" autocomplete="off">
+                <div class="unit-combo-menu" id="cd-sv-add-menu"></div>
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th><th style="width:220px">Phân loại lý do</th><th style="width:50px"></th></tr></thead>
+                <tbody id="cd-sv-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="ddet-action-bar">
+          <button class="btn btn-default" id="ddet-btn-edit" style="display:none" onclick="openEditProposal()">Chỉnh sửa</button>
+          <button class="btn btn-primary" id="ddet-btn-submit-draft" style="display:none" onclick="submitDraft()">Nộp duyệt</button>
+          <button class="btn btn-danger" id="ddet-btn-reject" style="display:none" onclick="approveStep('reject')">Từ chối</button>
+          <button class="btn btn-primary" id="ddet-btn-approve" style="display:none" onclick="approveStep('approve')">Đồng ý</button>
+
+          <button class="btn btn-default" id="ddet-edit-btn-cancel" style="display:none" onclick="cancelEdit()">Huỷ</button>
+          <button class="btn btn-default" id="cd-btn-save-draft" style="display:none" onclick="submitCreate(true)">Lưu nháp</button>
+          <button class="btn btn-primary" id="cd-btn-submit" style="display:none" onclick="submitCreate(false)">Nộp duyệt</button>
+        </div>
+      </div>
+
+      <!-- ═══ MODAL: Lịch sử xử lý đề xuất ═══ -->
+      <div class="overlay hidden" id="modal-history">
+        <div class="modal-box w960">
+          <div class="modal-hd">
+            <h3 class="modal-title">Lịch sử xử lý đề xuất</h3>
+            <button class="modal-close" data-close="modal-history">✕</button>
+          </div>
+          <div class="modal-bd">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th style="width:40px">STT</th>
+                    <th>Bước</th>
+                    <th>Đơn vị duyệt</th>
+                    <th>Người xử lý</th>
+                    <th>Thời gian</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody id="ddet-steps-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-ft">
+            <button class="btn btn-default" data-close="modal-history">Đóng</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Xác nhận Đồng ý/Từ chối ═══ -->
+<div class="overlay hidden" id="modal-approve-confirm">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="ac-title">Đồng ý đề xuất</h3>
+      </div>
+      <button class="modal-close" data-close="modal-approve-confirm">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi" style="margin-bottom:0">
+        <label id="ac-note-label">Ghi chú (không bắt buộc)</label>
+        <textarea class="fc" id="ac-note" rows="3" placeholder="Nhập ghi chú/lý do…"></textarea>
+        <div class="fe" id="ac-note-err">Vui lòng nhập lý do từ chối để đơn vị liên quan biết nguyên nhân.</div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-approve-confirm">Huỷ</button>
+      <button class="btn btn-primary" id="ac-confirm-btn" onclick="confirmApprove()">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — hình thức kỷ luật (đồng bộ rút gọn với mh-admin-12)
+   ============================================================ */
+const DISCIPLINE_TYPES = [
+  { id:'t1', code:'KL01', name:'Khiển trách', reasons:['Đi trễ giờ thi', 'Vi phạm nội quy phòng thi', 'Nghỉ học không phép quá số buổi quy định'], drlPoint:10 },
+  { id:'t2', code:'KL02', name:'Cảnh cáo', reasons:['Gian lận trong kiểm tra', 'Gây mất trật tự trong giờ học', 'Vi phạm quy định về trang phục, tác phong'], drlPoint:20 },
+  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', reasons:['Gian lận thi cử có tổ chức', 'Đánh nhau, gây rối trật tự công cộng'], drlPoint:30 },
+  { id:'t4', code:'KL04', name:'Buộc thôi học', reasons:['Vi phạm pháp luật nghiêm trọng', 'Tái phạm nhiều lần sau khi đã bị kỷ luật'], drlPoint:40 },
+];
+
+const UNITS = [
+  { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
+  { value:'u-daotao', label:'Ban Đào tạo' },
+  { value:'u-khaothi', label:'Phòng Khảo thí và Đảm bảo chất lượng' },
+  { value:'u-thanhtra', label:'Ban Thanh tra Pháp chế' },
+  { value:'u-cntt', label:'Khoa CNTT' },
+];
+const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+
+const CURRENT_USER = 'Nguyễn Văn Admin';
+
+/* Tra cứu email hiển thị kèm tên ở trường "Người tạo" (dạng "Tên - email") — dùng chung theo tên
+   người xử lý đã có sẵn trong history của từng đề xuất, không cần thêm field mới. */
+const USER_EMAIL = {
+  'Nguyễn Văn Admin': 'admin@khoacntt.edu.vn',
+  'PGS.TS. Lê Văn Hùng': 'lvhung@khoacntt.edu.vn',
+  'TS. Đỗ Văn Long': 'dvlong@khoacntt.edu.vn',
+};
+function userDisplay(name){ return name ? `${name}${USER_EMAIL[name] ? ' - ' + USER_EMAIL[name] : ''}` : '—'; }
+
+/* Quy trình duyệt đề xuất kỷ luật — 3 bước cố định */
+/* ============================================================
+   Quy trình duyệt — LẤY THEO quy trình động đã cấu hình ở mh-admin-01
+   (Quản lý Quy trình), lọc func:'kyluat'. Người dùng chọn 1 quy trình
+   đang active khi tạo đề xuất. Hội đồng Kỷ luật họp xét diễn ra
+   NGOÀI hệ thống — hệ thống chỉ ghi nhận kết quả qua các bước duyệt
+   đã cấu hình. Bản sao rút gọn steps[] từ PROCESSES ở mh-admin-01
+   (mỗi file HTML độc lập, không import module) — approvers/submitters
+   giữ nguyên format {type:'role'|'dept'|'person', label}. p6 đồng bộ
+   đúng theo WORKFLOW_DEMO_STEPS (dữ liệu chi tiết duy nhất trong hệ
+   thống); p7 dùng defaultSteps placeholder như ở mh-admin-01. */
+const PROCESSES = [
+  { id:'p6', name:'Quy trình xét kỷ luật sinh viên', status:'active', steps:[
+    { id:'s0', type:'submit', title:'Cố vấn học tập / GVCN nộp báo cáo vi phạm', submitters:[{type:'role', label:'Cố vấn học tập'}] },
+    { id:'s1', type:'approval', title:'Trưởng Bộ môn xác nhận', approvers:[{type:'role', label:'Trưởng đơn vị'}] },
+    { id:'s2', type:'approval', title:'Hội đồng Kỷ luật Khoa họp xét', approvers:[{type:'dept', label:'Phòng CTSV'}, {type:'role', label:'Trưởng đơn vị'}] },
+    { id:'s3', type:'approval', title:'Ban Giám hiệu ký quyết định', approvers:[{type:'role', label:'Phó trưởng đơn vị'}] },
+  ] },
+  { id:'p7', name:'Quy trình xử lý vi phạm thi cử', status:'inactive', steps:[
+    { id:'s0', type:'submit', title:'Nộp đề xuất', submitters:[{type:'role', label:'Chuyên viên đơn vị'}] },
+    { id:'s1', type:'approval', title:'Bước duyệt 1', approvers:[{type:'role', label:'Trưởng đơn vị'}] },
+    { id:'s2', type:'approval', title:'Bước duyệt 2', approvers:[{type:'role', label:'Trưởng đơn vị'}] },
+    { id:'s3', type:'approval', title:'Ban hành quyết định', approvers:[{type:'dept', label:'Ban Công tác Sinh viên'}] },
+  ] },
+];
+function processById(id){ return PROCESSES.find(p => p.id === id); }
+function approverLabel(a){ return a.label; }
+function stepApproverLabels(step){ return (step.approvers || step.submitters || []).map(approverLabel); }
+
+const STUDENT_DIRECTORY = [
+  { mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin' },
+  { mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính' },
+  { mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin' },
+  { mssv:'20120230', name:'Trịnh Văn Sơn', ctdt:'Công nghệ thông tin' },
+  { mssv:'20120231', name:'Mai Văn Cường', ctdt:'Kỹ thuật phần mềm' },
+];
+
+/* ============================================================
+   DATA — đề xuất kỷ luật (mock)
+   ============================================================ */
+let PROPOSALS = [
+  { id:'d1', code:'DXKL-000001', name:'Xử lý kỷ luật SV gian lận thi cử HK2 2025-2026', typeId:'t2', unit:'u-khaothi', processId:'p6',
+    reason:'02 sinh viên sử dụng tài liệu trái phép trong phòng thi', note:'',
+    currentStepIdx:3, status:'Đã duyệt', created:'10/07/2026',
+    students:[
+      { mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', reasonIdx:0 },
+      { mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', reasonIdx:0 },
+    ],
+    history:[
+      { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 10/07/2026' },
+      { step:'Khoa/Đơn vị duyệt', status:'Đã duyệt', handler:'PGS.TS. Lê Văn Hùng', note:'', time:'10:00 11/07/2026' },
+      { step:'Ban Thanh tra Pháp chế thẩm định', status:'Đã duyệt', handler:'TS. Đỗ Văn Long', note:'Đúng quy trình xử lý vi phạm', time:'09:00 12/07/2026' },
+      { step:'Phòng CTSV duyệt & Ban hành', status:'Đã duyệt', handler:'Nguyễn Văn Admin', note:'Đã ban hành', time:'14:00 13/07/2026' },
+    ] },
+  { id:'d2', code:'DXKL-000002', name:'Xử lý kỷ luật SV vi phạm nội quy ký túc xá', typeId:'t1', unit:'u-ctsv', processId:'p6',
+    reason:'Sinh viên gây mất trật tự tại khu nội trú', note:'',
+    currentStepIdx:1, status:'Chờ duyệt', created:'24/07/2026',
+    students:[ { mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin', reasonIdx:1 } ],
+    history:[
+      { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 24/07/2026' },
+    ] },
+  { id:'d3', code:'', name:'Xử lý kỷ luật SV nghỉ học không phép', typeId:'t1', unit:'u-daotao', processId:'p6',
+    reason:'', note:'', currentStepIdx:0, status:'Nháp', created:'27/07/2026',
+    students:[ { mssv:'20120230', name:'Trịnh Văn Sơn', ctdt:'Công nghệ thông tin', reasonIdx:2 } ],
+    history:[] },
+  { id:'d4', code:'DXKL-000004', name:'Xử lý kỷ luật SV đánh nhau trong khuôn viên trường', typeId:'t3', unit:'u-thanhtra', processId:'p6',
+    reason:'Xô xát gây rối trật tự trong khuôn viên trường', note:'', currentStepIdx:1, status:'Từ chối', created:'15/07/2026',
+    students:[ { mssv:'20120231', name:'Mai Văn Cường', ctdt:'Kỹ thuật phần mềm', reasonIdx:1 } ],
+    history:[
+      { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 15/07/2026' },
+      { step:'Khoa/Đơn vị duyệt', status:'Từ chối', handler:'PGS.TS. Lê Văn Hùng', note:'Cần bổ sung biên bản làm việc với các bên liên quan', time:'09:00 16/07/2026' },
+    ] },
+];
+
+let editingProposalId = null;
+let ddetMode = 'view';
+let cdStudents = [];
+let pendingApproveAction = null;
+
+/* == Dropdown thông báo == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'⚠️', title:'Đề xuất "Xử lý kỷ luật SV vi phạm nội quy ký túc xá" đang chờ duyệt', time:'2 giờ trước' },
+  { id:'n2', unread:false, ico:'✅', title:'Đề xuất "Xử lý kỷ luật SV gian lận thi cử" đã được ban hành', time:'Hôm qua' },
+];
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div><div class="notif-item-title">${n.title}</div><div class="notif-item-time">${n.time}</div></div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const c = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = c ? '' : 'none';
+  document.getElementById('notif-badge').textContent = c;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){ const n = NOTIFICATIONS.find(x => x.id === id); if (n) n.unread = false; renderNotifMenu(); }
+document.addEventListener('click', e => { if (!document.getElementById('notif-wrap').contains(e.target)) document.getElementById('notif-menu').classList.remove('open'); });
+updateNotifBadge();
+
+function setupUnitCombo(inputId, menuId, onPick){
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(menuId);
+  let selected = '';
+  function render(q){
+    const query = (q||'').toLowerCase();
+    const items = UNITS.filter(u => u.label.toLowerCase().includes(query));
+    menu.innerHTML = items.map(u => `<div class="unit-combo-item" data-v="${u.value}">${u.label}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
+    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      selected = el.dataset.v;
+      input.value = el.textContent;
+      menu.classList.remove('open');
+      onPick(selected);
+    }));
+  }
+  input.addEventListener('focus', () => { render(input.value === UNIT_LABEL[selected] ? '' : input.value); menu.classList.add('open'); });
+  input.addEventListener('input', () => { if (input.value === '') { selected=''; onPick(''); } render(input.value); menu.classList.add('open'); });
+  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+}
+
+const PAGE_SIZE = 20;
+let currentPage = 1;
+let currentStatus = 'all';
+let filterUnit = '';
+
+function populateTypeFilter(){
+  const sel = document.getElementById('pr-type-select');
+  DISCIPLINE_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
+}
+
+function pickStatusTab(status){
+  currentStatus = status;
+  document.querySelectorAll('.status-tab').forEach(b => b.classList.toggle('active', b.dataset.status === status));
+  currentPage = 1;
+  renderGrid();
+}
+
+function typeById(id){ return DISCIPLINE_TYPES.find(t => t.id === id); }
+function proposalById(id){ return PROPOSALS.find(p => p.id === id); }
+
+function renderGrid(){
+  const tbody = document.getElementById('pr-tbody');
+  const q = document.getElementById('pr-search').value.trim().toLowerCase();
+  const typeFilter = document.getElementById('pr-type-select').value;
+
+  let list = PROPOSALS.slice();
+  if (currentStatus !== 'all') list = list.filter(p => p.status === currentStatus);
+  if (typeFilter !== 'all') list = list.filter(p => p.typeId === typeFilter);
+  if (filterUnit) list = list.filter(p => p.unit === filterUnit);
+  if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.students.some(s => s.name.toLowerCase().includes(q) || s.mssv.includes(q)));
+
+  ['all','Nháp','Chờ duyệt','Đã duyệt','Từ chối'].forEach(s => {
+    const n = s === 'all' ? PROPOSALS.length : PROPOSALS.filter(p => p.status === s).length;
+    document.getElementById('badge-'+s).textContent = n;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  const statusClass = { 'Nháp':'tag-default', 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Từ chối':'tag-error' };
+
+  tbody.innerHTML = pageList.map((p, idx) => {
+    const proc = processById(p.processId);
+    const step = (proc && p.status !== 'Nháp' && p.status !== 'Đã duyệt' && p.status !== 'Từ chối') ? proc.steps[p.currentStepIdx] : null;
+    return `
+    <tr class="di-row" onclick="openDetail('${p.id}')">
+      <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td><span class="di-code">${p.code || '—'}</span></td>
+      <td>${p.name}</td>
+      <td>${typeById(p.typeId).name}</td>
+      <td>${p.students.length}</td>
+      <td>${step ? `<div class="approver-step">${step.title}</div><div class="approver-name">${stepApproverLabels(step).join(', ') || '—'}</div>` : '—'}</td>
+      <td><span class="tag ${statusClass[p.status]}">${p.status}</span></td>
+      <td class="text-muted">${p.created}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="icon-btn" title="Xem" onclick="openDetail('${p.id}')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có đề xuất nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('pr-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+  const from = (currentPage-1)*PAGE_SIZE + 1;
+  const to = Math.min(currentPage*PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++) btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  el.innerHTML = `<span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} đề xuất</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+function goToPage(p){ currentPage = p; renderGrid(); }
+
+document.getElementById('pr-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
+document.getElementById('pr-type-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+setupUnitCombo('pr-unit-search', 'pr-unit-combo-menu', v => { filterUnit = v; currentPage = 1; renderGrid(); });
+
+/* == Chuyển view list <-> detail == */
+function openDetail(id){
+  editingProposalId = id;
+  ddetMode = 'view';
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-detail').style.display = '';
+  renderDetail();
+}
+function closeDetail(){
+  document.getElementById('view-detail').style.display = 'none';
+  document.getElementById('view-list').style.display = '';
+  editingProposalId = null;
+  renderGrid();
+}
+
+function renderDetail(){
+  const p = proposalById(editingProposalId);
+  applyMode('view');
+  const t = typeById(p.typeId);
+
+  document.getElementById('ddet-title').textContent = p.name;
+  document.getElementById('ddet-name').textContent = p.name;
+  document.getElementById('ddet-type').textContent = t.name;
+  document.getElementById('ddet-unit').textContent = UNIT_LABEL[p.unit] || '—';
+  document.getElementById('ddet-process').textContent = processById(p.processId) ? processById(p.processId).name : '—';
+  const creator = (p.history && p.history[0]) ? p.history[0].handler : CURRENT_USER;
+  document.getElementById('ddet-created-by').textContent = userDisplay(creator);
+  document.getElementById('ddet-reason').textContent = p.reason || '—';
+  document.getElementById('ddet-note').textContent = p.note || '—';
+
+  document.getElementById('ddet-sv-tbody').innerHTML = p.students.map((s, idx) => `
+    <tr><td class="text-muted">${idx+1}</td><td>${s.mssv}</td><td>${s.name}</td><td>${s.ctdt}</td><td>${t.reasons[s.reasonIdx] || '—'}</td></tr>
+  `).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có sinh viên nào</div></td></tr>`;
+  document.getElementById('cd-sv-count').textContent = p.students.length + ' SV';
+
+  const proc = processById(p.processId);
+  const canEdit = p.status === 'Nháp';
+  const canApprove = p.status === 'Chờ duyệt' && proc && proc.steps[p.currentStepIdx] && proc.steps[p.currentStepIdx].type === 'approval';
+
+  toggleBtn('ddet-btn-edit', canEdit);
+  toggleBtn('ddet-btn-submit-draft', canEdit);
+  toggleBtn('ddet-btn-approve', canApprove);
+  toggleBtn('ddet-btn-reject', canApprove);
+}
+
+function toggleBtn(id, show){ document.getElementById(id).style.display = show ? '' : 'none'; }
+
+function applyMode(mode){
+  ddetMode = mode;
+  document.getElementById('ddet-view-fields').style.display = mode === 'view' ? '' : 'none';
+  document.getElementById('ddet-edit-fields').style.display = mode === 'view' ? 'none' : '';
+  document.getElementById('ddet-sv-view').style.display = mode === 'view' ? '' : 'none';
+  document.getElementById('ddet-sv-edit').style.display = mode === 'view' ? 'none' : '';
+  ['ddet-btn-edit','ddet-btn-submit-draft','ddet-btn-approve','ddet-btn-reject'].forEach(id => toggleBtn(id, false));
+  toggleBtn('ddet-edit-btn-cancel', mode !== 'view');
+  toggleBtn('cd-btn-save-draft', mode !== 'view');
+  toggleBtn('cd-btn-submit', mode !== 'view');
+}
+
+/* == Tạo mới / Sửa đề xuất == */
+function populateCdTypeSelect(){
+  const sel = document.getElementById('cd-type');
+  sel.innerHTML = DISCIPLINE_TYPES.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function populateCdProcessSelect(){
+  const sel = document.getElementById('cd-process');
+  sel.innerHTML = PROCESSES.filter(p => p.status === 'active').map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+function onCdTypeChange(){
+  cdStudents.forEach(s => s.reasonIdx = 0);
+  renderCdSvTable();
+}
+
+function openCreateProposal(){
+  editingProposalId = null;
+  populateCdTypeSelect();
+  populateCdProcessSelect();
+  document.getElementById('cd-name').value = '';
+  document.getElementById('cd-reason').value = '';
+  document.getElementById('cd-note').value = '';
+  cdStudents = [];
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-detail').style.display = '';
+  document.getElementById('ddet-title').textContent = 'Tạo đề xuất kỷ luật';
+  applyMode('create');
+  renderCdSvTable();
+  setupSvAddCombo();
+}
+
+function openEditProposal(){
+  const p = proposalById(editingProposalId);
+  populateCdTypeSelect();
+  populateCdProcessSelect();
+  document.getElementById('cd-type').value = p.typeId;
+  document.getElementById('cd-process').value = p.processId;
+  document.getElementById('cd-name').value = p.name;
+  document.getElementById('cd-reason').value = p.reason;
+  document.getElementById('cd-note').value = p.note;
+  cdStudents = p.students.map(s => ({...s}));
+  document.getElementById('ddet-title').textContent = 'Sửa đề xuất kỷ luật';
+  applyMode('edit');
+  renderCdSvTable();
+  setupSvAddCombo();
+}
+
+function cancelEdit(){
+  if (editingProposalId) renderDetail();
+  else closeDetail();
+}
+
+function renderCdSvTable(){
+  const t = typeById(document.getElementById('cd-type').value);
+  document.getElementById('cd-sv-tbody').innerHTML = cdStudents.map((s, idx) => `
+    <tr>
+      <td class="text-muted">${idx+1}</td><td>${s.mssv}</td><td>${s.name}</td><td>${s.ctdt}</td>
+      <td><select class="cd-sv-reason-select" onchange="setReasonIdx(${idx}, this.value)">
+        ${t.reasons.map((r, ri) => `<option value="${ri}" ${s.reasonIdx===ri?'selected':''}>${r}</option>`).join('')}
+      </select></td>
+      <td><button type="button" class="icon-btn danger" onclick="removeCdRow(${idx})">✕</button></td>
+    </tr>`).join('') || `<tr><td colspan="6"><div class="tbl-empty">Chưa có sinh viên nào — tìm và thêm ở ô phía trên</div></td></tr>`;
+}
+
+function setReasonIdx(idx, val){ cdStudents[idx].reasonIdx = Number(val); }
+function removeCdRow(idx){ cdStudents.splice(idx,1); renderCdSvTable(); }
+
+function setupSvAddCombo(){
+  const input = document.getElementById('cd-sv-add-search');
+  const menu = document.getElementById('cd-sv-add-menu');
+  input.value = '';
+  function render(q){
+    const query = (q||'').toLowerCase();
+    const items = STUDENT_DIRECTORY.filter(x => x.name.toLowerCase().includes(query) || x.mssv.includes(query));
+    menu.innerHTML = items.map(x => `<div class="unit-combo-item" data-k="${x.mssv}">${x.mssv} — ${x.name}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
+    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      const key = el.dataset.k;
+      if (!cdStudents.some(s => s.mssv === key)){ const s = STUDENT_DIRECTORY.find(x => x.mssv === key); cdStudents.push({...s, reasonIdx:0}); }
+      input.value = '';
+      menu.classList.remove('open');
+      renderCdSvTable();
+    }));
+  }
+  input.oninput = () => { render(input.value); menu.classList.add('open'); };
+  input.onfocus = () => { render(''); menu.classList.add('open'); };
+  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+}
+
+function validateCd(){
+  const name = document.getElementById('cd-name').value.trim();
+  if (!name){ showToast('Vui lòng nhập tên đề xuất', 'err'); return null; }
+  const processId = document.getElementById('cd-process').value;
+  if (!processId){ showToast('Vui lòng chọn quy trình duyệt', 'err'); return null; }
+  if (!cdStudents.length){ showToast('Vui lòng thêm ít nhất 1 sinh viên', 'err'); return null; }
+  return {
+    name,
+    typeId: document.getElementById('cd-type').value,
+    processId,
+    reason: document.getElementById('cd-reason').value.trim(),
+    note: document.getElementById('cd-note').value.trim(),
+  };
+}
+
+function submitCreate(isDraft){
+  const data = validateCd();
+  if (!data) return;
+
+  if (editingProposalId){
+    const p = proposalById(editingProposalId);
+    Object.assign(p, data);
+    p.students = cdStudents.map(s => ({...s}));
+    if (!isDraft){
+      p.status = 'Chờ duyệt'; p.currentStepIdx = 1;
+      p.code = p.code || ('DXKL-' + String(100000 + PROPOSALS.length).slice(-6));
+      p.history.push({ step:'Nộp đề xuất', status:'Đã nộp', handler:CURRENT_USER, note:'', time:'Hôm nay' });
+    }
+    showToast(isDraft ? 'Đã lưu nháp' : 'Đã nộp duyệt', 'ok');
+  } else {
+    const newP = {
+      id: 'd' + Date.now(), code: isDraft ? '' : ('DXKL-' + String(100000 + PROPOSALS.length + 1).slice(-6)),
+      ...data, currentStepIdx: isDraft ? 0 : 1, status: isDraft ? 'Nháp' : 'Chờ duyệt', created: 'Hôm nay',
+      students: cdStudents.map(s => ({...s})),
+      history: isDraft ? [] : [{ step:'Nộp đề xuất', status:'Đã nộp', handler:CURRENT_USER, note:'', time:'Hôm nay' }],
+    };
+    PROPOSALS.unshift(newP);
+    editingProposalId = newP.id;
+    showToast(isDraft ? 'Đã lưu nháp' : 'Đã nộp duyệt', 'ok');
+  }
+  renderDetail();
+}
+
+function submitDraft(){
+  const p = proposalById(editingProposalId);
+  p.status = 'Chờ duyệt';
+  p.currentStepIdx = 1;
+  p.code = p.code || ('DXKL-' + String(100000 + PROPOSALS.length).slice(-6));
+  p.history.push({ step:'Nộp đề xuất', status:'Đã nộp', handler:CURRENT_USER, note:'', time:'Hôm nay' });
+  showToast('Đã nộp duyệt', 'ok');
+  renderDetail();
+}
+
+/* == Đồng ý / Từ chối == */
+function approveStep(action){
+  pendingApproveAction = action;
+  document.getElementById('ac-title').textContent = action === 'approve' ? 'Đồng ý đề xuất' : 'Từ chối đề xuất';
+  document.getElementById('ac-note-label').textContent = action === 'approve' ? 'Ghi chú (không bắt buộc)' : 'Lý do từ chối*';
+  document.getElementById('ac-note').value = '';
+  document.getElementById('ac-note-err').style.display = 'none';
+  document.getElementById('ac-confirm-btn').className = 'btn ' + (action === 'approve' ? 'btn-primary' : 'btn-danger');
+  document.getElementById('ac-confirm-btn').textContent = action === 'approve' ? 'Đồng ý' : 'Từ chối';
+  openModal('modal-approve-confirm');
+}
+
+function confirmApprove(){
+  const note = document.getElementById('ac-note').value.trim();
+  if (pendingApproveAction === 'reject' && !note){
+    document.getElementById('ac-note-err').style.display = '';
+    return;
+  }
+  const p = proposalById(editingProposalId);
+  const proc = processById(p.processId);
+  const step = proc.steps[p.currentStepIdx];
+
+  if (pendingApproveAction === 'reject'){
+    p.status = 'Từ chối';
+    p.history.push({ step:step.title, status:'Từ chối', handler:CURRENT_USER, note, time:'Hôm nay' });
+    showToast('Đã từ chối đề xuất', 'ok');
+  } else {
+    p.history.push({ step:step.title, status:'Đã duyệt', handler:CURRENT_USER, note, time:'Hôm nay' });
+    if (p.currentStepIdx >= proc.steps.length - 1){
+      p.status = 'Đã duyệt';
+    } else {
+      p.currentStepIdx += 1;
+    }
+    showToast('Đã duyệt bước hiện tại', 'ok');
+  }
+
+  closeModal('modal-approve-confirm');
+  renderDetail();
+}
+
+/* == Lịch sử == */
+function openHistory(){
+  const p = proposalById(editingProposalId);
+  document.getElementById('ddet-steps-tbody').innerHTML = (p.history||[]).map((h, idx) => `
+    <tr>
+      <td class="text-muted">${idx+1}</td>
+      <td>${h.step}</td>
+      <td>${'—'}</td>
+      <td>${h.handler}</td>
+      <td>${h.time}</td>
+      <td><span class="tag ${h.status==='Đã duyệt'?'tag-success':h.status==='Từ chối'?'tag-error':'tag-default'}">${h.status}</span></td>
+      <td>${h.note || '—'}</td>
+    </tr>`).join('') || `<tr><td colspan="7"><div class="tbl-empty">Chưa có lịch sử xử lý</div></td></tr>`;
+  openModal('modal-history');
+}
+
+populateTypeFilter();
+renderGrid();
+</script>
+</body>
+</html>

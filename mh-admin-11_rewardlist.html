@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh sách Khen thưởng | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: danh sách khen thưởng đã phát sinh (MH-ADMIN-11) ========== */
+
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .drl-point{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--success)}
+  .obj-scope-tag{margin-left:6px}
+
+  /* Tổng quan (thẻ số liệu) */
+  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px}
+  .stat-card .stat-label{font-size:12px;color:var(--text-3);margin-bottom:6px}
+  .stat-card .stat-value{font-size:22px;font-weight:700;color:var(--text-1)}
+  .stat-card .stat-value.success{color:var(--success)}
+  @media (max-width:1100px){.stat-row{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:640px){.stat-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li>
+          <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
+          <li class="active"><a href="#">Danh sách Khen thưởng</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
+          <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Quản lý Khen thưởng / <b style="color:var(--text-1)">Danh sách Khen thưởng</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH KHEN THƯỞNG ĐÃ PHÁT SINH (MH-ADMIN-11)
+           Dữ liệu bung ra từ các Đề xuất Khen thưởng (mh-admin-10)
+           đã ở trạng thái "Đã duyệt" — mỗi dòng là 1 SV/tập thể được
+           khen thưởng cụ thể, không phải 1 đề xuất.
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="mb-16">
+          <h2 style="margin:0;font-size:18px">Danh sách Khen thưởng</h2>
+          <p class="text-muted text-sm" style="margin:4px 0 0">Các khen thưởng đã ban hành cho sinh viên/tập thể, tổng hợp từ Đề xuất Khen thưởng đã được duyệt</p>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Tổng lượt khen thưởng</div><div class="stat-value" id="stat-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Cá nhân</div><div class="stat-value" id="stat-canhan">0</div></div>
+          <div class="stat-card"><div class="stat-label">Tập thể</div><div class="stat-value" id="stat-tapthe">0</div></div>
+          <div class="stat-card"><div class="stat-label">Tổng điểm ĐRL đã cộng</div><div class="stat-value success" id="stat-drl">0</div></div>
+          <div class="stat-card"><div class="stat-label">Tổng tiền thưởng đã chi</div><div class="stat-value success" id="stat-money">0</div></div>
+        </div>
+
+        <!-- Bộ lọc -->
+        <div class="filter-bar">
+          <input class="fc" id="rw-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV, tập thể hoặc mã đề xuất…" autocomplete="off" style="width:300px">
+          <select class="fc" id="rw-type-select" style="width:220px">
+            <option value="all">Tất cả hình thức</option>
+          </select>
+          <select class="fc" id="rw-scope-select" style="width:160px">
+            <option value="all">Tất cả phạm vi</option>
+            <option value="canhan">Cá nhân</option>
+            <option value="tapthe">Tập thể</option>
+          </select>
+          <div class="flex items-center gap-8">
+            <input class="fc" id="rw-date-from" type="date" style="width:150px" title="Ngày ban hành từ">
+            <span class="text-muted text-sm">đến</span>
+            <input class="fc" id="rw-date-to" type="date" style="width:150px" title="Ngày ban hành đến">
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:120px">Đối tượng</th>
+                <th>Tên / MSSV</th>
+                <th>Hình thức khen thưởng</th>
+                <th style="width:130px">Mức khen thưởng</th>
+                <th style="width:90px">Điểm ĐRL</th>
+                <th style="width:130px">Mã đề xuất</th>
+                <th style="width:110px">Ngày ban hành</th>
+              </tr>
+            </thead>
+            <tbody id="rw-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="rw-pagination"><!-- rendered by JS --></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — hình thức khen thưởng (đồng bộ rút gọn với mh-admin-09)
+   ============================================================ */
+/* Đồng bộ id/tên với danh sách đầy đủ ở mh-admin-09 (theo Phụ lục 1 kèm QĐ 1653/QĐ-ĐHP-CTSV&KN). */
+const REWARD_TYPES = [
+  { id:'t103', code:'1.2.1', name:'Sinh viên Xuất sắc', scope:'canhan', money:0, drlPoint:15 },
+  { id:'t104', code:'1.2.2', name:'Sinh viên Giỏi', scope:'canhan', money:0, drlPoint:10 },
+  { id:'t105', code:'1.3.1', name:'Sinh viên Xuất sắc tiêu biểu (tuyên dương Lễ khai giảng)', scope:'canhan', money:2000000, drlPoint:20 },
+  { id:'t301', code:'3', name:'Thủ khoa tuyển sinh đại học', scope:'canhan', money:0, drlPoint:20 },
+  { id:'t425', code:'4.2.2-HCV', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:3000000, drlPoint:25 },
+  { id:'t521', code:'5.2.1', name:'Cá nhân — Bằng khen cấp Trung ương hoặc tương đương', scope:'canhan', money:600000, drlPoint:15 },
+  { id:'t101', code:'1.1.1', name:'Tập thể Xuất sắc', scope:'tapthe', money:2000000, drlPoint:20 },
+  { id:'t102', code:'1.1.2', name:'Tập thể Tiên tiến', scope:'tapthe', money:1500000, drlPoint:15 },
+  { id:'t421', code:'4.2.1-HCV', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:6000000, drlPoint:25 },
+];
+function typeById(id){ return REWARD_TYPES.find(t => t.id === id); }
+
+/* ============================================================
+   DATA — khen thưởng đã phát sinh (mock), mỗi dòng = 1 đối tượng
+   được khen thưởng cụ thể, phát sinh từ 1 Đề xuất đã Đã duyệt.
+   ============================================================ */
+const REWARDS = [
+  { id:'w1', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', typeId:'t425', proposalCode:'DXKT-000001', issuedDate:'22/07/2026' },
+  { id:'w2', scope:'canhan', mssv:'20120221', name:'Lê Thị Huyền', typeId:'t425', proposalCode:'DXKT-000001', issuedDate:'22/07/2026' },
+  { id:'w3', scope:'canhan', mssv:'20120067', name:'Ngô Thị Thu', typeId:'t105', proposalCode:'DXKT-000005', issuedDate:'10/07/2026' },
+  { id:'w4', scope:'canhan', mssv:'20120071', name:'Lý Thị Hương', typeId:'t104', proposalCode:'DXKT-000006', issuedDate:'05/07/2026' },
+  { id:'w5', scope:'tapthe', mssv:'', name:'Lớp CT4701 - CNTT khoá 47', typeId:'t101', proposalCode:'DXKT-000007', issuedDate:'28/06/2026' },
+  { id:'w6', scope:'tapthe', mssv:'', name:'Lớp CT4602 - CNTT khoá 46', typeId:'t102', proposalCode:'DXKT-000008', issuedDate:'20/06/2026' },
+];
+
+const PAGE_SIZE = 20;
+let currentPage = 1;
+
+/* == Dropdown thông báo == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'🏆', title:'2 sinh viên vừa được khen thưởng "Đạt giải nghiên cứu khoa học sinh viên"', time:'2 giờ trước' },
+  { id:'n2', unread:false, ico:'✅', title:'Lớp CT4701 vừa được khen thưởng Tập thể lớp xuất sắc', time:'Hôm qua' },
+];
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div><div class="notif-item-title">${n.title}</div><div class="notif-item-time">${n.time}</div></div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+function updateNotifBadge(){
+  const c = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = c ? '' : 'none';
+  document.getElementById('notif-badge').textContent = c;
+}
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+function readNotification(id){ const n = NOTIFICATIONS.find(x => x.id === id); if (n) n.unread = false; renderNotifMenu(); }
+document.addEventListener('click', e => { if (!document.getElementById('notif-wrap').contains(e.target)) document.getElementById('notif-menu').classList.remove('open'); });
+updateNotifBadge();
+
+function populateTypeFilter(){
+  const sel = document.getElementById('rw-type-select');
+  REWARD_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
+}
+
+function renderStats(list){
+  document.getElementById('stat-total').textContent = list.length;
+  document.getElementById('stat-canhan').textContent = list.filter(r => r.scope === 'canhan').length;
+  document.getElementById('stat-tapthe').textContent = list.filter(r => r.scope === 'tapthe').length;
+  const totalDrl = list.reduce((sum, r) => sum + typeById(r.typeId).drlPoint, 0);
+  document.getElementById('stat-drl').textContent = '+' + totalDrl;
+  const totalMoney = list.reduce((sum, r) => sum + (typeById(r.typeId).money || 0), 0);
+  document.getElementById('stat-money').textContent = totalMoney.toLocaleString('vi-VN') + ' đ';
+}
+
+function renderGrid(){
+  const tbody = document.getElementById('rw-tbody');
+  const q = document.getElementById('rw-search').value.trim().toLowerCase();
+  const typeFilter = document.getElementById('rw-type-select').value;
+  const scopeFilter = document.getElementById('rw-scope-select').value;
+  const dateFrom = document.getElementById('rw-date-from').value;
+  const dateTo = document.getElementById('rw-date-to').value;
+
+  let list = REWARDS.slice();
+  if (typeFilter !== 'all') list = list.filter(r => r.typeId === typeFilter);
+  if (scopeFilter !== 'all') list = list.filter(r => r.scope === scopeFilter);
+  if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.mssv.includes(q) || r.proposalCode.toLowerCase().includes(q));
+  if (dateFrom) list = list.filter(r => toISO(r.issuedDate) >= dateFrom);
+  if (dateTo) list = list.filter(r => toISO(r.issuedDate) <= dateTo);
+
+  renderStats(list);
+
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+
+  tbody.innerHTML = pageList.map((r, idx) => `
+    <tr>
+      <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td><span class="tag ${r.scope==='canhan'?'tag-default':'tag-purple'}">${r.scope==='canhan'?'Cá nhân':'Tập thể'}</span></td>
+      <td>${r.scope==='canhan' ? `${r.name} <span class="text-muted text-sm">(${r.mssv})</span>` : r.name}</td>
+      <td>${typeById(r.typeId).name}</td>
+      <td>${typeById(r.typeId).money ? typeById(r.typeId).money.toLocaleString('vi-VN') + ' đ' : '—'}</td>
+      <td><span class="drl-point">+${typeById(r.typeId).drlPoint}</span></td>
+      <td><span class="di-code">${r.proposalCode}</span></td>
+      <td class="text-muted">${r.issuedDate}</td>
+    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  renderPagination(list.length, totalPages);
+}
+
+function toISO(d){ const [dd,mm,yyyy] = d.split('/'); return `${yyyy}-${mm}-${dd}`; }
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('rw-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+  const from = (currentPage-1)*PAGE_SIZE + 1;
+  const to = Math.min(currentPage*PAGE_SIZE, totalItems);
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++) btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  el.innerHTML = `<span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} khen thưởng</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+function goToPage(p){ currentPage = p; renderGrid(); }
+
+['rw-search'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentPage = 1; renderGrid(); }));
+['rw-type-select','rw-scope-select','rw-date-from','rw-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
+
+populateTypeFilter();
+renderGrid();
+</script>
+</body>
+</html>

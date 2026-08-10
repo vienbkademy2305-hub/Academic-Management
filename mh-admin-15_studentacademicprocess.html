@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quá trình học tập | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: quá trình học tập sinh viên (MH-ADMIN-15) ========== */
+
+  /* Dropdown thông báo — đồng bộ với các màn admin khác */
+  .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
+  .notif-menu.open{display:block}
+  .notif-menu-hd{padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--text-1);border-bottom:1px solid var(--border)}
+  .notif-menu-list{max-height:320px;overflow-y:auto}
+  .notif-item{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer}
+  .notif-item:last-child{border-bottom:none}
+  .notif-item:hover{background:#fafafa}
+  .notif-item.unread{background:var(--primary-light)}
+  .notif-item.unread:hover{background:#ffefd1}
+  .notif-item-ico{font-size:16px;flex-shrink:0}
+  .notif-item-title{font-size:13px;color:var(--text-1);margin-bottom:2px}
+  .notif-item-time{font-size:11.5px;color:var(--text-3)}
+  .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Bảng danh sách sinh viên */
+  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  #view-list table.tbl th{background:#f0f0f0}
+  .sv-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
+  .sv-name-cell{font-size:13.5px;color:var(--text-1)}
+  tr.sv-row{cursor:pointer}
+  tr.sv-row:hover td{background:var(--primary-light)}
+
+  /* Trang Chi tiết — Timeline các mốc thay đổi trạng thái học vụ, mỗi mốc gắn với 1 Quyết định */
+  .ap-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+  .ap-breadcrumb{font-size:13px;color:var(--text-3);cursor:pointer}
+  .ap-breadcrumb:hover{color:var(--primary)}
+  .ap-hd h2{margin:0;font-size:18px}
+  .ap-sv-meta{display:flex;flex-wrap:wrap;gap:20px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:24px}
+  .ap-sv-meta-item{min-width:140px}
+  .ap-sv-meta-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  .ap-sv-meta-val{font-size:13.5px;color:var(--text-1)}
+
+  .ap-timeline{position:relative;padding-left:28px}
+  .ap-timeline::before{content:'';position:absolute;left:9px;top:6px;bottom:6px;width:2px;background:var(--border)}
+  .ap-tl-item{position:relative;padding-bottom:28px}
+  .ap-tl-item:last-child{padding-bottom:0}
+  .ap-tl-dot{position:absolute;left:-28px;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--primary);display:flex;align-items:center;justify-content:center}
+  .ap-tl-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .ap-tl-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px 16px;cursor:pointer;transition:border-color .15s}
+  .ap-tl-card:hover{border-color:var(--primary)}
+  .ap-tl-card-hd{display:flex;align-items:center;justify-content:between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .ap-tl-status-arrow{color:var(--text-3);font-size:12px;margin:0 4px}
+  .ap-tl-meta{font-size:12.5px;color:var(--text-3)}
+  .ap-tl-decision-link{font-size:12.5px;color:var(--primary);margin-top:6px}
+  .ap-tl-decision-link:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📅&nbsp; Quản lý đợt &nbsp;▾</span>
+        <ul class="sb-sub"><li><a href="#">Danh sách đợt</a></li></ul>
+      </li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li class="active"><a href="#">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Quá trình học tập</b></div>
+      <div class="h-right">
+        <div class="bw" id="notif-wrap">
+          <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
+          <span class="bc" id="notif-badge">2</span>
+          <div class="notif-menu" id="notif-menu">
+            <div class="notif-menu-hd">Thông báo</div>
+            <div class="notif-menu-list" id="notif-menu-list"></div>
+          </div>
+        </div>
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — DANH SÁCH SINH VIÊN (MH-ADMIN-15, view: list)
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-list">
+
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Quá trình học tập</h2>
+          </div>
+        </div>
+
+        <!-- Bộ lọc: Tìm tên/MSSV + Trạng thái hiện tại -->
+        <div class="filter-bar">
+          <input class="fc" id="sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV…" autocomplete="off" style="width:300px">
+          <select class="fc" id="status-filter-select" style="width:200px">
+            <option value="all">Tất cả trạng thái</option>
+          </select>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:48px">STT</th>
+                <th style="width:120px">MSSV</th>
+                <th>Họ và tên</th>
+                <th style="width:110px">Lớp HC</th>
+                <th style="width:180px">CTĐT</th>
+                <th style="width:140px">Trạng thái hiện tại</th>
+                <th style="width:90px">Số mốc</th>
+              </tr>
+            </thead>
+            <tbody id="sv-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="sv-pagination"><!-- rendered by JS --></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════
+           VIEW — CHI TIẾT QUÁ TRÌNH HỌC TẬP 1 SINH VIÊN (MH-ADMIN-15, view: detail)
+           Timeline các mốc thay đổi trạng thái học vụ, mỗi mốc gắn với 1 Quyết định cụ thể (mã QĐ,
+           ngày hiệu lực) — bấm vào 1 mốc để mở Chi tiết quyết định đó ở mh-admin-08 (xem
+           openDecisionInMh08()). Dữ liệu suy ra từ Quyết định đã ban hành (đối chiếu TYPE_NEW_STATUS
+           ở mh-admin-08) — đây là trang tra cứu tổng hợp theo GÓC NHÌN SINH VIÊN, khác mh-admin-08
+           tra cứu theo GÓC NHÌN QUYẾT ĐỊNH. 2 trang tĩnh độc lập, không kết nối kỹ thuật thật (giống
+           quan hệ DECISION_CATALOG giữa mh-admin-06/08).
+      ═══════════════════════════════════════════════════════ -->
+      <div id="view-detail" style="display:none">
+
+        <div class="ap-hd">
+          <div>
+            <div class="ap-breadcrumb" onclick="closeStudentDetail()">← Quay lại</div>
+            <h2 id="ap-title">Quá trình học tập</h2>
+          </div>
+        </div>
+
+        <div class="ap-sv-meta">
+          <div class="ap-sv-meta-item">
+            <div class="ap-sv-meta-label">MSSV</div>
+            <div class="ap-sv-meta-val" id="ap-sv-mssv">—</div>
+          </div>
+          <div class="ap-sv-meta-item">
+            <div class="ap-sv-meta-label">Họ và tên</div>
+            <div class="ap-sv-meta-val" id="ap-sv-name">—</div>
+          </div>
+          <div class="ap-sv-meta-item">
+            <div class="ap-sv-meta-label">Lớp HC</div>
+            <div class="ap-sv-meta-val" id="ap-sv-lop">—</div>
+          </div>
+          <div class="ap-sv-meta-item">
+            <div class="ap-sv-meta-label">CTĐT</div>
+            <div class="ap-sv-meta-val" id="ap-sv-ctdt">—</div>
+          </div>
+          <div class="ap-sv-meta-item">
+            <div class="ap-sv-meta-label">Trạng thái hiện tại</div>
+            <div class="ap-sv-meta-val" id="ap-sv-status">—</div>
+          </div>
+        </div>
+
+        <div class="sec-block">
+          <div class="sec-title"><span class="sec-badge">1</span> Timeline quá trình học tập</div>
+          <div class="ap-timeline" id="ap-timeline"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — Trạng thái học vụ (đối chiếu NEW_STATUS_LABEL/TYPE_NEW_STATUS ở mh-admin-08 — cùng 1 tập
+   giá trị, sinh viên chuyển từ trạng thái này sang trạng thái khác mỗi khi có 1 Quyết định mới
+   được ban hành và có hiệu lực).
+   ============================================================ */
+const STATUS_LABEL = {
+  danghoc:'Đang học', buocthoihoc:'Buộc thôi học', chuyentruong:'Chuyển trường đi',
+  totnghiep:'Tốt nghiệp', baoluu:'Bảo lưu', thoihoc:'Thôi học', xoaten:'Xoá tên',
+};
+const STATUS_TAG_CLASS = {
+  danghoc:'tag-success', buocthoihoc:'tag-error', chuyentruong:'tag-purple',
+  totnghiep:'tag-blue', baoluu:'tag-warning', thoihoc:'tag-error', xoaten:'tag-error',
+};
+function statusTagHtml(statusCode){
+  return `<span class="tag ${STATUS_TAG_CLASS[statusCode] || 'tag-default'}">${STATUS_LABEL[statusCode] || statusCode}</span>`;
+}
+
+/* ============================================================
+   DATA — Sinh viên + Timeline quá trình học tập (mock). Mỗi phần tử timeline gắn với 1 Quyết định
+   cụ thể đã ban hành (decisionCode/decisionTypeName/effectiveDate) — bấm vào mở Chi tiết quyết định
+   đó ở mh-admin-08 qua query string ?code=... (xem openDecisionInMh08()). fromStatus rỗng nghĩa là
+   mốc NHẬP HỌC ban đầu (chưa có trạng thái trước đó).
+   ============================================================ */
+const STUDENTS = [
+  { mssv:'20120201', name:'Trần Thị Bích', lop:'CT4501', ctdt:'Công nghệ thông tin',
+    timeline:[
+      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000112', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'05/09/2023', note:'Trúng tuyển nhập học khoá 2023-2027' },
+      { fromStatus:'danghoc', toStatus:'baoluu', decisionCode:'QDSV-000180', decisionTypeName:'Quyết định nghỉ học tạm thời/bảo lưu', effectiveDate:'24/06/2026', note:'Bảo lưu vì lý do sức khoẻ, học kỳ 2 năm học 2025-2026' },
+    ] },
+  { mssv:'20120202', name:'Phạm Văn Đông', lop:'CT4502', ctdt:'Khoa học máy tính',
+    timeline:[
+      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000098', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'02/09/2022', note:'Trúng tuyển nhập học khoá 2022-2026' },
+    ] },
+  { mssv:'20120088', name:'Hoàng Văn Nam', lop:'CT4404', ctdt:'Khoa học máy tính',
+    timeline:[
+      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000075', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2021', note:'Trúng tuyển nhập học khoá 2021-2025' },
+      { fromStatus:'danghoc', toStatus:'baoluu', decisionCode:'QDSV-000180', decisionTypeName:'Quyết định nghỉ học tạm thời/bảo lưu', effectiveDate:'24/06/2026', note:'Bảo lưu vì lý do gia đình' },
+      { fromStatus:'baoluu', toStatus:'danghoc', decisionCode:'QDSV-000205', decisionTypeName:'Quyết định thu hồi quyết định nghỉ học tạm thời', effectiveDate:'20/08/2026', note:'Hết thời hạn bảo lưu, quay trở lại học tập bình thường' },
+    ] },
+  { mssv:'20120207', name:'Lê Thị Hạnh', lop:'CT4501', ctdt:'Công nghệ thông tin',
+    timeline:[
+      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000060', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2021', note:'Trúng tuyển nhập học khoá 2021-2025' },
+      { fromStatus:'danghoc', toStatus:'buocthoihoc', decisionCode:'QDSV-000150', decisionTypeName:'Quyết định buộc thôi học do quá 2 lần cảnh báo', effectiveDate:'25/06/2026', note:'Buộc thôi học do 2 lần liên tiếp bị cảnh báo học vụ' },
+    ] },
+  { mssv:'20120219', name:'Nguyễn Thị Thảo', lop:'CT4501', ctdt:'Công nghệ thông tin',
+    timeline:[
+      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000050', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2022', note:'Trúng tuyển nhập học khoá 2022-2026' },
+      { fromStatus:'danghoc', toStatus:'totnghiep', decisionCode:'QDSV-000241', decisionTypeName:'Quyết định công nhận tốt nghiệp', effectiveDate:'04/07/2026', note:'Tốt nghiệp loại Giỏi, đợt tháng 6/2026' },
+    ] },
+];
+
+function studentById(mssv){ return STUDENTS.find(s => s.mssv === mssv); }
+function currentStatusOf(s){ return s.timeline[s.timeline.length - 1].toStatus; }
+
+document.getElementById('status-filter-select').insertAdjacentHTML('beforeend',
+  Object.keys(STATUS_LABEL).map(code => `<option value="${code}">${STATUS_LABEL[code]}</option>`).join(''));
+
+/* == Dropdown thông báo (chuông trên header) == */
+const NOTIFICATIONS = [
+  { id:'n1', unread:true, ico:'🎓', title:'Sinh viên "Nguyễn Thị Thảo" (20120219) vừa tốt nghiệp', time:'3 giờ trước' },
+  { id:'n2', unread:true, ico:'📋', title:'Sinh viên "Hoàng Văn Nam" (20120088) quay trở lại học tập sau bảo lưu', time:'1 ngày trước' },
+];
+
+function renderNotifMenu(){
+  const listEl = document.getElementById('notif-menu-list');
+  listEl.innerHTML = NOTIFICATIONS.map(n => `
+    <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="readNotification('${n.id}')">
+      <span class="notif-item-ico">${n.ico}</span>
+      <div>
+        <div class="notif-item-title">${n.title}</div>
+        <div class="notif-item-time">${n.time}</div>
+      </div>
+    </div>`).join('') || '<div class="notif-menu-empty">Không có thông báo nào</div>';
+  updateNotifBadge();
+}
+
+function updateNotifBadge(){
+  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  document.getElementById('notif-badge').style.display = unreadCount ? '' : 'none';
+  document.getElementById('notif-badge').textContent = unreadCount;
+}
+
+function toggleNotifMenu(){
+  const menu = document.getElementById('notif-menu');
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) renderNotifMenu();
+}
+
+function readNotification(id){
+  const n = NOTIFICATIONS.find(x => x.id === id);
+  if (n) n.unread = false;
+  renderNotifMenu();
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('notif-wrap').contains(e.target)) {
+    document.getElementById('notif-menu').classList.remove('open');
+  }
+});
+
+updateNotifBadge();
+
+/* == Bảng danh sách sinh viên == */
+const SV_PAGE_SIZE = 20;
+let currentPage = 1;
+
+function currentStatusFilter(){ return document.getElementById('status-filter-select').value; }
+function currentSvSearch(){ return document.getElementById('sv-search').value.trim().toLowerCase(); }
+
+function renderGrid(){
+  const tbody = document.getElementById('sv-tbody');
+  const statusFilter = currentStatusFilter();
+  const query = currentSvSearch();
+
+  let list = STUDENTS.slice();
+  if (statusFilter !== 'all') list = list.filter(s => currentStatusOf(s) === statusFilter);
+  if (query) list = list.filter(s => s.name.toLowerCase().includes(query) || s.mssv.toLowerCase().includes(query));
+
+  const totalPages = Math.max(1, Math.ceil(list.length / SV_PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const pageList = list.slice((currentPage-1)*SV_PAGE_SIZE, currentPage*SV_PAGE_SIZE);
+
+  tbody.innerHTML = pageList.length ? pageList.map((s, idx) => `
+    <tr class="sv-row" onclick="openStudentDetail('${s.mssv}')">
+      <td class="text-muted">${(currentPage-1)*SV_PAGE_SIZE + idx + 1}</td>
+      <td><span class="sv-code">${s.mssv}</span></td>
+      <td><span class="sv-name-cell">${s.name}</span></td>
+      <td class="text-muted">${s.lop}</td>
+      <td class="text-muted">${s.ctdt}</td>
+      <td>${statusTagHtml(currentStatusOf(s))}</td>
+      <td class="text-muted">${s.timeline.length}</td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="tbl-empty">Không tìm thấy sinh viên nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  renderPagination(list.length, totalPages);
+}
+
+function renderPagination(totalItems, totalPages){
+  const el = document.getElementById('sv-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (currentPage-1)*SV_PAGE_SIZE + 1;
+  const to = Math.min(currentPage*SV_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} sinh viên</span>
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+
+function goToPage(p){ currentPage = p; renderGrid(); }
+
+document.getElementById('status-filter-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+document.getElementById('sv-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
+
+renderGrid();
+
+/* == Trang Chi tiết — Timeline quá trình học tập == */
+function openStudentDetail(mssv){
+  const s = studentById(mssv);
+
+  document.getElementById('ap-title').textContent = `Quá trình học tập — ${s.name}`;
+  document.getElementById('ap-sv-mssv').textContent = s.mssv;
+  document.getElementById('ap-sv-name').textContent = s.name;
+  document.getElementById('ap-sv-lop').textContent = s.lop;
+  document.getElementById('ap-sv-ctdt').textContent = s.ctdt;
+  document.getElementById('ap-sv-status').innerHTML = statusTagHtml(currentStatusOf(s));
+
+  document.getElementById('ap-timeline').innerHTML = s.timeline.map(t => `
+    <div class="ap-tl-item">
+      <div class="ap-tl-dot"></div>
+      <div class="ap-tl-card" onclick="openDecisionInMh08('${t.decisionCode}')">
+        <div class="ap-tl-card-hd">
+          ${t.fromStatus ? `${statusTagHtml(t.fromStatus)}<span class="ap-tl-status-arrow">→</span>` : ''}
+          ${statusTagHtml(t.toStatus)}
+        </div>
+        <div class="ap-tl-meta">${t.decisionTypeName} · Số QĐ: ${t.decisionCode} · Hiệu lực: ${t.effectiveDate}</div>
+        ${t.note ? `<div class="text-muted text-sm" style="margin-top:4px">${t.note}</div>` : ''}
+        <div class="ap-tl-decision-link">Xem chi tiết quyết định →</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('breadcrumb').innerHTML = `Quyết định SV / Quá trình học tập / <b style="color:var(--text-1)">${s.name}</b>`;
+  document.getElementById('view-list').style.display = 'none';
+  document.getElementById('view-detail').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function closeStudentDetail(){
+  document.getElementById('view-detail').style.display = 'none';
+  document.getElementById('view-list').style.display = 'block';
+  document.getElementById('breadcrumb').innerHTML = `Quyết định SV / <b style="color:var(--text-1)">Quá trình học tập</b>`;
+}
+
+/* Mở Chi tiết quyết định tương ứng ở mh-admin-08 — truyền mã QĐ qua query string, mh-admin-08
+   KHÔNG tự đọc query này (2 trang tĩnh độc lập, không kết nối kỹ thuật thật) nên chỉ mở đúng trang
+   danh sách quyết định, người dùng tự tìm theo mã QĐ hiển thị sẵn trên URL/thanh tìm kiếm. */
+function openDecisionInMh08(code){
+  window.open(`mh-admin-08_studentdecisionlist.html?code=${encodeURIComponent(code)}`, '_blank');
+}
+</script>
+</body>
+</html>

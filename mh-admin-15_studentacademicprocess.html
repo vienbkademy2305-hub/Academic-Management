@@ -233,42 +233,164 @@ const STATUS_TAG_CLASS = {
   totnghiep:'tag-blue', baoluu:'tag-warning', thoihoc:'tag-error', xoaten:'tag-error',
 };
 function statusTagHtml(statusCode){
+  if (!statusCode) return '<span class="text-muted">—</span>';
   return `<span class="tag ${STATUS_TAG_CLASS[statusCode] || 'tag-default'}">${STATUS_LABEL[statusCode] || statusCode}</span>`;
 }
 
+/* Loại quyết định nào làm SV đổi trạng thái học vụ — ĐỒNG BỘ NỘI DUNG với TYPE_NEW_STATUS ở
+   mh-admin-08 (2 trang tĩnh độc lập, không kết nối kỹ thuật thật, giống quan hệ DECISION_CATALOG
+   giữa mh-admin-06/08). Loại quyết định không có trong danh sách này (VD giao đề tài, cử đi thực
+   tập...) không làm đổi trạng thái, nên KHÔNG tạo mốc timeline. */
+const TYPE_NEW_STATUS = {
+  'Quyết định thu hồi quyết định nghỉ học tạm thời': 'danghoc',
+  'Quyết định buộc thôi học do quá 2 lần cảnh báo': 'buocthoihoc',
+  'Quyết định chuyển trường đến': 'danghoc',
+  'Quyết định chuyển trường đi': 'chuyentruong',
+  'Quyết định công nhận tốt nghiệp': 'totnghiep',
+  'Quyết định nghỉ học tạm thời/bảo lưu': 'baoluu',
+  'Quyết định nhập trường/trúng tuyển': 'danghoc',
+  'Quyết định quay trở lại học tập': 'danghoc',
+  'Quyết định thôi học': 'thoihoc',
+  'Quyết định xoá tên': 'xoaten',
+};
+
 /* ============================================================
-   DATA — Sinh viên + Timeline quá trình học tập (mock). Mỗi phần tử timeline gắn với 1 Quyết định
-   cụ thể đã ban hành (decisionCode/decisionTypeName/effectiveDate) — bấm vào mở Chi tiết quyết định
-   đó ở mh-admin-08 qua query string ?code=... (xem openDecisionInMh08()). fromStatus rỗng nghĩa là
-   mốc NHẬP HỌC ban đầu (chưa có trạng thái trước đó).
+   DATA — Danh sách Quyết định THẬT, đúng nội dung DECISION_INSTANCES ở mh-admin-08 (ĐỒNG BỘ NỘI
+   DUNG, không kết nối kỹ thuật thật — 2 trang tĩnh độc lập, sửa 1 bên thì nhớ sửa bên còn lại).
+   Timeline "Quá trình học tập" của mỗi SV được TỰ ĐỘNG SUY RA từ danh sách này (buildTimelines()),
+   không còn data timeline bịa tay riêng như trước — mỗi quyết định ĐÃ DUYỆT có SV nào trong
+   students[] thì SV đó tự có 1 mốc trong timeline.
    ============================================================ */
-const STUDENTS = [
-  { mssv:'20120201', name:'Trần Thị Bích', lop:'CT4501', ctdt:'Công nghệ thông tin',
-    timeline:[
-      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000112', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'05/09/2023', note:'Trúng tuyển nhập học khoá 2023-2027' },
-      { fromStatus:'danghoc', toStatus:'baoluu', decisionCode:'QDSV-000180', decisionTypeName:'Quyết định nghỉ học tạm thời/bảo lưu', effectiveDate:'24/06/2026', note:'Bảo lưu vì lý do sức khoẻ, học kỳ 2 năm học 2025-2026' },
+const DECISION_INSTANCES = [
+  { id:'i1', code:'', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
+    created:'10/07/2026', status:'Chờ duyệt',
+    students:[
+      { mssv:'20120201', name:'Trần Thị Bích', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120202', name:'Phạm Văn Đông', lop:'', ctdt:'Khoa học máy tính' },
+      { mssv:'20120203', name:'Lê Hoàng Nam', lop:'', ctdt:'Công nghệ thông tin' },
     ] },
-  { mssv:'20120202', name:'Phạm Văn Đông', lop:'CT4502', ctdt:'Khoa học máy tính',
-    timeline:[
-      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000098', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'02/09/2022', note:'Trúng tuyển nhập học khoá 2022-2026' },
+  { id:'i2', code:'', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
+    created:'05/07/2026', status:'Chờ duyệt',
+    students:[
+      { mssv:'20120204', name:'Nguyễn Văn Long', lop:'', ctdt:'Kỹ thuật phần mềm' },
+      { mssv:'20120205', name:'Đinh Thị Hoài', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120206', name:'Trương Văn Kiên', lop:'', ctdt:'Công nghệ thông tin' },
     ] },
-  { mssv:'20120088', name:'Hoàng Văn Nam', lop:'CT4404', ctdt:'Khoa học máy tính',
-    timeline:[
-      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000075', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2021', note:'Trúng tuyển nhập học khoá 2021-2025' },
-      { fromStatus:'danghoc', toStatus:'baoluu', decisionCode:'QDSV-000180', decisionTypeName:'Quyết định nghỉ học tạm thời/bảo lưu', effectiveDate:'24/06/2026', note:'Bảo lưu vì lý do gia đình' },
-      { fromStatus:'baoluu', toStatus:'danghoc', decisionCode:'QDSV-000205', decisionTypeName:'Quyết định thu hồi quyết định nghỉ học tạm thời', effectiveDate:'20/08/2026', note:'Hết thời hạn bảo lưu, quay trở lại học tập bình thường' },
+  { id:'i3', code:'QDSV-000150', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
+    created:'20/06/2026', status:'Đã duyệt',
+    students:[
+      { mssv:'20120207', name:'Lê Thị Hạnh', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120208', name:'Phan Văn Đạt', lop:'', ctdt:'An toàn thông tin' },
+      { mssv:'20120209', name:'Ngô Thị Bảo', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120210', name:'Đỗ Văn Chiến', lop:'', ctdt:'Khoa học máy tính' },
     ] },
-  { mssv:'20120207', name:'Lê Thị Hạnh', lop:'CT4501', ctdt:'Công nghệ thông tin',
-    timeline:[
-      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000060', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2021', note:'Trúng tuyển nhập học khoá 2021-2025' },
-      { fromStatus:'danghoc', toStatus:'buocthoihoc', decisionCode:'QDSV-000150', decisionTypeName:'Quyết định buộc thôi học do quá 2 lần cảnh báo', effectiveDate:'25/06/2026', note:'Buộc thôi học do 2 lần liên tiếp bị cảnh báo học vụ' },
+  { id:'i4', code:'', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
+    created:'15/06/2026', status:'Từ chối',
+    students:[
+      { mssv:'20120211', name:'Phạm Văn Đức', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120212', name:'Vũ Thị Yến', lop:'', ctdt:'Kỹ thuật phần mềm' },
     ] },
-  { mssv:'20120219', name:'Nguyễn Thị Thảo', lop:'CT4501', ctdt:'Công nghệ thông tin',
-    timeline:[
-      { fromStatus:'', toStatus:'danghoc', decisionCode:'QDSV-000050', decisionTypeName:'Quyết định nhập trường/trúng tuyển', effectiveDate:'01/09/2022', note:'Trúng tuyển nhập học khoá 2022-2026' },
-      { fromStatus:'danghoc', toStatus:'totnghiep', decisionCode:'QDSV-000241', decisionTypeName:'Quyết định công nhận tốt nghiệp', effectiveDate:'04/07/2026', note:'Tốt nghiệp loại Giỏi, đợt tháng 6/2026' },
+  { id:'i5', code:'', typeName:'Quyết định công nhận tốt nghiệp',
+    created:'12/07/2026', status:'Chờ duyệt',
+    students:[
+      { mssv:'20120213', name:'Vũ Thị Ngọc', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120214', name:'Đỗ Văn Hải', lop:'', ctdt:'Khoa học máy tính' },
+      { mssv:'20120215', name:'Bùi Thị Lan', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120216', name:'Hồ Văn Thịnh', lop:'', ctdt:'Kỹ thuật phần mềm' },
+      { mssv:'20120217', name:'Dương Thị Mỹ', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120218', name:'Lý Văn Phát', lop:'', ctdt:'An toàn thông tin' },
     ] },
+  { id:'i6', code:'QDSV-000241', typeName:'Quyết định công nhận tốt nghiệp',
+    created:'01/07/2026', status:'Đã duyệt',
+    students:[
+      { mssv:'20120219', name:'Nguyễn Thị Thảo', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120220', name:'Trần Văn Khoa', lop:'', ctdt:'Khoa học máy tính' },
+      { mssv:'20120221', name:'Lê Thị Huyền', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120222', name:'Phạm Văn Tùng', lop:'', ctdt:'Kỹ thuật phần mềm' },
+      { mssv:'20120223', name:'Hoàng Thị Nga', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120224', name:'Vũ Văn Hiếu', lop:'', ctdt:'An toàn thông tin' },
+      { mssv:'20120225', name:'Đặng Thị Kim', lop:'', ctdt:'Khoa học máy tính' },
+    ] },
+  { id:'i7', code:'', typeName:'Quyết định công nhận tốt nghiệp',
+    created:'08/07/2026', status:'Chờ duyệt',
+    students:[
+      { mssv:'20120226', name:'Bùi Văn Sang', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120227', name:'Ngô Thị Yên', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120228', name:'Đỗ Văn Quân', lop:'', ctdt:'Khoa học máy tính' },
+      { mssv:'20120229', name:'Trịnh Thị Loan', lop:'', ctdt:'Kỹ thuật phần mềm' },
+    ] },
+  { id:'i8', code:'', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'18/07/2026', status:'Chờ duyệt',
+    students:[ { mssv:'20120067', name:'Ngô Thị Thu', lop:'', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i9', code:'QDSV-000180', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'22/06/2026', status:'Đã duyệt',
+    students:[ { mssv:'20120088', name:'Hoàng Văn Nam', lop:'', ctdt:'Khoa học máy tính' } ] },
+  { id:'i10', code:'', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'25/06/2026', status:'Từ chối',
+    students:[ { mssv:'20120044', name:'Đặng Thị Quỳnh', lop:'', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i11', code:'QDSV-000310', typeName:'Quyết định thôi học',
+    created:'19/07/2026', status:'Đã duyệt',
+    students:[
+      { mssv:'20120230', name:'Trịnh Văn Sơn', lop:'', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120231', name:'Mai Văn Cường', lop:'', ctdt:'Kỹ thuật phần mềm' },
+      { mssv:'20120232', name:'Lâm Thị Hồng', lop:'', ctdt:'Khoa học máy tính' },
+    ] },
+  { id:'i12', code:'QDSV-000318', typeName:'Quyết định thôi học',
+    created:'21/07/2026', status:'Đã duyệt',
+    students:[ { mssv:'20120071', name:'Lý Thị Hương', lop:'', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i13', code:'QDSV-000401', typeName:'Quyết định chuyển khoá, ngành, lớp',
+    created:'22/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    students:[ { mssv:'20120260', name:'Trần Văn Hậu', lop:'', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i14', code:'QDSV-000402', typeName:'Quyết định thay đổi đơn vị đào tạo',
+    created:'22/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    students:[ { mssv:'20120261', name:'Ngô Thị Kiều', lop:'', ctdt:'An toàn thông tin' } ] },
+  { id:'i16', code:'QDSV-000404', typeName:'Quyết định quay trở lại học tập',
+    created:'23/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    students:[ { mssv:'20120263', name:'Vương Thị Ngọc', lop:'', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i18', code:'QDSV-000406', typeName:'Quyết định cử đi thực tập tốt nghiệp',
+    created:'24/07/2026', status:'Đã duyệt', effectiveDate:'05/08/2026',
+    students:[ { mssv:'20120265', name:'Phạm Thị Hà', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
 ];
+
+/* ============================================================
+   Dựng danh sách Sinh viên + Timeline TỰ ĐỘNG từ DECISION_INSTANCES — không còn data timeline bịa
+   tay. Với mỗi quyết định đã "Đã duyệt", MỖI sinh viên trong students[] của quyết định đó được
+   thêm 1 mốc timeline nếu Loại quyết định có làm đổi trạng thái (TYPE_NEW_STATUS). fromStatus của
+   1 mốc = toStatus của mốc TRƯỚC ĐÓ (cùng SV, sắp theo ngày); mốc đầu tiên có fromStatus rỗng.
+   effectiveDate ưu tiên field effectiveDate của quyết định, fallback về created nếu quyết định đó
+   chưa có effectiveDate (một số bản ghi mock ở mh-admin-08 "Đã duyệt" nhưng chưa có effectiveDate).
+   ============================================================ */
+function parseVnDateForSort(str){
+  const [d, m, y] = str.split('/');
+  return `${y}${m.padStart(2,'0')}${d.padStart(2,'0')}`;
+}
+function buildTimelines(){
+  const byStudent = {};
+  DECISION_INSTANCES.forEach(d => {
+    if (d.status !== 'Đã duyệt') return;
+    const toStatus = TYPE_NEW_STATUS[d.typeName];
+    if (!toStatus) return;
+    const dateStr = d.effectiveDate || d.created;
+    d.students.forEach(s => {
+      if (!byStudent[s.mssv]) byStudent[s.mssv] = { mssv:s.mssv, name:s.name, lop:s.lop || '—', ctdt:s.ctdt, events:[] };
+      byStudent[s.mssv].events.push({ toStatus, decisionCode:d.code || '(Chưa cấp số)', decisionTypeName:d.typeName, effectiveDate:dateStr, sortKey:parseVnDateForSort(dateStr) });
+    });
+  });
+
+  return Object.values(byStudent).map(s => {
+    s.events.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+    s.timeline = s.events.map((e, i) => ({
+      fromStatus: i === 0 ? '' : s.events[i-1].toStatus,
+      toStatus: e.toStatus,
+      decisionCode: e.decisionCode,
+      decisionTypeName: e.decisionTypeName,
+      effectiveDate: e.effectiveDate,
+    }));
+    delete s.events;
+    return s;
+  }).filter(s => s.timeline.length);
+}
+const STUDENTS = buildTimelines();
 
 function studentById(mssv){ return STUDENTS.find(s => s.mssv === mssv); }
 function currentStatusOf(s){ return s.timeline[s.timeline.length - 1].toStatus; }

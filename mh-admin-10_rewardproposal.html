@@ -59,13 +59,14 @@
   .ddet-breadcrumb{font-size:13px;color:var(--text-3);cursor:pointer}
   .ddet-breadcrumb:hover{color:var(--primary)}
   .ddet-hd h2{margin:0;font-size:18px}
-  .adet-groups{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .adet-groups{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start}
   .adet-group{background:#fafafa;border:1px solid #f0f0f0;border-radius:8px;padding:14px 16px;height:100%}
   .adet-field-inline{margin-bottom:12px}
   .adet-field-inline:last-child{margin-bottom:0}
   .adet-field-inline label{display:block;font-size:11.5px;color:var(--text-3);margin-bottom:2px}
   .adet-field-inline .adet-field-val{font-size:13.5px;color:var(--text-1)}
-  @media (max-width:900px){.adet-groups{grid-template-columns:1fr}}
+  @media (max-width:1100px){.adet-groups{grid-template-columns:1fr 1fr}}
+  @media (max-width:700px){.adet-groups{grid-template-columns:1fr}}
   .ddet-action-bar{position:sticky;bottom:0;left:0;right:0;display:flex;justify-content:flex-end;gap:10px;padding:14px 0;margin-top:24px;background:var(--bg);border-top:1px solid var(--border)}
 
   .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
@@ -74,6 +75,21 @@
   .grp-pill:hover{background:#f0f0f0}
   .grp-pill.active{background:var(--primary);color:#fff}
   .drl-hint{font-size:12px;color:var(--text-3);margin-top:6px}
+
+  /* Ô chọn tài liệu đính kèm — copy pattern từ mh-admin-08 (cd-filepick) */
+  .cd-filepick{position:relative;border:1.5px dashed var(--border);border-radius:8px;padding:14px 16px;background:#fafafa;transition:all .15s}
+  .cd-filepick:hover{border-color:var(--primary);background:var(--primary-light)}
+  .cd-filepick input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+  .cd-filepick-empty{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .cd-filepick-picked{display:none;align-items:center;justify-content:space-between;gap:12px}
+  .cd-filepick.has-file{border-style:solid;border-color:#b7eb8f;background:#f6ffed}
+  .cd-filepick.has-file .cd-filepick-empty{display:none}
+  .cd-filepick.has-file .cd-filepick-picked{display:flex}
+  .cd-filepick-info{display:flex;align-items:center;gap:10px;min-width:0}
+  .cd-filepick-info svg{flex-shrink:0;color:var(--text-3)}
+  .cd-filepick.has-file .cd-filepick-info svg{color:var(--success)}
+  .cd-filepick-name{font-size:13.5px;color:var(--text-1);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cd-filepick-hint{font-size:12px;color:var(--text-3);margin-top:2px}
 </style>
 </head>
 <body>
@@ -171,11 +187,14 @@
           <button class="btn btn-primary" onclick="openCreateProposal()">＋ Tạo đề xuất</button>
         </div>
 
-        <!-- Bộ lọc: Tìm theo tên đề xuất/SV/tập thể + Hình thức + Đơn vị đề xuất + Ngày tạo -->
+        <!-- Bộ lọc: Tìm theo mã đề xuất/SV + Hình thức (Định kỳ/Đột xuất/Chuyên đề) + Đơn vị đề xuất -->
         <div class="filter-bar">
-          <input class="fc" id="pr-search" type="text" placeholder="🔍 Tìm theo tên đề xuất, SV hoặc tập thể…" autocomplete="off" style="width:280px">
-          <select class="fc" id="pr-type-select" style="width:220px">
+          <input class="fc" id="pr-search" type="text" placeholder="🔍 Tìm theo mã đề xuất, SV…" autocomplete="off" style="width:280px">
+          <select class="fc" id="pr-type-select" style="width:200px">
             <option value="all">Tất cả hình thức</option>
+            <option value="dinhky">Định kỳ</option>
+            <option value="dotxuat">Đột xuất</option>
+            <option value="chuyende">Theo chuyên đề</option>
           </select>
           <div class="unit-combo" id="pr-unit-combo" style="width:220px">
             <input class="fc" id="pr-unit-search" type="text" placeholder="🔍 Đơn vị đề xuất…" autocomplete="off" style="width:220px">
@@ -207,9 +226,10 @@
             <thead>
               <tr>
                 <th style="width:48px">STT</th>
-                <th style="width:110px">Mã</th>
-                <th>Tên đề xuất</th>
-                <th style="width:160px">Hình thức</th>
+                <th style="width:130px">Mã đề xuất</th>
+                <th style="width:150px">Hình thức</th>
+                <th style="width:150px">Đối tượng</th>
+                <th>Đơn vị đề xuất</th>
                 <th style="width:90px">Số lượng</th>
                 <th style="width:170px">Bước hiện tại</th>
                 <th style="width:110px">Trạng thái</th>
@@ -243,60 +263,164 @@
         <div class="sec-block">
           <div class="sec-title"><span class="sec-badge">1</span> Thông tin Đề xuất</div>
 
-          <!-- Chế độ XEM -->
+          <!-- Chế độ XEM — 3 cột song song, cùng bố cục với chế độ Sửa/Tạo mới bên dưới -->
           <div class="adet-groups" id="ddet-view-fields">
             <div class="adet-group">
-              <div class="adet-field-inline"><label>Tên đề xuất</label><div class="adet-field-val" id="ddet-name"></div></div>
-              <div class="adet-field-inline"><label>Hình thức khen thưởng</label><div class="adet-field-val" id="ddet-type"></div></div>
+              <div class="adet-field-inline"><label>Năm học</label><div class="adet-field-val" id="ddet-academic-year">—</div></div>
+              <div class="adet-field-inline"><label>Học kỳ áp dụng</label><div class="adet-field-val" id="ddet-semester">—</div></div>
+              <div class="adet-field-inline"><label>Đối tượng khen thưởng</label><div class="adet-field-val" id="ddet-scope">—</div></div>
+              <div class="adet-field-inline"><label>Hình thức khen thưởng</label><div class="adet-field-val" id="ddet-period-type">—</div></div>
               <div class="adet-field-inline"><label>Đơn vị đề xuất</label><div class="adet-field-val" id="ddet-unit"></div></div>
-              <div class="adet-field-inline"><label>Quy trình duyệt</label><div class="adet-field-val" id="ddet-process"></div></div>
               <div class="adet-field-inline"><label>Người tạo</label><div class="adet-field-val" id="ddet-created-by"></div></div>
             </div>
             <div class="adet-group">
-              <div class="adet-field-inline"><label>Mức khen thưởng / SV /tập thể</label><div class="adet-field-val" id="ddet-money">—</div></div>
+              <div class="adet-field-inline"><label>Quy trình duyệt</label><div class="adet-field-val" id="ddet-process"></div></div>
               <div class="adet-field-inline"><label>Lý do khen thưởng</label><div class="adet-field-val" id="ddet-reason">—</div></div>
               <div class="adet-field-inline"><label>Ghi chú</label><div class="adet-field-val" id="ddet-note">—</div></div>
+              <div class="adet-field-inline"><label>Số quyết định</label><div class="adet-field-val" id="ddet-issue-code">—</div></div>
+              <div class="adet-field-inline"><label>Ngày Quyết định</label><div class="adet-field-val" id="ddet-issue-effective">—</div></div>
+            </div>
+            <div class="adet-group">
+              <div class="adet-field-inline">
+                <label>Tài liệu đính kèm</label>
+                <div class="cd-filepick" id="ddet-filepick" style="padding:10px 12px">
+                  <div class="cd-filepick-empty">
+                    <div class="cd-filepick-info">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div>
+                        <div class="cd-filepick-name">Chưa có file — nhấn để chọn</div>
+                        <div class="cd-filepick-hint">Excel, Word, PDF · Tối đa 10 MB</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="cd-filepick-picked">
+                    <div class="cd-filepick-info">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      <div class="cd-filepick-name" id="ddet-filepick-picked-name"></div>
+                    </div>
+                    <button type="button" class="icon-btn danger" style="position:relative;z-index:1;background:#fff" title="Xoá file" onclick="removeDdetFile(event)">✕</button>
+                  </div>
+                  <input type="file" id="ddet-file" accept=".xlsx,.xls,.doc,.docx,.pdf" onchange="onDdetFileChange(this)">
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Chế độ SỬA/TẠO MỚI -->
-          <div id="ddet-edit-fields" style="display:none">
-            <div class="f-row col-2">
-              <div class="fi">
-                <label>Tên đề xuất<span class="req">*</span></label>
-                <input class="fc" id="cd-name" placeholder="VD: Khen thưởng SV đạt giải NCKH cấp Trường đợt HK2 2025-2026">
+          <!-- Chế độ SỬA/TẠO MỚI — 3 cột song song, cùng bố cục .adet-groups với chế độ Xem -->
+          <div class="adet-groups" id="ddet-edit-fields" style="display:none">
+
+            <!-- Cột 1 — Phạm vi áp dụng -->
+            <div class="adet-group">
+              <div class="f-row col-2">
+                <div class="fi">
+                  <label>Năm học<span class="req">*</span></label>
+                  <select class="fc" id="cd-academic-year">
+                    <option value="" selected disabled>— Chọn năm học —</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2026-2027">2026-2027</option>
+                  </select>
+                </div>
+                <div class="fi">
+                  <label>Học kỳ áp dụng<span class="req">*</span></label>
+                  <select class="fc" id="cd-semester">
+                    <option value="" selected disabled>— Chọn học kỳ —</option>
+                    <option value="Học kỳ 1">Học kỳ 1</option>
+                    <option value="Học kỳ 2">Học kỳ 2</option>
+                    <option value="Học kỳ hè">Học kỳ hè</option>
+                  </select>
+                </div>
               </div>
               <div class="fi">
+                <label>Đối tượng khen thưởng<span class="req">*</span></label>
+                <div class="grp-pills" id="cd-scope-pills">
+                  <button type="button" class="grp-pill" data-scope="canhan" onclick="pickCdScope('canhan')">Cá nhân</button>
+                  <button type="button" class="grp-pill" data-scope="tapthe" onclick="pickCdScope('tapthe')">Tập thể</button>
+                </div>
+              </div>
+              <div class="fi" style="margin-bottom:0">
                 <label>Hình thức khen thưởng<span class="req">*</span></label>
-                <select class="fc" id="cd-type"></select>
+                <select class="fc" id="cd-period-type">
+                  <option value="" selected disabled>— Chọn hình thức —</option>
+                  <option value="dinhky">Định kỳ</option>
+                  <option value="dotxuat">Đột xuất</option>
+                  <option value="chuyende">Theo chuyên đề</option>
+                </select>
               </div>
             </div>
-            <div class="fi">
-              <label>Quy trình duyệt<span class="req">*</span></label>
-              <select class="fc" id="cd-process"></select>
-              <div class="drl-hint">Danh sách quy trình đang Active đã cấu hình ở Quản lý Quy trình (nhóm Khen thưởng). Hội đồng khen thưởng họp xét ngoài hệ thống — các bước dưới đây chỉ ghi nhận kết quả duyệt.</div>
-            </div>
-            <div class="fi">
-              <label>Phạm vi<span class="req">*</span></label>
-              <div class="grp-pills" id="cd-scope-pills">
-                <button type="button" class="grp-pill" data-scope="canhan" onclick="pickCdScope('canhan')">Cá nhân</button>
-                <button type="button" class="grp-pill" data-scope="tapthe" onclick="pickCdScope('tapthe')">Tập thể</button>
+
+            <!-- Cột 2 — Nội dung đề xuất -->
+            <div class="adet-group">
+              <div class="fi">
+                <label>Đơn vị đề xuất<span class="req">*</span></label>
+                <div class="unit-combo" id="cd-unit-combo">
+                  <input class="fc" id="cd-unit-search" type="text" placeholder="🔍 Tìm đơn vị đề xuất…" autocomplete="off">
+                  <input type="hidden" id="cd-unit">
+                  <div class="unit-combo-menu" id="cd-unit-menu"></div>
+                </div>
+              </div>
+              <div class="fi">
+                <label>Quy trình duyệt<span class="req">*</span></label>
+                <div class="unit-combo" id="cd-process-combo">
+                  <input class="fc" id="cd-process-search" type="text" placeholder="🔍 Tìm quy trình duyệt…" autocomplete="off">
+                  <input type="hidden" id="cd-process">
+                  <div class="unit-combo-menu" id="cd-process-menu"></div>
+                </div>
+                <div class="drl-hint">Danh sách quy trình đang Active đã cấu hình ở Quản lý Quy trình (nhóm Khen thưởng). Hội đồng khen thưởng họp xét ngoài hệ thống — các bước dưới đây chỉ ghi nhận kết quả duyệt.</div>
+              </div>
+              <div class="fi">
+                <label>Lý do khen thưởng</label>
+                <textarea class="fc" id="cd-reason" rows="2" placeholder="Mô tả ngắn gọn thành tích/lý do đề xuất khen thưởng…"></textarea>
+              </div>
+              <div class="fi" style="margin-bottom:0">
+                <label>Ghi chú</label>
+                <textarea class="fc" id="cd-note" rows="2" placeholder="Ghi chú thêm (không bắt buộc)…"></textarea>
               </div>
             </div>
-            <div class="fi">
-              <label>Lý do khen thưởng</label>
-              <textarea class="fc" id="cd-reason" rows="2" placeholder="Mô tả ngắn gọn thành tích/lý do đề xuất khen thưởng…"></textarea>
+
+            <!-- Cột 3 — Thông tin ban hành: không bắt buộc, có thể bổ sung sau -->
+            <div class="adet-group">
+              <div class="fi">
+                <label>Số quyết định</label>
+                <input class="fc" id="cd-issue-code" placeholder="VD: 125/QĐ-ĐHPĐ">
+              </div>
+              <div class="fi" style="margin-bottom:0">
+                <label>Ngày Quyết định</label>
+                <input class="fc" id="cd-issue-effective" type="date">
+              </div>
             </div>
-            <div class="fi" style="margin-bottom:0">
-              <label>Ghi chú</label>
-              <textarea class="fc" id="cd-note" rows="2" placeholder="Ghi chú thêm (không bắt buộc)…"></textarea>
-            </div>
+
           </div>
         </div>
 
-        <!-- Danh sách SV / Tập thể áp dụng -->
+        <!-- Khối 2 — Tài liệu đính kèm (chế độ Sửa/Tạo mới) -->
+        <div class="sec-block" id="ddet-file-edit-block" style="display:none">
+          <div class="sec-title"><span class="sec-badge">2</span> Tài liệu đính kèm</div>
+          <div class="cd-filepick" id="cd-filepick">
+            <div class="cd-filepick-empty">
+              <div class="cd-filepick-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <div>
+                  <div class="cd-filepick-name">Chưa có file — kéo thả hoặc nhấn chọn file</div>
+                  <div class="cd-filepick-hint">Chấp nhận: Excel, Word, PDF · Tối đa 10 MB</div>
+                </div>
+              </div>
+              <span class="btn btn-default">Chọn file</span>
+            </div>
+            <div class="cd-filepick-picked">
+              <div class="cd-filepick-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <div class="cd-filepick-name" id="cd-filepick-picked-name"></div>
+              </div>
+              <button type="button" class="icon-btn danger" style="position:relative;z-index:1;background:#fff" title="Xoá file" onclick="removeCdFile(event)">✕</button>
+            </div>
+            <input type="file" id="cd-file" accept=".xlsx,.xls,.doc,.docx,.pdf" onchange="onCdFileChange(this)">
+          </div>
+        </div>
+
+        <!-- Khối 3 — Danh sách sinh viên / lớp áp dụng -->
         <div class="sec-block" style="margin-bottom:0">
-          <div class="sec-title"><span class="sec-badge">2</span> Danh sách đối tượng <span class="tag tag-default" id="cd-sv-count">0</span></div>
+          <div class="sec-title"><span class="sec-badge">3</span> Danh sách sinh viên <span class="tag tag-default" id="cd-sv-count">0</span></div>
 
           <div id="ddet-sv-view">
             <div class="tbl-wrap">
@@ -310,7 +434,7 @@
           <div id="ddet-sv-edit" style="display:none">
             <div class="cd-sv-toolbar">
               <div class="unit-combo" id="cd-sv-add-combo" style="flex:1">
-                <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV/mã lớp để thêm…" autocomplete="off">
+                <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV để thêm…" autocomplete="off">
                 <div class="unit-combo-menu" id="cd-sv-add-menu"></div>
               </div>
             </div>
@@ -475,33 +599,36 @@ const CLASS_DIRECTORY = [
 /* ============================================================
    DATA — đề xuất khen thưởng (mock)
    ============================================================ */
+const PERIOD_TYPE_LABEL = { dinhky:'Định kỳ', dotxuat:'Đột xuất', chuyende:'Theo chuyên đề' };
+const SCOPE_LABEL = { canhan:'Cá nhân', tapthe:'Tập thể' };
+
 let PROPOSALS = [
-  { id:'r1', code:'DXKT-000001', name:'Khen thưởng SV đạt giải NCKH cấp Trường HK2 2025-2026', typeId:'t425', unit:'u-cntt', processId:'p5',
-    reason:'02 sinh viên đạt giải Nhất, Nhì cuộc thi Nghiên cứu khoa học sinh viên cấp Trường', note:'',
+  { id:'r1', code:'DXKT-000001', academicYear:'2025-2026', semester:'Học kỳ 2', scope:'canhan', periodType:'dotxuat', unit:'u-cntt', processId:'p5',
+    reason:'02 sinh viên đạt giải Nhất, Nhì cuộc thi Nghiên cứu khoa học sinh viên cấp Trường', note:'', issueCode:'', issueEffective:'', fileName:'',
     currentStepIdx:2, status:'Đã duyệt', created:'20/07/2026',
     students:[
-      { mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin' },
-      { mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', typeId:'t425', money:3000000, note:'' },
+      { mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin', typeId:'t425', money:3000000, note:'' },
     ],
     history:[
       { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 20/07/2026' },
       { step:'Khoa/Đơn vị duyệt', status:'Đã duyệt', handler:'PGS.TS. Lê Văn Hùng', note:'Đồng ý khen thưởng', time:'10:00 21/07/2026' },
       { step:'Phòng CTSV duyệt & Ban hành', status:'Đã duyệt', handler:'Nguyễn Văn Admin', note:'Đã ban hành', time:'09:00 22/07/2026' },
     ] },
-  { id:'r2', code:'DXKT-000002', name:'Khen thưởng Tập thể Xuất sắc HK2 2025-2026', typeId:'t101', unit:'u-cntt', processId:'p4',
-    reason:'Lớp CT4801 đạt danh hiệu Tập thể Xuất sắc học kỳ 2', note:'',
+  { id:'r2', code:'DXKT-000002', academicYear:'2025-2026', semester:'Học kỳ 2', scope:'tapthe', periodType:'dinhky', unit:'u-cntt', processId:'p4',
+    reason:'Lớp CT4801 đạt danh hiệu Tập thể Xuất sắc học kỳ 2', note:'', issueCode:'', issueEffective:'', fileName:'',
     currentStepIdx:1, status:'Chờ duyệt', created:'25/07/2026',
-    classes:[ { code:'CT4801', name:'Lớp CT4801 - CNTT khoá 48' } ],
+    classes:[ { code:'CT4801', name:'Lớp CT4801 - CNTT khoá 48', typeId:'t101', money:2000000, note:'' } ],
     history:[
       { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 25/07/2026' },
     ] },
-  { id:'r3', code:'', name:'Khen thưởng SV Giỏi năm học 2025-2026', typeId:'t104', unit:'u-doanhoi', processId:'p4',
-    reason:'', note:'', currentStepIdx:0, status:'Nháp', created:'27/07/2026',
-    students:[ { mssv:'20120223', name:'Hoàng Thị Nga', ctdt:'Công nghệ thông tin' } ],
+  { id:'r3', code:'', academicYear:'2025-2026', semester:'Học kỳ 2', scope:'canhan', periodType:'dinhky', unit:'u-doanhoi', processId:'p4',
+    reason:'', note:'', issueCode:'', issueEffective:'', fileName:'', currentStepIdx:0, status:'Nháp', created:'27/07/2026',
+    students:[ { mssv:'20120223', name:'Hoàng Thị Nga', ctdt:'Công nghệ thông tin', typeId:'t104', money:0, note:'' } ],
     history:[] },
-  { id:'r4', code:'DXKT-000004', name:'Khen thưởng SV Xuất sắc tiêu biểu Lễ khai giảng 2025-2026', typeId:'t105', unit:'u-ctsv', processId:'p4',
-    reason:'Đạt danh hiệu Sinh viên Xuất sắc tiêu biểu', note:'', currentStepIdx:1, status:'Từ chối', created:'15/07/2026',
-    students:[ { mssv:'20120220', name:'Trần Văn Khoa', ctdt:'Khoa học máy tính' } ],
+  { id:'r4', code:'DXKT-000004', academicYear:'2025-2026', semester:'Học kỳ 1', scope:'canhan', periodType:'chuyende', unit:'u-ctsv', processId:'p4',
+    reason:'Đạt danh hiệu Sinh viên Xuất sắc tiêu biểu', note:'', issueCode:'', issueEffective:'', fileName:'', currentStepIdx:1, status:'Từ chối', created:'15/07/2026',
+    students:[ { mssv:'20120220', name:'Trần Văn Khoa', ctdt:'Khoa học máy tính', typeId:'t105', money:2000000, note:'' } ],
     history:[
       { step:'Nộp đề xuất', status:'Đã nộp', handler:'Nguyễn Văn Admin', note:'', time:'08:00 15/07/2026' },
       { step:'Khoa/Đơn vị duyệt', status:'Từ chối', handler:'PGS.TS. Lê Văn Hùng', note:'Hồ sơ minh chứng chưa đầy đủ', time:'09:00 16/07/2026' },
@@ -570,11 +697,6 @@ let currentPage = 1;
 let currentStatus = 'all';
 let filterUnit = '';
 
-function populateTypeFilter(){
-  const sel = document.getElementById('pr-type-select');
-  REWARD_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
-}
-
 function pickStatusTab(status){
   currentStatus = status;
   document.querySelectorAll('.status-tab').forEach(b => b.classList.toggle('active', b.dataset.status === status));
@@ -593,9 +715,9 @@ function renderGrid(){
 
   let list = PROPOSALS.slice();
   if (currentStatus !== 'all') list = list.filter(p => p.status === currentStatus);
-  if (typeFilter !== 'all') list = list.filter(p => p.typeId === typeFilter);
+  if (typeFilter !== 'all') list = list.filter(p => p.periodType === typeFilter);
   if (filterUnit) list = list.filter(p => p.unit === filterUnit);
-  if (q) list = list.filter(p => p.name.toLowerCase().includes(q)
+  if (q) list = list.filter(p => (p.code||'').toLowerCase().includes(q)
     || (p.students||[]).some(s => s.name.toLowerCase().includes(q) || s.mssv.includes(q))
     || (p.classes||[]).some(c => c.name.toLowerCase().includes(q)));
 
@@ -617,8 +739,9 @@ function renderGrid(){
     <tr class="di-row" onclick="openDetail('${p.id}')">
       <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
       <td><span class="di-code">${p.code || '—'}</span></td>
-      <td>${p.name}</td>
-      <td>${typeById(p.typeId).name}</td>
+      <td>${PERIOD_TYPE_LABEL[p.periodType] || '—'}</td>
+      <td><span class="tag tag-default">${SCOPE_LABEL[p.scope]}</span></td>
+      <td>${UNIT_LABEL[p.unit] || '—'}</td>
       <td>${objectCount(p)}</td>
       <td>${step ? `<div class="approver-step">${step.title}</div><div class="approver-name">${stepApproverLabels(step).join(', ') || '—'}</div>` : '—'}</td>
       <td><span class="tag ${statusClass[p.status]}">${p.status}</span></td>
@@ -629,7 +752,7 @@ function renderGrid(){
         </button>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có đề xuất nào khớp bộ lọc đang chọn</div></td></tr>`;
+  }).join('') || `<tr><td colspan="10"><div class="tbl-empty">Chưa có đề xuất nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -657,12 +780,15 @@ function openDetail(id){
   editingProposalId = id;
   ddetMode = 'view';
   document.getElementById('view-list').style.display = 'none';
-  document.getElementById('view-detail').style.display = '';
+  document.getElementById('view-detail').style.display = 'block';
+  document.getElementById('ddet-btn-history').style.display = '';
+  document.getElementById('breadcrumb').innerHTML = `Quản lý Khen thưởng / Đề xuất Khen thưởng / <b style="color:var(--text-1)">Chi tiết</b>`;
   renderDetail();
 }
 function closeDetail(){
   document.getElementById('view-detail').style.display = 'none';
   document.getElementById('view-list').style.display = '';
+  document.getElementById('breadcrumb').innerHTML = `Quản lý Khen thưởng / <b style="color:var(--text-1)">Đề xuất Khen thưởng</b>`;
   editingProposalId = null;
   renderGrid();
 }
@@ -671,26 +797,31 @@ function renderDetail(){
   const p = proposalById(editingProposalId);
   applyMode('view');
 
-  document.getElementById('ddet-title').textContent = p.name;
-  document.getElementById('ddet-name').textContent = p.name;
-  document.getElementById('ddet-type').textContent = typeById(p.typeId).name;
+  document.getElementById('ddet-title').textContent = p.code || 'Chi tiết đề xuất';
+  document.getElementById('ddet-academic-year').textContent = p.academicYear || '—';
+  document.getElementById('ddet-semester').textContent = p.semester || '—';
+  document.getElementById('ddet-scope').textContent = SCOPE_LABEL[p.scope] || '—';
+  document.getElementById('ddet-period-type').textContent = PERIOD_TYPE_LABEL[p.periodType] || '—';
   document.getElementById('ddet-unit').textContent = UNIT_LABEL[p.unit] || '—';
   document.getElementById('ddet-process').textContent = processById(p.processId) ? processById(p.processId).name : '—';
   const creator = (p.history && p.history[0]) ? p.history[0].handler : CURRENT_USER;
   document.getElementById('ddet-created-by').textContent = userDisplay(creator);
-  document.getElementById('ddet-money').textContent = typeById(p.typeId).money ? typeById(p.typeId).money.toLocaleString('vi-VN') + ' đ' : '—';
   document.getElementById('ddet-reason').textContent = p.reason || '—';
   document.getElementById('ddet-note').textContent = p.note || '—';
+  document.getElementById('ddet-issue-code').textContent = p.issueCode || '—';
+  document.getElementById('ddet-issue-effective').textContent = p.issueEffective || '—';
+  document.getElementById('ddet-filepick').classList.toggle('has-file', !!p.fileName);
+  if (p.fileName) document.getElementById('ddet-filepick-picked-name').textContent = p.fileName;
 
-  const isStudentMode = !!(p.students && p.students.length) || !(p.classes && p.classes.length);
+  const isStudentMode = p.scope === 'canhan';
   document.getElementById('ddet-sv-thead-row').innerHTML = isStudentMode
-    ? '<th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th>'
-    : '<th style="width:48px">STT</th><th style="width:110px">Mã lớp</th><th>Tên lớp</th>';
+    ? '<th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th><th>Danh hiệu khen thưởng</th><th style="width:130px;text-align:right">Mức khen thưởng (VNĐ)</th><th>Ghi chú</th>'
+    : '<th style="width:48px">STT</th><th style="width:110px">Mã lớp</th><th>Tên lớp</th><th>Danh hiệu khen thưởng</th><th style="width:130px;text-align:right">Mức khen thưởng (VNĐ)</th><th>Ghi chú</th>';
   const rows = isStudentMode ? (p.students||[]) : (p.classes||[]);
   document.getElementById('ddet-sv-tbody').innerHTML = rows.map((r, idx) => isStudentMode
-    ? `<tr><td class="text-muted">${idx+1}</td><td>${r.mssv}</td><td>${r.name}</td><td>${r.ctdt}</td></tr>`
-    : `<tr><td class="text-muted">${idx+1}</td><td>${r.code}</td><td>${r.name}</td></tr>`
-  ).join('') || `<tr><td colspan="4"><div class="tbl-empty">Chưa có đối tượng nào</div></td></tr>`;
+    ? `<tr><td class="text-muted">${idx+1}</td><td>${r.mssv}</td><td>${r.name}</td><td>${r.ctdt}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : '—'}</td><td style="text-align:right">${r.money ? r.money.toLocaleString('vi-VN') : '—'}</td><td class="text-muted">${r.note || ''}</td></tr>`
+    : `<tr><td class="text-muted">${idx+1}</td><td>${r.code}</td><td>${r.name}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : '—'}</td><td style="text-align:right">${r.money ? r.money.toLocaleString('vi-VN') : '—'}</td><td class="text-muted">${r.note || ''}</td></tr>`
+  ).join('') || `<tr><td colspan="7"><div class="tbl-empty">Chưa có đối tượng nào</div></td></tr>`;
   document.getElementById('cd-sv-count').textContent = rows.length + (isStudentMode ? ' SV' : ' tập thể');
 
   const proc = processById(p.processId);
@@ -709,6 +840,7 @@ function applyMode(mode){
   ddetMode = mode;
   document.getElementById('ddet-view-fields').style.display = mode === 'view' ? '' : 'none';
   document.getElementById('ddet-edit-fields').style.display = mode === 'view' ? 'none' : '';
+  document.getElementById('ddet-file-edit-block').style.display = mode === 'view' ? 'none' : '';
   document.getElementById('ddet-sv-view').style.display = mode === 'view' ? '' : 'none';
   document.getElementById('ddet-sv-edit').style.display = mode === 'view' ? 'none' : '';
   ['ddet-btn-edit','ddet-btn-submit-draft','ddet-btn-approve','ddet-btn-reject'].forEach(id => toggleBtn(id, false));
@@ -718,34 +850,117 @@ function applyMode(mode){
 }
 
 /* == Tạo mới / Sửa đề xuất == */
-function populateCdTypeSelect(){
-  const sel = document.getElementById('cd-type');
-  sel.innerHTML = REWARD_TYPES.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+/* Combobox tìm kiếm cho Hình thức khen thưởng / Quy trình duyệt — cùng pattern .unit-combo/
+   .unit-combo-menu đã dùng cho bộ lọc đơn vị (setupUnitCombo), viết riêng vì nguồn dữ liệu và
+   id khác nhau (input ẩn lưu giá trị đã chọn, input hiển thị để gõ tìm kiếm). */
+function setupCdSearchCombo(searchId, hiddenId, menuId, items, onPick){
+  const input = document.getElementById(searchId);
+  const hidden = document.getElementById(hiddenId);
+  const menu = document.getElementById(menuId);
+  function render(q){
+    const query = (q||'').toLowerCase();
+    const filtered = items.filter(it => it.label.toLowerCase().includes(query));
+    menu.innerHTML = filtered.map(it => `<div class="unit-combo-item" data-v="${it.value}">${it.label}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
+    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      hidden.value = el.dataset.v;
+      input.value = el.textContent;
+      menu.classList.remove('open');
+      if (onPick) onPick(el.dataset.v);
+    }));
+  }
+  input.oninput = () => { hidden.value = ''; render(input.value); menu.classList.add('open'); };
+  input.onfocus = () => { render(input.value); menu.classList.add('open'); };
+  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+}
+
+function setCdSearchComboValue(searchId, hiddenId, value, label){
+  document.getElementById(hiddenId).value = value;
+  document.getElementById(searchId).value = label;
+}
+
+function populateCdUnitSelect(){
+  setupCdSearchCombo('cd-unit-search', 'cd-unit', 'cd-unit-menu',
+    UNITS.map(u => ({ value:u.value, label:u.label })));
 }
 
 function populateCdProcessSelect(){
-  const sel = document.getElementById('cd-process');
-  sel.innerHTML = PROCESSES.filter(p => p.status === 'active').map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  setupCdSearchCombo('cd-process-search', 'cd-process', 'cd-process-menu',
+    PROCESSES.filter(p => p.status === 'active').map(p => ({ value:p.id, label:p.name })));
+}
+
+/* == Tài liệu đính kèm — copy pattern cd-filepick/has-file từ mh-admin-08 == */
+const CD_FILE_MAX_SIZE = 10 * 1024 * 1024;
+function onCdFileChange(input){
+  const picker = document.getElementById('cd-filepick');
+  if (input.files.length){
+    const file = input.files[0];
+    if (file.size > CD_FILE_MAX_SIZE){
+      showToast('File vượt quá dung lượng tối đa 10 MB, vui lòng chọn file khác.', 'err');
+      input.value = '';
+      picker.classList.remove('has-file');
+      return;
+    }
+    document.getElementById('cd-filepick-picked-name').textContent = file.name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+function removeCdFile(e){
+  e.stopPropagation();
+  document.getElementById('cd-file').value = '';
+  document.getElementById('cd-filepick').classList.remove('has-file');
+}
+function onDdetFileChange(input){
+  const picker = document.getElementById('ddet-filepick');
+  if (input.files.length){
+    const file = input.files[0];
+    if (file.size > CD_FILE_MAX_SIZE){
+      showToast('File vượt quá dung lượng tối đa 10 MB, vui lòng chọn file khác.', 'err');
+      input.value = '';
+      picker.classList.remove('has-file');
+      return;
+    }
+    document.getElementById('ddet-filepick-picked-name').textContent = file.name;
+    picker.classList.add('has-file');
+  } else {
+    picker.classList.remove('has-file');
+  }
+}
+function removeDdetFile(e){
+  e.stopPropagation();
+  document.getElementById('ddet-file').value = '';
+  document.getElementById('ddet-filepick').classList.remove('has-file');
 }
 
 function pickCdScope(scope){
   cdScope = scope;
   document.querySelectorAll('#cd-scope-pills .grp-pill').forEach(b => b.classList.toggle('active', b.dataset.scope === scope));
   renderCdSvTable();
+  const addSearch = document.getElementById('cd-sv-add-search');
+  if (addSearch) addSearch.placeholder = scope === 'canhan' ? '🔍 Tìm theo tên hoặc MSSV để thêm…' : '🔍 Tìm theo lớp hành chính để thêm…';
 }
 
 function openCreateProposal(){
   editingProposalId = null;
-  populateCdTypeSelect();
+  populateCdUnitSelect();
   populateCdProcessSelect();
-  document.getElementById('cd-name').value = '';
+  document.getElementById('cd-academic-year').value = '';
+  document.getElementById('cd-semester').value = '';
+  document.getElementById('cd-period-type').value = '';
   document.getElementById('cd-reason').value = '';
   document.getElementById('cd-note').value = '';
+  document.getElementById('cd-issue-code').value = '';
+  document.getElementById('cd-issue-effective').value = '';
+  document.getElementById('cd-file').value = '';
+  document.getElementById('cd-filepick').classList.remove('has-file');
   cdStudents = [];
   cdClasses = [];
   document.getElementById('view-list').style.display = 'none';
-  document.getElementById('view-detail').style.display = '';
+  document.getElementById('view-detail').style.display = 'block';
   document.getElementById('ddet-title').textContent = 'Tạo đề xuất khen thưởng';
+  document.getElementById('ddet-btn-history').style.display = 'none';
+  document.getElementById('breadcrumb').innerHTML = `Quản lý Khen thưởng / Đề xuất Khen thưởng / <b style="color:var(--text-1)">Tạo đề xuất</b>`;
   applyMode('create');
   pickCdScope('canhan');
   setupSvAddCombo();
@@ -753,13 +968,21 @@ function openCreateProposal(){
 
 function openEditProposal(){
   const p = proposalById(editingProposalId);
-  populateCdTypeSelect();
+  populateCdUnitSelect();
   populateCdProcessSelect();
-  document.getElementById('cd-type').value = p.typeId;
-  document.getElementById('cd-process').value = p.processId;
-  document.getElementById('cd-name').value = p.name;
+  setCdSearchComboValue('cd-unit-search', 'cd-unit', p.unit, UNIT_LABEL[p.unit] || '');
+  const proc = processById(p.processId);
+  setCdSearchComboValue('cd-process-search', 'cd-process', p.processId, proc ? proc.name : '');
+  document.getElementById('cd-academic-year').value = p.academicYear || '';
+  document.getElementById('cd-semester').value = p.semester || '';
+  document.getElementById('cd-period-type').value = p.periodType || '';
   document.getElementById('cd-reason').value = p.reason;
   document.getElementById('cd-note').value = p.note;
+  document.getElementById('cd-issue-code').value = p.issueCode || '';
+  document.getElementById('cd-issue-effective').value = p.issueEffective || '';
+  document.getElementById('cd-file').value = '';
+  document.getElementById('cd-filepick').classList.toggle('has-file', !!p.fileName);
+  if (p.fileName) document.getElementById('cd-filepick-picked-name').textContent = p.fileName;
   cdStudents = (p.students||[]).slice();
   cdClasses = (p.classes||[]).slice();
   document.getElementById('ddet-title').textContent = 'Sửa đề xuất khen thưởng';
@@ -773,16 +996,47 @@ function cancelEdit(){
   else closeDetail();
 }
 
+/* Mỗi dòng SV/Lớp trong bảng chọn Danh hiệu khen thưởng riêng (combobox nhỏ) — khi chọn xong
+   tự điền Mức khen thưởng theo hình thức đã chọn (REWARD_TYPES), Admin có thể sửa tay lại. */
 function renderCdSvTable(){
   const isStudentMode = cdScope === 'canhan';
   document.getElementById('cd-sv-thead-row').innerHTML = isStudentMode
-    ? '<th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th><th style="width:50px"></th>'
-    : '<th style="width:48px">STT</th><th style="width:110px">Mã lớp</th><th>Tên lớp</th><th style="width:50px"></th>';
+    ? '<th style="width:40px"></th><th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ tên</th><th>CTĐT</th><th style="width:200px">Danh hiệu khen thưởng</th><th style="width:130px">Mức khen thưởng (VNĐ)</th><th style="width:160px">Ghi chú</th><th style="width:50px"></th>'
+    : '<th style="width:40px"></th><th style="width:48px">STT</th><th style="width:110px">Mã lớp</th><th>Tên lớp</th><th style="width:200px">Danh hiệu khen thưởng</th><th style="width:130px">Mức khen thưởng (VNĐ)</th><th style="width:160px">Ghi chú</th><th style="width:50px"></th>';
   const rows = isStudentMode ? cdStudents : cdClasses;
-  document.getElementById('cd-sv-tbody').innerHTML = rows.map((r, idx) => isStudentMode
-    ? `<tr><td class="text-muted">${idx+1}</td><td>${r.mssv}</td><td>${r.name}</td><td>${r.ctdt}</td><td><button type="button" class="icon-btn danger" onclick="removeCdRow(${idx})">✕</button></td></tr>`
-    : `<tr><td class="text-muted">${idx+1}</td><td>${r.code}</td><td>${r.name}</td><td><button type="button" class="icon-btn danger" onclick="removeCdRow(${idx})">✕</button></td></tr>`
-  ).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có đối tượng nào — tìm và thêm ở ô phía trên</div></td></tr>`;
+  const typeChoices = REWARD_TYPES.filter(t => t.scope === cdScope);
+  document.getElementById('cd-sv-tbody').innerHTML = rows.map((r, idx) => `
+    <tr>
+      <td><input type="checkbox" class="cd-sv-check" data-idx="${idx}"></td>
+      <td class="text-muted">${idx+1}</td>
+      ${isStudentMode ? `<td>${r.mssv}</td><td>${r.name}</td><td>${r.ctdt}</td>` : `<td>${r.code}</td><td>${r.name}</td>`}
+      <td>
+        <select class="fc" style="font-size:12.5px" onchange="onCdRowTypeChange(${idx}, this.value)">
+          <option value="" ${!r.typeId ? 'selected' : ''} disabled>— Chọn —</option>
+          ${typeChoices.map(t => `<option value="${t.id}" ${t.id===r.typeId?'selected':''}>${t.name}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="fc" style="font-size:12.5px" type="number" min="0" step="100000" value="${r.money || ''}" oninput="onCdRowMoneyChange(${idx}, this.value)"></td>
+      <td><input class="fc" style="font-size:12.5px" type="text" value="${r.note || ''}" oninput="onCdRowNoteChange(${idx}, this.value)"></td>
+      <td><button type="button" class="icon-btn danger" onclick="removeCdRow(${idx})">✕</button></td>
+    </tr>`
+  ).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có đối tượng nào — tìm và thêm ở ô phía trên</div></td></tr>`;
+}
+
+function onCdRowTypeChange(idx, typeId){
+  const rows = cdScope === 'canhan' ? cdStudents : cdClasses;
+  rows[idx].typeId = typeId;
+  const t = typeById(typeId);
+  if (t) rows[idx].money = t.money || 0;
+  renderCdSvTable();
+}
+function onCdRowMoneyChange(idx, value){
+  const rows = cdScope === 'canhan' ? cdStudents : cdClasses;
+  rows[idx].money = Number(value) || 0;
+}
+function onCdRowNoteChange(idx, value){
+  const rows = cdScope === 'canhan' ? cdStudents : cdClasses;
+  rows[idx].note = value;
 }
 
 function removeCdRow(idx){
@@ -790,9 +1044,12 @@ function removeCdRow(idx){
   renderCdSvTable();
 }
 
+/* Ô tìm-thêm đối tượng — tìm theo SV (MSSV/tên) khi Cá nhân, đổi sang tìm theo Lớp hành chính
+   khi Tập thể (xem pickCdScope()). Dòng mới thêm chưa có Danh hiệu/Mức thưởng, Admin chọn ở bảng. */
 function setupSvAddCombo(){
   const input = document.getElementById('cd-sv-add-search');
   const menu = document.getElementById('cd-sv-add-menu');
+  input.placeholder = cdScope === 'canhan' ? '🔍 Tìm theo tên hoặc MSSV để thêm…' : '🔍 Tìm theo lớp hành chính để thêm…';
   input.value = '';
   function render(q){
     const query = (q||'').toLowerCase();
@@ -804,9 +1061,9 @@ function setupSvAddCombo(){
     menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
       const key = el.dataset.k;
       if (cdScope === 'canhan'){
-        if (!cdStudents.some(s => s.mssv === key)){ const s = STUDENT_DIRECTORY.find(x => x.mssv === key); cdStudents.push(s); }
+        if (!cdStudents.some(s => s.mssv === key)){ const s = STUDENT_DIRECTORY.find(x => x.mssv === key); cdStudents.push({ ...s, typeId:'', money:0, note:'' }); }
       } else {
-        if (!cdClasses.some(c => c.code === key)){ const c = CLASS_DIRECTORY.find(x => x.code === key); cdClasses.push(c); }
+        if (!cdClasses.some(c => c.code === key)){ const c = CLASS_DIRECTORY.find(x => x.code === key); cdClasses.push({ ...c, typeId:'', money:0, note:'' }); }
       }
       input.value = '';
       menu.classList.remove('open');
@@ -819,18 +1076,31 @@ function setupSvAddCombo(){
 }
 
 function validateCd(){
-  const name = document.getElementById('cd-name').value.trim();
-  if (!name){ showToast('Vui lòng nhập tên đề xuất', 'err'); return null; }
+  const academicYear = document.getElementById('cd-academic-year').value;
+  if (!academicYear){ showToast('Vui lòng chọn năm học', 'err'); return null; }
+  const semester = document.getElementById('cd-semester').value;
+  if (!semester){ showToast('Vui lòng chọn học kỳ áp dụng', 'err'); return null; }
+  const periodType = document.getElementById('cd-period-type').value;
+  if (!periodType){ showToast('Vui lòng chọn hình thức khen thưởng', 'err'); return null; }
+  const unit = document.getElementById('cd-unit').value;
+  if (!unit){ showToast('Vui lòng chọn đơn vị đề xuất', 'err'); return null; }
   const processId = document.getElementById('cd-process').value;
   if (!processId){ showToast('Vui lòng chọn quy trình duyệt', 'err'); return null; }
   const objects = cdScope === 'canhan' ? cdStudents : cdClasses;
   if (!objects.length){ showToast('Vui lòng thêm ít nhất 1 đối tượng khen thưởng', 'err'); return null; }
+  if (objects.some(o => !o.typeId)){ showToast('Vui lòng chọn Danh hiệu khen thưởng cho tất cả đối tượng trong danh sách', 'err'); return null; }
+  const fileInput = document.getElementById('cd-file');
   return {
-    name,
-    typeId: document.getElementById('cd-type').value,
+    academicYear,
+    semester,
+    periodType,
+    unit,
     processId,
     reason: document.getElementById('cd-reason').value.trim(),
     note: document.getElementById('cd-note').value.trim(),
+    issueCode: document.getElementById('cd-issue-code').value.trim(),
+    issueEffective: document.getElementById('cd-issue-effective').value,
+    fileName: fileInput.files.length ? fileInput.files[0].name : (editingProposalId ? proposalById(editingProposalId).fileName : ''),
   };
 }
 
@@ -841,6 +1111,7 @@ function submitCreate(isDraft){
   if (editingProposalId){
     const p = proposalById(editingProposalId);
     Object.assign(p, data);
+    p.scope = cdScope;
     if (cdScope === 'canhan'){ p.students = cdStudents.slice(); p.classes = []; } else { p.classes = cdClasses.slice(); p.students = []; }
     if (!isDraft){
       p.status = 'Chờ duyệt'; p.currentStepIdx = 1;
@@ -851,7 +1122,7 @@ function submitCreate(isDraft){
   } else {
     const newP = {
       id: 'r' + Date.now(), code: isDraft ? '' : ('DXKT-' + String(100000 + PROPOSALS.length + 1).slice(-6)),
-      ...data, currentStepIdx: isDraft ? 0 : 1, status: isDraft ? 'Nháp' : 'Chờ duyệt', created: 'Hôm nay',
+      ...data, scope: cdScope, currentStepIdx: isDraft ? 0 : 1, status: isDraft ? 'Nháp' : 'Chờ duyệt', created: 'Hôm nay',
       students: cdScope === 'canhan' ? cdStudents.slice() : [],
       classes: cdScope === 'tapthe' ? cdClasses.slice() : [],
       history: isDraft ? [] : [{ step:'Nộp đề xuất', status:'Đã nộp', handler:CURRENT_USER, note:'', time:'Hôm nay' }],
@@ -930,7 +1201,6 @@ function openHistory(){
   openModal('modal-history');
 }
 
-populateTypeFilter();
 renderGrid();
 </script>
 </body>

@@ -487,7 +487,7 @@
             <input class="fc" id="new-form-code" readonly style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;background:#fafafa;color:var(--text-3)">
           </div>
           <div class="fi" id="new-form-dept-wrap">
-            <label>Đơn vị ban hành<span class="req">*</span></label>
+            <label>Đơn vị phụ trách<span class="req">*</span></label>
             <select class="fc" id="new-form-dept">
               <option value="" selected disabled>— Chọn đơn vị —</option>
             </select>
@@ -517,18 +517,18 @@
 
         <div class="f-row col-2">
           <div class="fi">
-            <label>Đơn vị áp dụng</label>
-            <div class="msel" id="new-form-applyunit-msel">
-              <div class="msel-trigger" onclick="toggleMsel('new-form-applyunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Khoa/Trường —</span></div>
+            <label>Đơn vị trực thuộc</label>
+            <div class="msel" id="new-form-parentunit-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-parentunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Trường/Khoa —</span></div>
               <div class="msel-menu"></div>
             </div>
-            <input class="fc" id="new-form-applyunit-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
+            <input class="fc" id="new-form-parentunit-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
           </div>
 
           <div class="fi">
-            <label>Khoá áp dụng</label>
-            <div class="msel" id="new-form-cohort-msel">
-              <div class="msel-trigger" onclick="toggleMsel('new-form-cohort-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi khoá —</span></div>
+            <label>Khoa quản lý</label>
+            <div class="msel" id="new-form-applyunit-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-applyunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Khoa con —</span></div>
               <div class="msel-menu"></div>
             </div>
           </div>
@@ -536,19 +536,27 @@
 
         <div class="f-row col-2">
           <div class="fi">
-            <label>Hệ đào tạo<span class="req">*</span></label>
+            <label>Hệ đào tạo</label>
             <div class="msel" id="new-form-scope-msel">
-              <div class="msel-trigger" onclick="toggleMsel('new-form-scope-msel')"><span class="msel-placeholder">— Chọn hệ đào tạo —</span></div>
+              <div class="msel-trigger" onclick="toggleMsel('new-form-scope-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi hệ đào tạo —</span></div>
               <div class="msel-menu"></div>
             </div>
           </div>
 
           <div class="fi">
-            <label>Chương trình đào tạo</label>
-            <div class="msel" id="new-form-program-msel">
-              <div class="msel-trigger" onclick="toggleMsel('new-form-program-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi chương trình —</span></div>
+            <label>Niên khoá</label>
+            <div class="msel" id="new-form-cohort-msel">
+              <div class="msel-trigger" onclick="toggleMsel('new-form-cohort-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi khoá —</span></div>
               <div class="msel-menu"></div>
             </div>
+          </div>
+        </div>
+
+        <div class="fi">
+          <label>Chương trình đào tạo</label>
+          <div class="msel" id="new-form-program-msel">
+            <div class="msel-trigger" onclick="toggleMsel('new-form-program-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi chương trình —</span></div>
+            <div class="msel-menu"></div>
           </div>
         </div>
 
@@ -1247,6 +1255,7 @@ function ownerLabel(unitId){
 }
 
 function scopeText(scopes){
+  if (!scopes.length) return 'Tất cả hệ đào tạo';
   return SCOPE_ORDER.filter(s => scopes.includes(s)).map(s => SCOPE_LABEL[s]).join(', ');
 }
 
@@ -1681,13 +1690,18 @@ function doCopyForm(){
     // trường kê khai thêm, quy trình xử lý...) — chỉ ownerUnit và applyUnits là
     // gán lại theo đơn vị đích, vì bản sao này thuộc về và chỉ áp dụng cho
     // chính Khoa/Trường vừa sao chép về, không kế thừa phạm vi áp dụng gốc.
+    // Khoa quản lý mặc định lấy đơn vị đích + toàn bộ Khoa con (Cấp 3) trực
+    // thuộc, để bản sao áp dụng luôn cho các Khoa con mà không cần chọn lại.
+    // Trạng thái luôn đặt Inactive — cần rà soát/kích hoạt thủ công trước khi dùng.
+    const targetSubunits = UNITS.filter(u => u.level === 3 && u.parent === targetUnit).map(u => u.id);
     const copy = {
       ...source,
       id: 'f-copy-' + sourceId + '-' + Date.now() + '-' + Math.floor(Math.random()*1000),
       itemId: maxItemId() + 1,
       code: source.code + '-' + targetUnit.replace('u-', '').toUpperCase(),
       ownerUnit: targetUnit,
-      applyUnits: [targetUnit],
+      applyUnits: [targetUnit, ...targetSubunits],
+      status: 'inactive',
       name: source.name + ' (' + unitById(targetUnit).name + ')',
       scopes: source.scopes.slice(),
       programs: (source.programs || []).slice(),
@@ -1727,6 +1741,42 @@ function doCopyForm(){
 const COHORTS = ['K44', 'K45', 'K46', 'K47', 'K48'];
 const TRAINING_PROGRAMS = ['Công nghệ thông tin', 'Khoa học máy tính', 'Hệ thống thông tin', 'Kỹ thuật phần mềm', 'Mạng máy tính', 'Kinh tế', 'Quản trị kinh doanh', 'Kế toán'];
 
+/* Dữ liệu demo: Khoa/Trường (Cấp 2) nào có Hệ đào tạo/Niên khoá/Chương trình đào tạo
+   nào — dùng để giới hạn 3 msel này khi Admin Cấp 2 đang sửa 1 biểu mẫu đã bị khoá
+   cứng Khoa quản lý (bản sao sau Sao chép, hoặc fork-as-copy khi sửa biểu mẫu Cấp 1
+   trong ngữ cảnh Cấp 2 — xem setFormDeptAndApplyUnitLocked). Đơn vị Cấp 1 (không
+   khoá) không tra theo mapping này, vẫn thấy đủ toàn bộ SCOPE_ORDER/COHORTS/
+   TRAINING_PROGRAMS như trước. Đây là dữ liệu DEMO minh hoạ hành vi UI — nguồn
+   dữ liệu mapping thật cần PO/Dev BE xác nhận trước khi lên production. */
+const UNIT_SCOPES = {
+  'u-cntt':     ['chinhquy', 'vlvh'],
+  'u-kt':       ['chinhquy', 'vlvh', 'lienthong'],
+  'u-truongxd': ['chinhquy'],
+  'u-ngoaingu': ['chinhquy', 'vlvh'],
+  'u-yduoc':    ['chinhquy', 'saudaihoc'],
+};
+const UNIT_COHORTS = {
+  'u-cntt':     ['K44', 'K45', 'K46', 'K47', 'K48'],
+  'u-kt':       ['K44', 'K45', 'K46'],
+  'u-truongxd': ['K45', 'K46', 'K47'],
+  'u-ngoaingu': ['K44', 'K45', 'K46', 'K47'],
+  'u-yduoc':    ['K46', 'K47', 'K48'],
+};
+const UNIT_PROGRAMS = {
+  'u-cntt':     ['Công nghệ thông tin', 'Khoa học máy tính', 'Hệ thống thông tin', 'Kỹ thuật phần mềm', 'Mạng máy tính'],
+  'u-kt':       ['Kinh tế', 'Quản trị kinh doanh', 'Kế toán'],
+  'u-truongxd': ['Công nghệ thông tin'],
+  'u-ngoaingu': [],
+  'u-yduoc':    [],
+};
+
+/* Quy về đúng 1 Khoa/Trường Cấp 2 để tra UNIT_SCOPES/UNIT_COHORTS/UNIT_PROGRAMS —
+   Cấp 3 (Khoa con/Bộ môn) luôn dùng chung mapping của Cấp 2 cha. */
+function unitScopeKey(unitId){
+  const u = unitById(unitId);
+  return u.level === 3 ? u.parent : u.id;
+}
+
 /* Multi-select dropdown — bấm ô để mở/đóng danh sách checkbox, chọn nhiều
    mục, đóng lại hiển thị dạng tag ngay trong ô. Trạng thái chọn của mỗi ô
    lưu trong MSEL_STATE theo id, options cấu hình 1 lần lúc populate. */
@@ -1752,12 +1802,14 @@ function selectAllMsel(containerId){
   const state = MSEL_STATE[containerId];
   state.selected = state.options.map(o => o.value);
   renderMselTrigger(containerId);
+  if (containerId === 'new-form-parentunit-msel') { renderApplyUnitOptionsFromParent(); renderTrainingFieldsFromParent(); }
 }
 
 function deselectAllMsel(containerId){
   const state = MSEL_STATE[containerId];
   state.selected = [];
   renderMselTrigger(containerId);
+  if (containerId === 'new-form-parentunit-msel') { renderApplyUnitOptionsFromParent(); renderTrainingFieldsFromParent(); }
 }
 
 function toggleMsel(containerId){
@@ -1771,12 +1823,14 @@ function toggleMselOption(containerId, value){
   const idx = state.selected.indexOf(value);
   if (idx === -1) state.selected.push(value); else state.selected.splice(idx, 1);
   renderMselTrigger(containerId);
+  if (containerId === 'new-form-parentunit-msel') { renderApplyUnitOptionsFromParent(); renderTrainingFieldsFromParent(); }
 }
 
 function removeMselValue(containerId, value){
   const state = MSEL_STATE[containerId];
   state.selected = state.selected.filter(v => v !== value);
   renderMselTrigger(containerId);
+  if (containerId === 'new-form-parentunit-msel') { renderApplyUnitOptionsFromParent(); renderTrainingFieldsFromParent(); }
 }
 
 function renderMselTrigger(containerId){
@@ -1955,12 +2009,10 @@ function newFormGoToStep(step){
     const code = document.getElementById('new-form-code').value.trim();
     const ownerUnit = newFormLockedUnit || document.getElementById('new-form-dept').value;
     const name = document.getElementById('new-form-name').value.trim();
-    const scopes = getMselValues('new-form-scope-msel');
     const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
     if (isCodeTaken(code, newFormEditId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
-    if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
+    if (!ownerUnit) { showToast('Vui lòng chọn đơn vị phụ trách.', 'err'); return; }
     if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
-    if (!scopes.length) { showToast('Vui lòng chọn ít nhất 1 hệ đào tạo.', 'err'); return; }
     if (!studentStatuses.length) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
   }
 
@@ -2023,10 +2075,13 @@ function setFormDeptAndApplyUnitLocked(unitId){
   deptLockedEl.style.display = isLocked ? '' : 'none';
   if (isLocked) deptLockedEl.value = unitName + ' (cố định — bản sao chỉ thuộc về đơn vị này)';
 
-  document.getElementById('new-form-applyunit-msel').style.display = isLocked ? 'none' : '';
-  const applyLockedEl = document.getElementById('new-form-applyunit-locked');
-  applyLockedEl.style.display = isLocked ? '' : 'none';
-  if (isLocked) applyLockedEl.value = unitName + ' (cố định — bản sao chỉ áp dụng cho đơn vị này)';
+  // "Đơn vị trực thuộc" bị khoá cứng = đúng đơn vị đích khi đang sửa bản sao —
+  // nhưng "Khoa quản lý" (Cấp 3) KHÔNG bị khoá/ẩn, vẫn cho Admin tự chọn Khoa
+  // con của đơn vị đó (xem renderApplyUnitOptionsFromParent).
+  document.getElementById('new-form-parentunit-msel').style.display = isLocked ? 'none' : '';
+  const parentLockedEl = document.getElementById('new-form-parentunit-locked');
+  parentLockedEl.style.display = isLocked ? '' : 'none';
+  if (isLocked) parentLockedEl.value = unitName + ' (cố định — bản sao chỉ thuộc về đơn vị này)';
 }
 
 function resetNewFormWizard(){
@@ -2046,13 +2101,86 @@ function resetNewFormWizard(){
   document.getElementById('new-form-status').value = 'inactive';
   resetMsel('new-form-scope-msel');
   resetMsel('new-form-program-msel');
+  resetMsel('new-form-parentunit-msel');
   resetMsel('new-form-applyunit-msel');
   resetMsel('new-form-cohort-msel');
   newFormExtraFields = [];
   renderExtraFields();
 }
 
-function populateNewFormDeptSelect(){
+/* "Khoa quản lý" (Cấp 3) render theo đúng các "Đơn vị trực thuộc" (Cấp 2) đang
+   được chọn ở new-form-parentunit-msel — gọi lại mỗi khi parentunit-msel đổi
+   giá trị (chọn/bỏ chọn/chọn tất cả/xoá tag), xem toggleMselOption/removeMselValue/
+   selectAllMsel/deselectAllMsel. Đơn vị trực thuộc không có Khoa con nào thì
+   Khoa quản lý không có option nào để chọn (để trống — ngầm hiểu áp dụng toàn bộ
+   đơn vị trực thuộc đó, không có Khoa con để giới hạn thêm). */
+function renderApplyUnitOptionsFromParent(){
+  const parentIds = getMselValues('new-form-parentunit-msel');
+  const previousSelected = getMselValues('new-form-applyunit-msel');
+  const childUnits = parentIds.length
+    ? UNITS.filter(u => u.level === 3 && parentIds.includes(u.parent))
+    : UNITS.filter(u => u.level === 3);
+
+  initMsel('new-form-applyunit-msel',
+    childUnits.map(u => ({ value:u.id, label: u.name + ' (' + unitById(u.parent).name + ')' })),
+    '— Để trống nếu áp dụng mọi Khoa con —');
+
+  // Giữ lại các lựa chọn cũ vẫn còn hợp lệ (con của đơn vị trực thuộc mới),
+  // bỏ tick các lựa chọn không còn thuộc phạm vi sau khi đổi Đơn vị trực thuộc.
+  const validIds = childUnits.map(u => u.id);
+  setMselValues('new-form-applyunit-msel', previousSelected.filter(id => validIds.includes(id)));
+}
+
+/* Hệ đào tạo/Niên khoá/Chương trình đào tạo giới hạn theo đúng (các) Đơn vị
+   trực thuộc đang chọn ở new-form-parentunit-msel — áp dụng NHẤT QUÁN dù Admin
+   Cấp 1 tự chọn (không khoá) hay đang bị khoá cứng (Admin Cấp 2 sửa bản sao):
+   hễ Đơn vị trực thuộc có giá trị là 3 field này lập tức giới hạn theo đúng
+   phạm vi đó, không chờ tới lúc field bị khoá mới giới hạn. Chọn nhiều Đơn vị
+   trực thuộc cùng lúc thì gộp (union) toàn bộ Hệ/Niên khoá/CTĐT của các đơn vị
+   đó lại. Để trống Đơn vị trực thuộc (= ALL) thì 3 field hiện đủ toàn bộ danh
+   mục dùng chung toàn trường như trước. Gọi lại mỗi khi parentunit-msel đổi
+   giá trị, cùng lúc với renderApplyUnitOptionsFromParent(). */
+function renderTrainingFieldsFromParent(){
+  const parentIds = getMselValues('new-form-parentunit-msel');
+  const scopeKeys = parentIds.length ? parentIds.map(unitScopeKey) : null;
+
+  const scopeChoices = scopeKeys
+    ? SCOPE_ORDER.filter(s => scopeKeys.some(k => (UNIT_SCOPES[k] || []).includes(s)))
+    : SCOPE_ORDER;
+  const cohortChoices = scopeKeys
+    ? COHORTS.filter(c => scopeKeys.some(k => (UNIT_COHORTS[k] || []).includes(c)))
+    : COHORTS;
+  const programChoices = scopeKeys
+    ? TRAINING_PROGRAMS.filter(p => scopeKeys.some(k => (UNIT_PROGRAMS[k] || []).includes(p)))
+    : TRAINING_PROGRAMS;
+
+  const prevScopes = getMselValues('new-form-scope-msel');
+  const prevCohorts = getMselValues('new-form-cohort-msel');
+  const prevPrograms = getMselValues('new-form-program-msel');
+
+  initMsel('new-form-scope-msel',
+    scopeChoices.map(s => ({ value:s, label:SCOPE_LABEL[s] })), '— Để trống nếu áp dụng mọi hệ đào tạo —');
+  initMsel('new-form-cohort-msel',
+    cohortChoices.map(c => ({ value:c, label:c })), '— Để trống nếu áp dụng mọi khoá —');
+  initMsel('new-form-program-msel',
+    programChoices.map(p => ({ value:p, label:p })), '— Để trống nếu áp dụng mọi chương trình —');
+
+  // Bỏ tick các lựa chọn cũ không còn hợp lệ sau khi đổi Đơn vị trực thuộc,
+  // giữ lại phần vẫn còn thuộc phạm vi mới — cùng cách xử lý với Khoa quản lý.
+  setMselValues('new-form-scope-msel', prevScopes.filter(v => scopeChoices.includes(v)));
+  setMselValues('new-form-cohort-msel', prevCohorts.filter(v => cohortChoices.includes(v)));
+  setMselValues('new-form-program-msel', prevPrograms.filter(v => programChoices.includes(v)));
+}
+
+/* lockedParentUnitId khác null khi Admin Cấp 2 đang thao tác trên 1 biểu mẫu bị
+   khoá cứng Đơn vị trực thuộc (bản sao sau Sao chép, hoặc fork-as-copy khi sửa
+   biểu mẫu Cấp 1 trong ngữ cảnh Cấp 2 — xem setFormDeptAndApplyUnitLocked). Khi
+   đó Hệ đào tạo/Niên khoá/Chương trình đào tạo chỉ hiện đúng những giá trị thuộc
+   Trường/Khoa đó (tra UNIT_SCOPES/UNIT_COHORTS/UNIT_PROGRAMS); "Khoa quản lý"
+   KHÔNG bị khoá/ẩn — vẫn hiện multi-select bình thường, liệt kê đúng các Khoa
+   con (Cấp 3) trực thuộc đơn vị đang khoá để Admin tự chọn (không tự tick sẵn),
+   không còn dùng ô readonly như trước. */
+function populateNewFormDeptSelect(lockedParentUnitId){
   resetNewFormWizard();
 
   const sel = document.getElementById('new-form-dept');
@@ -2060,18 +2188,18 @@ function populateNewFormDeptSelect(){
   sel.innerHTML = '<option value="" selected disabled>— Chọn đơn vị —</option>'
     + level1.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
 
-  initMsel('new-form-scope-msel',
-    SCOPE_ORDER.map(s => ({ value:s, label:SCOPE_LABEL[s] })), '— Chọn hệ đào tạo —');
+  const level2Choices = UNITS.filter(u => u.level === 2);
+  initMsel('new-form-parentunit-msel',
+    level2Choices.map(u => ({ value:u.id, label:u.name })),
+    '— Để trống nếu áp dụng mọi Trường/Khoa —');
+  if (lockedParentUnitId) setMselValues('new-form-parentunit-msel', [lockedParentUnitId]);
 
-  initMsel('new-form-program-msel',
-    TRAINING_PROGRAMS.map(p => ({ value:p, label:p })), '— Để trống nếu áp dụng mọi chương trình —');
-
-  initMsel('new-form-cohort-msel',
-    COHORTS.map(c => ({ value:c, label:c })), '— Để trống nếu áp dụng mọi khoá —');
-
-  const level2 = UNITS.filter(u => u.level === 2);
-  initMsel('new-form-applyunit-msel',
-    level2.map(u => ({ value:u.id, label:u.name })), '— Để trống nếu áp dụng mọi Khoa/Trường —');
+  // renderTrainingFieldsFromParent()/renderApplyUnitOptionsFromParent() đọc trực
+  // tiếp giá trị hiện có của new-form-parentunit-msel — gọi sau khi đã set ở trên
+  // để Hệ đào tạo/Niên khoá/Chương trình đào tạo/Khoa quản lý giới hạn đúng ngay
+  // từ đầu, dù Đơn vị trực thuộc đang bị khoá cứng hay chỉ mới được set mặc định.
+  renderTrainingFieldsFromParent();
+  renderApplyUnitOptionsFromParent();
 
   newFormGoToStep(1);
 }
@@ -2083,11 +2211,6 @@ function openFormEdit(id){
   const f = formById(id);
   if (!f) return;
 
-  populateNewFormDeptSelect();
-  newFormEditId = id;
-  document.getElementById('new-form-modal-title').textContent = 'Sửa biểu mẫu';
-  document.getElementById('new-form-submit-btn').textContent = 'Lưu thay đổi';
-
   // Bản sao (originId khác null) luôn thuộc về đúng 1 Khoa/Trường Cấp 2 —
   // khoá cứng ownerUnit/applyUnits theo đơn vị đó, không cho đổi khi sửa.
   // Biểu mẫu Cấp 1 dùng chung, khi được sửa trong lúc đang xem tại 1 đơn vị
@@ -2096,6 +2219,11 @@ function openFormEdit(id){
   const isCopy = !!f.originId && unitById(f.ownerUnit).level === 2;
   const viewingUnit = unitById(effectiveOwnerUnit());
   const lockedUnitId = isCopy ? f.ownerUnit : (viewingUnit.level === 2 ? viewingUnit.id : null);
+
+  populateNewFormDeptSelect(lockedUnitId);
+  newFormEditId = id;
+  document.getElementById('new-form-modal-title').textContent = 'Sửa biểu mẫu';
+  document.getElementById('new-form-submit-btn').textContent = 'Lưu thay đổi';
   setFormDeptAndApplyUnitLocked(lockedUnitId);
 
   document.getElementById('new-form-code').value = f.code;
@@ -2106,9 +2234,19 @@ function openFormEdit(id){
   document.querySelectorAll('.new-form-studentstatus-check').forEach(cb => {
     cb.checked = (f.studentStatuses || []).includes(cb.value);
   });
+  // f.applyUnits lưu lẫn cả Cấp 2 (Đơn vị trực thuộc) và Cấp 3 (Khoa quản lý) —
+  // tách theo level rồi nạp đúng vào từng msel; nạp "Đơn vị trực thuộc" trước
+  // rồi render lại Khoa quản lý VÀ Hệ đào tạo/Niên khoá/Chương trình đào tạo
+  // theo đúng phạm vi đó, sau đó mới set giá trị đã lưu của 3 field kia — nếu
+  // set trước thì initMsel() bên trong renderTrainingFieldsFromParent() sẽ xoá
+  // sạch lựa chọn vừa set (initMsel luôn reset selected về rỗng).
+  const savedApplyUnits = f.applyUnits || [];
+  setMselValues('new-form-parentunit-msel', savedApplyUnits.filter(id => unitById(id).level === 2));
+  renderTrainingFieldsFromParent();
+  renderApplyUnitOptionsFromParent();
+  setMselValues('new-form-applyunit-msel', savedApplyUnits.filter(id => unitById(id).level === 3));
   setMselValues('new-form-scope-msel', f.scopes);
   setMselValues('new-form-program-msel', f.programs);
-  setMselValues('new-form-applyunit-msel', f.applyUnits);
   setMselValues('new-form-cohort-msel', f.cohorts);
 
   document.getElementById('new-form-content').innerHTML = f.content || '';
@@ -2134,7 +2272,12 @@ function doCreateForm() {
   const guide = document.getElementById('new-form-guide').innerHTML.trim();
   const scopes = getMselValues('new-form-scope-msel');
   const programs = getMselValues('new-form-program-msel');
-  const applyUnits = newFormLockedUnit ? [newFormLockedUnit] : getMselValues('new-form-applyunit-msel');
+  // Khoa quản lý (applyUnits) gồm "Đơn vị trực thuộc" (Cấp 2 — khoá cứng =
+  // newFormLockedUnit khi đang sửa bản sao) + "Khoa quản lý" (Cấp 3, Admin tự
+  // chọn, KHÔNG bị khoá dù Đơn vị trực thuộc đã khoá — xem setFormDeptAndApplyUnitLocked).
+  const parentUnits = newFormLockedUnit ? [newFormLockedUnit] : getMselValues('new-form-parentunit-msel');
+  const childUnits = getMselValues('new-form-applyunit-msel');
+  const applyUnits = [...parentUnits, ...childUnits];
   const cohorts = getMselValues('new-form-cohort-msel');
   const studentStatuses = Array.from(document.querySelectorAll('.new-form-studentstatus-check:checked')).map(cb => cb.value);
   const allowCopy = document.getElementById('new-form-allow-copy').checked;
@@ -2157,7 +2300,6 @@ function doCreateForm() {
   if (!willForkAsCopy && isCodeTaken(code, editId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
   if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
   if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
-  if (!scopes.length) { showToast('Vui lòng chọn ít nhất 1 hệ đào tạo.', 'err'); return; }
   if (!studentStatuses.length) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
   if (!hasFile) { showToast('Vui lòng upload file mẫu (.docx).', 'err'); return; }
   if (!content) { showToast('Vui lòng soạn nội dung biểu mẫu.', 'err'); return; }

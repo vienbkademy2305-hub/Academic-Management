@@ -24,18 +24,35 @@
   .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
 
   /* Bảng danh sách hình thức khen thưởng */
-  #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
-  #view-list table.tbl th{background:#f0f0f0}
+  .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
+  table.tbl th{background:#f0f0f0}
   .type-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
   .type-name-cell{font-size:13.5px;color:var(--text-1)}
-  .drl-point{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--success)}
 
-  /* Chọn Phạm vi (Cá nhân / Tập thể) trong popup Thêm/Sửa — pill 2 lựa chọn */
-  .grp-pills{display:flex;gap:8px;background:#fafafa;border:1px solid var(--border);border-radius:8px;padding:4px}
-  .grp-pill{flex:1;padding:8px 12px;border:none;border-radius:6px;background:transparent;color:var(--text-2);font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s}
-  .grp-pill:hover{background:#f0f0f0}
-  .grp-pill.active{background:var(--primary);color:#fff}
+  /* Tab container — Nhóm khen thưởng / Hình thức khen thưởng */
+  .tab-container .tabs-nav{margin-bottom:20px}
+  .group-name-cell{font-size:13.5px;color:var(--text-1);font-weight:400}
+  .group-count-cell{font-size:13px;color:var(--text-3)}
+
+  /* Chọn Đối tượng khen thưởng (Cá nhân / Tập thể) trong popup Thêm/Sửa — radio 2 lựa chọn */
+  .scope-radio-group{display:flex;gap:24px;padding:8px 2px}
+  .scope-radio{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--text-1);cursor:pointer;font-weight:400}
+  .scope-radio input[type="radio"]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;margin:0}
   .drl-hint{font-size:12px;color:var(--text-3);margin-top:6px}
+
+  /* Khối cấu hình Điểm ĐRL — toggle bật/tắt + Loại điểm/Số điểm */
+  .drl-config-box{margin-bottom:16px}
+  .drl-config-hd{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--text-1)}
+  .drl-config-box .f-row{margin-top:14px;margin-bottom:0}
+  .drl-config-box .drl-hint{margin-top:10px;margin-bottom:0}
+  .toggle-switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+  .toggle-switch input{opacity:0;width:0;height:0}
+  .toggle-slider{position:absolute;cursor:pointer;inset:0;background:#d9d9d9;border-radius:22px;transition:.2s}
+  .toggle-slider::before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .toggle-switch input:checked + .toggle-slider{background:var(--primary)}
+  .toggle-switch input:checked + .toggle-slider::before{transform:translateX(18px)}
+  .drl-plus{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--success)}
+  .drl-minus{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--error)}
 </style>
 </head>
 <body>
@@ -105,7 +122,7 @@
   <div class="main">
     <!-- ═══ HEADER ═══ -->
     <header class="app-header">
-      <div class="h-breadcrumb" id="breadcrumb">Quản lý Khen thưởng / <b style="color:var(--text-1)">DS Hình thức Khen thưởng</b></div>
+      <div class="h-breadcrumb" id="breadcrumb">Quản lý Khen thưởng / <b style="color:var(--text-1)">Danh mục Khen thưởng</b></div>
       <div class="h-right">
         <div class="bw" id="notif-wrap">
           <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
@@ -122,59 +139,98 @@
     <div class="content">
 
       <!-- ═══════════════════════════════════════════════════════
-           VIEW — DANH SÁCH HÌNH THỨC KHEN THƯỞNG (MH-ADMIN-09, view: list)
+           DANH MỤC KHEN THƯỞNG (MH-ADMIN-09) — 2 tab: Nhóm / Hình thức
       ═══════════════════════════════════════════════════════ -->
-      <div id="view-list">
+      <div class="tab-container">
 
         <div class="flex justify-between items-center mb-16">
           <div>
-            <h2 style="margin:0;font-size:18px">Danh sách Hình thức Khen thưởng</h2>
-            <p class="text-muted text-sm" style="margin:4px 0 0">Theo Quyết định số 1653/QĐ-ĐHP-CTSV&amp;KN ngày 28/4/2026 — Quy định công tác khen thưởng đối với sinh viên đại học chính quy tại Đại học Phenikaa (Phụ lục 1)</p>
-          </div>
-          <div class="flex gap-8">
-            <button class="btn btn-primary" onclick="openAddTypeModal()">＋ Thêm mới</button>
+            <h2 style="margin:0;font-size:18px">Danh mục Khen thưởng</h2>
           </div>
         </div>
 
-        <!-- Bộ lọc: Tìm tên hình thức + Nhóm + Phạm vi + Trạng thái -->
-        <div class="filter-bar">
-          <input class="fc" id="type-name-search" type="text" placeholder="🔍 Tìm tên hình thức khen thưởng…" autocomplete="off" style="width:280px">
-          <select class="fc" id="group-select" style="width:260px">
-            <option value="all">Tất cả nhóm</option>
-          </select>
-          <select class="fc" id="scope-select" style="width:150px">
-            <option value="all">Tất cả phạm vi</option>
-            <option value="canhan">Cá nhân</option>
-            <option value="tapthe">Tập thể</option>
-          </select>
-          <select class="fc" id="status-select" style="width:150px">
-            <option value="all">Tất cả trạng thái</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+        <div class="tabs-nav">
+          <button type="button" class="tab-btn active" data-tab="tab-group">Nhóm khen thưởng</button>
+          <button type="button" class="tab-btn" data-tab="tab-type">Hình thức khen thưởng</button>
         </div>
 
-        <div class="tbl-wrap">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th style="width:48px">STT</th>
-                <th style="width:70px">TT</th>
-                <th style="width:220px">Nhóm</th>
-                <th>Danh hiệu / Tên hình thức</th>
-                <th style="width:100px">Phạm vi</th>
-                <th style="width:130px">Mức khen thưởng</th>
-                <th style="width:90px">Điểm ĐRL</th>
-                <th style="width:100px">Trạng thái</th>
-                <th style="width:90px">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="type-tbody">
-              <!-- Rows rendered by JS -->
-            </tbody>
-          </table>
+        <!-- ─── TAB: NHÓM KHEN THƯỞNG ─── -->
+        <div class="tab-pane active" id="tab-group">
+
+          <!-- Bộ lọc: Tìm tên nhóm + Trạng thái + Thêm mới -->
+          <div class="filter-bar">
+            <input class="fc" id="group-name-search" type="text" placeholder="🔍 Tìm tên nhóm khen thưởng…" autocomplete="off" style="width:320px">
+            <select class="fc" id="group-status-select" style="width:150px">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <button class="btn btn-primary" style="margin-left:auto" onclick="openAddGroupModal()">＋ Thêm nhóm</button>
+          </div>
+
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="width:48px">STT</th>
+                  <th>Tên nhóm</th>
+                  <th style="width:160px">Số hình thức</th>
+                  <th style="width:120px">Trạng thái</th>
+                  <th style="width:90px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="group-tbody">
+                <!-- Rows rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="group-pagination"><!-- rendered by JS --></div>
         </div>
-        <div class="pagination" id="type-pagination"><!-- rendered by JS --></div>
+
+        <!-- ─── TAB: HÌNH THỨC KHEN THƯỞNG ─── -->
+        <div class="tab-pane" id="tab-type">
+
+          <!-- Bộ lọc: Tìm tên hình thức + Nhóm + Đối tượng khen thưởng + Trạng thái + Thêm mới -->
+          <div class="filter-bar">
+            <input class="fc" id="type-name-search" type="text" placeholder="🔍 Tìm tên hình thức khen thưởng…" autocomplete="off" style="width:280px">
+            <select class="fc" id="group-select" style="width:260px">
+              <option value="all">Tất cả nhóm khen thưởng</option>
+            </select>
+            <select class="fc" id="scope-select" style="width:180px">
+              <option value="all">Tất cả đối tượng</option>
+              <option value="canhan">Cá nhân</option>
+              <option value="tapthe">Tập thể</option>
+            </select>
+            <select class="fc" id="status-select" style="width:150px">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <button class="btn btn-primary" style="margin-left:auto" onclick="openAddTypeModal()">＋ Thêm mới</button>
+          </div>
+
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="width:48px">STT</th>
+                  <th style="width:26%">Danh hiệu khen thưởng</th>
+                  <th style="width:130px;text-align:center">Đối tượng khen thưởng</th>
+                  <th style="width:150px;text-align:right">Mức khen thưởng (VNĐ)</th>
+                  <th style="width:90px;text-align:center">Điểm ĐRL</th>
+                  <th style="width:200px">Ghi chú</th>
+                  <th style="width:100px">Trạng thái</th>
+                  <th style="width:90px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="type-tbody">
+                <!-- Rows rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="type-pagination"><!-- rendered by JS --></div>
+        </div>
+
       </div>
 
     </div>
@@ -191,49 +247,80 @@
     <div class="modal-bd">
 
       <div class="fi">
-        <label>Nhóm<span class="req">*</span></label>
+        <label>Danh hiệu khen thưởng<span class="req">*</span></label>
+        <input class="fc" id="new-type-name" placeholder="VD: Sinh viên Xuất sắc, Tập thể lớp Tiên tiến…">
+      </div>
+
+      <div class="fi">
+        <label>Nhóm khen thưởng<span class="req">*</span></label>
         <select class="fc" id="new-type-group"></select>
       </div>
 
       <div class="fi">
-        <label>Phạm vi<span class="req">*</span></label>
-        <div class="grp-pills" id="new-type-scope-pills">
-          <button type="button" class="grp-pill" data-scope="canhan" onclick="pickScope('canhan')">Cá nhân</button>
-          <button type="button" class="grp-pill" data-scope="tapthe" onclick="pickScope('tapthe')">Tập thể</button>
+        <label>Đối tượng khen thưởng<span class="req">*</span></label>
+        <div class="scope-radio-group" id="new-type-scope-pills">
+          <label class="scope-radio"><input type="radio" name="new-type-scope" value="canhan" onchange="pickScope('canhan')"> Cá nhân</label>
+          <label class="scope-radio"><input type="radio" name="new-type-scope" value="tapthe" onchange="pickScope('tapthe')"> Tập thể</label>
         </div>
       </div>
 
-      <div class="f-row col-2">
-        <div class="fi">
-          <label>TT</label>
-          <input class="fc" id="new-type-code" readonly style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;background:#fafafa;color:var(--text-3)">
+      <div class="fi">
+        <label>Mức khen thưởng (VNĐ)</label>
+        <input class="fc" id="new-type-money" type="number" min="0" step="100000" placeholder="VD: 2000000">
+      </div>
+
+      <div class="drl-config-box">
+        <div class="drl-config-hd">
+          <span>Sử dụng trong đánh giá ĐRL</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="new-type-drl-enabled" onchange="toggleDrlConfig()">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="fi">
-          <label>Danh hiệu / Tên hình thức<span class="req">*</span></label>
-          <input class="fc" id="new-type-name" placeholder="VD: Sinh viên Xuất sắc, Tập thể lớp Tiên tiến…">
+        <div class="f-row col-2" id="new-type-drl-fields" style="display:none">
+          <div class="fi" style="margin-bottom:0">
+            <label>Loại điểm<span class="req">*</span></label>
+            <select class="fc" id="new-type-drl-type">
+              <option value="cong">Điểm cộng</option>
+              <option value="tru">Điểm trừ</option>
+            </select>
+          </div>
+          <div class="fi" style="margin-bottom:0">
+            <label>Số điểm<span class="req">*</span></label>
+            <input class="fc" id="new-type-drl-value" type="number" min="0" placeholder="Nhập số điểm">
+          </div>
         </div>
       </div>
 
-      <div class="f-row col-2">
-        <div class="fi">
-          <label>Mức khen thưởng (VNĐ)</label>
-          <input class="fc" id="new-type-money" type="number" min="0" step="100000" placeholder="VD: 2000000">
-        </div>
-        <div class="fi">
-          <label>Điểm ĐRL</label>
-          <input class="fc" id="new-type-drl-value" type="number" min="0" placeholder="VD: 15">
-        </div>
-      </div>
       <div class="fi" style="margin-bottom:0">
         <label>Ghi chú</label>
         <input class="fc" id="new-type-note" placeholder="VD: Đã được xét học bổng KK học tập…">
-        <div class="drl-hint">Mức khen thưởng theo Phụ lục 1 kèm QĐ 1653/QĐ-ĐHP-CTSV&amp;KN. Điểm ĐRL là quy ước nội bộ, cộng vào Điểm rèn luyện SV/thành viên tập thể khi được khen thưởng theo hình thức này.</div>
       </div>
 
     </div>
     <div class="modal-ft">
       <button class="btn btn-default" data-close="modal-new-type">Huỷ</button>
       <button class="btn btn-primary" id="new-type-submit-btn" onclick="doSaveType()">Thêm mới</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Thêm/Sửa nhóm khen thưởng ═══ -->
+<div class="overlay hidden" id="modal-new-group">
+  <div class="modal-box w700">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="new-group-modal-title">Thêm nhóm khen thưởng</h3>
+      <button class="modal-close" data-close="modal-new-group">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi" style="margin-bottom:0">
+        <label>Tên nhóm<span class="req">*</span></label>
+        <input class="fc" id="new-group-name" placeholder="VD: Thành tích học tập và rèn luyện trong năm học">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-new-group">Huỷ</button>
+      <button class="btn btn-primary" id="new-group-submit-btn" onclick="doSaveGroup()">Thêm mới</button>
     </div>
   </div>
 </div>
@@ -245,85 +332,86 @@
    (kèm Quyết định số 1653/QĐ-ĐHP-CTSV&KN ngày 28/4/2026 của Giám
    đốc Đại học Phenikaa — Quy định công tác khen thưởng SV đại học
    chính quy). Cột "money" = Mức khen thưởng (VNĐ) lấy đúng văn bản;
-   cột "drlPoint" là quy ước nội bộ (không có trong văn bản gốc),
-   dùng chung cho các đề xuất khen thưởng ở mh-admin-10.
+   cột "drlEnabled"/"drlType"/"drlValue" là quy ước nội bộ (không
+   có trong văn bản gốc), dùng chung cho các đề xuất khen thưởng
+   ở mh-admin-10.
    ============================================================ */
 const SCOPE_LABEL = { 'canhan':'Cá nhân', 'tapthe':'Tập thể' };
 
 const GROUPS = [
-  { id:'g1', name:'1. Thành tích học tập và rèn luyện trong năm học' },
-  { id:'g2', name:'2. Thành tích học tập và rèn luyện toàn khoá học' },
-  { id:'g3', name:'3. Thủ khoa tuyển sinh đại học' },
-  { id:'g4', name:'4. Cuộc thi học thuật, NCKH, sáng tạo kỹ thuật, văn hoá, văn nghệ, thể thao' },
-  { id:'g5', name:'5. Công tác Đoàn, phong trào SV, xây dựng ĐH/Đảng, tình nguyện' },
+  { id:'g1', name:'1. Thành tích học tập và rèn luyện trong năm học', status:'active' },
+  { id:'g2', name:'2. Thành tích học tập và rèn luyện toàn khoá học', status:'active' },
+  { id:'g3', name:'3. Thủ khoa tuyển sinh đại học', status:'active' },
+  { id:'g4', name:'4. Cuộc thi học thuật, NCKH, sáng tạo kỹ thuật, văn hoá, văn nghệ, thể thao', status:'active' },
+  { id:'g5', name:'5. Công tác Đoàn, phong trào SV, xây dựng ĐH/Đảng, tình nguyện', status:'active' },
 ];
 const GROUP_LABEL = Object.fromEntries(GROUPS.map(g => [g.id, g.name]));
 
 const TYPES = [
   // Nhóm 1 — Thành tích học tập, rèn luyện trong năm học
-  { id:'t101', code:'1.1.1', group:'g1', name:'Tập thể Xuất sắc', scope:'tapthe', money:2000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t102', code:'1.1.2', group:'g1', name:'Tập thể Tiên tiến', scope:'tapthe', money:1500000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t103', code:'1.2.1', group:'g1', name:'Sinh viên Xuất sắc', scope:'canhan', money:0, drlPoint:15, note:'Đã được xét học bổng KK học tập', status:'active', updated:'28/04/2026' },
-  { id:'t104', code:'1.2.2', group:'g1', name:'Sinh viên Giỏi', scope:'canhan', money:0, drlPoint:10, note:'Đã được xét học bổng KK học tập', status:'active', updated:'28/04/2026' },
-  { id:'t105', code:'1.3.1', group:'g1', name:'Sinh viên Xuất sắc tiêu biểu (tuyên dương Lễ khai giảng)', scope:'canhan', money:2000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t106', code:'1.3.2', group:'g1', name:'Sinh viên Giỏi tiêu biểu (tuyên dương Lễ khai giảng)', scope:'canhan', money:1000000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t107', code:'1.3.3', group:'g1', name:'Cán bộ Đoàn xuất sắc có kết quả học tập từ Khá trở lên', scope:'canhan', money:2000000, drlPoint:15, note:'Số lượng cụ thể do Ban Giám đốc quyết định', status:'active', updated:'28/04/2026' },
+  { id:'t101', code:'1.1.1', group:'g1', name:'Tập thể Xuất sắc', scope:'tapthe', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t102', code:'1.1.2', group:'g1', name:'Tập thể Tiên tiến', scope:'tapthe', money:1500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t103', code:'1.2.1', group:'g1', name:'Sinh viên Xuất sắc', scope:'canhan', money:0, drlEnabled:true, drlType:'cong', drlValue:15, note:'Đã được xét học bổng KK học tập', status:'active', updated:'28/04/2026' },
+  { id:'t104', code:'1.2.2', group:'g1', name:'Sinh viên Giỏi', scope:'canhan', money:0, drlEnabled:true, drlType:'cong', drlValue:10, note:'Đã được xét học bổng KK học tập', status:'active', updated:'28/04/2026' },
+  { id:'t105', code:'1.3.1', group:'g1', name:'Sinh viên Xuất sắc tiêu biểu (tuyên dương Lễ khai giảng)', scope:'canhan', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t106', code:'1.3.2', group:'g1', name:'Sinh viên Giỏi tiêu biểu (tuyên dương Lễ khai giảng)', scope:'canhan', money:1000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t107', code:'1.3.3', group:'g1', name:'Cán bộ Đoàn xuất sắc có kết quả học tập từ Khá trở lên', scope:'canhan', money:2000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'Số lượng cụ thể do Ban Giám đốc quyết định', status:'active', updated:'28/04/2026' },
 
   // Nhóm 2 — Thành tích học tập, rèn luyện toàn khoá học
-  { id:'t201', code:'2.1', group:'g2', name:'Sinh viên Xuất sắc (toàn khoá)', scope:'canhan', money:1000000, drlPoint:20, note:'Trường hợp đồng thời là thủ khoa ngành/khoá học thì chỉ nhận mức khen thưởng dành cho thủ khoa', status:'active', updated:'28/04/2026' },
-  { id:'t202', code:'2.2', group:'g2', name:'Sinh viên Giỏi (toàn khoá)', scope:'canhan', money:600000, drlPoint:15, note:'Trường hợp đồng thời là thủ khoa ngành/khoá học thì chỉ nhận mức khen thưởng dành cho thủ khoa', status:'active', updated:'28/04/2026' },
-  { id:'t203', code:'2.3.1', group:'g2', name:'Sinh viên tốt nghiệp Thủ khoa ngành và khoá học — Xuất sắc', scope:'canhan', money:3000000, drlPoint:25, note:'Trường hợp có nhiều hơn 01 SV sẽ xét đến tiêu chí ĐRL, ĐNK để lựa chọn', status:'active', updated:'28/04/2026' },
-  { id:'t204', code:'2.3.2', group:'g2', name:'Sinh viên tốt nghiệp Thủ khoa ngành và khoá học — Giỏi', scope:'canhan', money:2000000, drlPoint:20, note:'Trường hợp có nhiều hơn 01 SV sẽ xét đến tiêu chí ĐRL, ĐNK để lựa chọn', status:'active', updated:'28/04/2026' },
-  { id:'t205', code:'2.4', group:'g2', name:'Sinh viên tốt nghiệp trước tiến độ (thưởng thêm)', scope:'canhan', money:500000, drlPoint:10, note:'Đạt loại Xuất sắc/Giỏi, ĐRL toàn khoá đạt loại Tốt trở lên', status:'active', updated:'28/04/2026' },
+  { id:'t201', code:'2.1', group:'g2', name:'Sinh viên Xuất sắc (toàn khoá)', scope:'canhan', money:1000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'Trường hợp đồng thời là thủ khoa ngành/khoá học thì chỉ nhận mức khen thưởng dành cho thủ khoa', status:'active', updated:'28/04/2026' },
+  { id:'t202', code:'2.2', group:'g2', name:'Sinh viên Giỏi (toàn khoá)', scope:'canhan', money:600000, drlEnabled:true, drlType:'cong', drlValue:15, note:'Trường hợp đồng thời là thủ khoa ngành/khoá học thì chỉ nhận mức khen thưởng dành cho thủ khoa', status:'active', updated:'28/04/2026' },
+  { id:'t203', code:'2.3.1', group:'g2', name:'Sinh viên tốt nghiệp Thủ khoa ngành và khoá học — Xuất sắc', scope:'canhan', money:3000000, drlEnabled:true, drlType:'cong', drlValue:25, note:'Trường hợp có nhiều hơn 01 SV sẽ xét đến tiêu chí ĐRL, ĐNK để lựa chọn', status:'active', updated:'28/04/2026' },
+  { id:'t204', code:'2.3.2', group:'g2', name:'Sinh viên tốt nghiệp Thủ khoa ngành và khoá học — Giỏi', scope:'canhan', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'Trường hợp có nhiều hơn 01 SV sẽ xét đến tiêu chí ĐRL, ĐNK để lựa chọn', status:'active', updated:'28/04/2026' },
+  { id:'t205', code:'2.4', group:'g2', name:'Sinh viên tốt nghiệp trước tiến độ (thưởng thêm)', scope:'canhan', money:500000, drlEnabled:true, drlType:'cong', drlValue:10, note:'Đạt loại Xuất sắc/Giỏi, ĐRL toàn khoá đạt loại Tốt trở lên', status:'active', updated:'28/04/2026' },
 
   // Nhóm 3 — Thủ khoa tuyển sinh
-  { id:'t301', code:'3', group:'g3', name:'Thủ khoa tuyển sinh đại học (xét theo ngành)', scope:'canhan', money:0, drlPoint:20, note:'Mức khen thưởng theo quyết định của từng năm', status:'active', updated:'28/04/2026' },
+  { id:'t301', code:'3', group:'g3', name:'Thủ khoa tuyển sinh đại học (xét theo ngành)', scope:'canhan', money:0, drlEnabled:true, drlType:'cong', drlValue:20, note:'Mức khen thưởng theo quyết định của từng năm', status:'active', updated:'28/04/2026' },
 
   // Nhóm 4 — Cuộc thi học thuật/NCKH/văn nghệ/thể thao, theo cấp × hạng giải
-  { id:'t411', code:'4.1.1-HCV', group:'g4', name:'Quốc tế — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:9000000, drlPoint:30, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t412', code:'4.1.1-HCB', group:'g4', name:'Quốc tế — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:7500000, drlPoint:25, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t413', code:'4.1.1-HCD', group:'g4', name:'Quốc tế — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:6000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t414', code:'4.1.1-KK', group:'g4', name:'Quốc tế — Tập thể — Giải Khuyến khích', scope:'tapthe', money:4500000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t415', code:'4.1.2-HCV', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:4500000, drlPoint:30, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t416', code:'4.1.2-HCB', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:3000000, drlPoint:25, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t417', code:'4.1.2-HCD', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:2250000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t418', code:'4.1.2-KK', group:'g4', name:'Quốc tế — Cá nhân — Giải Khuyến khích', scope:'canhan', money:1500000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t411', code:'4.1.1-HCV', group:'g4', name:'Quốc tế — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:9000000, drlEnabled:true, drlType:'cong', drlValue:30, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t412', code:'4.1.1-HCB', group:'g4', name:'Quốc tế — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:7500000, drlEnabled:true, drlType:'cong', drlValue:25, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t413', code:'4.1.1-HCD', group:'g4', name:'Quốc tế — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:6000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t414', code:'4.1.1-KK', group:'g4', name:'Quốc tế — Tập thể — Giải Khuyến khích', scope:'tapthe', money:4500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t415', code:'4.1.2-HCV', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:4500000, drlEnabled:true, drlType:'cong', drlValue:30, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t416', code:'4.1.2-HCB', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:3000000, drlEnabled:true, drlType:'cong', drlValue:25, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t417', code:'4.1.2-HCD', group:'g4', name:'Quốc tế — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:2250000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t418', code:'4.1.2-KK', group:'g4', name:'Quốc tế — Cá nhân — Giải Khuyến khích', scope:'canhan', money:1500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
 
-  { id:'t421', code:'4.2.1-HCV', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:6000000, drlPoint:25, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t422', code:'4.2.1-HCB', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:5000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t423', code:'4.2.1-HCD', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:4000000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t424', code:'4.2.1-KK', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Giải Khuyến khích', scope:'tapthe', money:3000000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t425', code:'4.2.2-HCV', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:3000000, drlPoint:25, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t426', code:'4.2.2-HCB', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:2000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t427', code:'4.2.2-HCD', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:1500000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t428', code:'4.2.2-KK', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Giải Khuyến khích', scope:'canhan', money:1000000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t421', code:'4.2.1-HCV', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:6000000, drlEnabled:true, drlType:'cong', drlValue:25, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t422', code:'4.2.1-HCB', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:5000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t423', code:'4.2.1-HCD', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:4000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t424', code:'4.2.1-KK', group:'g4', name:'Quốc gia (Bộ/Ngành) — Tập thể — Giải Khuyến khích', scope:'tapthe', money:3000000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t425', code:'4.2.2-HCV', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:3000000, drlEnabled:true, drlType:'cong', drlValue:25, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t426', code:'4.2.2-HCB', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t427', code:'4.2.2-HCD', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:1500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t428', code:'4.2.2-KK', group:'g4', name:'Quốc gia (Bộ/Ngành) — Cá nhân — Giải Khuyến khích', scope:'canhan', money:1000000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
 
-  { id:'t431', code:'4.3.1-HCV', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:4000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t432', code:'4.3.1-HCB', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:3000000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t433', code:'4.3.1-HCD', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:2000000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t434', code:'4.3.1-KK', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Giải Khuyến khích', scope:'tapthe', money:1000000, drlPoint:5, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t435', code:'4.3.2-HCV', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:2000000, drlPoint:20, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t436', code:'4.3.2-HCB', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:1500000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t437', code:'4.3.2-HCD', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:1000000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t438', code:'4.3.2-KK', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Giải Khuyến khích', scope:'canhan', money:500000, drlPoint:5, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t431', code:'4.3.1-HCV', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:4000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t432', code:'4.3.1-HCB', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:3000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t433', code:'4.3.1-HCD', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:2000000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t434', code:'4.3.1-KK', group:'g4', name:'Tỉnh/Thành phố — Tập thể — Giải Khuyến khích', scope:'tapthe', money:1000000, drlEnabled:true, drlType:'cong', drlValue:5, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t435', code:'4.3.2-HCV', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t436', code:'4.3.2-HCB', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:1500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t437', code:'4.3.2-HCD', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:1000000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t438', code:'4.3.2-KK', group:'g4', name:'Tỉnh/Thành phố — Cá nhân — Giải Khuyến khích', scope:'canhan', money:500000, drlEnabled:true, drlType:'cong', drlValue:5, note:'', status:'active', updated:'28/04/2026' },
 
-  { id:'t441', code:'4.4.1-HCV', group:'g4', name:'Đại học — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:2000000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t442', code:'4.4.1-HCB', group:'g4', name:'Đại học — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:1500000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t443', code:'4.4.1-HCD', group:'g4', name:'Đại học — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:1000000, drlPoint:5, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t444', code:'4.4.2-HCV', group:'g4', name:'Đại học — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:1000000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t445', code:'4.4.2-HCB', group:'g4', name:'Đại học — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:700000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t446', code:'4.4.2-HCD', group:'g4', name:'Đại học — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:500000, drlPoint:5, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t441', code:'4.4.1-HCV', group:'g4', name:'Đại học — Tập thể — Huy chương Vàng (Giải Nhất)', scope:'tapthe', money:2000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t442', code:'4.4.1-HCB', group:'g4', name:'Đại học — Tập thể — Huy chương Bạc (Giải Nhì)', scope:'tapthe', money:1500000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t443', code:'4.4.1-HCD', group:'g4', name:'Đại học — Tập thể — Huy chương Đồng (Giải Ba)', scope:'tapthe', money:1000000, drlEnabled:true, drlType:'cong', drlValue:5, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t444', code:'4.4.2-HCV', group:'g4', name:'Đại học — Cá nhân — Huy chương Vàng (Giải Nhất)', scope:'canhan', money:1000000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t445', code:'4.4.2-HCB', group:'g4', name:'Đại học — Cá nhân — Huy chương Bạc (Giải Nhì)', scope:'canhan', money:700000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t446', code:'4.4.2-HCD', group:'g4', name:'Đại học — Cá nhân — Huy chương Đồng (Giải Ba)', scope:'canhan', money:500000, drlEnabled:true, drlType:'cong', drlValue:5, note:'', status:'active', updated:'28/04/2026' },
 
   // Nhóm 5 — Công tác Đoàn, phong trào SV, xây dựng ĐH/Đảng, tình nguyện
-  { id:'t511', code:'5.1.1', group:'g5', name:'Tập thể — Bằng khen cấp Trung ương hoặc tương đương', scope:'tapthe', money:2000000, drlPoint:20, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
-  { id:'t512', code:'5.1.2', group:'g5', name:'Tập thể — Giấy khen cấp Tỉnh/Thành hoặc tương đương', scope:'tapthe', money:1500000, drlPoint:15, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
-  { id:'t513', code:'5.1.3', group:'g5', name:'Tập thể — Giấy khen Giám đốc hoặc cấp Quận/Huyện', scope:'tapthe', money:1000000, drlPoint:10, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
-  { id:'t521', code:'5.2.1', group:'g5', name:'Cá nhân — Bằng khen cấp Trung ương hoặc tương đương', scope:'canhan', money:600000, drlPoint:15, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
-  { id:'t522', code:'5.2.2', group:'g5', name:'Cá nhân — Giấy khen cấp Tỉnh/Thành hoặc tương đương', scope:'canhan', money:400000, drlPoint:10, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
-  { id:'t523', code:'5.2.3', group:'g5', name:'Cá nhân — Giấy khen của Giám đốc hoặc cấp Quận/Huyện', scope:'canhan', money:300000, drlPoint:5, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
-  { id:'t531', code:'5.3.1', group:'g5', name:'Ban cán sự lớp — Hoàn thành Xuất sắc nhiệm vụ', scope:'canhan', money:600000, drlPoint:15, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t532', code:'5.3.2', group:'g5', name:'Ban cán sự lớp — Hoàn thành Tốt nhiệm vụ', scope:'canhan', money:400000, drlPoint:10, note:'', status:'active', updated:'28/04/2026' },
-  { id:'t533', code:'5.3.3', group:'g5', name:'Ban cán sự lớp — Hoàn thành nhiệm vụ', scope:'canhan', money:300000, drlPoint:5, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t511', code:'5.1.1', group:'g5', name:'Tập thể — Bằng khen cấp Trung ương hoặc tương đương', scope:'tapthe', money:2000000, drlEnabled:true, drlType:'cong', drlValue:20, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
+  { id:'t512', code:'5.1.2', group:'g5', name:'Tập thể — Giấy khen cấp Tỉnh/Thành hoặc tương đương', scope:'tapthe', money:1500000, drlEnabled:true, drlType:'cong', drlValue:15, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
+  { id:'t513', code:'5.1.3', group:'g5', name:'Tập thể — Giấy khen Giám đốc hoặc cấp Quận/Huyện', scope:'tapthe', money:1000000, drlEnabled:true, drlType:'cong', drlValue:10, note:'Chỉ xét tại đợt khen thưởng định kỳ do Ban CTSV&KN phụ trách', status:'active', updated:'28/04/2026' },
+  { id:'t521', code:'5.2.1', group:'g5', name:'Cá nhân — Bằng khen cấp Trung ương hoặc tương đương', scope:'canhan', money:600000, drlEnabled:true, drlType:'cong', drlValue:15, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
+  { id:'t522', code:'5.2.2', group:'g5', name:'Cá nhân — Giấy khen cấp Tỉnh/Thành hoặc tương đương', scope:'canhan', money:400000, drlEnabled:true, drlType:'cong', drlValue:10, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
+  { id:'t523', code:'5.2.3', group:'g5', name:'Cá nhân — Giấy khen của Giám đốc hoặc cấp Quận/Huyện', scope:'canhan', money:300000, drlEnabled:true, drlType:'cong', drlValue:5, note:'Trường hợp đã được Giám đốc khen thưởng sẽ không khen thưởng lần hai', status:'active', updated:'28/04/2026' },
+  { id:'t531', code:'5.3.1', group:'g5', name:'Ban cán sự lớp — Hoàn thành Xuất sắc nhiệm vụ', scope:'canhan', money:600000, drlEnabled:true, drlType:'cong', drlValue:15, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t532', code:'5.3.2', group:'g5', name:'Ban cán sự lớp — Hoàn thành Tốt nhiệm vụ', scope:'canhan', money:400000, drlEnabled:true, drlType:'cong', drlValue:10, note:'', status:'active', updated:'28/04/2026' },
+  { id:'t533', code:'5.3.3', group:'g5', name:'Ban cán sự lớp — Hoàn thành nhiệm vụ', scope:'canhan', money:300000, drlEnabled:true, drlType:'cong', drlValue:5, note:'', status:'active', updated:'28/04/2026' },
 ];
 
 let editingTypeId = null;
@@ -386,11 +474,12 @@ function currentGroupFilter(){ return document.getElementById('group-select').va
 function currentNameSearch(){ return document.getElementById('type-name-search').value.trim().toLowerCase(); }
 
 function typeById(id){ return TYPES.find(t => t.id === id); }
-function formatMoney(v){ return v ? v.toLocaleString('vi-VN') + ' đ' : '—'; }
+function formatMoney(v){ return v ? v.toLocaleString('vi-VN') : '—'; }
 
 function populateGroupFilter(){
   const sel = document.getElementById('group-select');
-  GROUPS.forEach(g => sel.insertAdjacentHTML('beforeend', `<option value="${g.id}">${g.name}</option>`));
+  sel.querySelectorAll('option:not([value="all"])').forEach(o => o.remove());
+  GROUPS.filter(g => g.status === 'active').forEach(g => sel.insertAdjacentHTML('beforeend', `<option value="${g.id}">${g.name}</option>`));
 }
 
 function renderGrid(){
@@ -413,12 +502,11 @@ function renderGrid(){
   tbody.innerHTML = pageList.map((t, idx) => `
     <tr>
       <td class="text-muted">${(currentPage-1)*TYPE_PAGE_SIZE + idx + 1}</td>
-      <td><span class="type-code">${t.code}</span></td>
-      <td class="text-muted" style="font-size:12.5px">${GROUP_LABEL[t.group]}</td>
-      <td><span class="type-name-cell">${t.name}</span>${t.note ? `<div class="text-muted text-sm" style="margin-top:2px">${t.note}</div>` : ''}</td>
-      <td><span class="tag tag-default">${SCOPE_LABEL[t.scope]}</span></td>
-      <td>${formatMoney(t.money)}</td>
-      <td><span class="drl-point">+${t.drlPoint}</span></td>
+      <td><span class="type-name-cell">${t.name}</span></td>
+      <td style="text-align:center"><span class="tag tag-default">${SCOPE_LABEL[t.scope]}</span></td>
+      <td style="text-align:right">${formatMoney(t.money)}</td>
+      <td style="text-align:center">${t.drlEnabled ? `<span class="${t.drlType==='tru'?'drl-minus':'drl-plus'}">${t.drlType==='tru'?'-':'+'}${t.drlValue}</span>` : ''}</td>
+      <td class="text-muted text-sm" style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.note || ''}">${t.note || ''}</td>
       <td><span class="tag ${t.status==='active'?'tag-success':'tag-default'}">${t.status==='active'?'Active':'Inactive'}</span></td>
       <td>
         <div class="tbl-actions">
@@ -434,7 +522,7 @@ function renderGrid(){
           </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có hình thức nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có hình thức nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -468,12 +556,17 @@ document.getElementById('type-name-search').addEventListener('input', () => { cu
 /* == Popup Thêm/Sửa hình thức == */
 function populateGroupSelect(){
   const sel = document.getElementById('new-type-group');
-  sel.innerHTML = GROUPS.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+  sel.innerHTML = GROUPS.filter(g => g.status === 'active').map(g => `<option value="${g.id}">${g.name}</option>`).join('');
 }
 
 function pickScope(scope){
   selectedScope = scope;
-  document.querySelectorAll('#new-type-scope-pills .grp-pill').forEach(b => b.classList.toggle('active', b.dataset.scope === scope));
+  document.querySelectorAll('#new-type-scope-pills input[type="radio"]').forEach(r => { r.checked = r.value === scope; });
+}
+
+function toggleDrlConfig(){
+  const enabled = document.getElementById('new-type-drl-enabled').checked;
+  document.getElementById('new-type-drl-fields').style.display = enabled ? '' : 'none';
 }
 
 function openAddTypeModal(){
@@ -482,11 +575,13 @@ function openAddTypeModal(){
   populateGroupSelect();
   document.getElementById('new-type-modal-title').textContent = 'Thêm hình thức khen thưởng';
   document.getElementById('new-type-submit-btn').textContent = 'Thêm mới';
-  document.getElementById('new-type-code').value = '';
   document.getElementById('new-type-name').value = '';
   document.getElementById('new-type-money').value = '';
+  document.getElementById('new-type-drl-enabled').checked = false;
+  document.getElementById('new-type-drl-type').value = 'cong';
   document.getElementById('new-type-drl-value').value = '';
   document.getElementById('new-type-note').value = '';
+  toggleDrlConfig();
   pickScope('canhan');
   openModal('modal-new-type');
 }
@@ -499,11 +594,13 @@ function openEditTypeModal(id){
   document.getElementById('new-type-modal-title').textContent = 'Sửa hình thức khen thưởng';
   document.getElementById('new-type-submit-btn').textContent = 'Lưu thay đổi';
   document.getElementById('new-type-group').value = t.group;
-  document.getElementById('new-type-code').value = t.code;
   document.getElementById('new-type-name').value = t.name;
   document.getElementById('new-type-money').value = t.money || '';
-  document.getElementById('new-type-drl-value').value = t.drlPoint;
+  document.getElementById('new-type-drl-enabled').checked = !!t.drlEnabled;
+  document.getElementById('new-type-drl-type').value = t.drlType || 'cong';
+  document.getElementById('new-type-drl-value').value = t.drlEnabled ? t.drlValue : '';
   document.getElementById('new-type-note').value = t.note || '';
+  toggleDrlConfig();
   pickScope(t.scope);
   openModal('modal-new-type');
 }
@@ -511,18 +608,19 @@ function openEditTypeModal(id){
 function doSaveType(){
   const name = document.getElementById('new-type-name').value.trim();
   const group = document.getElementById('new-type-group').value;
-  const code = document.getElementById('new-type-code').value.trim();
   const money = Number(document.getElementById('new-type-money').value) || 0;
-  const drlPoint = Number(document.getElementById('new-type-drl-value').value) || 0;
+  const drlEnabled = document.getElementById('new-type-drl-enabled').checked;
+  const drlType = document.getElementById('new-type-drl-type').value;
+  const drlValue = Number(document.getElementById('new-type-drl-value').value) || 0;
   const note = document.getElementById('new-type-note').value.trim();
 
   if (!name){ showToast('Vui lòng nhập tên hình thức', 'err'); return; }
-  if (!code){ showToast('Vui lòng nhập TT (số thứ tự theo Phụ lục)', 'err'); return; }
+  if (drlEnabled && !drlValue){ showToast('Vui lòng nhập số điểm ĐRL', 'err'); return; }
 
   if (modalMode === 'add'){
     TYPES.unshift({
       id: 't' + Date.now(),
-      code, group, name, scope: selectedScope, money, drlPoint, note,
+      code: '', group, name, scope: selectedScope, money, drlEnabled, drlType, drlValue, note,
       status: 'active', updated: 'Hôm nay',
     });
     showToast('Đã thêm hình thức mới', 'ok');
@@ -530,10 +628,11 @@ function doSaveType(){
     const t = typeById(editingTypeId);
     t.name = name;
     t.group = group;
-    t.code = code;
     t.scope = selectedScope;
     t.money = money;
-    t.drlPoint = drlPoint;
+    t.drlEnabled = drlEnabled;
+    t.drlType = drlType;
+    t.drlValue = drlValue;
     t.note = note;
     t.updated = 'Hôm nay';
     showToast('Đã lưu thay đổi', 'ok');
@@ -548,8 +647,8 @@ function confirmToggleTypeStatus(id){
   const t = typeById(id);
   const toActive = t.status !== 'active';
   const msg = toActive
-    ? `Chuyển "${t.name}" sang Active?`
-    : `Chuyển "${t.name}" sang Inactive?`;
+    ? `Chuyển Danh hiệu khen thưởng "${t.name}" sang Active?`
+    : `Chuyển Danh hiệu khen thưởng "${t.name}" sang Inactive?`;
   showConfirm(msg, () => {
     t.status = toActive ? 'active' : 'inactive';
     t.updated = 'Hôm nay';
@@ -558,8 +657,138 @@ function confirmToggleTypeStatus(id){
   }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
 }
 
+/* == Bảng danh sách nhóm khen thưởng == */
+let editingGroupId = null;
+let groupModalMode = 'add';
+const GROUP_PAGE_SIZE = 10;
+let groupCurrentPage = 1;
+
+function groupById(id){ return GROUPS.find(g => g.id === id); }
+function typeCountByGroup(id){ return TYPES.filter(t => t.group === id).length; }
+function currentGroupNameSearch(){ return document.getElementById('group-name-search').value.trim().toLowerCase(); }
+function currentGroupStatusFilter(){ return document.getElementById('group-status-select').value; }
+
+function renderGroupGrid(){
+  const tbody = document.getElementById('group-tbody');
+  const nameQuery = currentGroupNameSearch();
+  const statusFilter = currentGroupStatusFilter();
+
+  let list = GROUPS.slice();
+  if (statusFilter !== 'all') list = list.filter(g => g.status === statusFilter);
+  if (nameQuery) list = list.filter(g => g.name.toLowerCase().includes(nameQuery));
+
+  const totalPages = Math.max(1, Math.ceil(list.length / GROUP_PAGE_SIZE));
+  groupCurrentPage = Math.min(groupCurrentPage, totalPages);
+  const pageList = list.slice((groupCurrentPage-1)*GROUP_PAGE_SIZE, groupCurrentPage*GROUP_PAGE_SIZE);
+
+  tbody.innerHTML = pageList.map((g, idx) => `
+    <tr>
+      <td class="text-muted">${(groupCurrentPage-1)*GROUP_PAGE_SIZE + idx + 1}</td>
+      <td><span class="group-name-cell">${g.name}</span></td>
+      <td><span class="group-count-cell">${typeCountByGroup(g.id)} hình thức</span></td>
+      <td><span class="tag ${g.status==='active'?'tag-success':'tag-default'}">${g.status==='active'?'Active':'Inactive'}</span></td>
+      <td>
+        <div class="tbl-actions">
+          <button class="icon-btn" title="Sửa" onclick="openEditGroupModal('${g.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          ${g.status==='active' ? `
+          <button class="icon-btn" title="Chuyển sang Inactive" onclick="confirmToggleGroupStatus('${g.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>` : `
+          <button class="icon-btn" title="Chuyển sang Active" onclick="confirmToggleGroupStatus('${g.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          </button>`}
+        </div>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có nhóm khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  renderGroupPagination(list.length, totalPages);
+}
+
+function renderGroupPagination(totalItems, totalPages){
+  const el = document.getElementById('group-pagination');
+  if (!totalItems){ el.innerHTML = ''; return; }
+
+  const from = (groupCurrentPage-1)*GROUP_PAGE_SIZE + 1;
+  const to = Math.min(groupCurrentPage*GROUP_PAGE_SIZE, totalItems);
+
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===groupCurrentPage?'active':''}" onclick="goToGroupPage(${i})">${i}</button>`;
+  }
+
+  el.innerHTML = `
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} nhóm</span>
+    <button type="button" class="pg-btn" ${groupCurrentPage<=1?'disabled':''} onclick="goToGroupPage(${groupCurrentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${groupCurrentPage>=totalPages?'disabled':''} onclick="goToGroupPage(${groupCurrentPage+1})">›</button>`;
+}
+
+function goToGroupPage(p){ groupCurrentPage = p; renderGroupGrid(); }
+
+document.getElementById('group-name-search').addEventListener('input', () => { groupCurrentPage = 1; renderGroupGrid(); });
+document.getElementById('group-status-select').addEventListener('change', () => { groupCurrentPage = 1; renderGroupGrid(); });
+
+function openAddGroupModal(){
+  editingGroupId = null;
+  groupModalMode = 'add';
+  document.getElementById('new-group-modal-title').textContent = 'Thêm nhóm khen thưởng';
+  document.getElementById('new-group-submit-btn').textContent = 'Thêm mới';
+  document.getElementById('new-group-name').value = '';
+  openModal('modal-new-group');
+}
+
+function openEditGroupModal(id){
+  const g = groupById(id);
+  editingGroupId = id;
+  groupModalMode = 'edit';
+  document.getElementById('new-group-modal-title').textContent = 'Sửa nhóm khen thưởng';
+  document.getElementById('new-group-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('new-group-name').value = g.name;
+  openModal('modal-new-group');
+}
+
+function doSaveGroup(){
+  const name = document.getElementById('new-group-name').value.trim();
+  if (!name){ showToast('Vui lòng nhập tên nhóm', 'err'); return; }
+
+  if (groupModalMode === 'add'){
+    GROUPS.push({ id: 'g' + Date.now(), name, status: 'active' });
+    showToast('Đã thêm nhóm mới', 'ok');
+  } else {
+    const g = groupById(editingGroupId);
+    g.name = name;
+    showToast('Đã lưu thay đổi', 'ok');
+  }
+
+  closeModal('modal-new-group');
+  renderGroupGrid();
+  populateGroupFilter();
+  renderGrid();
+}
+
+function confirmToggleGroupStatus(id){
+  const g = groupById(id);
+  const toActive = g.status !== 'active';
+  const count = typeCountByGroup(id);
+  const desc = (!toActive && count) ? `Nhóm này đang có ${count} hình thức khen thưởng.` : '';
+  const msg = toActive
+    ? `Chuyển "${g.name}" sang Active?`
+    : `Chuyển "${g.name}" sang Inactive?`;
+  showConfirm(msg, () => {
+    g.status = toActive ? 'active' : 'inactive';
+    showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
+    renderGroupGrid();
+    populateGroupFilter();
+    renderGrid();
+  }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger', desc);
+}
+
 populateGroupFilter();
 renderGrid();
+renderGroupGrid();
+initTabs();
 </script>
 </body>
 </html>

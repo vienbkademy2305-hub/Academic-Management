@@ -141,6 +141,7 @@
           <li class="active"><a href="#">Cấu hình Quyết định</a></li>
           <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
         </ul>
       </li>
       <li>
@@ -632,6 +633,8 @@ const DECISIONS = [
   { id:'d20', itemId:20, code:'QĐ20', name:'Quyết định xoá tên', unit:'u-ctsv', newStatus:'xoaten', noChange:false, updFields:['status'], status:'active', updated:'07/07/2026', fileNameDh:'mau-qd-xoa-ten-dh.docx', fileNameSdh:'mau-qd-xoa-ten-sdh.docx', processId: null },
   { id:'d21', itemId:21, code:'QĐ21', name:'Quyết định thay đổi đơn vị đào tạo', unit:'u-daotao', newStatus:'', noChange:true, updFields:['unit'], status:'active', updated:'31/07/2026', fileNameDh:'mau-qd-thay-doi-don-vi-dao-tao-dh.docx', fileNameSdh:'mau-qd-thay-doi-don-vi-dao-tao-sdh.docx', processId: null },
   { id:'d22', itemId:22, code:'QĐ22', name:'Quyết định giao đề tài và phân công GVHD', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'04/08/2026', fileNameDh:'mau-qd-giao-de-tai-phan-cong-gvhd-dh.docx', fileNameSdh:'mau-qd-giao-de-tai-phan-cong-gvhd-sdh.docx', processId: null },
+  { id:'d23', itemId:23, code:'QĐ23', name:'Quyết định phân công giảng viên phản biện', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'12/08/2026', fileNameDh:'', fileNameSdh:'', processId: 'p1' },
+  { id:'d24', itemId:24, code:'QĐ24', name:'Quyết định phân công giảng viên phản biện (bảo vệ trước thời hạn)', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'12/08/2026', fileNameDh:'', fileNameSdh:'', processId: 'p1' },
 ];
 
 let editingDecisionId = null;

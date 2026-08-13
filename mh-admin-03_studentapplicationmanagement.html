@@ -265,7 +265,7 @@
         <!-- Bộ lọc: Đơn vị + Tìm theo tên/MSSV -->
         <div class="filter-bar">
           <div class="unit-combo" id="unit-combo">
-            <input class="fc" id="unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:260px">
+            <input class="fc" id="unit-search" type="text" placeholder="🔍 Tổ chức phụ trách…" autocomplete="off" style="width:260px">
             <div class="unit-combo-menu" id="unit-combo-menu"></div>
           </div>
           <!-- Tạm ẩn bộ lọc "Chức năng" — màn hình này chỉ xử lý riêng Quản lý Đơn từ (bieumau),
@@ -1137,7 +1137,7 @@ function closeUnitMenu(){ unitComboMenu.classList.remove('open'); unitHlIndex = 
 function pickUnit(id){
   selectedUnitId = id;
   unitSearchInput.value = id ? unitDisplayName(unitById(id)) : '';
-  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  unitSearchInput.placeholder = id ? '' : '🔍 Tổ chức phụ trách…';
   closeUnitMenu();
   currentPage = 1;
   renderAppGrid();

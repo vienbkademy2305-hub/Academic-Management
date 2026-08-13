@@ -76,7 +76,7 @@
   .tpl-file-name{flex:1;min-width:0;font-size:13.5px;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tpl-file-dl{flex-shrink:0}
 
-  /* Unit search combobox — dùng cho bộ lọc "Đơn vị phụ trách" trên thanh filter-bar,
+  /* Unit search combobox — dùng cho bộ lọc "Tổ chức phụ trách" trên thanh filter-bar,
      và cho combobox chọn quy trình xử lý trong modal gán quy trình */
   .unit-combo{position:relative}
   .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
@@ -200,11 +200,11 @@
           </div>
         </div>
 
-        <!-- Bộ lọc: Tìm tên quyết định + Đơn vị phụ trách + Trạng thái -->
+        <!-- Bộ lọc: Tìm tên quyết định + Tổ chức phụ trách + Trạng thái -->
         <div class="filter-bar">
           <input class="fc" id="dec-name-search" type="text" placeholder="🔍 Tìm tên quyết định…" autocomplete="off" style="width:280px">
           <div class="unit-combo" id="dec-unit-combo" style="width:220px">
-            <input class="fc" id="dec-unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:220px">
+            <input class="fc" id="dec-unit-search" type="text" placeholder="🔍 Tổ chức phụ trách…" autocomplete="off" style="width:220px">
             <div class="unit-combo-menu" id="dec-unit-combo-menu"></div>
           </div>
           <select class="fc" id="status-select" style="width:180px">
@@ -221,7 +221,7 @@
                 <th style="width:48px">STT</th>
                 <th style="width:90px">Mã</th>
                 <th>Tên quyết định</th>
-                <th style="width:170px">Đơn vị phụ trách</th>
+                <th style="width:170px">Tổ chức phụ trách</th>
                 <th style="width:130px">Mẫu file xuất</th>
                 <th style="width:100px">Trạng thái</th>
                 <th style="width:110px">Cập nhật</th>
@@ -281,7 +281,7 @@
         </div>
 
         <div class="fi" style="margin-bottom:0">
-          <label>Đơn vị phụ trách<span class="req">*</span></label>
+          <label>Tổ chức phụ trách<span class="req">*</span></label>
           <select class="fc" id="new-decision-unit">
             <option value="" selected disabled>— Chọn đơn vị phụ trách —</option>
           </select>
@@ -572,7 +572,7 @@ const DATA_FIELDS = [
   { name:'Ngày ban hành quyết định', code:'#ngayBanHanh' },
   { name:'Trích yếu quyết định', code:'#trichYeu' },
   { name:'Lý do ban hành', code:'#lyDoBanHanh' },
-  { name:'Đơn vị phụ trách ban hành', code:'#donViPhuTrach' },
+  { name:'Tổ chức phụ trách ban hành', code:'#donViPhuTrach' },
   { name:'Người ký quyết định', code:'#nguoiKy' },
   { name:'Chức vụ người ký', code:'#chucVuNguoiKy' },
   { name:'Ngày hết hiệu lực', code:'#ngayHetHieuLuc' },
@@ -585,7 +585,7 @@ const DATA_FIELDS = [
   { name:'Ngày lập hồ sơ', code:'#ngayLapHoSo' },
   { name:'Ghi chú', code:'#ghiChu' },
 ];
-/* Đơn vị phụ trách — rút gọn từ cây đơn vị 3 cấp dùng chung ở mh-admin-01,
+/* Tổ chức phụ trách — rút gọn từ cây đơn vị 3 cấp dùng chung ở mh-admin-01,
    chỉ cần Cấp 1/2 để chọn ai được ban hành quyết định này (phân quyền). */
 const UNITS = [
   { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
@@ -848,7 +848,7 @@ function decById(id){ return DECISIONS.find(d => d.id === id); }
 document.getElementById('status-select').addEventListener('change', () => { currentPage = 1; renderDecGrid(); });
 document.getElementById('dec-name-search').addEventListener('input', () => { currentPage = 1; renderDecGrid(); });
 
-/* == Combobox tìm kiếm "Đơn vị phụ trách" trên thanh filter-bar == */
+/* == Combobox tìm kiếm "Tổ chức phụ trách" trên thanh filter-bar == */
 let selectedDecUnitId = null;
 const decUnitSearchInput = document.getElementById('dec-unit-search');
 const decUnitComboMenu = document.getElementById('dec-unit-combo-menu');
@@ -875,7 +875,7 @@ function closeDecUnitMenu(){ decUnitComboMenu.classList.remove('open'); }
 function pickDecUnit(id){
   selectedDecUnitId = id;
   decUnitSearchInput.value = id === '__dh__' ? 'Đại học Phenikaa' : (id ? UNIT_LABEL[id] : '');
-  decUnitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  decUnitSearchInput.placeholder = id ? '' : '🔍 Tổ chức phụ trách…';
   closeDecUnitMenu();
   currentPage = 1;
   renderDecGrid();
@@ -1225,7 +1225,7 @@ document.addEventListener('click', e => {
   if (!document.getElementById('process-picker-combo').contains(e.target)) closeProcessPickerMenu();
 });
 
-/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng chung bởi combobox Đơn vị phụ trách và combobox Quy trình xử lý */
+/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng chung bởi combobox Tổ chức phụ trách và combobox Quy trình xử lý */
 function highlightMatch(text, q){
   if (!q) return text;
   const i = text.toLowerCase().indexOf(q.toLowerCase());

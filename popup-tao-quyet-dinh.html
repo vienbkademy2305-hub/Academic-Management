@@ -23,7 +23,7 @@
   .notif-item-time{font-size:11.5px;color:var(--text-3)}
   .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
 
-  /* Unit search combobox — copy từ mh-admin-06, dùng cho bộ lọc "Đơn vị phụ trách" */
+  /* Unit search combobox — copy từ mh-admin-06, dùng cho bộ lọc "Tổ chức phụ trách" */
   .unit-combo{position:relative}
   .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
   .unit-combo-menu.open{display:block}
@@ -243,14 +243,14 @@
           <button class="btn btn-primary" onclick="openCreateDecisionModal()">＋ Tạo quyết định</button>
         </div>
 
-        <!-- Bộ lọc: Tìm theo SV/MSSV/Mã QĐ + Loại quyết định + Đơn vị phụ trách + Ngày tạo -->
+        <!-- Bộ lọc: Tìm theo SV/MSSV/Mã QĐ + Loại quyết định + Tổ chức phụ trách + Ngày tạo -->
         <div class="filter-bar">
           <input class="fc" id="di-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã quyết định…" autocomplete="off" style="width:280px">
           <select class="fc" id="di-type-select" style="width:260px">
             <option value="all">Tất cả loại quyết định</option>
           </select>
           <div class="unit-combo" id="di-unit-combo" style="width:220px">
-            <input class="fc" id="di-unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:220px">
+            <input class="fc" id="di-unit-search" type="text" placeholder="🔍 Tổ chức phụ trách…" autocomplete="off" style="width:220px">
             <div class="unit-combo-menu" id="di-unit-combo-menu"></div>
           </div>
           <div class="flex items-center gap-8">
@@ -834,7 +834,7 @@
 <script src="_vendor-xlsx.min.js"></script>
 <script>
 /* ============================================================
-   DATA — Đơn vị phụ trách, đồng bộ rút gọn với mh-admin-06
+   DATA — Tổ chức phụ trách, đồng bộ rút gọn với mh-admin-06
    ============================================================ */
 const UNITS = [
   { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
@@ -1156,7 +1156,7 @@ document.addEventListener('click', e => {
 });
 updateNotifBadge();
 
-/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng cho combobox Đơn vị phụ trách */
+/* highlightMatch — bôi vàng phần khớp tìm kiếm, dùng cho combobox Tổ chức phụ trách */
 function highlightMatch(text, q){
   if (!q) return text;
   const i = text.toLowerCase().indexOf(q.toLowerCase());
@@ -1164,7 +1164,7 @@ function highlightMatch(text, q){
   return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
 }
 
-/* == Combobox tìm kiếm "Đơn vị phụ trách" trên thanh filter-bar == */
+/* == Combobox tìm kiếm "Tổ chức phụ trách" trên thanh filter-bar == */
 let selectedUnitId = null;
 const unitSearchInput = document.getElementById('di-unit-search');
 const unitComboMenu = document.getElementById('di-unit-combo-menu');
@@ -1188,7 +1188,7 @@ function closeUnitMenu(){ unitComboMenu.classList.remove('open'); }
 function pickUnitFilter(id){
   selectedUnitId = id;
   unitSearchInput.value = id ? UNIT_LABEL[id] : '';
-  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  unitSearchInput.placeholder = id ? '' : '🔍 Tổ chức phụ trách…';
   closeUnitMenu();
   currentPage = 1;
   renderGrid();

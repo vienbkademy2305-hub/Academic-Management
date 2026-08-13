@@ -168,7 +168,7 @@
         <!-- Bộ lọc -->
         <div class="filter-bar">
           <div class="unit-combo" id="unit-combo">
-            <input class="fc" id="unit-search" type="text" placeholder="🔍 Đơn vị phụ trách…" autocomplete="off" style="width:230px">
+            <input class="fc" id="unit-search" type="text" placeholder="🔍 Tổ chức phụ trách…" autocomplete="off" style="width:230px">
             <div class="unit-combo-menu" id="unit-combo-menu"></div>
           </div>
           <div class="unit-combo" id="form-combo" style="width:220px">
@@ -207,7 +207,7 @@
               <tr>
                 <th style="width:40px"><input type="checkbox" id="fb-select-all" onchange="toggleSelectAll(this.checked)"></th>
                 <th style="width:230px">Tên đơn</th>
-                <th style="width:170px">Đơn vị phụ trách</th>
+                <th style="width:170px">Tổ chức phụ trách</th>
                 <th style="width:110px">Mã sinh viên</th>
                 <th style="width:160px">Họ và tên</th>
                 <th style="width:130px">Đánh giá</th>
@@ -369,7 +369,7 @@ const FEEDBACKS = [
 
 /* ============================================================
    DATA — cây đơn vị 3 cấp, copy nguyên từ mh-admin-03 để đồng bộ
-   bộ lọc "Đơn vị phụ trách" giữa 2 màn hình.
+   bộ lọc "Tổ chức phụ trách" giữa 2 màn hình.
    ============================================================ */
 const UNITS = [
   { id:'u-dh', level:1, parent:null, name:'Đại học' },
@@ -587,7 +587,7 @@ function closeUnitMenu(){ unitComboMenu.classList.remove('open'); }
 function pickUnit(id){
   selectedUnitId = id;
   unitSearchInput.value = id ? unitDisplayName(unitById(id)) : '';
-  unitSearchInput.placeholder = id ? '' : '🔍 Đơn vị phụ trách…';
+  unitSearchInput.placeholder = id ? '' : '🔍 Tổ chức phụ trách…';
   closeUnitMenu();
   currentPage = 1;
   renderFeedbackTable();

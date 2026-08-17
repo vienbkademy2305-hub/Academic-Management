@@ -326,7 +326,7 @@
       </li>
       <li>
         <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
-        <ul class="sb-sub"><li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li><li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li><li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li></ul>
+        <ul class="sb-sub"><li><a href="mh-admin-09_rewardtypelist.html">Danh hiệu Khen thưởng</a></li><li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li><li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li><li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li></ul>
       </li>
       <li>
         <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
@@ -515,11 +515,13 @@
           <div class="rich-area" id="new-form-guide" contenteditable="true" data-placeholder="VD: Nộp trước ngày 15 hằng tháng, kèm minh chứng liên quan…"></div>
         </div>
 
+        <div class="expand-title" style="margin-top:20px">Đối tượng áp dụng</div>
+
         <div class="f-row col-2">
           <div class="fi">
-            <label>Đơn vị trực thuộc</label>
+            <label>Trường/Viện</label>
             <div class="msel" id="new-form-parentunit-msel">
-              <div class="msel-trigger" onclick="toggleMsel('new-form-parentunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Trường/Khoa —</span></div>
+              <div class="msel-trigger" onclick="toggleMsel('new-form-parentunit-msel')"><span class="msel-placeholder">— Để trống nếu áp dụng mọi Trường/Viện —</span></div>
               <div class="msel-menu"></div>
             </div>
             <input class="fc" id="new-form-parentunit-locked" readonly style="display:none;background:#fafafa;color:var(--text-3)">
@@ -567,6 +569,9 @@
               <input type="checkbox" class="new-form-studentstatus-check" value="danghoc"> Đang học
             </label>
             <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
+              <input type="checkbox" class="new-form-studentstatus-check" value="thoihoc"> Thôi học
+            </label>
+            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
               <input type="checkbox" class="new-form-studentstatus-check" value="buocthoihoc"> Buộc thôi học
             </label>
             <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
@@ -580,9 +585,6 @@
             </label>
             <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
               <input type="checkbox" class="new-form-studentstatus-check" value="totnghiep"> Đã tốt nghiệp
-            </label>
-            <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-              <input type="checkbox" class="new-form-studentstatus-check" value="xoaten"> Đã xoá tên
             </label>
           </div>
         </div>

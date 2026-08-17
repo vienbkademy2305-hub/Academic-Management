@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Danh sách Hình thức Khen thưởng | Khoa CNTT</title>
+<title>Danh sách Danh hiệu Khen thưởng | Khoa CNTT</title>
 <link rel="stylesheet" href="_styles.css">
 <style>
-  /* ========== Page-specific: danh sách hình thức khen thưởng (MH-ADMIN-09) ========== */
+  /* ========== Page-specific: danh sách danh hiệu khen thưởng (MH-ADMIN-09) ========== */
 
   /* Dropdown thông báo — đồng bộ với các màn admin khác */
   .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
@@ -23,13 +23,13 @@
   .notif-item-time{font-size:11.5px;color:var(--text-3)}
   .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
 
-  /* Bảng danh sách hình thức khen thưởng */
+  /* Bảng danh sách danh hiệu khen thưởng */
   .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
   table.tbl th{background:#f0f0f0}
   .type-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
   .type-name-cell{font-size:13.5px;color:var(--text-1)}
 
-  /* Tab container — Nhóm khen thưởng / Hình thức khen thưởng */
+  /* Tab container — Nhóm khen thưởng / Danh hiệu khen thưởng */
   .tab-container .tabs-nav{margin-bottom:20px}
   .group-name-cell{font-size:13.5px;color:var(--text-1);font-weight:400}
   .group-count-cell{font-size:13px;color:var(--text-3)}
@@ -43,6 +43,7 @@
   /* Khối cấu hình Điểm ĐRL — toggle bật/tắt + Loại điểm/Số điểm */
   .drl-config-box{margin-bottom:16px}
   .drl-config-hd{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--text-1)}
+
   .drl-config-box .f-row{margin-top:14px;margin-bottom:0}
   .drl-config-box .drl-hint{margin-top:10px;margin-bottom:0}
   .toggle-switch{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
@@ -96,7 +97,8 @@
       <li class="active">
         <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
         <ul class="sb-sub open">
-          <li class="active"><a href="#">DS Hình thức Khen thưởng</a></li>
+          <li class="active"><a href="#">Danh hiệu Khen thưởng</a></li>
+          <li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li>
           <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
           <li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li>
         </ul>
@@ -139,7 +141,7 @@
     <div class="content">
 
       <!-- ═══════════════════════════════════════════════════════
-           DANH MỤC KHEN THƯỞNG (MH-ADMIN-09) — 2 tab: Nhóm / Hình thức
+           DANH MỤC KHEN THƯỞNG (MH-ADMIN-09) — 2 tab: Nhóm / Danh hiệu
       ═══════════════════════════════════════════════════════ -->
       <div class="tab-container">
 
@@ -151,7 +153,7 @@
 
         <div class="tabs-nav">
           <button type="button" class="tab-btn active" data-tab="tab-group">Nhóm khen thưởng</button>
-          <button type="button" class="tab-btn" data-tab="tab-type">Hình thức khen thưởng</button>
+          <button type="button" class="tab-btn" data-tab="tab-type">Danh hiệu khen thưởng</button>
         </div>
 
         <!-- ─── TAB: NHÓM KHEN THƯỞNG ─── -->
@@ -174,7 +176,7 @@
                 <tr>
                   <th style="width:48px">STT</th>
                   <th>Tên nhóm</th>
-                  <th style="width:160px">Số hình thức</th>
+                  <th style="width:160px">Số danh hiệu</th>
                   <th style="width:120px">Trạng thái</th>
                   <th style="width:90px">Thao tác</th>
                 </tr>
@@ -187,12 +189,12 @@
           <div class="pagination" id="group-pagination"><!-- rendered by JS --></div>
         </div>
 
-        <!-- ─── TAB: HÌNH THỨC KHEN THƯỞNG ─── -->
+        <!-- ─── TAB: DANH HIỆU KHEN THƯỞNG ─── -->
         <div class="tab-pane" id="tab-type">
 
-          <!-- Bộ lọc: Tìm tên hình thức + Nhóm + Đối tượng khen thưởng + Trạng thái + Thêm mới -->
+          <!-- Bộ lọc: Tìm tên danh hiệu + Nhóm + Đối tượng khen thưởng + Trạng thái + Thêm mới -->
           <div class="filter-bar">
-            <input class="fc" id="type-name-search" type="text" placeholder="🔍 Tìm tên hình thức khen thưởng…" autocomplete="off" style="width:280px">
+            <input class="fc" id="type-name-search" type="text" placeholder="🔍 Tìm tên danh hiệu khen thưởng…" autocomplete="off" style="width:280px">
             <select class="fc" id="group-select" style="width:260px">
               <option value="all">Tất cả nhóm khen thưởng</option>
             </select>
@@ -237,11 +239,11 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Thêm/Sửa hình thức khen thưởng ═══ -->
+<!-- ═══ MODAL: Thêm/Sửa danh hiệu khen thưởng ═══ -->
 <div class="overlay hidden" id="modal-new-type">
   <div class="modal-box w700">
     <div class="modal-hd">
-      <h3 class="modal-title" id="new-type-modal-title">Thêm hình thức khen thưởng</h3>
+      <h3 class="modal-title" id="new-type-modal-title">Thêm danh hiệu khen thưởng</h3>
       <button class="modal-close" data-close="modal-new-type">✕</button>
     </div>
     <div class="modal-bd">
@@ -328,7 +330,7 @@
 <script src="_utils.js"></script>
 <script>
 /* ============================================================
-   DATA — danh sách hình thức khen thưởng, theo đúng Phụ lục 1
+   DATA — danh sách danh hiệu khen thưởng, theo đúng Phụ lục 1
    (kèm Quyết định số 1653/QĐ-ĐHP-CTSV&KN ngày 28/4/2026 của Giám
    đốc Đại học Phenikaa — Quy định công tác khen thưởng SV đại học
    chính quy). Cột "money" = Mức khen thưởng (VNĐ) lấy đúng văn bản;
@@ -421,7 +423,7 @@ let selectedScope = 'canhan';
 /* == Dropdown thông báo (chuông trên header) == */
 const NOTIFICATIONS = [
   { id:'n1', unread:true, ico:'🏅', title:'"Sinh viên 5 tốt cấp Trường" vừa được cập nhật điểm ĐRL', time:'1 giờ trước' },
-  { id:'n2', unread:true, ico:'📝', title:'Hình thức mới "Chi đoàn vững mạnh xuất sắc" vừa được thêm vào danh sách', time:'5 giờ trước' },
+  { id:'n2', unread:true, ico:'📝', title:'Danh hiệu mới "Chi đoàn vững mạnh xuất sắc" vừa được thêm vào danh sách', time:'5 giờ trước' },
   { id:'n3', unread:false, ico:'✅', title:'"Tích cực tham gia hoạt động Đoàn - Hội" vừa được chuyển sang Active', time:'Hôm qua' },
 ];
 
@@ -464,7 +466,7 @@ document.addEventListener('click', e => {
 
 updateNotifBadge();
 
-/* == Bảng danh sách hình thức khen thưởng == */
+/* == Bảng danh sách danh hiệu khen thưởng == */
 const TYPE_PAGE_SIZE = 20;
 let currentPage = 1;
 
@@ -522,7 +524,7 @@ function renderGrid(){
           </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có hình thức nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có danh hiệu nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -540,7 +542,7 @@ function renderPagination(totalItems, totalPages){
   }
 
   el.innerHTML = `
-    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} hình thức</span>
+    <span class="pg-info">Hiển thị ${from}–${to} / ${totalItems} danh hiệu</span>
     <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
     ${btns}
     <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
@@ -553,7 +555,7 @@ document.getElementById('scope-select').addEventListener('change', () => { curre
 document.getElementById('group-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
 document.getElementById('type-name-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
 
-/* == Popup Thêm/Sửa hình thức == */
+/* == Popup Thêm/Sửa danh hiệu == */
 function populateGroupSelect(){
   const sel = document.getElementById('new-type-group');
   sel.innerHTML = GROUPS.filter(g => g.status === 'active').map(g => `<option value="${g.id}">${g.name}</option>`).join('');
@@ -573,7 +575,7 @@ function openAddTypeModal(){
   editingTypeId = null;
   modalMode = 'add';
   populateGroupSelect();
-  document.getElementById('new-type-modal-title').textContent = 'Thêm hình thức khen thưởng';
+  document.getElementById('new-type-modal-title').textContent = 'Thêm danh hiệu khen thưởng';
   document.getElementById('new-type-submit-btn').textContent = 'Thêm mới';
   document.getElementById('new-type-name').value = '';
   document.getElementById('new-type-money').value = '';
@@ -591,7 +593,7 @@ function openEditTypeModal(id){
   editingTypeId = id;
   modalMode = 'edit';
   populateGroupSelect();
-  document.getElementById('new-type-modal-title').textContent = 'Sửa hình thức khen thưởng';
+  document.getElementById('new-type-modal-title').textContent = 'Sửa danh hiệu khen thưởng';
   document.getElementById('new-type-submit-btn').textContent = 'Lưu thay đổi';
   document.getElementById('new-type-group').value = t.group;
   document.getElementById('new-type-name').value = t.name;
@@ -614,7 +616,7 @@ function doSaveType(){
   const drlValue = Number(document.getElementById('new-type-drl-value').value) || 0;
   const note = document.getElementById('new-type-note').value.trim();
 
-  if (!name){ showToast('Vui lòng nhập tên hình thức', 'err'); return; }
+  if (!name){ showToast('Vui lòng nhập tên danh hiệu', 'err'); return; }
   if (drlEnabled && !drlValue){ showToast('Vui lòng nhập số điểm ĐRL', 'err'); return; }
 
   if (modalMode === 'add'){
@@ -623,7 +625,7 @@ function doSaveType(){
       code: '', group, name, scope: selectedScope, money, drlEnabled, drlType, drlValue, note,
       status: 'active', updated: 'Hôm nay',
     });
-    showToast('Đã thêm hình thức mới', 'ok');
+    showToast('Đã thêm danh hiệu mới', 'ok');
   } else {
     const t = typeById(editingTypeId);
     t.name = name;
@@ -685,7 +687,7 @@ function renderGroupGrid(){
     <tr>
       <td class="text-muted">${(groupCurrentPage-1)*GROUP_PAGE_SIZE + idx + 1}</td>
       <td><span class="group-name-cell">${g.name}</span></td>
-      <td><span class="group-count-cell">${typeCountByGroup(g.id)} hình thức</span></td>
+      <td><span class="group-count-cell">${typeCountByGroup(g.id)} danh hiệu</span></td>
       <td><span class="tag ${g.status==='active'?'tag-success':'tag-default'}">${g.status==='active'?'Active':'Inactive'}</span></td>
       <td>
         <div class="tbl-actions">
@@ -772,7 +774,7 @@ function confirmToggleGroupStatus(id){
   const g = groupById(id);
   const toActive = g.status !== 'active';
   const count = typeCountByGroup(id);
-  const desc = (!toActive && count) ? `Nhóm này đang có ${count} hình thức khen thưởng.` : '';
+  const desc = (!toActive && count) ? `Nhóm này đang có ${count} danh hiệu khen thưởng.` : '';
   const msg = toActive
     ? `Chuyển "${g.name}" sang Active?`
     : `Chuyển "${g.name}" sang Inactive?`;

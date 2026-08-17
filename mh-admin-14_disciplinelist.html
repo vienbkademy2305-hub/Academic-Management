@@ -26,13 +26,6 @@
   #view-list table.tbl th{background:#f0f0f0}
   .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
   .drl-point{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--error)}
-
-  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-  .stat-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px}
-  .stat-card .stat-label{font-size:12px;color:var(--text-3);margin-bottom:6px}
-  .stat-card .stat-value{font-size:22px;font-weight:700;color:var(--text-1)}
-  .stat-card .stat-value.error{color:var(--error)}
-  @media (max-width:900px){.stat-row{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -76,7 +69,8 @@
       <li>
         <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
         <ul class="sb-sub">
-          <li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li>
+          <li><a href="mh-admin-09_rewardtypelist.html">Danh hiệu Khen thưởng</a></li>
+          <li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li>
           <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
           <li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li>
         </ul>
@@ -121,7 +115,9 @@
       <!-- ═══════════════════════════════════════════════════════
            VIEW — DANH SÁCH KỶ LUẬT ĐÃ PHÁT SINH (MH-ADMIN-14)
            Dữ liệu bung ra từ các Đề xuất Kỷ luật (mh-admin-13)
-           đã ở trạng thái "Đã duyệt" — mỗi dòng là 1 SV bị kỷ luật cụ thể.
+           đã ở trạng thái "Đã duyệt" — mỗi dòng là 1 SV bị kỷ luật cụ thể,
+           không phải 1 dòng đại diện chung. Chỉ đề xuất Đã duyệt mới phát
+           sinh vào danh sách này (đồng bộ đúng quy ước với mh-admin-11).
       ═══════════════════════════════════════════════════════ -->
       <div id="view-list">
 
@@ -130,18 +126,14 @@
           <p class="text-muted text-sm" style="margin:4px 0 0">Các kỷ luật đã ban hành cho sinh viên, tổng hợp từ Đề xuất Kỷ luật đã được duyệt</p>
         </div>
 
-        <div class="stat-row">
-          <div class="stat-card"><div class="stat-label">Tổng lượt kỷ luật</div><div class="stat-value" id="stat-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">Khiển trách / Cảnh cáo</div><div class="stat-value" id="stat-nhe">0</div></div>
-          <div class="stat-card"><div class="stat-label">Đình chỉ / Buộc thôi học</div><div class="stat-value" id="stat-nang">0</div></div>
-          <div class="stat-card"><div class="stat-label">Tổng điểm ĐRL đã trừ</div><div class="stat-value error" id="stat-drl">0</div></div>
-        </div>
-
         <!-- Bộ lọc -->
         <div class="filter-bar">
-          <input class="fc" id="dl-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã đề xuất…" autocomplete="off" style="width:300px">
-          <select class="fc" id="dl-type-select" style="width:220px">
+          <input class="fc" id="dl-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã đề xuất…" autocomplete="off" style="width:260px">
+          <select class="fc" id="dl-type-select" style="width:200px">
             <option value="all">Tất cả hình thức</option>
+          </select>
+          <select class="fc" id="dl-unit-select" style="width:200px">
+            <option value="all">Tất cả đơn vị</option>
           </select>
           <div class="flex items-center gap-8">
             <input class="fc" id="dl-date-from" type="date" style="width:150px" title="Ngày ban hành từ">
@@ -155,14 +147,16 @@
             <thead>
               <tr>
                 <th style="width:48px">STT</th>
+                <th style="width:140px">Đơn vị</th>
                 <th style="width:110px">MSSV</th>
-                <th>Họ tên</th>
-                <th>CTĐT</th>
-                <th>Hình thức kỷ luật</th>
-                <th>Phân loại lý do</th>
-                <th style="width:90px">Điểm ĐRL</th>
-                <th style="width:130px">Mã đề xuất</th>
-                <th style="width:110px">Ngày ban hành</th>
+                <th>Họ và tên</th>
+                <th style="width:150px">CTĐT</th>
+                <th style="width:170px">Hình thức kỷ luật</th>
+                <th style="width:100px">Năm học</th>
+                <th style="width:110px">Số QĐ</th>
+                <th style="width:100px">Ngày QĐ</th>
+                <th style="width:110px">Điểm ĐRL bị trừ</th>
+                <th>Ghi chú</th>
               </tr>
             </thead>
             <tbody id="dl-tbody">
@@ -183,22 +177,36 @@
    DATA — hình thức kỷ luật (đồng bộ rút gọn với mh-admin-12)
    ============================================================ */
 const DISCIPLINE_TYPES = [
-  { id:'t1', code:'KL01', name:'Khiển trách', reasons:['Đi trễ giờ thi', 'Vi phạm nội quy phòng thi', 'Nghỉ học không phép quá số buổi quy định'], drlPoint:10, severe:false },
-  { id:'t2', code:'KL02', name:'Cảnh cáo', reasons:['Gian lận trong kiểm tra', 'Gây mất trật tự trong giờ học', 'Vi phạm quy định về trang phục, tác phong'], drlPoint:20, severe:false },
-  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', reasons:['Gian lận thi cử có tổ chức', 'Đánh nhau, gây rối trật tự công cộng'], drlPoint:30, severe:true },
-  { id:'t4', code:'KL04', name:'Buộc thôi học', reasons:['Vi phạm pháp luật nghiêm trọng', 'Tái phạm nhiều lần sau khi đã bị kỷ luật'], drlPoint:40, severe:true },
+  { id:'t1', code:'KL01', name:'Khiển trách', drlPoint:10 },
+  { id:'t2', code:'KL02', name:'Cảnh cáo', drlPoint:20 },
+  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', drlPoint:30 },
+  { id:'t4', code:'KL04', name:'Buộc thôi học', drlPoint:40 },
+  { id:'t5', code:'KL05', name:'Cảnh cáo toàn trường', drlPoint:25 },
 ];
 function typeById(id){ return DISCIPLINE_TYPES.find(t => t.id === id); }
 
+/* Đơn vị — đồng bộ với UNITS ở mh-admin-13 */
+const UNITS = [
+  { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
+  { value:'u-daotao', label:'Ban Đào tạo' },
+  { value:'u-khaothi', label:'Phòng Khảo thí và Đảm bảo chất lượng' },
+  { value:'u-thanhtra', label:'Ban Thanh tra Pháp chế' },
+  { value:'u-cntt', label:'Khoa CNTT' },
+];
+const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+
 /* ============================================================
-   DATA — kỷ luật đã phát sinh (mock), mỗi dòng = 1 SV bị kỷ luật
-   cụ thể, phát sinh từ 1 Đề xuất đã Đã duyệt.
+   DATA — kỷ luật đã phát sinh (mock), mỗi dòng = 1 SV bị kỷ luật cụ
+   thể, phát sinh từ 1 Đề xuất đã Đã duyệt (chỉ đề xuất Đã duyệt mới
+   phát sinh vào danh sách này — đồng bộ đúng quy ước với mh-admin-11).
    ============================================================ */
 const DISCIPLINES = [
-  { id:'dl1', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', typeId:'t2', reasonIdx:0, proposalCode:'DXKL-000001', issuedDate:'13/07/2026' },
-  { id:'dl2', mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', typeId:'t2', reasonIdx:0, proposalCode:'DXKL-000001', issuedDate:'13/07/2026' },
-  { id:'dl3', mssv:'20120100', name:'Vũ Thị Yến', ctdt:'Hệ thống thông tin', typeId:'t1', reasonIdx:2, proposalCode:'DXKL-000009', issuedDate:'02/07/2026' },
-  { id:'dl4', mssv:'20120150', name:'Đinh Văn Phúc', ctdt:'Kỹ thuật phần mềm', typeId:'t3', reasonIdx:0, proposalCode:'DXKL-000010', issuedDate:'25/06/2026' },
+  { id:'dl1', unit:'u-khaothi', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', typeId:'t2', academicYear:'2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
+  { id:'dl2', unit:'u-khaothi', mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', typeId:'t2', academicYear:'2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
+  { id:'dl3', unit:'u-cntt', mssv:'20120100', name:'Vũ Thị Yến', ctdt:'Hệ thống thông tin', typeId:'t1', academicYear:'2025-2026', proposalCode:'DXKL-000009', issueCode:'92/QĐ-ĐHPĐ', issueEffective:'02/07/2026', issuedDate:'02/07/2026', note:'Nghỉ học không phép quá số buổi quy định' },
+  { id:'dl4', unit:'u-thanhtra', mssv:'20120150', name:'Đinh Văn Phúc', ctdt:'Kỹ thuật phần mềm', typeId:'t3', academicYear:'2024-2025', proposalCode:'DXKL-000010', issueCode:'78/QĐ-ĐHPĐ', issueEffective:'25/06/2026', issuedDate:'25/06/2026', note:'Đánh nhau, gây rối trật tự công cộng' },
+  { id:'dl5', unit:'u-ctsv', mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin', typeId:'t1', academicYear:'2025-2026', proposalCode:'DXKL-000012', issueCode:'85/QĐ-ĐHPĐ', issueEffective:'18/06/2026', issuedDate:'18/06/2026', note:'Gây mất trật tự tại khu nội trú' },
+  { id:'dl6', unit:'u-daotao', mssv:'20120306', name:'Vũ Thị Kim Ngân', ctdt:'An toàn thông tin', typeId:'t2', academicYear:'2024-2025', proposalCode:'DXKL-000013', issueCode:'', issueEffective:'10/06/2026', issuedDate:'10/06/2026', note:'Vi phạm quy định về trang phục, tác phong' },
 ];
 
 const PAGE_SIZE = 20;
@@ -236,29 +244,25 @@ function populateTypeFilter(){
   const sel = document.getElementById('dl-type-select');
   DISCIPLINE_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
 }
-
-function renderStats(list){
-  document.getElementById('stat-total').textContent = list.length;
-  document.getElementById('stat-nhe').textContent = list.filter(r => !typeById(r.typeId).severe).length;
-  document.getElementById('stat-nang').textContent = list.filter(r => typeById(r.typeId).severe).length;
-  const totalDrl = list.reduce((sum, r) => sum + typeById(r.typeId).drlPoint, 0);
-  document.getElementById('stat-drl').textContent = '-' + totalDrl;
+function populateUnitFilter(){
+  const sel = document.getElementById('dl-unit-select');
+  UNITS.forEach(u => sel.insertAdjacentHTML('beforeend', `<option value="${u.value}">${u.label}</option>`));
 }
 
 function renderGrid(){
   const tbody = document.getElementById('dl-tbody');
   const q = document.getElementById('dl-search').value.trim().toLowerCase();
   const typeFilter = document.getElementById('dl-type-select').value;
+  const unitFilter = document.getElementById('dl-unit-select').value;
   const dateFrom = document.getElementById('dl-date-from').value;
   const dateTo = document.getElementById('dl-date-to').value;
 
   let list = DISCIPLINES.slice();
   if (typeFilter !== 'all') list = list.filter(r => r.typeId === typeFilter);
+  if (unitFilter !== 'all') list = list.filter(r => r.unit === unitFilter);
   if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.mssv.includes(q) || r.proposalCode.toLowerCase().includes(q));
   if (dateFrom) list = list.filter(r => toISO(r.issuedDate) >= dateFrom);
   if (dateTo) list = list.filter(r => toISO(r.issuedDate) <= dateTo);
-
-  renderStats(list);
 
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
@@ -269,16 +273,18 @@ function renderGrid(){
     return `
     <tr>
       <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td>${UNIT_LABEL[r.unit] || '—'}</td>
       <td>${r.mssv}</td>
       <td>${r.name}</td>
-      <td>${r.ctdt}</td>
-      <td><span class="tag ${t.severe?'tag-error':'tag-warning'}">${t.name}</span></td>
-      <td>${t.reasons[r.reasonIdx] || '—'}</td>
+      <td>${r.ctdt || '—'}</td>
+      <td><span class="tag tag-error">${t.name}</span></td>
+      <td>${r.academicYear || '—'}</td>
+      <td>${r.issueCode || '—'}</td>
+      <td class="text-muted">${r.issueEffective || '—'}</td>
       <td><span class="drl-point">-${t.drlPoint}</span></td>
-      <td><span class="di-code">${r.proposalCode}</span></td>
-      <td class="text-muted">${r.issuedDate}</td>
+      <td class="text-muted">${r.note || '—'}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có kỷ luật nào khớp bộ lọc đang chọn</div></td></tr>`;
+  }).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có kỷ luật nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -300,9 +306,10 @@ function renderPagination(totalItems, totalPages){
 function goToPage(p){ currentPage = p; renderGrid(); }
 
 document.getElementById('dl-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
-['dl-type-select','dl-date-from','dl-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
+['dl-type-select','dl-unit-select','dl-date-from','dl-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
 
 populateTypeFilter();
+populateUnitFilter();
 renderGrid();
 </script>
 </body>

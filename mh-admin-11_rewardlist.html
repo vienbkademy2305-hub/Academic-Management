@@ -24,18 +24,7 @@
 
   #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
   #view-list table.tbl th{background:#f0f0f0}
-  .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
-  .drl-point{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--success)}
   .obj-scope-tag{margin-left:6px}
-
-  /* Tổng quan (thẻ số liệu) */
-  .stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}
-  .stat-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px}
-  .stat-card .stat-label{font-size:12px;color:var(--text-3);margin-bottom:6px}
-  .stat-card .stat-value{font-size:22px;font-weight:700;color:var(--text-1)}
-  .stat-card .stat-value.success{color:var(--success)}
-  @media (max-width:1100px){.stat-row{grid-template-columns:repeat(3,1fr)}}
-  @media (max-width:640px){.stat-row{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -79,7 +68,8 @@
       <li class="active">
         <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
         <ul class="sb-sub open">
-          <li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li>
+          <li><a href="mh-admin-09_rewardtypelist.html">Danh hiệu Khen thưởng</a></li>
+          <li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li>
           <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
           <li class="active"><a href="#">Danh sách Khen thưởng</a></li>
         </ul>
@@ -134,24 +124,19 @@
           <p class="text-muted text-sm" style="margin:4px 0 0">Các khen thưởng đã ban hành cho sinh viên/tập thể, tổng hợp từ Đề xuất Khen thưởng đã được duyệt</p>
         </div>
 
-        <div class="stat-row">
-          <div class="stat-card"><div class="stat-label">Tổng lượt khen thưởng</div><div class="stat-value" id="stat-total">0</div></div>
-          <div class="stat-card"><div class="stat-label">Cá nhân</div><div class="stat-value" id="stat-canhan">0</div></div>
-          <div class="stat-card"><div class="stat-label">Tập thể</div><div class="stat-value" id="stat-tapthe">0</div></div>
-          <div class="stat-card"><div class="stat-label">Tổng điểm ĐRL đã cộng</div><div class="stat-value success" id="stat-drl">0</div></div>
-          <div class="stat-card"><div class="stat-label">Tổng tiền thưởng đã chi</div><div class="stat-value success" id="stat-money">0</div></div>
-        </div>
-
         <!-- Bộ lọc -->
         <div class="filter-bar">
-          <input class="fc" id="rw-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV, tập thể hoặc mã đề xuất…" autocomplete="off" style="width:300px">
-          <select class="fc" id="rw-type-select" style="width:220px">
-            <option value="all">Tất cả hình thức</option>
+          <input class="fc" id="rw-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV, tập thể hoặc mã đề xuất…" autocomplete="off" style="width:280px">
+          <select class="fc" id="rw-type-select" style="width:200px">
+            <option value="all">Tất cả danh hiệu</option>
           </select>
-          <select class="fc" id="rw-scope-select" style="width:160px">
+          <select class="fc" id="rw-scope-select" style="width:150px">
             <option value="all">Tất cả phạm vi</option>
             <option value="canhan">Cá nhân</option>
             <option value="tapthe">Tập thể</option>
+          </select>
+          <select class="fc" id="rw-unit-select" style="width:200px">
+            <option value="all">Tất cả đơn vị</option>
           </select>
           <div class="flex items-center gap-8">
             <input class="fc" id="rw-date-from" type="date" style="width:150px" title="Ngày ban hành từ">
@@ -165,13 +150,18 @@
             <thead>
               <tr>
                 <th style="width:48px">STT</th>
-                <th style="width:120px">Đối tượng</th>
-                <th>Tên / MSSV</th>
-                <th>Hình thức khen thưởng</th>
+                <th style="width:140px">Đơn vị</th>
+                <th style="width:110px">MSSV</th>
+                <th>Họ và tên</th>
+                <th style="width:150px">CTĐT</th>
+                <th style="width:130px">Hình thức khen thưởng</th>
+                <th style="width:110px">Đối tượng áp dụng</th>
+                <th style="width:100px">Năm học</th>
+                <th style="width:110px">Số QĐ</th>
+                <th style="width:100px">Ngày QĐ</th>
+                <th style="width:180px">Danh hiệu khen thưởng</th>
                 <th style="width:130px">Mức khen thưởng</th>
-                <th style="width:90px">Điểm ĐRL</th>
-                <th style="width:130px">Mã đề xuất</th>
-                <th style="width:110px">Ngày ban hành</th>
+                <th>Ghi chú</th>
               </tr>
             </thead>
             <tbody id="rw-tbody">
@@ -205,17 +195,33 @@ const REWARD_TYPES = [
 ];
 function typeById(id){ return REWARD_TYPES.find(t => t.id === id); }
 
+/* Đơn vị — đồng bộ với UNITS ở mh-admin-10 */
+const UNITS = [
+  { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
+  { value:'u-daotao', label:'Ban Đào tạo' },
+  { value:'u-cntt', label:'Khoa CNTT' },
+  { value:'u-doanhoi', label:'Đoàn Thanh niên - Hội Sinh viên' },
+];
+const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+const PERIOD_TYPE_LABEL = { dinhky:'Định kỳ', dotxuat:'Đột xuất', chuyende:'Theo đợt/theo chuyên đề' };
+
 /* ============================================================
    DATA — khen thưởng đã phát sinh (mock), mỗi dòng = 1 đối tượng
    được khen thưởng cụ thể, phát sinh từ 1 Đề xuất đã Đã duyệt.
+   Dòng Tập thể (scope:'tapthe') vẫn liệt kê từng SV thuộc lớp được
+   khen thưởng — chỉ khác Danh hiệu là danh hiệu tập thể (gán chung
+   cho cả lớp), không phải 1 dòng đại diện cho cả lớp như trước.
    ============================================================ */
 const REWARDS = [
-  { id:'w1', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', typeId:'t425', proposalCode:'DXKT-000001', issuedDate:'22/07/2026' },
-  { id:'w2', scope:'canhan', mssv:'20120221', name:'Lê Thị Huyền', typeId:'t425', proposalCode:'DXKT-000001', issuedDate:'22/07/2026' },
-  { id:'w3', scope:'canhan', mssv:'20120067', name:'Ngô Thị Thu', typeId:'t105', proposalCode:'DXKT-000005', issuedDate:'10/07/2026' },
-  { id:'w4', scope:'canhan', mssv:'20120071', name:'Lý Thị Hương', typeId:'t104', proposalCode:'DXKT-000006', issuedDate:'05/07/2026' },
-  { id:'w5', scope:'tapthe', mssv:'', name:'Lớp CT4701 - CNTT khoá 47', typeId:'t101', proposalCode:'DXKT-000007', issuedDate:'28/06/2026' },
-  { id:'w6', scope:'tapthe', mssv:'', name:'Lớp CT4602 - CNTT khoá 46', typeId:'t102', proposalCode:'DXKT-000008', issuedDate:'20/06/2026' },
+  { id:'w1', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dotxuat', academicYear:'2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
+  { id:'w2', scope:'canhan', mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dotxuat', academicYear:'2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
+  { id:'w3', scope:'canhan', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Kỹ thuật phần mềm', unit:'u-ctsv', periodType:'chuyende', academicYear:'2025-2026', typeId:'t105', proposalCode:'DXKT-000005', issueCode:'118/QĐ-ĐHPĐ', issueEffective:'10/07/2026', issuedDate:'10/07/2026', note:'' },
+  { id:'w4', scope:'canhan', mssv:'20120071', name:'Lý Thị Hương', ctdt:'Khoa học máy tính', unit:'u-daotao', periodType:'dinhky', academicYear:'2024-2025', typeId:'t104', proposalCode:'DXKT-000006', issueCode:'112/QĐ-ĐHPĐ', issueEffective:'05/07/2026', issuedDate:'05/07/2026', note:'Học kỳ 2' },
+  { id:'w5', scope:'tapthe', mssv:'20120310', name:'Cao Thị Yến Nhi', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w6', scope:'tapthe', mssv:'20120325', name:'Bùi Văn Đạt', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w7', scope:'tapthe', mssv:'20120330', name:'Trịnh Thị Mai Anh', ctdt:'Kỹ thuật phần mềm', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w8', scope:'tapthe', mssv:'20120308', name:'Dương Thị Thanh Hà', ctdt:'Hệ thống thông tin', unit:'u-doanhoi', periodType:'dinhky', academicYear:'2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
+  { id:'w9', scope:'tapthe', mssv:'20120340', name:'Phan Đức Anh', ctdt:'Khoa học máy tính', unit:'u-doanhoi', periodType:'dinhky', academicYear:'2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
 ];
 
 const PAGE_SIZE = 20;
@@ -253,15 +259,9 @@ function populateTypeFilter(){
   const sel = document.getElementById('rw-type-select');
   REWARD_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
 }
-
-function renderStats(list){
-  document.getElementById('stat-total').textContent = list.length;
-  document.getElementById('stat-canhan').textContent = list.filter(r => r.scope === 'canhan').length;
-  document.getElementById('stat-tapthe').textContent = list.filter(r => r.scope === 'tapthe').length;
-  const totalDrl = list.reduce((sum, r) => sum + typeById(r.typeId).drlPoint, 0);
-  document.getElementById('stat-drl').textContent = '+' + totalDrl;
-  const totalMoney = list.reduce((sum, r) => sum + (typeById(r.typeId).money || 0), 0);
-  document.getElementById('stat-money').textContent = totalMoney.toLocaleString('vi-VN') + ' đ';
+function populateUnitFilter(){
+  const sel = document.getElementById('rw-unit-select');
+  UNITS.forEach(u => sel.insertAdjacentHTML('beforeend', `<option value="${u.value}">${u.label}</option>`));
 }
 
 function renderGrid(){
@@ -269,17 +269,17 @@ function renderGrid(){
   const q = document.getElementById('rw-search').value.trim().toLowerCase();
   const typeFilter = document.getElementById('rw-type-select').value;
   const scopeFilter = document.getElementById('rw-scope-select').value;
+  const unitFilter = document.getElementById('rw-unit-select').value;
   const dateFrom = document.getElementById('rw-date-from').value;
   const dateTo = document.getElementById('rw-date-to').value;
 
   let list = REWARDS.slice();
   if (typeFilter !== 'all') list = list.filter(r => r.typeId === typeFilter);
   if (scopeFilter !== 'all') list = list.filter(r => r.scope === scopeFilter);
+  if (unitFilter !== 'all') list = list.filter(r => r.unit === unitFilter);
   if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.mssv.includes(q) || r.proposalCode.toLowerCase().includes(q));
   if (dateFrom) list = list.filter(r => toISO(r.issuedDate) >= dateFrom);
   if (dateTo) list = list.filter(r => toISO(r.issuedDate) <= dateTo);
-
-  renderStats(list);
 
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
@@ -288,14 +288,19 @@ function renderGrid(){
   tbody.innerHTML = pageList.map((r, idx) => `
     <tr>
       <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td>${UNIT_LABEL[r.unit] || '—'}</td>
+      <td>${r.mssv || '—'}</td>
+      <td>${r.name}</td>
+      <td>${r.ctdt || '—'}</td>
+      <td>${PERIOD_TYPE_LABEL[r.periodType] || '—'}</td>
       <td><span class="tag ${r.scope==='canhan'?'tag-default':'tag-purple'}">${r.scope==='canhan'?'Cá nhân':'Tập thể'}</span></td>
-      <td>${r.scope==='canhan' ? `${r.name} <span class="text-muted text-sm">(${r.mssv})</span>` : r.name}</td>
+      <td>${r.academicYear || '—'}</td>
+      <td>${r.issueCode || '—'}</td>
+      <td class="text-muted">${r.issueEffective || '—'}</td>
       <td>${typeById(r.typeId).name}</td>
       <td>${typeById(r.typeId).money ? typeById(r.typeId).money.toLocaleString('vi-VN') + ' đ' : '—'}</td>
-      <td><span class="drl-point">+${typeById(r.typeId).drlPoint}</span></td>
-      <td><span class="di-code">${r.proposalCode}</span></td>
-      <td class="text-muted">${r.issuedDate}</td>
-    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
+      <td class="text-muted">${r.note || '—'}</td>
+    </tr>`).join('') || `<tr><td colspan="13"><div class="tbl-empty">Chưa có khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -317,9 +322,10 @@ function renderPagination(totalItems, totalPages){
 function goToPage(p){ currentPage = p; renderGrid(); }
 
 ['rw-search'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentPage = 1; renderGrid(); }));
-['rw-type-select','rw-scope-select','rw-date-from','rw-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
+['rw-type-select','rw-scope-select','rw-unit-select','rw-date-from','rw-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
 
 populateTypeFilter();
+populateUnitFilter();
 renderGrid();
 </script>
 </body>

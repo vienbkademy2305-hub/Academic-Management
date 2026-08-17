@@ -39,6 +39,20 @@
   .reason-row-del:hover{background:#fff2f0;color:var(--error);border-color:#ffa39e}
   .reason-add-btn{font-size:13px;color:var(--primary);cursor:pointer;font-weight:500}
   .drl-hint{font-size:12px;color:var(--text-3);margin-top:6px}
+  .type-process-cell{font-size:13px;color:var(--text-1)}
+  .type-process-cell.empty{color:var(--text-3);font-style:italic}
+
+  /* Combobox chọn quy trình xử lý — copy nguyên pattern unit-combo từ mh-admin-17, dùng trong popup Gán quy trình */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+  #modal-process-picker .modal-bd{overflow:visible}
+
+  .dm-section-title{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -82,7 +96,7 @@
       <li>
         <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
         <ul class="sb-sub">
-          <li><a href="mh-admin-09_rewardtypelist.html">DS Hình thức Khen thưởng</a></li>
+          <li><a href="mh-admin-09_rewardtypelist.html">Danh hiệu Khen thưởng</a></li><li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li>
           <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
           <li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li>
         </ul>
@@ -155,12 +169,13 @@
               <tr>
                 <th style="width:48px">STT</th>
                 <th style="width:90px">Mã</th>
-                <th style="width:180px">Tên hình thức</th>
+                <th style="width:160px">Tên hình thức</th>
                 <th>Phân loại lý do</th>
-                <th style="width:100px">Điểm ĐRL</th>
+                <th style="width:90px">Điểm ĐRL</th>
+                <th style="width:200px">Quy trình duyệt áp dụng</th>
                 <th style="width:100px">Trạng thái</th>
                 <th style="width:110px">Cập nhật</th>
-                <th style="width:90px">Thao tác</th>
+                <th style="width:110px">Thao tác</th>
               </tr>
             </thead>
             <tbody id="type-tbody">
@@ -215,22 +230,107 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: Gán quy trình xử lý cho 1 hình thức kỷ luật — quy trình được xây dựng/sửa bước
+     tập trung tại màn Quản lý Quy trình (mh-admin-01); tại đây Admin CHỈ chọn 1 quy trình có sẵn
+     (chức năng "Kỷ luật") để gán, không tạo mới. Copy nguyên pattern process-picker từ mh-admin-17. ═══ -->
+<div class="overlay hidden" id="modal-process-picker">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="process-picker-title">Gán quy trình xử lý</h3>
+      <button class="modal-close" onclick="closeProcessPicker()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Quy trình xử lý<span class="req">*</span></label>
+        <div class="unit-combo" id="process-picker-combo">
+          <input class="fc" id="process-picker-search" type="text" placeholder="🔍 Tìm quy trình…" autocomplete="off">
+          <div class="unit-combo-menu" id="process-picker-combo-menu"></div>
+        </div>
+        <div class="f-hint">Muốn thêm quy trình mới hoặc sửa các bước, vào <a href="mh-admin-01_processmanagement.html">Cấu hình hệ thống → Quản lý Quy trình</a></div>
+      </div>
+
+      <!-- Chỉ xem — dữ liệu bước lấy từ quy trình đã chọn, không sửa được tại đây. -->
+      <div id="process-picker-preview" style="display:none">
+        <div class="dm-section-title" style="margin-bottom:10px">Các bước xử lý</div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:40px">STT</th>
+                <th>Tên bước</th>
+                <th>Đơn vị duyệt</th>
+                <th>Vai trò duyệt</th>
+              </tr>
+            </thead>
+            <tbody id="process-picker-steps-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" onclick="closeProcessPicker()">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveProcessPicker()">Lưu</button>
+    </div>
+  </div>
+</div>
+
 <script src="_utils.js"></script>
 <script>
+/* ============================================================
+   DATA — Quy trình duyệt, chức năng 'kyluat' — bản sao rút gọn từ
+   mh-admin-01/mh-admin-13 (mỗi file HTML độc lập, không import module).
+   ============================================================ */
+const PROCESSES = [
+  { id:'p6', name:'Quy trình xét kỷ luật sinh viên', status:'active', steps:[
+    { title:'Cố vấn học tập / GVCN nộp báo cáo vi phạm', unit:'', role:'Cố vấn học tập' },
+    { title:'Trưởng Bộ môn xác nhận', unit:'', role:'Trưởng đơn vị' },
+    { title:'Hội đồng Kỷ luật Khoa họp xét', unit:'Phòng CTSV', role:'Trưởng đơn vị' },
+    { title:'Ban Giám hiệu ký quyết định', unit:'', role:'Phó trưởng đơn vị' },
+  ] },
+  { id:'p7', name:'Quy trình xử lý vi phạm thi cử', status:'inactive', steps:[
+    { title:'Nộp đề xuất', unit:'', role:'Chuyên viên đơn vị' },
+    { title:'Bước duyệt 1', unit:'', role:'Trưởng đơn vị' },
+    { title:'Bước duyệt 2', unit:'', role:'Trưởng đơn vị' },
+    { title:'Ban hành quyết định', unit:'Ban Công tác Sinh viên', role:'' },
+  ] },
+];
+function processById(id){ return PROCESSES.find(p => p.id === id); }
+
+/* Hồ sơ cần nộp khi lập đề xuất kỷ luật ở mh-admin-13 — dùng chung cho các Hình thức kỷ luật vì
+   Quy chế công tác SV chưa quy định hồ sơ riêng theo từng mức kỷ luật, chỉ khác về Điểm ĐRL bị trừ. */
+const REQUIRED_DOCS_BASE = [
+  { code:'bienBanViPham', label:'Biên bản vi phạm', required:true },
+  { code:'banTuongTrinh', label:'Bản tường trình của sinh viên', required:true },
+  { code:'bienBanHopHDKL', label:'Biên bản họp Hội đồng Kỷ luật', required:true },
+  { code:'qdKyLuatDuThao', label:'Quyết định kỷ luật dự thảo', required:false },
+];
+
+const FIELD_TYPE_OPTIONS = ['Text', 'Textarea', 'Select', 'Checkbox', 'Date', 'File upload'];
+
 /* ============================================================
    DATA — danh sách hình thức kỷ luật (mock)
    Mỗi hình thức có 1 danh sách "Phân loại lý do" con (VD hình
    thức "Khiển trách" có thể do "Đi trễ giờ thi", "Vi phạm nội quy
    phòng thi"…) — dùng để chọn khi lập đề xuất kỷ luật ở mh-admin-13.
-   ============================================================ */
+   processId — quy trình duyệt gán cho hình thức này (mh-admin-13 tự lấy
+   theo Hình thức kỷ luật đã chọn, không để người tạo đề xuất tự chọn quy
+   trình tự do, đồng bộ đúng cách mh-admin-17 gán processId cho reward
+   periodType). extraFields/requiredDocs — cấu hình động để mh-admin-13
+   hiển thị đúng checklist hồ sơ/trường kê khai theo từng hình thức. */
 const TYPES = [
-  { id:'t1', code:'KL01', name:'Khiển trách', reasons:['Đi trễ giờ thi', 'Vi phạm nội quy phòng thi', 'Nghỉ học không phép quá số buổi quy định'], drlPoint:10, status:'active', updated:'21/07/2026' },
-  { id:'t2', code:'KL02', name:'Cảnh cáo', reasons:['Gian lận trong kiểm tra', 'Gây mất trật tự trong giờ học', 'Vi phạm quy định về trang phục, tác phong'], drlPoint:20, status:'active', updated:'19/07/2026' },
-  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', reasons:['Gian lận thi cử có tổ chức', 'Đánh nhau, gây rối trật tự công cộng'], drlPoint:30, status:'active', updated:'16/07/2026' },
-  { id:'t4', code:'KL04', name:'Buộc thôi học', reasons:['Vi phạm pháp luật nghiêm trọng', 'Tái phạm nhiều lần sau khi đã bị kỷ luật'], drlPoint:40, status:'active', updated:'14/07/2026' },
-  { id:'t5', code:'KL05', name:'Cảnh cáo toàn trường', reasons:['Gian lận trong thi cử, kiểm tra có tổ chức nhiều người'], drlPoint:25, status:'active', updated:'11/07/2026' },
+  { id:'t1', code:'KL01', name:'Khiển trách', reasons:['Đi trễ giờ thi', 'Vi phạm nội quy phòng thi', 'Nghỉ học không phép quá số buổi quy định'], drlPoint:10, status:'active', updated:'21/07/2026',
+    processId:'p6', requiredDocs: REQUIRED_DOCS_BASE, extraFields:[] },
+  { id:'t2', code:'KL02', name:'Cảnh cáo', reasons:['Gian lận trong kiểm tra', 'Gây mất trật tự trong giờ học', 'Vi phạm quy định về trang phục, tác phong'], drlPoint:20, status:'active', updated:'19/07/2026',
+    processId:'p6', requiredDocs: REQUIRED_DOCS_BASE, extraFields:[] },
+  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', reasons:['Gian lận thi cử có tổ chức', 'Đánh nhau, gây rối trật tự công cộng'], drlPoint:30, status:'active', updated:'16/07/2026',
+    processId:'p6', requiredDocs: REQUIRED_DOCS_BASE,
+    extraFields:[ { code:'soBienBanViPham', label:'Số biên bản vi phạm', placeholder:'VD: 05/BB-CNTT', type:'Text', required:true, options:[] } ] },
+  { id:'t4', code:'KL04', name:'Buộc thôi học', reasons:['Vi phạm pháp luật nghiêm trọng', 'Tái phạm nhiều lần sau khi đã bị kỷ luật'], drlPoint:40, status:'active', updated:'14/07/2026',
+    processId:'p6', requiredDocs: REQUIRED_DOCS_BASE,
+    extraFields:[ { code:'soBienBanViPham', label:'Số biên bản vi phạm', placeholder:'VD: 05/BB-CNTT', type:'Text', required:true, options:[] } ] },
+  { id:'t5', code:'KL05', name:'Cảnh cáo toàn trường', reasons:['Gian lận trong thi cử, kiểm tra có tổ chức nhiều người'], drlPoint:25, status:'active', updated:'11/07/2026',
+    processId:'', requiredDocs: REQUIRED_DOCS_BASE, extraFields:[] },
 ];
-
 let editingTypeId = null;
 let modalMode = 'add';
 
@@ -302,17 +402,23 @@ function renderGrid(){
   currentPage = Math.min(currentPage, totalPages);
   const pageList = list.slice((currentPage-1)*TYPE_PAGE_SIZE, currentPage*TYPE_PAGE_SIZE);
 
-  tbody.innerHTML = pageList.map((t, idx) => `
+  tbody.innerHTML = pageList.map((t, idx) => {
+    const proc = processById(t.processId);
+    return `
     <tr>
       <td class="text-muted">${(currentPage-1)*TYPE_PAGE_SIZE + idx + 1}</td>
       <td><span class="type-code">${t.code}</span></td>
       <td><span class="type-name-cell">${t.name}</span></td>
       <td><ul class="reason-mini">${t.reasons.map(r => `<li>${r}</li>`).join('') || '<li>—</li>'}</ul></td>
       <td><span class="drl-point">-${t.drlPoint}</span></td>
+      <td><span class="type-process-cell ${proc ? '' : 'empty'}">${proc ? proc.name : 'Chưa gán quy trình'}</span></td>
       <td><span class="tag ${t.status==='active'?'tag-success':'tag-default'}">${t.status==='active'?'Active':'Inactive'}</span></td>
       <td class="text-muted">${t.updated}</td>
       <td>
         <div class="tbl-actions">
+          <button class="icon-btn" title="Gán quy trình xử lý" onclick="openProcessPicker('${t.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </button>
           <button class="icon-btn" title="Sửa" onclick="openEditTypeModal('${t.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
@@ -325,7 +431,8 @@ function renderGrid(){
           </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có hình thức nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`;
+  }).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có hình thức nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -458,6 +565,89 @@ function confirmToggleTypeStatus(id){
     showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
     renderGrid();
   }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
+}
+
+/* == Modal Gán quy trình xử lý — copy nguyên pattern process-picker từ mh-admin-17 == */
+let pickerTypeId = null;
+let pickerSelectedProcessId = null;
+
+function openProcessPicker(typeId){
+  const t = typeById(typeId);
+  if (!t) return;
+  pickerTypeId = typeId;
+  pickerSelectedProcessId = t.processId || null;
+
+  document.getElementById('process-picker-title').textContent = 'Gán quy trình xử lý — ' + t.name;
+  document.getElementById('process-picker-search').value = pickerSelectedProcessId ? processById(pickerSelectedProcessId).name : '';
+  renderProcessPickerPreview();
+  openModal('modal-process-picker');
+}
+
+function closeProcessPicker(){ closeModal('modal-process-picker'); }
+
+/* Quy trình Inactive không được gán mới — chỉ hiện các quy trình Active trong danh sách chọn. */
+function renderProcessPickerMenu(query){
+  const q = (query || '').trim();
+  const menu = document.getElementById('process-picker-combo-menu');
+  const active = PROCESSES.filter(p => p.status === 'active');
+  const matches = q ? active.filter(p => p.name.toLowerCase().includes(q.toLowerCase())) : active;
+  menu.innerHTML = matches.map(p => `
+    <div class="unit-combo-item" onclick="pickProcess('${p.id}')">${highlightMatch(p.name, q)}</div>`).join('')
+    || `<div class="unit-combo-empty">Không tìm thấy quy trình nào khớp "${q}"</div>`;
+}
+
+function openProcessPickerMenu(){
+  renderProcessPickerMenu(document.getElementById('process-picker-search').value);
+  document.getElementById('process-picker-combo-menu').classList.add('open');
+}
+function closeProcessPickerMenu(){ document.getElementById('process-picker-combo-menu').classList.remove('open'); }
+
+function pickProcess(id){
+  pickerSelectedProcessId = id;
+  document.getElementById('process-picker-search').value = processById(id).name;
+  closeProcessPickerMenu();
+  renderProcessPickerPreview();
+}
+
+function renderProcessPickerPreview(){
+  const wrap = document.getElementById('process-picker-preview');
+  const p = pickerSelectedProcessId ? processById(pickerSelectedProcessId) : null;
+  if (!p){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  document.getElementById('process-picker-steps-tbody').innerHTML = p.steps.map((s, i) => `
+    <tr>
+      <td class="text-muted">${i+1}</td>
+      <td>${s.title}</td>
+      <td>${s.unit || '—'}</td>
+      <td>${s.role || '—'}</td>
+    </tr>`).join('');
+}
+
+function saveProcessPicker(){
+  if (!pickerSelectedProcessId){ showToast('Vui lòng chọn quy trình xử lý', 'err'); return; }
+  const t = typeById(pickerTypeId);
+  t.processId = pickerSelectedProcessId;
+  closeProcessPicker();
+  renderGrid();
+  showToast('Đã gán quy trình xử lý', 'ok');
+}
+
+document.getElementById('process-picker-search').addEventListener('focus', openProcessPickerMenu);
+document.getElementById('process-picker-search').addEventListener('input', e => {
+  renderProcessPickerMenu(e.target.value);
+  document.getElementById('process-picker-combo-menu').classList.add('open');
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('process-picker-combo').contains(e.target)) closeProcessPickerMenu();
+});
+
+/* highlightMatch — bôi vàng phần khớp tìm kiếm trong combobox chọn quy trình */
+function highlightMatch(text, q){
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return text.slice(0, idx) + '<mark>' + text.slice(idx, idx + q.length) + '</mark>' + text.slice(idx + q.length);
 }
 
 renderGrid();

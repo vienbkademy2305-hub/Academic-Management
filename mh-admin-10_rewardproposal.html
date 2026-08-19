@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -33,6 +33,12 @@
   .unit-combo-group-label{padding:8px 10px 4px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em}
   .unit-combo-group-label:not(:first-child){margin-top:4px;border-top:1px solid var(--border);padding-top:10px}
   .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Bộ lọc "Đơn vị đề xuất" — dạng droplist: bấm mở hiện TOÀN BỘ danh sách đơn vị + có ô tìm kiếm
+     riêng trong dropdown để tra cứu nhanh, chọn 1 mục rồi tự đóng (khác unit-combo tìm-gõ trực
+     tiếp trên ô hiển thị của Năm học/Học kỳ). */
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
 
   /* Tabs trạng thái — lọc nhanh (Tất cả/Nháp/Chờ duyệt/Yêu cầu chỉnh sửa/Đã duyệt/Từ chối) */
   .status-tabs{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
@@ -175,7 +181,8 @@
       <li>
         <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
         <ul class="sb-sub">
-          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-12_disciplinetypelist.html">Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-18_disciplinereasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
           <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
         </ul>
@@ -224,6 +231,33 @@
         <!-- Bộ lọc: Hình thức (Định kỳ/Đột xuất/Chuyên đề) + Đối tượng áp dụng + Năm học + Học kỳ
              + Đơn vị đề xuất + Khoảng ngày tạo -->
         <div class="filter-bar">
+          <div class="unit-combo" id="pr-semester-combo" style="width:150px">
+            <button type="button" class="fc form-combo-trigger" id="pr-semester-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('semester')">
+              <span id="pr-semester-combo-label">Tất cả học kỳ</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="pr-semester-combo-menu">
+              <input class="fc" id="pr-semester-search" type="text" placeholder="🔍 Tìm học kỳ…" autocomplete="off" style="margin-bottom:4px">
+              <div id="pr-semester-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="pr-year-combo" style="width:150px">
+            <button type="button" class="fc form-combo-trigger" id="pr-year-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('year')">
+              <span id="pr-year-combo-label">Tất cả năm học</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="pr-year-combo-menu">
+              <input class="fc" id="pr-year-search" type="text" placeholder="🔍 Tìm năm học…" autocomplete="off" style="margin-bottom:4px">
+              <div id="pr-year-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="pr-unit-combo" style="width:200px">
+            <button type="button" class="fc form-combo-trigger" id="pr-unit-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('unit')">
+              <span id="pr-unit-combo-label">Tất cả đơn vị</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="pr-unit-combo-menu">
+              <input class="fc" id="pr-unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="margin-bottom:4px">
+              <div id="pr-unit-combo-list"></div>
+            </div>
+          </div>
           <select class="fc" id="pr-type-select" style="width:160px">
             <option value="all">Tất cả hình thức</option>
             <option value="dinhky">Định kỳ</option>
@@ -235,21 +269,10 @@
             <option value="canhan">Cá nhân</option>
             <option value="tapthe">Tập thể</option>
           </select>
-          <div class="unit-combo" id="pr-year-combo" style="width:150px">
-            <input class="fc" id="pr-year-search" type="text" placeholder="🔍 Năm học…" autocomplete="off" style="width:150px">
-            <div class="unit-combo-menu" id="pr-year-combo-menu"></div>
-          </div>
-          <div class="unit-combo" id="pr-semester-combo" style="width:150px">
-            <input class="fc" id="pr-semester-search" type="text" placeholder="🔍 Học kỳ…" autocomplete="off" style="width:150px">
-            <div class="unit-combo-menu" id="pr-semester-combo-menu"></div>
-          </div>
-          <div class="unit-combo" id="pr-unit-combo" style="width:200px">
-            <input class="fc" id="pr-unit-search" type="text" placeholder="🔍 Đơn vị đề xuất…" autocomplete="off" style="width:200px">
-            <div class="unit-combo-menu" id="pr-unit-combo-menu"></div>
-          </div>
           <input class="fc" id="pr-created-from" type="date" style="width:150px">
           <span class="text-muted">đến</span>
           <input class="fc" id="pr-created-to" type="date" style="width:150px">
+          <input class="fc" id="pr-issuecode-search" type="text" placeholder="🔍 Tìm số quyết định…" autocomplete="off" style="width:200px">
         </div>
 
         <!-- Tabs trạng thái -->
@@ -280,6 +303,8 @@
               <tr>
                 <th style="width:48px">STT</th>
                 <th>Đơn vị đề xuất</th>
+                <th style="width:120px">Số QĐ</th>
+                <th style="width:100px">Ngày QĐ</th>
                 <th style="width:130px">Hình thức khen thưởng</th>
                 <th style="width:120px">Đối tượng áp dụng</th>
                 <th style="width:100px">Năm học</th>
@@ -310,6 +335,11 @@
             <h2 id="ddet-title">Chi tiết đề xuất</h2>
           </div>
           <div class="flex gap-8">
+            <!-- Xuất QĐ Khen thưởng ra file .docx thật đã điền sẵn dữ liệu (mail-merge), cùng cơ chế
+                 exportDecisionWordDocx('dh'|'sdh') ở mh-admin-08 — hiện ở mọi trạng thái đề xuất
+                 (kể cả Nháp/Chờ duyệt), vì có thể cần soạn trước nội dung quyết định. -->
+            <button class="btn btn-default" id="ddet-btn-export-dh" style="display:none" onclick="exportProposalWordDocx('dh')">Xuất QĐ (ĐH)</button>
+            <button class="btn btn-default" id="ddet-btn-export-sdh" style="display:none" onclick="exportProposalWordDocx('sdh')">Xuất QĐ (SĐH)</button>
             <button class="btn btn-default" id="ddet-btn-history" onclick="openHistory()">🕐 Lịch sử</button>
           </div>
         </div>
@@ -618,6 +648,11 @@
 <!-- SheetJS (nhúng local, không gọi CDN) — dùng để đọc thật file .xlsx nhị phân ở popup Import
      Danh sách sinh viên, cùng thư viện với popup Import ở mh-admin-08. -->
 <script src="_vendor-xlsx.min.js"></script>
+<!-- PizZip + docxtemplater (nhúng local, không gọi CDN) — dùng để điền dữ liệu quyết định thật
+     vào file .docx mẫu và xuất file Word thật ở nút "Xuất QĐ", cùng cơ chế mail-merge với
+     mh-admin-08 (xem exportDecisionWordDocx()). -->
+<script src="_vendor-pizzip.min.js"></script>
+<script src="_vendor-docxtemplater.min.js"></script>
 <script>
 /* ============================================================
    DATA — hình thức khen thưởng (đồng bộ rút gọn với mh-admin-09)
@@ -823,56 +858,59 @@ function readNotification(id){ const n = NOTIFICATIONS.find(x => x.id === id); i
 document.addEventListener('click', e => { if (!document.getElementById('notif-wrap').contains(e.target)) document.getElementById('notif-menu').classList.remove('open'); });
 updateNotifBadge();
 
-/* == Combobox đơn vị (bộ lọc) == */
-function setupUnitCombo(inputId, menuId, onPick){
-  const input = document.getElementById(inputId);
-  const menu = document.getElementById(menuId);
-  let selected = '';
-  function render(q){
-    const query = (q||'').toLowerCase();
-    const items = UNITS.filter(u => u.label.toLowerCase().includes(query));
-    menu.innerHTML = items.map(u => `<div class="unit-combo-item" data-v="${u.value}">${u.label}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
-    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
-      selected = el.dataset.v;
-      input.value = el.textContent;
-      menu.classList.remove('open');
-      onPick(selected);
-    }));
-  }
-  input.addEventListener('focus', () => { render(input.value === UNIT_LABEL[selected] ? '' : input.value); menu.classList.add('open'); });
-  input.addEventListener('input', () => { if (input.value === '') { selected=''; onPick(''); } render(input.value); menu.classList.add('open'); });
-  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+/* Bộ lọc dạng droplist dùng chung cho Đơn vị đề xuất/Năm học/Học kỳ — bấm nút mới mở, hiện TOÀN
+   BỘ danh sách lựa chọn (không phải gõ mới thấy gợi ý), có ô tìm kiếm riêng bên trong dropdown để
+   tra cứu nhanh, chọn 1 mục thì tự đóng lại. items là mảng {value,label}. */
+const droplistFilterMenus = {};
+const droplistFilterOpeners = {};
+function toggleFilterMenu(prefix){
+  const menu = droplistFilterMenus[prefix];
+  const isOpen = menu.classList.contains('open');
+  Object.values(droplistFilterMenus).forEach(m => m.classList.remove('open'));
+  if (!isOpen) droplistFilterOpeners[prefix]();
 }
 
-/* Combobox lọc dùng chung cho Năm học/Học kỳ (bộ lọc danh sách) — cùng pattern setupUnitCombo()
-   nhưng nhận thẳng danh sách item (không phụ thuộc UNITS/UNIT_LABEL). */
-function setupSimpleFilterCombo(inputId, menuId, items, onPick){
-  const input = document.getElementById(inputId);
-  const menu = document.getElementById(menuId);
-  let selected = '';
-  function render(q){
-    const query = (q||'').toLowerCase();
-    const matches = items.filter(v => v.toLowerCase().includes(query));
-    menu.innerHTML = matches.map(v => `<div class="unit-combo-item" data-v="${v}">${v}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
-    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+function setupDroplistFilter(prefix, allLabel, items, onPick, preselected){
+  let selected = preselected || '';
+  const triggerLabel = document.getElementById(`pr-${prefix}-combo-label`);
+  const searchInput = document.getElementById(`pr-${prefix}-search`);
+  const menu = document.getElementById(`pr-${prefix}-combo-menu`);
+  const list = document.getElementById(`pr-${prefix}-combo-list`);
+  droplistFilterMenus[prefix] = menu;
+  droplistFilterOpeners[prefix] = () => { searchInput.value = ''; render(''); menu.classList.add('open'); };
+
+  function render(query){
+    const q = (query || '').trim().toLowerCase();
+    const matches = q ? items.filter(it => it.label.toLowerCase().includes(q)) : items;
+    list.innerHTML = matches.length
+      ? [`<div class="unit-combo-item" data-v="">${allLabel}</div>`, ...matches.map(it => `<div class="unit-combo-item ${it.value===selected?'hl':''}" data-v="${it.value}">${it.label}</div>`)].join('')
+      : '<div class="unit-combo-empty">Không tìm thấy "' + query.trim() + '"</div>';
+    list.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
       selected = el.dataset.v;
-      input.value = el.textContent;
+      updateLabel();
       menu.classList.remove('open');
       onPick(selected);
     }));
   }
-  input.addEventListener('focus', () => { render(input.value === selected ? '' : input.value); menu.classList.add('open'); });
-  input.addEventListener('input', () => { if (input.value === '') { selected=''; onPick(''); } render(input.value); menu.classList.add('open'); });
-  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+  function updateLabel(){
+    const found = items.find(it => it.value === selected);
+    triggerLabel.textContent = found ? found.label : allLabel;
+  }
+
+  updateLabel();
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  document.addEventListener('click', e => {
+    if (!document.getElementById(`pr-${prefix}-combo`).contains(e.target)) menu.classList.remove('open');
+  });
 }
 
 /* == Bảng danh sách đề xuất == */
 const PAGE_SIZE = 20;
 let currentPage = 1;
 let currentStatus = 'all';
-let filterUnit = '';
-let filterYear = '';
-let filterSemester = '';
+let selectedUnit = '';
+let selectedYear = '';
+let selectedSemester = 'Học kỳ 2';
 
 function pickStatusTab(status){
   currentStatus = status;
@@ -913,16 +951,18 @@ function renderGrid(){
   const createdToStr = document.getElementById('pr-created-to').value;
   const createdFrom = createdFromStr ? new Date(createdFromStr + 'T00:00:00') : null;
   const createdTo = createdToStr ? new Date(createdToStr + 'T23:59:59') : null;
+  const issueCodeQuery = document.getElementById('pr-issuecode-search').value.trim().toLowerCase();
 
   let list = PROPOSALS.slice();
   if (currentStatus !== 'all') list = list.filter(p => p.status === currentStatus);
   if (typeFilter !== 'all') list = list.filter(p => p.periodType === typeFilter);
   if (scopeFilter !== 'all') list = list.filter(p => p.scope === scopeFilter);
-  if (filterYear) list = list.filter(p => p.academicYear === filterYear);
-  if (filterSemester) list = list.filter(p => p.semester === filterSemester);
-  if (filterUnit) list = list.filter(p => p.unit === filterUnit);
+  if (selectedUnit) list = list.filter(p => p.unit === selectedUnit);
+  if (selectedYear) list = list.filter(p => p.academicYear === selectedYear);
+  if (selectedSemester) list = list.filter(p => p.semester === selectedSemester);
   if (createdFrom) list = list.filter(p => { const d = parseVnDate(p.created); return d && d >= createdFrom; });
   if (createdTo) list = list.filter(p => { const d = parseVnDate(p.created); return d && d <= createdTo; });
+  if (issueCodeQuery) list = list.filter(p => (p.issueCode || '').toLowerCase().includes(issueCodeQuery));
 
   ['all','Nháp','Chờ duyệt','Yêu cầu chỉnh sửa','Đã duyệt','Từ chối'].forEach(s => {
     const n = s === 'all' ? PROPOSALS.length : PROPOSALS.filter(p => p.status === s).length;
@@ -948,6 +988,8 @@ function renderGrid(){
     <tr class="di-row" onclick="openDetail('${p.id}')">
       <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
       <td>${UNIT_LABEL[p.unit] || '—'}</td>
+      <td class="text-muted">${p.issueCode || '—'}</td>
+      <td class="text-muted">${p.issueEffective || '—'}</td>
       <td>${PERIOD_TYPE_LABEL[p.periodType] || '—'}</td>
       <td><span class="tag tag-default">${SCOPE_LABEL[p.scope]}</span></td>
       <td>${p.academicYear || '—'}</td>
@@ -973,7 +1015,7 @@ function renderGrid(){
         </div>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có đề xuất nào khớp bộ lọc đang chọn</div></td></tr>`;
+  }).join('') || `<tr><td colspan="13"><div class="tbl-empty">Chưa có đề xuất nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -994,11 +1036,12 @@ function goToPage(p){ currentPage = p; renderGrid(); }
 
 document.getElementById('pr-created-from').addEventListener('change', () => { currentPage = 1; renderGrid(); });
 document.getElementById('pr-created-to').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+document.getElementById('pr-issuecode-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
 document.getElementById('pr-type-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
 document.getElementById('pr-scope-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
-setupSimpleFilterCombo('pr-year-search', 'pr-year-combo-menu', ['2026-2027','2025-2026','2024-2025'], v => { filterYear = v; currentPage = 1; renderGrid(); });
-setupSimpleFilterCombo('pr-semester-search', 'pr-semester-combo-menu', ['Học kỳ hè','Học kỳ 2','Học kỳ 1'], v => { filterSemester = v; currentPage = 1; renderGrid(); });
-setupUnitCombo('pr-unit-search', 'pr-unit-combo-menu', v => { filterUnit = v; currentPage = 1; renderGrid(); });
+setupDroplistFilter('unit', 'Tất cả đơn vị', UNITS, v => { selectedUnit = v; currentPage = 1; renderGrid(); });
+setupDroplistFilter('year', 'Tất cả năm học', ['2026-2027','2025-2026','2024-2025'].map(y => ({value:y, label:y})), v => { selectedYear = v; currentPage = 1; renderGrid(); });
+setupDroplistFilter('semester', 'Tất cả học kỳ', ['Học kỳ 1','Học kỳ 2','Học kỳ hè'].map(s => ({value:s, label:s})), v => { selectedSemester = v; currentPage = 1; renderGrid(); }, selectedSemester);
 
 /* == Chuyển view list <-> detail == */
 function openDetail(id){
@@ -1069,16 +1112,16 @@ function renderDetail(){
      khi không đủ điều kiện (không phải Chờ duyệt), không ẩn hẳn cột. */
   const canQuickEditSv = p.status === 'Chờ duyệt';
   document.getElementById('ddet-sv-thead-row').innerHTML =
-    '<th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:180px">Danh hiệu khen thưởng</th><th>Ghi chú</th><th style="width:60px">Thao tác</th>';
+    '<th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:180px">Danh hiệu khen thưởng</th><th>Ghi chú</th><th style="width:60px">Thao tác</th>';
   const rows = p.students || [];
   document.getElementById('ddet-sv-tbody').innerHTML = rows.map((r, idx) =>
-    `<tr><td class="text-muted">${idx+1}</td><td>${r.mssv}</td><td>${r.name}</td><td>${r.lopHc || '—'}</td><td>${UNIT_LABEL[r.unit] || '—'}</td><td>${r.ctdt}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : '—'}</td><td class="text-muted">${r.note || ''}</td>
+    `<tr><td>${r.mssv}</td><td>${r.name}</td><td>${r.lopHc || '—'}</td><td>${UNIT_LABEL[r.unit] || '—'}</td><td>${r.ctdt}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : '—'}</td><td class="text-muted">${r.note || ''}</td>
     <td>
       <button type="button" class="icon-btn" title="${canQuickEditSv ? 'Sửa Danh hiệu/Ghi chú' : 'Chỉ sửa được khi đang Chờ duyệt'}" ${canQuickEditSv ? '' : 'disabled'} onclick="openSvEditQuick(${idx})">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
     </td></tr>`
-  ).join('') || `<tr><td colspan="9"><div class="tbl-empty">Chưa có sinh viên nào</div></td></tr>`;
+  ).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có sinh viên nào</div></td></tr>`;
   document.getElementById('cd-sv-count').textContent = rows.length + ' SV';
 
   const proc = processById(p.processId);
@@ -1090,6 +1133,8 @@ function renderDetail(){
   toggleBtn('ddet-btn-approve', canApprove);
   toggleBtn('ddet-btn-revise', canApprove);
   toggleBtn('ddet-btn-reject', canApprove);
+  toggleBtn('ddet-btn-export-dh', true);
+  toggleBtn('ddet-btn-export-sdh', true);
 }
 
 function toggleBtn(id, show){ document.getElementById(id).style.display = show ? '' : 'none'; }
@@ -1284,6 +1329,8 @@ function openCreateProposal(){
   document.getElementById('view-detail').style.display = 'block';
   document.getElementById('ddet-title').textContent = 'Tạo đề xuất khen thưởng';
   document.getElementById('ddet-btn-history').style.display = 'none';
+  document.getElementById('ddet-btn-export-dh').style.display = 'none';
+  document.getElementById('ddet-btn-export-sdh').style.display = 'none';
   document.getElementById('breadcrumb').innerHTML = `Quản lý Khen thưởng / Đề xuất Khen thưởng / <b style="color:var(--text-1)">Tạo đề xuất</b>`;
   applyMode('create');
   pickCdScope('canhan');
@@ -1325,11 +1372,10 @@ function cancelEdit(){
    lớp như trước (cdClasses đã bỏ). */
 function renderCdSvTable(){
   document.getElementById('cd-sv-thead-row').innerHTML =
-    '<th style="width:40px"></th><th style="width:48px">STT</th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:90px;text-align:center">GPA tích luỹ</th><th style="width:90px;text-align:center">ĐRL tích luỹ</th><th style="width:180px">Danh hiệu khen thưởng</th><th>Ghi chú</th><th style="width:70px">Thao tác</th>';
+    '<th style="width:40px"></th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:90px;text-align:center">GPA tích luỹ</th><th style="width:90px;text-align:center">ĐRL tích luỹ</th><th style="width:180px">Danh hiệu khen thưởng</th><th>Ghi chú</th><th style="width:70px">Thao tác</th>';
   document.getElementById('cd-sv-tbody').innerHTML = cdStudents.map((r, idx) => `
     <tr>
       <td><input type="checkbox" class="cd-sv-check" data-idx="${idx}"></td>
-      <td class="text-muted">${idx+1}</td>
       <td>${r.mssv}</td>
       <td>${r.name}</td>
       <td>${r.lopHc || '—'}</td>
@@ -1348,7 +1394,7 @@ function renderCdSvTable(){
         </div>
       </td>
     </tr>`
-  ).join('') || `<tr><td colspan="12"><div class="tbl-empty">Chưa có sinh viên nào — tìm và thêm ở ô phía trên</div></td></tr>`;
+  ).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có sinh viên nào — tìm và thêm ở ô phía trên</div></td></tr>`;
 }
 
 /* == Popup Sửa Danh hiệu / Ghi chú cho 1 SV ==
@@ -1719,7 +1765,8 @@ function submitCreate(isDraft){
     editingProposalId = newP.id;
     showToast(isDraft ? 'Đã lưu nháp' : 'Đã nộp duyệt', 'ok');
   }
-  renderDetail();
+  if (isDraft) closeDetail();
+  else renderDetail();
 }
 
 function submitDraft(){
@@ -1779,6 +1826,53 @@ function confirmApprove(){
 
   closeModal('modal-approve-confirm');
   renderDetail();
+}
+
+/* Xuất Quyết định Khen thưởng ra file .docx thật đã điền sẵn dữ liệu (mail-merge), cùng cơ chế
+   exportDecisionWordDocx() ở mh-admin-08 (PizZip + docxtemplater nhúng local). TẠM DÙNG CHUNG file
+   mẫu mau-qd-cap-ma-sv-phan-lop-dh.docx (chưa có file mẫu riêng "Quyết định Khen thưởng" — khi có
+   file mẫu thật, đổi TEMPLATE_FILE_NAME bên dưới, giữ nguyên các placeholder). */
+const REWARD_DECISION_TEMPLATE_FILE = 'mau-qd-cap-ma-sv-phan-lop-dh.docx';
+function exportProposalWordDocx(he){
+  const p = proposalById(editingProposalId);
+  fetch(REWARD_DECISION_TEMPLATE_FILE)
+    .then(res => {
+      if (!res.ok) throw new Error('not-found');
+      return res.arrayBuffer();
+    })
+    .then(buf => {
+      const zip = new PizZip(buf);
+      const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+      doc.render({
+        tenTruong: 'ĐẠI HỌC ĐẠI HỌC',
+        tenDonVi: UNIT_LABEL[p.unit] || '',
+        tenQuyetDinh: 'Quyết định Khen thưởng',
+        soQuyetDinh: p.issueCode || '(Chưa cấp số)',
+        donViDeNghi: UNIT_LABEL[p.unit] || '',
+        noiDung: p.note || `Khen thưởng cho ${p.students.length} sinh viên/tập thể có tên trong danh sách kèm theo.`,
+        namHoc: p.academicYear || '',
+        hocKyApDung: p.semester || '',
+        ngayHieuLuc: p.issueEffective || '(Chưa ban hành)',
+        soLuongSV: p.students.length,
+        students: p.students.map((s, i) => ({ stt: i + 1, mssv: s.mssv, name: s.name || '', ghiChu: (typeById(s.typeId) ? typeById(s.typeId).name : '') + (s.note ? ` — ${s.note}` : '') })),
+        diaDiem: 'Hà Nội',
+        ngayKy: '....', thangKy: '....', namKy: '20....',
+        chucDanhNguoiKy: he === 'dh' ? 'HIỆU TRƯỞNG' : 'TRƯỞNG PHÒNG SAU ĐẠI HỌC',
+      });
+
+      const outBlob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      const outName = `${p.code || p.id}-khen-thuong-${he}.docx`;
+      const url = URL.createObjectURL(outBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = outName;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showToast(`Đã xuất "${outName}"`, 'ok');
+    })
+    .catch(() => {
+      showToast(`Không tìm thấy file mẫu "${REWARD_DECISION_TEMPLATE_FILE}"`, 'err');
+    });
 }
 
 /* == Lịch sử == */

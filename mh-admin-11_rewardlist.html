@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -25,6 +25,18 @@
   #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
   #view-list table.tbl th{background:#f0f0f0}
   .obj-scope-tag{margin-left:6px}
+
+  /* Bộ lọc "Đơn vị quản lý" dạng droplist — copy nguyên pattern setupDroplistFilter() từ
+     mh-admin-13/mh-admin-10: bấm nút mới mở, hiện TOÀN BỘ danh sách + có ô tìm kiếm riêng bên
+     trong dropdown, chọn 1 mục thì tự đóng lại. */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -77,7 +89,8 @@
       <li>
         <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
         <ul class="sb-sub">
-          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-12_disciplinetypelist.html">Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-18_disciplinereasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
           <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
         </ul>
@@ -119,14 +132,33 @@
       ═══════════════════════════════════════════════════════ -->
       <div id="view-list">
 
-        <div class="mb-16">
-          <h2 style="margin:0;font-size:18px">Danh sách Khen thưởng</h2>
-          <p class="text-muted text-sm" style="margin:4px 0 0">Các khen thưởng đã ban hành cho sinh viên/tập thể, tổng hợp từ Đề xuất Khen thưởng đã được duyệt</p>
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Danh sách Khen thưởng</h2>
+          </div>
+          <button type="button" class="btn btn-default" id="rw-export-btn" disabled onclick="exportSelectedRewards()">Xuất dữ liệu</button>
         </div>
 
         <!-- Bộ lọc -->
         <div class="filter-bar">
-          <input class="fc" id="rw-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV, tập thể hoặc mã đề xuất…" autocomplete="off" style="width:280px">
+          <div class="unit-combo" id="rw-semester-combo" style="width:180px">
+            <button type="button" class="fc form-combo-trigger" id="rw-semester-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('rw-semester')">
+              <span id="rw-semester-combo-label">Tất cả học kỳ</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="rw-semester-combo-menu">
+              <input class="fc" id="rw-semester-search" type="text" placeholder="🔍 Tìm học kỳ…" autocomplete="off" style="margin-bottom:4px">
+              <div id="rw-semester-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="rw-unit-combo" style="width:200px">
+            <button type="button" class="fc form-combo-trigger" id="rw-unit-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('rw-unit')">
+              <span id="rw-unit-combo-label">Tất cả đơn vị</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="rw-unit-combo-menu">
+              <input class="fc" id="rw-unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="margin-bottom:4px">
+              <div id="rw-unit-combo-list"></div>
+            </div>
+          </div>
           <select class="fc" id="rw-type-select" style="width:200px">
             <option value="all">Tất cả danh hiệu</option>
           </select>
@@ -135,31 +167,28 @@
             <option value="canhan">Cá nhân</option>
             <option value="tapthe">Tập thể</option>
           </select>
-          <select class="fc" id="rw-unit-select" style="width:200px">
-            <option value="all">Tất cả đơn vị</option>
-          </select>
           <div class="flex items-center gap-8">
             <input class="fc" id="rw-date-from" type="date" style="width:150px" title="Ngày ban hành từ">
             <span class="text-muted text-sm">đến</span>
             <input class="fc" id="rw-date-to" type="date" style="width:150px" title="Ngày ban hành đến">
           </div>
+          <input class="fc" id="rw-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV, tập thể hoặc mã đề xuất…" autocomplete="off" style="width:280px">
         </div>
 
         <div class="tbl-wrap">
           <table class="tbl">
             <thead>
               <tr>
-                <th style="width:48px">STT</th>
-                <th style="width:140px">Đơn vị</th>
+                <th style="width:36px"><input type="checkbox" id="rw-check-all" onchange="toggleAllRewardSelection(this.checked)"></th>
+                <th style="width:160px">Đơn vị quản lý</th>
                 <th style="width:110px">MSSV</th>
                 <th>Họ và tên</th>
                 <th style="width:150px">CTĐT</th>
-                <th style="width:130px">Hình thức khen thưởng</th>
+                <th style="width:180px">Danh hiệu khen thưởng</th>
                 <th style="width:110px">Đối tượng áp dụng</th>
-                <th style="width:100px">Năm học</th>
+                <th style="width:170px">Học kỳ áp dụng</th>
                 <th style="width:110px">Số QĐ</th>
                 <th style="width:100px">Ngày QĐ</th>
-                <th style="width:180px">Danh hiệu khen thưởng</th>
                 <th style="width:130px">Mức khen thưởng</th>
                 <th>Ghi chú</th>
               </tr>
@@ -177,6 +206,8 @@
 </div>
 
 <script src="_utils.js"></script>
+<!-- SheetJS (nhúng local, không gọi CDN) — dùng để xuất thật file .xlsx cho các dòng đã chọn -->
+<script src="_vendor-xlsx.min.js"></script>
 <script>
 /* ============================================================
    DATA — hình thức khen thưởng (đồng bộ rút gọn với mh-admin-09)
@@ -195,15 +226,25 @@ const REWARD_TYPES = [
 ];
 function typeById(id){ return REWARD_TYPES.find(t => t.id === id); }
 
-/* Đơn vị — đồng bộ với UNITS ở mh-admin-10 */
+/* Đơn vị quản lý — đồng bộ với UNITS ở mh-admin-10, bổ sung thêm các khoa khác (ngoài CNTT) để
+   minh hoạ danh sách khen thưởng có SV từ nhiều khoa, không chỉ riêng Khoa CNTT. */
 const UNITS = [
   { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
   { value:'u-daotao', label:'Ban Đào tạo' },
   { value:'u-cntt', label:'Khoa CNTT' },
   { value:'u-doanhoi', label:'Đoàn Thanh niên - Hội Sinh viên' },
+  { value:'u-oto', label:'Khoa Công nghệ Ô tô' },
+  { value:'u-cokhi', label:'Khoa Cơ khí' },
+  { value:'u-luat', label:'Khoa Luật' },
 ];
 const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
 const PERIOD_TYPE_LABEL = { dinhky:'Định kỳ', dotxuat:'Đột xuất', chuyende:'Theo đợt/theo chuyên đề' };
+
+/* Danh sách tất cả Học kỳ của hệ thống (Năm học × Học kỳ), năm mới nhất lên trước — đồng bộ
+   ALL_SEMESTERS với mh-admin-13/mh-admin-14, dùng cho bộ lọc "Học kỳ áp dụng". */
+const ACADEMIC_YEARS_DESC = ['2026-2027', '2025-2026', '2024-2025'];
+const SEMESTER_ORDER = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ hè'];
+const ALL_SEMESTERS = ACADEMIC_YEARS_DESC.flatMap(y => SEMESTER_ORDER.map(s => `${s} - ${y}`));
 
 /* ============================================================
    DATA — khen thưởng đã phát sinh (mock), mỗi dòng = 1 đối tượng
@@ -213,19 +254,26 @@ const PERIOD_TYPE_LABEL = { dinhky:'Định kỳ', dotxuat:'Đột xuất', chuy
    cho cả lớp), không phải 1 dòng đại diện cho cả lớp như trước.
    ============================================================ */
 const REWARDS = [
-  { id:'w1', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dotxuat', academicYear:'2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
-  { id:'w2', scope:'canhan', mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dotxuat', academicYear:'2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
-  { id:'w3', scope:'canhan', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Kỹ thuật phần mềm', unit:'u-ctsv', periodType:'chuyende', academicYear:'2025-2026', typeId:'t105', proposalCode:'DXKT-000005', issueCode:'118/QĐ-ĐHPĐ', issueEffective:'10/07/2026', issuedDate:'10/07/2026', note:'' },
-  { id:'w4', scope:'canhan', mssv:'20120071', name:'Lý Thị Hương', ctdt:'Khoa học máy tính', unit:'u-daotao', periodType:'dinhky', academicYear:'2024-2025', typeId:'t104', proposalCode:'DXKT-000006', issueCode:'112/QĐ-ĐHPĐ', issueEffective:'05/07/2026', issuedDate:'05/07/2026', note:'Học kỳ 2' },
-  { id:'w5', scope:'tapthe', mssv:'20120310', name:'Cao Thị Yến Nhi', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
-  { id:'w6', scope:'tapthe', mssv:'20120325', name:'Bùi Văn Đạt', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
-  { id:'w7', scope:'tapthe', mssv:'20120330', name:'Trịnh Thị Mai Anh', ctdt:'Kỹ thuật phần mềm', unit:'u-cntt', periodType:'dinhky', academicYear:'2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
-  { id:'w8', scope:'tapthe', mssv:'20120308', name:'Dương Thị Thanh Hà', ctdt:'Hệ thống thông tin', unit:'u-doanhoi', periodType:'dinhky', academicYear:'2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
-  { id:'w9', scope:'tapthe', mssv:'20120340', name:'Phan Đức Anh', ctdt:'Khoa học máy tính', unit:'u-doanhoi', periodType:'dinhky', academicYear:'2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
+  { id:'w1', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dotxuat', semester:'Học kỳ 2 - 2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
+  { id:'w2', scope:'canhan', mssv:'20120221', name:'Lê Thị Huyền', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dotxuat', semester:'Học kỳ 2 - 2025-2026', typeId:'t425', proposalCode:'DXKT-000001', issueCode:'', issueEffective:'22/07/2026', issuedDate:'22/07/2026', note:'' },
+  { id:'w3', scope:'canhan', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Kỹ thuật phần mềm', unit:'u-cntt', periodType:'chuyende', semester:'Học kỳ 2 - 2025-2026', typeId:'t105', proposalCode:'DXKT-000005', issueCode:'118/QĐ-ĐHPĐ', issueEffective:'10/07/2026', issuedDate:'10/07/2026', note:'' },
+  { id:'w4', scope:'canhan', mssv:'20120071', name:'Lý Thị Hương', ctdt:'Khoa học máy tính', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 2 - 2024-2025', typeId:'t104', proposalCode:'DXKT-000006', issueCode:'112/QĐ-ĐHPĐ', issueEffective:'05/07/2026', issuedDate:'05/07/2026', note:'Học kỳ 2' },
+  { id:'w5', scope:'tapthe', mssv:'20120310', name:'Cao Thị Yến Nhi', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 2 - 2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w6', scope:'tapthe', mssv:'20120325', name:'Bùi Văn Đạt', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 2 - 2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w7', scope:'tapthe', mssv:'20120330', name:'Trịnh Thị Mai Anh', ctdt:'Kỹ thuật phần mềm', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 2 - 2025-2026', typeId:'t101', proposalCode:'DXKT-000007', issueCode:'105/QĐ-ĐHPĐ', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Lớp CT4701' },
+  { id:'w8', scope:'tapthe', mssv:'20120308', name:'Dương Thị Thanh Hà', ctdt:'Hệ thống thông tin', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 1 - 2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
+  { id:'w9', scope:'tapthe', mssv:'20120340', name:'Phan Đức Anh', ctdt:'Khoa học máy tính', unit:'u-cntt', periodType:'dinhky', semester:'Học kỳ 1 - 2024-2025', typeId:'t102', proposalCode:'DXKT-000008', issueCode:'', issueEffective:'20/06/2026', issuedDate:'20/06/2026', note:'Lớp CT4602' },
+  { id:'w10', scope:'canhan', mssv:'20130045', name:'Phạm Văn Tuấn', ctdt:'Công nghệ kỹ thuật ô tô', unit:'u-oto', periodType:'chuyende', semester:'Học kỳ 2 - 2025-2026', typeId:'t105', proposalCode:'DXKT-000009', issueCode:'120/QĐ-ĐHPĐ', issueEffective:'12/07/2026', issuedDate:'12/07/2026', note:'Giải Nhì Hội thi tay nghề ô tô cấp Trường' },
+  { id:'w11', scope:'canhan', mssv:'20130112', name:'Nguyễn Hữu Khoa', ctdt:'Kỹ thuật cơ khí', unit:'u-cokhi', periodType:'dinhky', semester:'Học kỳ 2 - 2025-2026', typeId:'t104', proposalCode:'DXKT-000010', issueCode:'', issueEffective:'30/06/2026', issuedDate:'30/06/2026', note:'Học kỳ 2' },
+  { id:'w12', scope:'canhan', mssv:'20140078', name:'Trần Thị Bích Ngọc', ctdt:'Luật', unit:'u-luat', periodType:'dotxuat', semester:'Học kỳ 1 - 2024-2025', typeId:'t425', proposalCode:'DXKT-000011', issueCode:'99/QĐ-ĐHPĐ', issueEffective:'15/06/2026', issuedDate:'15/06/2026', note:'Đạt giải Nhất cuộc thi Hùng biện Pháp luật cấp Trường' },
+  { id:'w13', scope:'canhan', mssv:'20120219', name:'Nguyễn Thị Thảo', ctdt:'Công nghệ thông tin', unit:'u-cntt', periodType:'dotxuat', semester:'Học kỳ 1 - 2026-2027', typeId:'t105', proposalCode:'DXKT-000012', issueCode:'8/QĐ-ĐHPĐ', issueEffective:'20/08/2026', issuedDate:'20/08/2026', note:'' },
+  { id:'w14', scope:'canhan', mssv:'20130045', name:'Phạm Văn Tuấn', ctdt:'Công nghệ kỹ thuật ô tô', unit:'u-oto', periodType:'dinhky', semester:'Học kỳ 1 - 2026-2027', typeId:'t104', proposalCode:'DXKT-000013', issueCode:'', issueEffective:'15/08/2026', issuedDate:'15/08/2026', note:'Học kỳ 1' },
+  { id:'w15', scope:'tapthe', mssv:'20130112', name:'Nguyễn Hữu Khoa', ctdt:'Kỹ thuật cơ khí', unit:'u-cokhi', periodType:'dinhky', semester:'Học kỳ 1 - 2026-2027', typeId:'t101', proposalCode:'DXKT-000014', issueCode:'12/QĐ-ĐHPĐ', issueEffective:'18/08/2026', issuedDate:'18/08/2026', note:'Lớp CK5001' },
 ];
 
 const PAGE_SIZE = 20;
 let currentPage = 1;
+let selectedUnit = '';
 
 /* == Dropdown thông báo == */
 const NOTIFICATIONS = [
@@ -259,24 +307,71 @@ function populateTypeFilter(){
   const sel = document.getElementById('rw-type-select');
   REWARD_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
 }
-function populateUnitFilter(){
-  const sel = document.getElementById('rw-unit-select');
-  UNITS.forEach(u => sel.insertAdjacentHTML('beforeend', `<option value="${u.value}">${u.label}</option>`));
+/* Bộ lọc "Đơn vị quản lý" dạng droplist — copy nguyên pattern setupDroplistFilter()/
+   toggleFilterMenu() từ mh-admin-13/mh-admin-10: bấm nút mới mở, hiện TOÀN BỘ danh sách lựa chọn
+   (không phải gõ mới thấy gợi ý), có ô tìm kiếm riêng bên trong dropdown, chọn 1 mục thì tự đóng
+   lại. items là mảng {value,label}. */
+const droplistFilterMenus = {};
+const droplistFilterOpeners = {};
+function toggleFilterMenu(prefix){
+  const menu = droplistFilterMenus[prefix];
+  const isOpen = menu.classList.contains('open');
+  Object.values(droplistFilterMenus).forEach(m => m.classList.remove('open'));
+  if (!isOpen) droplistFilterOpeners[prefix]();
 }
+
+function setupDroplistFilter(prefix, allLabel, items, onPick, preselected){
+  let selected = preselected || '';
+  const triggerLabel = document.getElementById(`${prefix}-combo-label`);
+  const searchInput = document.getElementById(`${prefix}-search`);
+  const menu = document.getElementById(`${prefix}-combo-menu`);
+  const list = document.getElementById(`${prefix}-combo-list`);
+  droplistFilterMenus[prefix] = menu;
+  droplistFilterOpeners[prefix] = () => { searchInput.value = ''; render(''); menu.classList.add('open'); };
+
+  function render(query){
+    const q = (query || '').trim().toLowerCase();
+    const matches = q ? items.filter(it => it.label.toLowerCase().includes(q)) : items;
+    list.innerHTML = matches.length
+      ? [`<div class="unit-combo-item" data-v="">${allLabel}</div>`, ...matches.map(it => `<div class="unit-combo-item ${it.value===selected?'hl':''}" data-v="${it.value}">${it.label}</div>`)].join('')
+      : '<div class="unit-combo-empty">Không tìm thấy "' + query.trim() + '"</div>';
+    list.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      selected = el.dataset.v;
+      updateLabel();
+      menu.classList.remove('open');
+      onPick(selected);
+    }));
+  }
+  function updateLabel(){
+    const found = items.find(it => it.value === selected);
+    triggerLabel.textContent = found ? found.label : allLabel;
+  }
+
+  updateLabel();
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  document.addEventListener('click', e => {
+    if (!document.getElementById(`${prefix}-combo`).contains(e.target)) menu.classList.remove('open');
+  });
+}
+
+/* Chọn dòng để Xuất dữ liệu (Excel) — checkbox thay cho cột STT, lưu theo id nên vẫn đúng khi
+   đổi trang/lọc lại (không reset lựa chọn cũ). */
+const selectedRewardIds = new Set();
+let selectedSemester = ALL_SEMESTERS[0];
 
 function renderGrid(){
   const tbody = document.getElementById('rw-tbody');
   const q = document.getElementById('rw-search').value.trim().toLowerCase();
   const typeFilter = document.getElementById('rw-type-select').value;
   const scopeFilter = document.getElementById('rw-scope-select').value;
-  const unitFilter = document.getElementById('rw-unit-select').value;
   const dateFrom = document.getElementById('rw-date-from').value;
   const dateTo = document.getElementById('rw-date-to').value;
 
   let list = REWARDS.slice();
   if (typeFilter !== 'all') list = list.filter(r => r.typeId === typeFilter);
   if (scopeFilter !== 'all') list = list.filter(r => r.scope === scopeFilter);
-  if (unitFilter !== 'all') list = list.filter(r => r.unit === unitFilter);
+  if (selectedUnit) list = list.filter(r => r.unit === selectedUnit);
+  if (selectedSemester) list = list.filter(r => r.semester === selectedSemester);
   if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.mssv.includes(q) || r.proposalCode.toLowerCase().includes(q));
   if (dateFrom) list = list.filter(r => toISO(r.issuedDate) >= dateFrom);
   if (dateTo) list = list.filter(r => toISO(r.issuedDate) <= dateTo);
@@ -285,24 +380,64 @@ function renderGrid(){
   currentPage = Math.min(currentPage, totalPages);
   const pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
 
-  tbody.innerHTML = pageList.map((r, idx) => `
+  tbody.innerHTML = pageList.map((r) => `
     <tr>
-      <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td><input type="checkbox" class="rw-row-check" data-id="${r.id}" ${selectedRewardIds.has(r.id) ? 'checked' : ''} onchange="toggleRewardSelection('${r.id}', this.checked)"></td>
       <td>${UNIT_LABEL[r.unit] || '—'}</td>
       <td>${r.mssv || '—'}</td>
       <td>${r.name}</td>
       <td>${r.ctdt || '—'}</td>
-      <td>${PERIOD_TYPE_LABEL[r.periodType] || '—'}</td>
+      <td>${typeById(r.typeId).name}</td>
       <td><span class="tag ${r.scope==='canhan'?'tag-default':'tag-purple'}">${r.scope==='canhan'?'Cá nhân':'Tập thể'}</span></td>
-      <td>${r.academicYear || '—'}</td>
+      <td>${r.semester || '—'}</td>
       <td>${r.issueCode || '—'}</td>
       <td class="text-muted">${r.issueEffective || '—'}</td>
-      <td>${typeById(r.typeId).name}</td>
       <td>${typeById(r.typeId).money ? typeById(r.typeId).money.toLocaleString('vi-VN') + ' đ' : '—'}</td>
       <td class="text-muted">${r.note || '—'}</td>
-    </tr>`).join('') || `<tr><td colspan="13"><div class="tbl-empty">Chưa có khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="12"><div class="tbl-empty">Chưa có khen thưởng nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  const pageIds = pageList.map(r => r.id);
+  const checkAll = document.getElementById('rw-check-all');
+  checkAll.checked = pageIds.length > 0 && pageIds.every(id => selectedRewardIds.has(id));
+  updateRewardExportBtn();
 
   renderPagination(list.length, totalPages);
+}
+
+function toggleRewardSelection(id, checked){
+  if (checked) selectedRewardIds.add(id); else selectedRewardIds.delete(id);
+  document.getElementById('rw-check-all').checked = [...document.querySelectorAll('.rw-row-check')].every(el => el.checked);
+  updateRewardExportBtn();
+}
+function toggleAllRewardSelection(checked){
+  document.querySelectorAll('.rw-row-check').forEach(el => {
+    el.checked = checked;
+    if (checked) selectedRewardIds.add(el.dataset.id); else selectedRewardIds.delete(el.dataset.id);
+  });
+  updateRewardExportBtn();
+}
+function updateRewardExportBtn(){
+  const btn = document.getElementById('rw-export-btn');
+  btn.disabled = selectedRewardIds.size === 0;
+  btn.textContent = selectedRewardIds.size ? `Xuất dữ liệu (${selectedRewardIds.size})` : 'Xuất dữ liệu';
+}
+
+/* Xuất các dòng đã chọn ra file .xlsx thật (SheetJS) — đúng các cột đang hiển thị trên bảng. */
+function exportSelectedRewards(){
+  const rows = REWARDS.filter(r => selectedRewardIds.has(r.id));
+  if (!rows.length) return;
+  const header = ['STT', 'MSSV', 'Họ và tên', 'CTĐT', 'Đơn vị quản lý', 'Năm học', 'Học kỳ áp dụng', 'Hình thức khen thưởng', 'Đối tượng khen thưởng', 'Danh hiệu khen thưởng', 'Số QĐ', 'Ngày QĐ', 'Mức khen thưởng', 'Điểm rèn luyện', 'Ghi chú'];
+  const dataRows = rows.map((r, idx) => {
+    const t = typeById(r.typeId);
+    const academicYear = (r.semester || '').split(' - ')[1] || '';
+    return [idx + 1, r.mssv || '', r.name, r.ctdt || '', UNIT_LABEL[r.unit] || '', academicYear, r.semester || '', PERIOD_TYPE_LABEL[r.periodType] || '', r.scope==='canhan'?'Cá nhân':'Tập thể', t.name, r.issueCode || '', r.issueEffective || '', t.money || '', t.drlPoint ? `+${t.drlPoint}` : '', r.note || ''];
+  });
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet, 'Danh sách Khen thưởng');
+  const fileName = `danh-sach-khen-thuong-${rows.length}-dong.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast(`Đã xuất "${fileName}"`, 'ok');
 }
 
 function toISO(d){ const [dd,mm,yyyy] = d.split('/'); return `${yyyy}-${mm}-${dd}`; }
@@ -322,10 +457,11 @@ function renderPagination(totalItems, totalPages){
 function goToPage(p){ currentPage = p; renderGrid(); }
 
 ['rw-search'].forEach(id => document.getElementById(id).addEventListener('input', () => { currentPage = 1; renderGrid(); }));
-['rw-type-select','rw-scope-select','rw-unit-select','rw-date-from','rw-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
+['rw-type-select','rw-scope-select','rw-date-from','rw-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
 
 populateTypeFilter();
-populateUnitFilter();
+setupDroplistFilter('rw-unit', 'Tất cả đơn vị', UNITS, v => { selectedUnit = v; currentPage = 1; renderGrid(); });
+setupDroplistFilter('rw-semester', 'Tất cả học kỳ', ALL_SEMESTERS.map(s => ({value:s, label:s})), v => { selectedSemester = v; currentPage = 1; renderGrid(); }, selectedSemester);
 renderGrid();
 </script>
 </body>

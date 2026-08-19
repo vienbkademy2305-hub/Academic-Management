@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -26,6 +26,18 @@
   #view-list table.tbl th{background:#f0f0f0}
   .di-code{font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:12.5px;color:var(--text-3)}
   .drl-point{font-weight:600;font-family:"SFMono-Regular",Consolas,"Courier New",monospace;font-size:13px;color:var(--error)}
+
+  /* Bộ lọc "Đơn vị quản lý" dạng droplist — copy nguyên pattern setupDroplistFilter() từ
+     mh-admin-13/mh-admin-10: bấm nút mới mở, hiện TOÀN BỘ danh sách + có ô tìm kiếm riêng bên
+     trong dropdown, chọn 1 mục thì tự đóng lại. */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -78,7 +90,8 @@
       <li class="active">
         <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
         <ul class="sb-sub open">
-          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-12_disciplinetypelist.html">Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-18_disciplinereasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
           <li class="active"><a href="#">Danh sách Kỷ luật</a></li>
         </ul>
@@ -121,41 +134,68 @@
       ═══════════════════════════════════════════════════════ -->
       <div id="view-list">
 
-        <div class="mb-16">
-          <h2 style="margin:0;font-size:18px">Danh sách Kỷ luật</h2>
-          <p class="text-muted text-sm" style="margin:4px 0 0">Các kỷ luật đã ban hành cho sinh viên, tổng hợp từ Đề xuất Kỷ luật đã được duyệt</p>
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <h2 style="margin:0;font-size:18px">Danh sách Kỷ luật</h2>
+          </div>
+          <button type="button" class="btn btn-default" id="dl-export-btn" disabled onclick="exportSelectedDisciplines()">Xuất dữ liệu</button>
         </div>
 
         <!-- Bộ lọc -->
         <div class="filter-bar">
-          <input class="fc" id="dl-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã đề xuất…" autocomplete="off" style="width:260px">
+          <div class="unit-combo" id="dl-semester-combo" style="width:180px">
+            <button type="button" class="fc form-combo-trigger" id="dl-semester-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('dl-semester')">
+              <span id="dl-semester-combo-label">Tất cả học kỳ</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="dl-semester-combo-menu">
+              <input class="fc" id="dl-semester-search" type="text" placeholder="🔍 Tìm học kỳ…" autocomplete="off" style="margin-bottom:4px">
+              <div id="dl-semester-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="dl-unit-combo" style="width:200px">
+            <button type="button" class="fc form-combo-trigger" id="dl-unit-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('dl-unit')">
+              <span id="dl-unit-combo-label">Tất cả đơn vị</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="dl-unit-combo-menu">
+              <input class="fc" id="dl-unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="margin-bottom:4px">
+              <div id="dl-unit-combo-list"></div>
+            </div>
+          </div>
           <select class="fc" id="dl-type-select" style="width:200px">
             <option value="all">Tất cả hình thức</option>
           </select>
-          <select class="fc" id="dl-unit-select" style="width:200px">
-            <option value="all">Tất cả đơn vị</option>
-          </select>
+          <div class="unit-combo" id="dl-reason-combo" style="width:220px">
+            <button type="button" class="fc form-combo-trigger" id="dl-reason-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('dl-reason')">
+              <span id="dl-reason-combo-label">Tất cả phân loại lý do</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="dl-reason-combo-menu">
+              <input class="fc" id="dl-reason-search" type="text" placeholder="🔍 Tìm lý do…" autocomplete="off" style="margin-bottom:4px">
+              <div id="dl-reason-combo-list"></div>
+            </div>
+          </div>
           <div class="flex items-center gap-8">
             <input class="fc" id="dl-date-from" type="date" style="width:150px" title="Ngày ban hành từ">
             <span class="text-muted text-sm">đến</span>
             <input class="fc" id="dl-date-to" type="date" style="width:150px" title="Ngày ban hành đến">
           </div>
+          <input class="fc" id="dl-search" type="text" placeholder="🔍 Tìm theo tên SV, MSSV hoặc mã đề xuất…" autocomplete="off" style="width:260px">
         </div>
 
         <div class="tbl-wrap">
           <table class="tbl">
             <thead>
               <tr>
-                <th style="width:48px">STT</th>
-                <th style="width:140px">Đơn vị</th>
+                <th style="width:36px"><input type="checkbox" id="dl-check-all" onchange="toggleAllDisciplineSelection(this.checked)"></th>
+                <th style="width:160px">Đơn vị quản lý</th>
                 <th style="width:110px">MSSV</th>
                 <th>Họ và tên</th>
                 <th style="width:150px">CTĐT</th>
                 <th style="width:170px">Hình thức kỷ luật</th>
-                <th style="width:100px">Năm học</th>
+                <th style="width:200px">Phân loại lý do</th>
+                <th style="width:150px">Học kỳ bắt đầu</th>
+                <th style="width:150px">Học kỳ kết thúc</th>
                 <th style="width:110px">Số QĐ</th>
                 <th style="width:100px">Ngày QĐ</th>
-                <th style="width:110px">Điểm ĐRL bị trừ</th>
                 <th>Ghi chú</th>
               </tr>
             </thead>
@@ -172,28 +212,59 @@
 </div>
 
 <script src="_utils.js"></script>
+<!-- SheetJS (nhúng local, không gọi CDN) — dùng để xuất thật file .xlsx cho các dòng đã chọn -->
+<script src="_vendor-xlsx.min.js"></script>
 <script>
 /* ============================================================
    DATA — hình thức kỷ luật (đồng bộ rút gọn với mh-admin-12)
    ============================================================ */
 const DISCIPLINE_TYPES = [
-  { id:'t1', code:'KL01', name:'Khiển trách', drlPoint:10 },
-  { id:'t2', code:'KL02', name:'Cảnh cáo', drlPoint:20 },
-  { id:'t3', code:'KL03', name:'Đình chỉ học tập có thời hạn', drlPoint:30 },
-  { id:'t4', code:'KL04', name:'Buộc thôi học', drlPoint:40 },
-  { id:'t5', code:'KL05', name:'Cảnh cáo toàn trường', drlPoint:25 },
+  { id:'t1', code:'KL01', name:'Khiển trách cấp Trường/Khoa đào tạo', drlPoint:10 },
+  { id:'t2', code:'KL02', name:'Cảnh cáo cấp Trường/Khoa đào tạo', drlPoint:10 },
+  { id:'t3', code:'KL03', name:'Khiển trách cấp Đại học', drlPoint:10 },
+  { id:'t4', code:'KL04', name:'Cảnh cáo cấp Đại học', drlPoint:10 },
+  { id:'t5', code:'KL05', name:'Buộc thôi học', drlPoint:10 },
+  { id:'t6', code:'KL06', name:'Đình chỉ 1 học kỳ', drlPoint:10 },
+  { id:'t7', code:'KL07', name:'Đình chỉ 2 học kỳ', drlPoint:10 },
+  { id:'t8', code:'KL08', name:'Đình chỉ 3 học kỳ', drlPoint:10 },
+  { id:'t9', code:'KL09', name:'Đình chỉ 1 năm học', drlPoint:10 },
 ];
 function typeById(id){ return DISCIPLINE_TYPES.find(t => t.id === id); }
 
-/* Đơn vị — đồng bộ với UNITS ở mh-admin-13 */
+/* Danh mục Lý do — ĐỒNG BỘ NỘI DUNG với REASONS ở mh-admin-18/mh-admin-13, không có kết nối kỹ
+   thuật thật giữa các file HTML độc lập (mock demo). Sửa 1 bên thì nhớ sửa bên còn lại cho khớp. */
+const REASONS = [
+  { id:'r1', name:'Vi phạm nề nếp học tập' },
+  { id:'r2', name:'Vi phạm thái độ, ứng xử' },
+  { id:'r3', name:'Vi phạm học vụ — kiểm tra, thi cử' },
+  { id:'r4', name:'Vi phạm hồ sơ, giấy tờ — hành chính sinh viên' },
+  { id:'r5', name:'Vi phạm tài sản — cơ sở vật chất, thư viện' },
+  { id:'r6', name:'Vi phạm an ninh trật tự — an toàn xã hội' },
+  { id:'r7', name:'Vi phạm đạo đức, văn hoá — lối sống' },
+  { id:'r8', name:'Vi phạm pháp luật và tệ nạn xã hội' },
+  { id:'r9', name:'Các vi phạm khác' },
+];
+function reasonById(id){ return REASONS.find(r => r.id === id); }
+
+/* Đơn vị quản lý — đồng bộ với UNITS ở mh-admin-13, bổ sung thêm các khoa khác (ngoài CNTT) để
+   minh hoạ danh sách kỷ luật có SV từ nhiều khoa, không chỉ riêng Khoa CNTT. */
 const UNITS = [
   { value:'u-ctsv', label:'Ban Công tác Sinh viên' },
   { value:'u-daotao', label:'Ban Đào tạo' },
   { value:'u-khaothi', label:'Phòng Khảo thí và Đảm bảo chất lượng' },
   { value:'u-thanhtra', label:'Ban Thanh tra Pháp chế' },
   { value:'u-cntt', label:'Khoa CNTT' },
+  { value:'u-oto', label:'Khoa Công nghệ Ô tô' },
+  { value:'u-cokhi', label:'Khoa Cơ khí' },
+  { value:'u-luat', label:'Khoa Luật' },
 ];
 const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
+
+/* Danh sách tất cả Học kỳ của hệ thống (Năm học × Học kỳ), năm mới nhất lên trước — đồng bộ
+   ALL_SEMESTERS với mh-admin-13, dùng cho bộ lọc "Học kỳ áp dụng". */
+const ACADEMIC_YEARS_DESC = ['2026-2027', '2025-2026', '2024-2025'];
+const SEMESTER_ORDER = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ hè'];
+const ALL_SEMESTERS = ACADEMIC_YEARS_DESC.flatMap(y => SEMESTER_ORDER.map(s => `${s} - ${y}`));
 
 /* ============================================================
    DATA — kỷ luật đã phát sinh (mock), mỗi dòng = 1 SV bị kỷ luật cụ
@@ -201,16 +272,20 @@ const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
    phát sinh vào danh sách này — đồng bộ đúng quy ước với mh-admin-11).
    ============================================================ */
 const DISCIPLINES = [
-  { id:'dl1', unit:'u-khaothi', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', typeId:'t2', academicYear:'2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
-  { id:'dl2', unit:'u-khaothi', mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', typeId:'t2', academicYear:'2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
-  { id:'dl3', unit:'u-cntt', mssv:'20120100', name:'Vũ Thị Yến', ctdt:'Hệ thống thông tin', typeId:'t1', academicYear:'2025-2026', proposalCode:'DXKL-000009', issueCode:'92/QĐ-ĐHPĐ', issueEffective:'02/07/2026', issuedDate:'02/07/2026', note:'Nghỉ học không phép quá số buổi quy định' },
-  { id:'dl4', unit:'u-thanhtra', mssv:'20120150', name:'Đinh Văn Phúc', ctdt:'Kỹ thuật phần mềm', typeId:'t3', academicYear:'2024-2025', proposalCode:'DXKL-000010', issueCode:'78/QĐ-ĐHPĐ', issueEffective:'25/06/2026', issuedDate:'25/06/2026', note:'Đánh nhau, gây rối trật tự công cộng' },
-  { id:'dl5', unit:'u-ctsv', mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin', typeId:'t1', academicYear:'2025-2026', proposalCode:'DXKL-000012', issueCode:'85/QĐ-ĐHPĐ', issueEffective:'18/06/2026', issuedDate:'18/06/2026', note:'Gây mất trật tự tại khu nội trú' },
-  { id:'dl6', unit:'u-daotao', mssv:'20120306', name:'Vũ Thị Kim Ngân', ctdt:'An toàn thông tin', typeId:'t2', academicYear:'2024-2025', proposalCode:'DXKL-000013', issueCode:'', issueEffective:'10/06/2026', issuedDate:'10/06/2026', note:'Vi phạm quy định về trang phục, tác phong' },
+  { id:'dl1', unit:'u-cntt', mssv:'20120067', name:'Ngô Thị Thu', ctdt:'Công nghệ thông tin', typeId:'t2', reasonId:'r3', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 2 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
+  { id:'dl2', unit:'u-cntt', mssv:'20120088', name:'Hoàng Văn Nam', ctdt:'Khoa học máy tính', typeId:'t2', reasonId:'r3', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 2 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000001', issueCode:'', issueEffective:'13/07/2026', issuedDate:'13/07/2026', note:'Sử dụng tài liệu trái phép trong phòng thi' },
+  { id:'dl3', unit:'u-cntt', mssv:'20120100', name:'Vũ Thị Yến', ctdt:'Hệ thống thông tin', typeId:'t1', reasonId:'r1', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 1 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000009', issueCode:'92/QĐ-ĐHPĐ', issueEffective:'02/07/2026', issuedDate:'02/07/2026', note:'Nghỉ học không phép quá số buổi quy định' },
+  { id:'dl4', unit:'u-cntt', mssv:'20120150', name:'Đinh Văn Phúc', ctdt:'Kỹ thuật phần mềm', typeId:'t6', reasonId:'r6', semester:'Học kỳ 1 - 2024-2025', semesterStart:'Học kỳ 1 - 2024-2025', semesterEnd:'Học kỳ 2 - 2024-2025', proposalCode:'DXKL-000010', issueCode:'78/QĐ-ĐHPĐ', issueEffective:'25/06/2026', issuedDate:'25/06/2026', note:'Đánh nhau, gây rối trật tự công cộng' },
+  { id:'dl5', unit:'u-cntt', mssv:'20120044', name:'Đặng Thị Quỳnh', ctdt:'Hệ thống thông tin', typeId:'t1', reasonId:'r6', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 2 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000012', issueCode:'85/QĐ-ĐHPĐ', issueEffective:'18/06/2026', issuedDate:'18/06/2026', note:'Gây mất trật tự tại khu nội trú' },
+  { id:'dl6', unit:'u-cntt', mssv:'20120306', name:'Vũ Thị Kim Ngân', ctdt:'An toàn thông tin', typeId:'t2', reasonId:'r2', semester:'Học kỳ hè - 2024-2025', semesterStart:'Học kỳ hè - 2024-2025', semesterEnd:'Học kỳ hè - 2024-2025', proposalCode:'DXKL-000013', issueCode:'', issueEffective:'10/06/2026', issuedDate:'10/06/2026', note:'Vi phạm quy định về trang phục, tác phong' },
+  { id:'dl7', unit:'u-oto', mssv:'20130045', name:'Phạm Văn Tuấn', ctdt:'Công nghệ kỹ thuật ô tô', typeId:'t1', reasonId:'r1', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 2 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000014', issueCode:'96/QĐ-ĐHPĐ', issueEffective:'05/07/2026', issuedDate:'05/07/2026', note:'Vi phạm nội quy xưởng thực hành' },
+  { id:'dl8', unit:'u-cokhi', mssv:'20130112', name:'Nguyễn Hữu Khoa', ctdt:'Kỹ thuật cơ khí', typeId:'t2', reasonId:'r5', semester:'Học kỳ 2 - 2025-2026', semesterStart:'Học kỳ 2 - 2025-2026', semesterEnd:'Học kỳ 2 - 2025-2026', proposalCode:'DXKL-000015', issueCode:'', issueEffective:'28/06/2026', issuedDate:'28/06/2026', note:'Sử dụng thiết bị xưởng không đúng quy định an toàn' },
+  { id:'dl9', unit:'u-luat', mssv:'20140078', name:'Trần Thị Bích Ngọc', ctdt:'Luật', typeId:'t1', reasonId:'r3', semester:'Học kỳ 1 - 2024-2025', semesterStart:'Học kỳ 1 - 2024-2025', semesterEnd:'Học kỳ 1 - 2024-2025', proposalCode:'DXKL-000016', issueCode:'70/QĐ-ĐHPĐ', issueEffective:'22/06/2026', issuedDate:'22/06/2026', note:'Nộp bài thi hộ' },
 ];
 
 const PAGE_SIZE = 20;
 let currentPage = 1;
+let selectedUnit = '';
 
 /* == Dropdown thông báo == */
 const NOTIFICATIONS = [
@@ -244,22 +319,72 @@ function populateTypeFilter(){
   const sel = document.getElementById('dl-type-select');
   DISCIPLINE_TYPES.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
 }
-function populateUnitFilter(){
-  const sel = document.getElementById('dl-unit-select');
-  UNITS.forEach(u => sel.insertAdjacentHTML('beforeend', `<option value="${u.value}">${u.label}</option>`));
+
+/* Bộ lọc "Đơn vị quản lý" dạng droplist — copy nguyên pattern setupDroplistFilter()/
+   toggleFilterMenu() từ mh-admin-13/mh-admin-10: bấm nút mới mở, hiện TOÀN BỘ danh sách lựa chọn
+   (không phải gõ mới thấy gợi ý), có ô tìm kiếm riêng bên trong dropdown, chọn 1 mục thì tự đóng
+   lại. items là mảng {value,label}. */
+const droplistFilterMenus = {};
+const droplistFilterOpeners = {};
+function toggleFilterMenu(prefix){
+  const menu = droplistFilterMenus[prefix];
+  const isOpen = menu.classList.contains('open');
+  Object.values(droplistFilterMenus).forEach(m => m.classList.remove('open'));
+  if (!isOpen) droplistFilterOpeners[prefix]();
 }
+
+function setupDroplistFilter(prefix, allLabel, items, onPick, preselected){
+  let selected = preselected || '';
+  const triggerLabel = document.getElementById(`${prefix}-combo-label`);
+  const searchInput = document.getElementById(`${prefix}-search`);
+  const menu = document.getElementById(`${prefix}-combo-menu`);
+  const list = document.getElementById(`${prefix}-combo-list`);
+  droplistFilterMenus[prefix] = menu;
+  droplistFilterOpeners[prefix] = () => { searchInput.value = ''; render(''); menu.classList.add('open'); };
+
+  function render(query){
+    const q = (query || '').trim().toLowerCase();
+    const matches = q ? items.filter(it => it.label.toLowerCase().includes(q)) : items;
+    list.innerHTML = matches.length
+      ? [`<div class="unit-combo-item" data-v="">${allLabel}</div>`, ...matches.map(it => `<div class="unit-combo-item ${it.value===selected?'hl':''}" data-v="${it.value}">${it.label}</div>`)].join('')
+      : '<div class="unit-combo-empty">Không tìm thấy "' + query.trim() + '"</div>';
+    list.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      selected = el.dataset.v;
+      updateLabel();
+      menu.classList.remove('open');
+      onPick(selected);
+    }));
+  }
+  function updateLabel(){
+    const found = items.find(it => it.value === selected);
+    triggerLabel.textContent = found ? found.label : allLabel;
+  }
+
+  updateLabel();
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  document.addEventListener('click', e => {
+    if (!document.getElementById(`${prefix}-combo`).contains(e.target)) menu.classList.remove('open');
+  });
+}
+
+/* Chọn dòng để Xuất dữ liệu (Excel) — checkbox thay cho cột STT, lưu theo id nên vẫn đúng khi
+   đổi trang/lọc lại (không reset lựa chọn cũ). */
+const selectedDisciplineIds = new Set();
+let selectedSemester = 'Học kỳ 2 - 2025-2026';
+let selectedReason = '';
 
 function renderGrid(){
   const tbody = document.getElementById('dl-tbody');
   const q = document.getElementById('dl-search').value.trim().toLowerCase();
   const typeFilter = document.getElementById('dl-type-select').value;
-  const unitFilter = document.getElementById('dl-unit-select').value;
   const dateFrom = document.getElementById('dl-date-from').value;
   const dateTo = document.getElementById('dl-date-to').value;
 
   let list = DISCIPLINES.slice();
   if (typeFilter !== 'all') list = list.filter(r => r.typeId === typeFilter);
-  if (unitFilter !== 'all') list = list.filter(r => r.unit === unitFilter);
+  if (selectedUnit) list = list.filter(r => r.unit === selectedUnit);
+  if (selectedSemester) list = list.filter(r => r.semester === selectedSemester);
+  if (selectedReason) list = list.filter(r => r.reasonId === selectedReason);
   if (q) list = list.filter(r => r.name.toLowerCase().includes(q) || r.mssv.includes(q) || r.proposalCode.toLowerCase().includes(q));
   if (dateFrom) list = list.filter(r => toISO(r.issuedDate) >= dateFrom);
   if (dateTo) list = list.filter(r => toISO(r.issuedDate) <= dateTo);
@@ -268,25 +393,67 @@ function renderGrid(){
   currentPage = Math.min(currentPage, totalPages);
   const pageList = list.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
 
-  tbody.innerHTML = pageList.map((r, idx) => {
+  tbody.innerHTML = pageList.map((r) => {
     const t = typeById(r.typeId);
     return `
     <tr>
-      <td class="text-muted">${(currentPage-1)*PAGE_SIZE + idx + 1}</td>
+      <td><input type="checkbox" class="dl-row-check" data-id="${r.id}" ${selectedDisciplineIds.has(r.id) ? 'checked' : ''} onchange="toggleDisciplineSelection('${r.id}', this.checked)"></td>
       <td>${UNIT_LABEL[r.unit] || '—'}</td>
       <td>${r.mssv}</td>
       <td>${r.name}</td>
       <td>${r.ctdt || '—'}</td>
-      <td><span class="tag tag-error">${t.name}</span></td>
-      <td>${r.academicYear || '—'}</td>
+      <td>${t.name}</td>
+      <td>${reasonById(r.reasonId) ? reasonById(r.reasonId).name : '—'}</td>
+      <td class="text-muted">${r.semesterStart || '—'}</td>
+      <td class="text-muted">${r.semesterEnd || '—'}</td>
       <td>${r.issueCode || '—'}</td>
       <td class="text-muted">${r.issueEffective || '—'}</td>
-      <td><span class="drl-point">-${t.drlPoint}</span></td>
       <td class="text-muted">${r.note || '—'}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có kỷ luật nào khớp bộ lọc đang chọn</div></td></tr>`;
+  }).join('') || `<tr><td colspan="12"><div class="tbl-empty">Chưa có kỷ luật nào khớp bộ lọc đang chọn</div></td></tr>`;
+
+  const pageIds = pageList.map(r => r.id);
+  const checkAll = document.getElementById('dl-check-all');
+  checkAll.checked = pageIds.length > 0 && pageIds.every(id => selectedDisciplineIds.has(id));
+  updateDisciplineExportBtn();
 
   renderPagination(list.length, totalPages);
+}
+
+function toggleDisciplineSelection(id, checked){
+  if (checked) selectedDisciplineIds.add(id); else selectedDisciplineIds.delete(id);
+  document.getElementById('dl-check-all').checked = [...document.querySelectorAll('.dl-row-check')].every(el => el.checked);
+  updateDisciplineExportBtn();
+}
+function toggleAllDisciplineSelection(checked){
+  document.querySelectorAll('.dl-row-check').forEach(el => {
+    el.checked = checked;
+    if (checked) selectedDisciplineIds.add(el.dataset.id); else selectedDisciplineIds.delete(el.dataset.id);
+  });
+  updateDisciplineExportBtn();
+}
+function updateDisciplineExportBtn(){
+  const btn = document.getElementById('dl-export-btn');
+  btn.disabled = selectedDisciplineIds.size === 0;
+  btn.textContent = selectedDisciplineIds.size ? `Xuất dữ liệu (${selectedDisciplineIds.size})` : 'Xuất dữ liệu';
+}
+
+/* Xuất các dòng đã chọn ra file .xlsx thật (SheetJS) — đúng các cột đang hiển thị trên bảng. */
+function exportSelectedDisciplines(){
+  const rows = DISCIPLINES.filter(r => selectedDisciplineIds.has(r.id));
+  if (!rows.length) return;
+  const header = ['STT', 'MSSV', 'Họ và tên', 'CTĐT', 'Đơn vị quản lý', 'Hình thức kỷ luật', 'Phân loại lý do', 'Học kỳ bắt đầu', 'Học kỳ kết thúc', 'Năm học', 'Học kỳ áp dụng', 'Số QĐ', 'Ngày QĐ', 'Điểm rèn luyện', 'Ghi chú'];
+  const dataRows = rows.map((r, idx) => {
+    const t = typeById(r.typeId);
+    const academicYear = (r.semester || '').split(' - ')[1] || '';
+    return [idx + 1, r.mssv, r.name, r.ctdt || '', UNIT_LABEL[r.unit] || '', t.name, reasonById(r.reasonId) ? reasonById(r.reasonId).name : '', r.semesterStart || '', r.semesterEnd || '', academicYear, r.semester || '', r.issueCode || '', r.issueEffective || '', `-${t.drlPoint}`, r.note || ''];
+  });
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet, 'Danh sách Kỷ luật');
+  const fileName = `danh-sach-ky-luat-${rows.length}-dong.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast(`Đã xuất "${fileName}"`, 'ok');
 }
 
 function toISO(d){ const [dd,mm,yyyy] = d.split('/'); return `${yyyy}-${mm}-${dd}`; }
@@ -306,10 +473,12 @@ function renderPagination(totalItems, totalPages){
 function goToPage(p){ currentPage = p; renderGrid(); }
 
 document.getElementById('dl-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
-['dl-type-select','dl-unit-select','dl-date-from','dl-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
+['dl-type-select','dl-date-from','dl-date-to'].forEach(id => document.getElementById(id).addEventListener('change', () => { currentPage = 1; renderGrid(); }));
 
 populateTypeFilter();
-populateUnitFilter();
+setupDroplistFilter('dl-unit', 'Tất cả đơn vị', UNITS, v => { selectedUnit = v; currentPage = 1; renderGrid(); });
+setupDroplistFilter('dl-semester', 'Tất cả học kỳ', ALL_SEMESTERS.map(s => ({value:s, label:s})), v => { selectedSemester = v; currentPage = 1; renderGrid(); }, selectedSemester);
+setupDroplistFilter('dl-reason', 'Tất cả phân loại lý do', REASONS.map(r => ({value:r.id, label:r.name})), v => { selectedReason = v; currentPage = 1; renderGrid(); });
 renderGrid();
 </script>
 </body>

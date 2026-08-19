@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -38,10 +38,10 @@
   .form-combo-item:hover{background:var(--primary-light);color:var(--primary)}
   .form-combo-item input[type="checkbox"]{flex-shrink:0;cursor:pointer}
   .form-combo-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  /* Ô tìm kiếm bên trong menu Năm học/Học kỳ (di-year-menu/di-semester-menu) — đứng NGOÀI phần cuộn
-     của danh sách checkbox bên dưới (sticky ở trên), tránh bị cuộn mất theo danh sách dài. */
-  #di-year-menu, #di-semester-menu{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:visible;padding:6px}
-  #di-year-menu-list, #di-semester-menu-list{overflow-y:auto;max-height:260px}
+  /* Ô tìm kiếm bên trong menu Học kỳ/Tổ chức phụ trách (di-semester-menu/di-unit-combo-menu) — đứng
+     NGOÀI phần cuộn của danh sách bên dưới (sticky ở trên), tránh bị cuộn mất theo danh sách dài. */
+  #di-semester-menu, #di-unit-combo-menu{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:visible;padding:6px}
+  #di-semester-menu-list, #di-unit-menu-list{overflow-y:auto;max-height:260px}
   /* Nhãn nhóm "Năm học" trong dropdown Lớp HC mới (cd-reassign-lop) — gom lớp theo năm học để phân
      biệt các lớp trùng tên nhưng khác năm (VD CT4501 của năm học 2024-2025 khác CT4501 của
      2025-2026), không phải mục chọn được nên không có hover/cursor như .unit-combo-item. */
@@ -147,13 +147,13 @@
 
   /* Bảng Danh sách SV ở khối "Sửa/Tạo mới" đổi bộ cột theo Loại quyết định (xem CD_SV_THEAD_HTML):
      mặc định 11 cột (STT, MSSV, Họ tên, Lớp HC, Đơn vị, Ngành, CTĐT, Trạng thái hiện tại, Phân loại
-     lý do, Ghi chú, xoá); TYPE_TRAINING_SCORE 12 cột do "Phân loại lý do" tách thành "ĐTB niên khoá"
+     lý do, Ghi chú, xoá); TYPE_TRAINING_SCORE 12 cột do "Danh mục Lý do" tách thành "ĐTB niên khoá"
      + "Xếp loại toàn khoá"; TYPE_INTERNSHIP 11 cột riêng (STT, MSSV, Họ tên, Ngày sinh, Lớp HC,
      CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng dẫn, Ghi chú, xoá); TYPE_TOPIC_ASSIGNMENT 10 cột
      riêng (STT, MSSV, Họ tên, Lớp HC, CTĐT, Tên đề tài, Giảng viên hướng dẫn, Đơn vị công tác, Ghi
      chú, xoá); TYPE_TOPIC_CHANGE dùng lại đúng bộ cột của TYPE_TOPIC_ASSIGNMENT, chỉ đổi "Tên đề
      tài" thành "Đề tài"; TYPE_DISCIPLINE 10 cột riêng (STT, MSSV, CTĐT, Loại kỷ luật, Năm học, Học
-     kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG
+     kỳ bắt đầu, Học kỳ kết thúc, Lý do, Danh mục Lý do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG
      SV, tách biệt với Năm học/Học kỳ CHUNG ở khối 1 (áp dụng cho cả quyết định). */
   .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
   .cd-sv-reason-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-1);background:#fff;font-family:inherit}
@@ -218,7 +218,8 @@
       <li>
         <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
         <ul class="sb-sub">
-          <li><a href="mh-admin-12_disciplinetypelist.html">DS Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-12_disciplinetypelist.html">Hình thức Kỷ luật</a></li>
+          <li><a href="mh-admin-18_disciplinereasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
           <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
         </ul>
@@ -264,34 +265,12 @@
           <button class="btn btn-primary" onclick="openCreateDecisionNew()">＋ Tạo quyết định</button>
         </div>
 
-        <!-- Bộ lọc: Tìm theo Số quyết định + Loại quyết định + Tổ chức phụ trách + Năm học + Học kỳ + Ngày tạo -->
+        <!-- Bộ lọc: Học kỳ áp dụng + Tổ chức phụ trách + Loại quyết định + Ngày tạo + Tìm theo Số
+             quyết định — đồng bộ kiểu droplist (trigger nút + panel + search, chọn 1) với
+             mh-admin-13/10/14/11. Không có filter Năm học riêng — chỉ 1 filter "Học kỳ" ghép sẵn
+             HK-năm học (dạng "HK{n}-{năm học}"), mặc định chọn học kỳ mới nhất có dữ liệu (xem
+             semesterOptionsForFilter()/selectedSemester). -->
         <div class="filter-bar">
-          <input class="fc" id="di-search" type="text" placeholder="🔍 Tìm theo Số quyết định…" autocomplete="off" style="width:280px">
-          <select class="fc" id="di-type-select" style="width:260px">
-            <option value="all">Tất cả loại quyết định</option>
-          </select>
-          <div class="unit-combo" id="di-unit-combo" style="width:220px">
-            <input class="fc" id="di-unit-search" type="text" placeholder="🔍 Tổ chức phụ trách…" autocomplete="off" style="width:220px">
-            <div class="unit-combo-menu" id="di-unit-combo-menu"></div>
-          </div>
-          <!-- Năm học/Học kỳ — combobox NHIỀU lựa chọn (checkbox), lọc theo d.academicYear/
-               d.semesterStart. Options render động từ DECISION_INSTANCES để luôn khớp giá trị thật
-               có trong data, không liệt kê cứng có thể lệch. Mặc định KHÔNG chọn gì (= tất cả),
-               chọn ≥1 mục thì chỉ lọc đúng các năm/kỳ đã tích — xem toggleYearFilter()/toggleSemesterFilter(). -->
-          <div class="unit-combo" id="di-year-combo" style="width:170px">
-            <button type="button" class="fc form-combo-trigger" id="di-year-trigger" onclick="event.stopPropagation();toggleYearMenu()">
-              <span id="di-year-label">Tất cả năm học</span><span class="form-combo-arrow">▾</span>
-            </button>
-            <div class="unit-combo-menu" id="di-year-menu">
-              <input class="fc" id="di-year-search" type="text" placeholder="🔍 Tìm năm học…" autocomplete="off" onclick="event.stopPropagation()" oninput="renderYearMenuList()">
-              <div id="di-year-menu-list"></div>
-            </div>
-          </div>
-          <!-- Học kỳ PHỤ THUỘC Năm học đã chọn ở combobox trên — chỉ gen ra đúng các học kỳ thuộc
-               (các) năm đang tích, dạng "HK{n}-{năm học}" sắp mới→cũ (xem semesterOptionsForFilter()).
-               Nếu chưa chọn năm nào thì hiện toàn bộ học kỳ của mọi năm có trong dữ liệu, cũng sắp
-               mới→cũ. Đổi lựa chọn Năm học thì các học kỳ không còn thuộc năm đã chọn tự động bị bỏ
-               tích (xem toggleYearFilter()). -->
           <div class="unit-combo" id="di-semester-combo" style="width:190px">
             <button type="button" class="fc form-combo-trigger" id="di-semester-trigger" onclick="event.stopPropagation();toggleSemesterMenu()">
               <span id="di-semester-label">Tất cả học kỳ</span><span class="form-combo-arrow">▾</span>
@@ -301,11 +280,26 @@
               <div id="di-semester-menu-list"></div>
             </div>
           </div>
+          <!-- Tổ chức phụ trách — droplist chọn 1, cùng kiểu trigger+panel+search với Năm học/Học
+               kỳ ở trên (trước đây là ô nhập-tìm trực tiếp, xem pickUnitFilter()). -->
+          <div class="unit-combo" id="di-unit-combo" style="width:220px">
+            <button type="button" class="fc form-combo-trigger" id="di-unit-trigger" onclick="event.stopPropagation();toggleUnitMenu()">
+              <span id="di-unit-label">Tất cả đơn vị phụ trách</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="di-unit-combo-menu">
+              <input class="fc" id="di-unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" onclick="event.stopPropagation()" oninput="renderUnitMenu(this.value)">
+              <div id="di-unit-menu-list"></div>
+            </div>
+          </div>
+          <select class="fc" id="di-type-select" style="width:260px">
+            <option value="all">Tất cả loại quyết định</option>
+          </select>
           <div class="flex items-center gap-8">
             <input class="fc" id="di-created-from" type="date" style="width:150px" title="Ngày tạo từ">
             <span class="text-muted text-sm">đến</span>
             <input class="fc" id="di-created-to" type="date" style="width:150px" title="Ngày tạo đến">
           </div>
+          <input class="fc" id="di-search" type="text" placeholder="🔍 Tìm theo Số quyết định…" autocomplete="off" style="width:280px">
         </div>
 
         <!-- Tabs trạng thái — lọc nhanh, mỗi tab có badge đếm số lượng -->
@@ -861,7 +855,7 @@
         <input type="file" id="cd-sv-import-file" accept=".xlsx" onchange="onCreateImportFileChange(this)">
       </div>
       <!-- Tạm ẩn ghi chú định dạng cột theo yêu cầu — giữ nguyên để dễ khôi phục khi cần bật lại.
-      <div class="f-hint">File gồm 4 cột: Mã sinh viên (bắt buộc), Mã CTĐT, Phân loại lý do, Ghi chú. Bỏ trống Mã CTĐT nếu MSSV chỉ học 1 CTĐT — MSSV học nhiều CTĐT mà bỏ trống sẽ được báo lại để chọn tay, không tự suy đoán.</div>
+      <div class="f-hint">File gồm 4 cột: Mã sinh viên (bắt buộc), Mã CTĐT, Danh mục Lý do, Ghi chú. Bỏ trống Mã CTĐT nếu MSSV chỉ học 1 CTĐT — MSSV học nhiều CTĐT mà bỏ trống sẽ được báo lại để chọn tay, không tự suy đoán.</div>
       -->
 
       <!-- Xem trước kết quả đọc file trước khi thêm/cập nhật thật vào danh sách — hiện ngay sau khi
@@ -1346,37 +1340,38 @@ function highlightMatch(text, q){
   return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
 }
 
-/* == Combobox tìm kiếm "Tổ chức phụ trách" trên thanh filter-bar == */
+/* == Droplist "Tổ chức phụ trách" trên thanh filter-bar — chọn 1, trigger nút mở panel + ô tìm
+   kiếm riêng bên trong, cùng kiểu với Năm học/Học kỳ. == */
 let selectedUnitId = null;
-const unitSearchInput = document.getElementById('di-unit-search');
 const unitComboMenu = document.getElementById('di-unit-combo-menu');
 
 function renderUnitMenu(query){
   const q = (query || '').trim();
-  let html = '<div class="unit-combo-item" onclick="pickUnitFilter(null)">Tất cả đơn vị phụ trách</div>';
+  let html = `<div class="unit-combo-item ${!selectedUnitId?'hl':''}" onclick="pickUnitFilter(null)">Tất cả đơn vị phụ trách</div>`;
   const matches = q ? UNITS.filter(u => u.label.toLowerCase().includes(q.toLowerCase())) : UNITS;
   if (matches.length){
     matches.forEach(u => {
-      html += '<div class="unit-combo-item" onclick="pickUnitFilter(&#39;' + u.value + '&#39;)">' + highlightMatch(u.label, q) + '</div>';
+      html += `<div class="unit-combo-item ${u.value===selectedUnitId?'hl':''}" onclick="pickUnitFilter(&#39;${u.value}&#39;)">${highlightMatch(u.label, q)}</div>`;
     });
   } else if (q){
     html += '<div class="unit-combo-empty">Không tìm thấy đơn vị nào khớp "' + q + '"</div>';
   }
-  unitComboMenu.innerHTML = html;
+  document.getElementById('di-unit-menu-list').innerHTML = html;
 }
-function openUnitMenu(){ renderUnitMenu(unitSearchInput.value); unitComboMenu.classList.add('open'); }
+function updateUnitFilterLabel(){
+  document.getElementById('di-unit-label').textContent = selectedUnitId ? (UNIT_LABEL[selectedUnitId] || '') : 'Tất cả đơn vị phụ trách';
+}
+function openUnitMenu(){ document.getElementById('di-unit-search').value = ''; renderUnitMenu(''); unitComboMenu.classList.add('open'); document.getElementById('di-unit-search').focus(); }
 function closeUnitMenu(){ unitComboMenu.classList.remove('open'); }
+function toggleUnitMenu(){ unitComboMenu.classList.contains('open') ? closeUnitMenu() : openUnitMenu(); }
 
 function pickUnitFilter(id){
   selectedUnitId = id;
-  unitSearchInput.value = id ? UNIT_LABEL[id] : '';
-  unitSearchInput.placeholder = id ? '' : '🔍 Tổ chức phụ trách…';
+  updateUnitFilterLabel();
   closeUnitMenu();
   currentPage = 1;
   renderGrid();
 }
-unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
-unitSearchInput.addEventListener('input', () => openUnitMenu());
 document.addEventListener('click', e => {
   if (!document.getElementById('di-unit-combo').contains(e.target)) closeUnitMenu();
 });
@@ -1386,23 +1381,17 @@ const DECISION_TYPE_NAMES = [...new Set(DECISION_INSTANCES.map(d => d.typeName))
 document.getElementById('di-type-select').insertAdjacentHTML('beforeend',
   DECISION_TYPE_NAMES.map(t => `<option value="${t}">${t}</option>`).join(''));
 
-/* Bộ lọc "Năm học"/"Học kỳ" — combobox NHIỀU lựa chọn (checkbox) có ô tìm kiếm riêng bên trong menu
-   (di-year-search/di-semester-search, lọc live không qua server). Danh sách lấy theo giá trị THẬT có
-   trong DECISION_INSTANCES (bỏ qua bản ghi Nháp/rỗng chưa nhập), Năm học sắp xếp mới nhất trước. Mặc
-   định selectedYears/selectedSemesters RỖNG = không lọc gì (hiện tất cả).
-   Học kỳ hiển thị dạng ghép "HK{n}-{năm học}" (VD "HK1-2026-2027") và PHỤ THUỘC Năm học đã chọn — xem
-   semesterOptionsForFilter(): nếu selectedYears rỗng thì gen học kỳ của TẤT CẢ năm có trong dữ liệu,
-   nếu đã chọn ≥1 năm thì chỉ gen học kỳ thuộc (các) năm đó. Luôn sắp xếp mới→cũ theo đúng mốc thời
-   gian thật (năm giảm dần, trong cùng năm thì HK1→HK2→HK hè theo SEMESTER_ORDER). Đổi Năm học đã chọn
-   thì các học kỳ đang tích nhưng không còn thuộc năm nào đã chọn sẽ tự động bị bỏ tích (xem
-   toggleYearFilter()) — tránh giữ lại lựa chọn học kỳ "mồ côi" không khớp bộ lọc năm hiện tại. */
-const DECISION_ACADEMIC_YEARS = [...new Set(DECISION_INSTANCES.map(d => d.academicYear).filter(Boolean))].sort().reverse();
+/* Bộ lọc "Học kỳ áp dụng" — droplist CHỌN 1 (trigger nút mở panel + ô tìm kiếm riêng bên trong,
+   đồng bộ kiểu với mh-admin-13/10/14/11), thay cho combobox Năm học/Học kỳ phụ thuộc nhau trước
+   đây — không còn filter Năm học riêng, chỉ 1 danh sách ghép sẵn "HK{n}-{năm học}" (VD
+   "HK2-2025-2026") lấy theo giá trị THẬT có trong DECISION_INSTANCES (bỏ qua bản ghi Nháp/rỗng
+   chưa nhập), sắp mới→cũ theo đúng mốc thời gian thật (năm giảm dần, trong cùng năm thì
+   HK1→HK2→HK hè theo SEMESTER_ORDER). Mặc định chọn SẴN học kỳ mới nhất có dữ liệu (không phải
+   rỗng/"tất cả" như trước) — xem selectedSemester khởi tạo bên dưới. */
 const SEMESTER_ORDER = { 'Học kỳ 1':0, 'Học kỳ 2':1, 'Học kỳ hè':2 };
 const SEMESTER_SHORT_LABEL = { 'Học kỳ 1':'HK1', 'Học kỳ 2':'HK2', 'Học kỳ hè':'HK hè' };
-const selectedYears = new Set();
-const selectedSemesters = new Set();
 
-/* value nội bộ dùng để lọc/lưu trạng thái tích chọn — giữ NGUYÊN "{semesterStart}||{academicYear}"
+/* value nội bộ dùng để lọc/lưu trạng thái đang chọn — giữ NGUYÊN "{semesterStart}||{academicYear}"
    (không phải chuỗi hiển thị "HK1-2026-2027") để tách lại đúng 2 phần khi so khớp d.semesterStart/
    d.academicYear trong renderGrid(), tránh phải parse ngược chuỗi hiển thị. */
 function semesterFilterValue(semesterStart, academicYear){ return `${semesterStart}||${academicYear}`; }
@@ -1411,9 +1400,8 @@ function semesterFilterLabel(value){
   return `${SEMESTER_SHORT_LABEL[sem] || sem}-${year}`;
 }
 function semesterOptionsForFilter(){
-  const years = selectedYears.size ? [...selectedYears] : DECISION_ACADEMIC_YEARS;
   const pairs = [...new Set(DECISION_INSTANCES
-    .filter(d => d.semesterStart && d.academicYear && years.includes(d.academicYear))
+    .filter(d => d.semesterStart && d.academicYear)
     .map(d => semesterFilterValue(d.semesterStart, d.academicYear)))];
   return pairs.sort((a, b) => {
     const [semA, yearA] = a.split('||');
@@ -1422,58 +1410,35 @@ function semesterOptionsForFilter(){
     return (SEMESTER_ORDER[semA] ?? 99) - (SEMESTER_ORDER[semB] ?? 99);
   });
 }
+let selectedSemester = semesterOptionsForFilter()[0] || '';
 
-function renderMultiComboList(menuId, options, selectedSet, toggleFnName, searchTerm, labelFn){
+function renderSingleComboList(menuId, options, selectedValue, pickFnName, allLabel, searchTerm, labelFn){
   const q = (searchTerm || '').trim().toLowerCase();
   const toLabel = labelFn || (opt => opt);
   const filtered = q ? options.filter(opt => toLabel(opt).toLowerCase().includes(q)) : options;
-  document.getElementById(menuId).innerHTML = filtered.map(opt => {
-    const checked = selectedSet.has(opt) ? 'checked' : '';
-    return `<label class="form-combo-item">
-      <input type="checkbox" ${checked} onchange="${toggleFnName}(${JSON.stringify(opt)}, this.checked)">
-      <span>${toLabel(opt)}</span>
-    </label>`;
-  }).join('') || `<div class="unit-combo-empty">${q ? 'Không tìm thấy' : 'Không có dữ liệu'}</div>`;
-}
-function updateMultiComboLabel(labelId, selectedSet, allLabel, unitLabel){
-  const el = document.getElementById(labelId);
-  el.textContent = selectedSet.size === 0 ? allLabel : `${selectedSet.size} ${unitLabel} đã chọn`;
+  const allItem = `<div class="unit-combo-item ${!selectedValue?'hl':''}" onclick="${pickFnName}('')">${allLabel}</div>`;
+  const items = filtered.map(opt =>
+    `<div class="unit-combo-item ${opt===selectedValue?'hl':''}" onclick="${pickFnName}(${JSON.stringify(opt)})">${toLabel(opt)}</div>`
+  ).join('');
+  document.getElementById(menuId).innerHTML = allItem + (items || (q ? `<div class="unit-combo-empty">Không tìm thấy</div>` : ''));
 }
 
-function toggleYearFilter(year, checked){
-  if (checked) selectedYears.add(year); else selectedYears.delete(year);
-  updateMultiComboLabel('di-year-label', selectedYears, 'Tất cả năm học', 'năm học');
-
-  // Năm học đổi → học kỳ đang tích nhưng không còn thuộc năm nào đã chọn thì tự bỏ tích, tránh giữ
-  // lựa chọn "mồ côi" không khớp bộ lọc năm hiện tại.
-  const validSemesterValues = new Set(semesterOptionsForFilter());
-  let semestersChanged = false;
-  [...selectedSemesters].forEach(v => { if (!validSemesterValues.has(v)){ selectedSemesters.delete(v); semestersChanged = true; } });
-  if (semestersChanged) updateMultiComboLabel('di-semester-label', selectedSemesters, 'Tất cả học kỳ', 'học kỳ');
-
+function pickSemesterFilter(semValue){
+  selectedSemester = semValue;
+  document.getElementById('di-semester-label').textContent = selectedSemester ? semesterFilterLabel(selectedSemester) : 'Tất cả học kỳ';
+  closeSemesterMenu();
   currentPage = 1;
   renderGrid();
 }
-function renderYearMenuList(){ renderMultiComboList('di-year-menu-list', DECISION_ACADEMIC_YEARS, selectedYears, 'toggleYearFilter', document.getElementById('di-year-search').value); }
-function openYearMenu(){ document.getElementById('di-year-search').value = ''; renderYearMenuList(); document.getElementById('di-year-menu').classList.add('open'); document.getElementById('di-year-search').focus(); }
-function closeYearMenu(){ document.getElementById('di-year-menu').classList.remove('open'); }
-function toggleYearMenu(){ document.getElementById('di-year-menu').classList.contains('open') ? closeYearMenu() : openYearMenu(); }
-
-function toggleSemesterFilter(semValue, checked){
-  if (checked) selectedSemesters.add(semValue); else selectedSemesters.delete(semValue);
-  updateMultiComboLabel('di-semester-label', selectedSemesters, 'Tất cả học kỳ', 'học kỳ');
-  currentPage = 1;
-  renderGrid();
-}
-function renderSemesterMenuList(){ renderMultiComboList('di-semester-menu-list', semesterOptionsForFilter(), selectedSemesters, 'toggleSemesterFilter', document.getElementById('di-semester-search').value, semesterFilterLabel); }
+function renderSemesterMenuList(){ renderSingleComboList('di-semester-menu-list', semesterOptionsForFilter(), selectedSemester, 'pickSemesterFilter', 'Tất cả học kỳ', document.getElementById('di-semester-search').value, semesterFilterLabel); }
 function openSemesterMenu(){ document.getElementById('di-semester-search').value = ''; renderSemesterMenuList(); document.getElementById('di-semester-menu').classList.add('open'); document.getElementById('di-semester-search').focus(); }
 function closeSemesterMenu(){ document.getElementById('di-semester-menu').classList.remove('open'); }
 function toggleSemesterMenu(){ document.getElementById('di-semester-menu').classList.contains('open') ? closeSemesterMenu() : openSemesterMenu(); }
 
 document.addEventListener('click', e => {
-  if (!document.getElementById('di-year-combo').contains(e.target)) closeYearMenu();
   if (!document.getElementById('di-semester-combo').contains(e.target)) closeSemesterMenu();
 });
+document.getElementById('di-semester-label').textContent = selectedSemester ? semesterFilterLabel(selectedSemester) : 'Tất cả học kỳ';
 
 /* ============================================================
    TẠO QUYẾT ĐỊNH — ban hành 1 quyết định mới cho 1 danh sách SV.
@@ -1554,7 +1519,7 @@ const TYPE_UNIT_CHANGE = 'Quyết định thay đổi đơn vị đào tạo';
    thị field liên quan vẫn giữ nguyên chỉ để KHÔNG làm vỡ hiển thị các bản ghi lịch sử cũ (nếu còn). */
 const TYPE_REWARD = 'Quyết định khen thưởng';
 
-/* Loại quyết định duy nhất thay cột "Phân loại lý do" trong bảng Danh sách sinh viên (khối 3) bằng
+/* Loại quyết định duy nhất thay cột "Danh mục Lý do" trong bảng Danh sách sinh viên (khối 3) bằng
    2 cột riêng "ĐTB niên khoá" và "Xếp loại toàn khoá" — mỗi SV có điểm/xếp loại rèn luyện khác nhau
    nên cần nhập theo từng dòng, không dùng chung 1 danh mục lý do như các loại quyết định khác. */
 const TYPE_TRAINING_SCORE = 'Quyết định công nhận điểm rèn luyện toàn khoá';
@@ -1570,7 +1535,7 @@ const TYPE_INTERNSHIP = 'Quyết định cử đi thực tập tốt nghiệp';
 
 /* Loại quyết định duy nhất dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3) cho việc giao đề
    tài & phân công GVHD: STT, MSSV, Họ và tên, Lớp HC, CTĐT, Tên đề tài, Giảng viên hướng dẫn, Đơn
-   vị công tác, Ghi chú — không dùng Phân loại lý do vì không liên quan. Tên đề tài/GVHD/Đơn vị công
+   vị công tác, Ghi chú — không dùng Danh mục Lý do vì không liên quan. Tên đề tài/GVHD/Đơn vị công
    tác nhập tay riêng cho từng SV (mỗi SV có thể làm đề tài khác nhau, GVHD khác nhau), xem
    renderCreateDecisionStudents(). Cố tình KHÔNG dùng lại field "gvhd" của TYPE_INTERNSHIP dù cùng
    nhãn "Giảng viên hướng dẫn" — 2 loại quyết định độc lập nhau, tách field riêng (gvhdDeTai) để đổi
@@ -1593,13 +1558,13 @@ const TYPE_REVIEWER_ASSIGNMENT = 'Quyết định phân công giảng viên ph�
 const TYPE_REVIEWER_ASSIGNMENT_EARLY = 'Quyết định phân công giảng viên phản biện (bảo vệ trước thời hạn)';
 
 /* Quyết định kỷ luật — dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3): STT, MSSV, CTĐT, Loại
-   kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do — vì mỗi SV trong CÙNG 1
+   kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Danh mục Lý do — vì mỗi SV trong CÙNG 1
    đợt kỷ luật có thể bị áp hình thức khác nhau (SV này Khiển trách, SV khác Đình chỉ 2 học kỳ) nên
    Loại kỷ luật + thời hạn phải khai theo TỪNG dòng, không dùng chung 1 giá trị như khối 1. Khối 1
    (Năm học/Học kỳ áp dụng chung) VẪN giữ nguyên, không ẩn — theo yêu cầu, không lược bỏ. */
 const TYPE_DISCIPLINE = 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)';
 const DISCIPLINE_TYPE_OPTIONS = [
-  'Khiển trách cấp Trường/Khoa', 'Cảnh cáo cấp Trường/Khoa', 'Khiển trách cấp ĐH', 'Cảnh cáo cấp ĐH',
+  'Khiển trách cấp Trường/Khoa đào tạo', 'Cảnh cáo cấp Trường/Khoa đào tạo', 'Khiển trách cấp Đại học', 'Cảnh cáo cấp Đại học',
   'Buộc thôi học', 'Đình chỉ học tập 1 học kỳ', 'Đình chỉ học tập 2 học kỳ', 'Đình chỉ học tập 3 học kỳ',
   'Đình chỉ học tập 1 năm học',
 ];
@@ -1609,7 +1574,7 @@ const DISCIPLINE_ACADEMIC_YEAR_OPTIONS = ['2024-2025', '2025-2026', '2026-2027',
 const DISCIPLINE_SEMESTER_OPTIONS = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ hè'];
 
 /* Quyết định nghỉ học tạm thời/bảo lưu — dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3): thêm
-   "Học kỳ bắt đầu"/"Học kỳ kết thúc" NGAY SAU "Trạng thái hiện tại" (trước "Phân loại lý do"), vì mỗi
+   "Học kỳ bắt đầu"/"Học kỳ kết thúc" NGAY SAU "Trạng thái hiện tại" (trước "Danh mục Lý do"), vì mỗi
    SV trong CÙNG 1 đợt bảo lưu có thể bảo lưu thời hạn khác nhau (SV này bảo lưu 1 học kỳ, SV khác bảo
    lưu cả năm) nên phải khai theo TỪNG dòng, không dùng chung 1 giá trị như khối 1 — giống pattern đã
    có ở TYPE_DISCIPLINE. Khối 1 (Năm học/Học kỳ áp dụng chung) VẪN giữ nguyên, không ẩn.
@@ -1816,11 +1781,11 @@ function onCreateDecisionTypeChange(){
     document.getElementById('cd-reviewer-assignment-dothuongdan').value = '';
   }
 
-  // Đổi loại quyết định thì bộ Phân loại lý do cũng đổi theo — lý do đã gán trước đó (theo loại
+  // Đổi loại quyết định thì bộ Danh mục Lý do cũng đổi theo — lý do đã gán trước đó (theo loại
   // cũ) không còn hợp lệ, đặt lại về trống để tránh hiển thị nhầm lý do của loại quyết định khác.
   if (createDecisionStudents.some(s => s.lyDo)){
     createDecisionStudents.forEach(s => s.lyDo = '');
-    showToast('Đã đặt lại Phân loại lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+    showToast('Đã đặt lại Danh mục Lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
   }
 
   // Rời khỏi TYPE_TRAINING_SCORE thì ĐTB niên khoá/Xếp loại toàn khoá đã nhập trước đó cũng không
@@ -2128,9 +2093,9 @@ function removeDdetFile(e){
 /* == Danh sách sinh viên trong quyết định đang tạo ==
    Khoá theo s.id (không phải s.mssv) xuyên suốt — 1 MSSV có thể xuất hiện 2 lần trong danh sách
    này nếu là 2 CTĐT khác nhau của cùng 1 sinh viên, đó là hợp lệ, không phải trùng lặp.
-   Mỗi dòng có thêm "lyDo" — Phân loại lý do riêng của sinh viên đó trong quyết định này, chọn
+   Mỗi dòng có thêm "lyDo" — Danh mục Lý do riêng của sinh viên đó trong quyết định này, chọn
    theo bộ lý do của Loại quyết định đang chọn (xem reasonsForType()/REASONS), có thể để trống.
-   Riêng TYPE_TRAINING_SCORE thay cột "Phân loại lý do" bằng "ĐTB niên khoá" (dtbNienKhoa, nhập tay)
+   Riêng TYPE_TRAINING_SCORE thay cột "Danh mục Lý do" bằng "ĐTB niên khoá" (dtbNienKhoa, nhập tay)
    + "Xếp loại toàn khoá" (xepLoaiToanKhoa, chọn theo XEP_LOAI_TOAN_KHOA_OPTIONS); riêng TYPE_INTERNSHIP
    dùng hẳn 1 bộ cột khác (xem CD_SV_THEAD_HTML/CD_SV_COL_COUNT) — vì cột không chỉ khác nội dung mà
    còn khác cả VỊ TRÍ (Ngày sinh chen giữa Họ và tên/Lớp HC) nên không thể ẩn/hiện cột tĩnh như
@@ -2144,7 +2109,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:120px">Đơn vị</th>
     <th style="width:150px">CTĐT</th>
     <th style="width:110px">Trạng thái hiện tại</th>
-    <th style="width:170px">Phân loại lý do</th>
+    <th style="width:170px">Danh mục Lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:50px"></th>`,
   leave: `
@@ -2157,7 +2122,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:110px">Trạng thái hiện tại</th>
     <th style="width:130px">Học kỳ bắt đầu</th>
     <th style="width:130px">Học kỳ kết thúc</th>
-    <th style="width:170px">Phân loại lý do</th>
+    <th style="width:170px">Danh mục Lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:50px"></th>`,
   trainingScore: `
@@ -2216,7 +2181,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:120px">Học kỳ bắt đầu</th>
     <th style="width:120px">Học kỳ kết thúc</th>
     <th style="width:170px">Lý do</th>
-    <th style="width:170px">Phân loại lý do</th>
+    <th style="width:170px">Danh mục Lý do</th>
     <th style="width:50px"></th>`,
   reviewerAssignment: `
     <th style="width:36px"><input type="checkbox" id="cd-sv-check-all" onchange="toggleCdSvSelectAll(this.checked)"></th>
@@ -2641,11 +2606,11 @@ document.addEventListener('click', e => {
   if (!document.getElementById('cd-sv-add-combo').contains(e.target)) closeCreateDecisionAddMenu();
 });
 
-/* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Phân loại lý do, Ghi chú) — giải quyết
+/* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Danh mục Lý do, Ghi chú) — giải quyết
    bài toán 1 quyết định áp dụng cho hàng chục/hàng trăm SV cùng lúc, và Mã CTĐT trong file tự giải
    quyết luôn ca mập mờ (MSSV học nhiều CTĐT) thay vì phải báo lại rồi chọn tay như khi thêm từng SV.
    Chỉ báo lại (không chặn các dòng còn lại) khi: thiếu Mã sinh viên, không khớp danh bạ, MSSV có
-   nhiều CTĐT mà bỏ trống Mã CTĐT, hoặc Phân loại lý do không khớp danh mục của Loại quyết định. */
+   nhiều CTĐT mà bỏ trống Mã CTĐT, hoặc Danh mục Lý do không khớp danh mục của Loại quyết định. */
 function openCreateDecisionImportModal(){
   document.getElementById('cd-sv-import-file').value = '';
   document.getElementById('cd-import-filepick').classList.remove('has-file');
@@ -2679,12 +2644,12 @@ function removeCreateImportFile(e){
 const CD_SV_EXPORT_COLUMNS = {
   default: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
-    ['CTĐT','ctdt'], ['Phân loại lý do','lyDo'], ['Ghi chú','lyDoText'],
+    ['CTĐT','ctdt'], ['Danh mục Lý do','lyDo'], ['Ghi chú','lyDoText'],
   ],
   leave: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
     ['CTĐT','ctdt'], ['Học kỳ bắt đầu','leaveSemesterStart'], ['Học kỳ kết thúc','leaveSemesterEnd'],
-    ['Phân loại lý do','lyDo'], ['Ghi chú','lyDoText'],
+    ['Danh mục Lý do','lyDo'], ['Ghi chú','lyDoText'],
   ],
   trainingScore: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
@@ -2706,7 +2671,7 @@ const CD_SV_EXPORT_COLUMNS = {
   discipline: [
     ['MSSV','mssv'], ['CTĐT','ctdt'], ['Loại kỷ luật','disciplineType'], ['Năm học','disciplineYear'],
     ['Học kỳ bắt đầu','disciplineSemesterStart'], ['Học kỳ kết thúc','disciplineSemesterEnd'],
-    ['Lý do','disciplineReasonText'], ['Phân loại lý do','lyDo'],
+    ['Lý do','disciplineReasonText'], ['Danh mục Lý do','lyDo'],
   ],
 };
 function exportCreateDecisionStudentsXlsx(){
@@ -2729,9 +2694,9 @@ function exportCreateDecisionStudentsXlsx(){
 
 /* Tải file mẫu import — file .xlsx thật (dựng bằng SheetJS, không phải mock). Định dạng cột phụ
    thuộc Loại quyết định đang chọn ở modal Tạo quyết định (đồng bộ với buildImportPreview()):
-   - Mặc định 4 cột: Mã sinh viên, Mã CTĐT, Phân loại lý do, Ghi chú.
+   - Mặc định 4 cột: Mã sinh viên, Mã CTĐT, Danh mục Lý do, Ghi chú.
    - TYPE_INTERNSHIP 6 cột riêng: Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
-     dẫn, Ghi chú — không có Phân loại lý do vì loại quyết định này không dùng khái niệm đó.
+     dẫn, Ghi chú — không có Danh mục Lý do vì loại quyết định này không dùng khái niệm đó.
    Cả 2 bộ dữ liệu mẫu đều khớp sẵn với STUDENT_DIRECTORY (đã test import ra 10/10 "Hợp lệ"), minh
    hoạ đủ tình huống: MSSV 1 CTĐT bỏ trống Mã CTĐT, MSSV học song song 2 CTĐT phải ghi rõ Mã CTĐT
    (20120301 lặp lại 2 dòng), và các cột không bắt buộc vừa để trống vừa điền. */
@@ -2741,7 +2706,7 @@ function downloadImportTemplateXlsx(){
 
   const header = isInternship
     ? ['Mã sinh viên', 'Mã CTĐT', 'Cơ sở thực tập', 'Địa chỉ', 'Giảng viên hướng dẫn', 'Ghi chú']
-    : ['Mã sinh viên', 'Mã CTĐT', 'Phân loại lý do', 'Ghi chú'];
+    : ['Mã sinh viên', 'Mã CTĐT', 'Danh mục Lý do', 'Ghi chú'];
   const sampleRows = isInternship ? [
     ['20120302', '', 'Công ty TNHH FPT Software', 'Toà nhà FPT, Q. Cầu Giấy, Hà Nội', 'ThS. Nguyễn Văn A', ''],
     ['20120303', '', 'Tập đoàn Viettel', 'Số 1 Trần Hữu Dực, Q. Nam Từ Liêm, Hà Nội', 'TS. Trần Thị B', ''],
@@ -2782,7 +2747,7 @@ function downloadImportTemplateXlsx(){
 let importPreviewRows = [];
 /* Bộ cột của lần import gần nhất — quyết định header/ô hiển thị ở renderImportPreview() và các
    trường được ghi lại khi commitImportPreview(). 'internship' khi Loại quyết định = TYPE_INTERNSHIP
-   (đọc Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn thay vì Phân loại lý do), còn lại dùng 'default'. */
+   (đọc Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn thay vì Danh mục Lý do), còn lại dùng 'default'. */
 let importPreviewMode = 'default';
 const CD_IMPORT_PREVIEW_PAGE_SIZE = 20;
 let cdImportPreviewPage = 1;
@@ -2819,13 +2784,13 @@ function previewImportFile(file){
 }
 
 /* TYPE_INTERNSHIP đọc file 6 cột (Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
-   dẫn, Ghi chú) — không có Phân loại lý do vì loại quyết định này không dùng khái niệm đó, xem
+   dẫn, Ghi chú) — không có Danh mục Lý do vì loại quyết định này không dùng khái niệm đó, xem
    TYPE_INTERNSHIP ở phần khai báo hằng số. Các loại quyết định còn lại giữ nguyên 4 cột như cũ. */
 function buildImportPreview(rows, type){
   importPreviewMode = type === TYPE_INTERNSHIP ? 'internship' : 'default';
   const reasons = reasonsForType(type);
   rows = rows.filter(r => r.some(c => (c || '').trim() !== ''));
-  // Bỏ dòng tiêu đề nếu dòng đầu là header (VD "Mã sinh viên,Mã CTĐT,Phân loại lý do"), không phải dữ liệu thật
+  // Bỏ dòng tiêu đề nếu dòng đầu là header (VD "Mã sinh viên,Mã CTĐT,Danh mục Lý do"), không phải dữ liệu thật
   if (rows.length && /mã sinh viên|mssv/i.test(rows[0][0] || '')) rows = rows.slice(1);
 
   importPreviewRows = rows.map(row => {
@@ -2882,7 +2847,7 @@ const CD_IMPORT_THEAD_HTML = {
     <th style="width:120px">Mã SV</th>
     <th style="width:170px">Họ và tên</th>
     <th style="width:150px">CTĐT</th>
-    <th style="width:150px">Phân loại lý do</th>
+    <th style="width:150px">Danh mục Lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:170px">Lỗi</th>`,
   internship: `
@@ -3274,8 +3239,7 @@ function renderGrid(){
   let baseList = DECISION_INSTANCES.slice();
   if (typeFilter !== 'all') baseList = baseList.filter(d => d.typeName === typeFilter);
   if (selectedUnitId) baseList = baseList.filter(d => d.unit === selectedUnitId);
-  if (selectedYears.size) baseList = baseList.filter(d => selectedYears.has(d.academicYear));
-  if (selectedSemesters.size) baseList = baseList.filter(d => selectedSemesters.has(semesterFilterValue(d.semesterStart, d.academicYear)));
+  if (selectedSemester) baseList = baseList.filter(d => semesterFilterValue(d.semesterStart, d.academicYear) === selectedSemester);
   if (createdFrom) baseList = baseList.filter(d => parseVnDate(d.created) >= createdFrom);
   if (createdTo) baseList = baseList.filter(d => parseVnDate(d.created) <= createdTo);
   if (searchTerms.length) baseList = baseList.filter(d => searchTerms.some(term => d.code.toLowerCase().includes(term)));
@@ -3490,17 +3454,17 @@ const DDET_SV_CHECK_TH = `<th style="width:36px"><input type="checkbox"></th>`;
 /* Cột cuối — "Thao tác" (nút bút chì), bấm để sửa INLINE đúng dòng đó (đổi các cell field-riêng
    theo Loại quyết định thành input/select, giống hệt khối Sửa/Tạo) mà không cần vào chế độ Sửa
    toàn bộ quyết định — xem ddetSvEditingId/toggleDdetSvEditRow()/saveDdetSvRow(). Các cột định danh
-   (MSSV/Họ tên/Lớp/CTĐT...) KHÔNG sửa được ở đây, chỉ field ghi chú/phân loại lý do/thông tin bổ
+   (MSSV/Họ tên/Lớp/CTĐT...) KHÔNG sửa được ở đây, chỉ field ghi chú/Danh mục Lý do/thông tin bổ
    sung theo từng SV. */
 const DDET_SV_ACTION_TH = `<th style="width:90px">Thao tác</th>`;
 const DDET_SV_THEAD_HTML = {
-  default: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
-  leave: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:130px">Học kỳ bắt đầu</th><th style="width:130px">Học kỳ kết thúc</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  default: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:170px">Danh mục Lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  leave: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:130px">Học kỳ bắt đầu</th><th style="width:130px">Học kỳ kết thúc</th><th style="width:170px">Danh mục Lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   trainingScore: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:110px">ĐTB niên khoá</th><th style="width:140px">Xếp loại toàn khoá</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   internship: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:100px">Ngày sinh</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:180px">Cơ sở thực tập</th><th style="width:200px">Địa chỉ</th><th style="width:150px">GVHD</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicChange: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:220px">Đề tài cũ (theo QĐ)</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
-  discipline: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">CTĐT</th><th style="width:190px">Loại kỷ luật</th><th style="width:110px">Năm học</th><th style="width:120px">Học kỳ bắt đầu</th><th style="width:120px">Học kỳ kết thúc</th><th style="width:170px">Lý do</th><th>Phân loại lý do</th>${DDET_SV_ACTION_TH}`,
+  discipline: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">CTĐT</th><th style="width:190px">Loại kỷ luật</th><th style="width:110px">Năm học</th><th style="width:120px">Học kỳ bắt đầu</th><th style="width:120px">Học kỳ kết thúc</th><th style="width:170px">Lý do</th><th>Danh mục Lý do</th>${DDET_SV_ACTION_TH}`,
   reviewerAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:130px">Lớp học phần</th><th style="width:150px">CTĐT</th><th style="width:200px">Tên đề tài</th><th style="width:150px">GVHD</th><th style="width:150px">GVPB</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
 };
 const DDET_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:11, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Danh mục Lý do | Khoa CNTT</title>
+<title>Danh mục Lý do Kỷ luật | Khoa CNTT</title>
 <link rel="stylesheet" href="_styles.css">
 <style>
-  /* ========== Page-specific: danh mục lý do quyết định sinh viên (MH-ADMIN-16) ========== */
+  /* ========== Page-specific: Danh mục Lý do kỷ luật (MH-ADMIN-18) ========== */
 
   /* Dropdown thông báo — đồng bộ với các màn admin khác */
   .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
@@ -23,26 +23,10 @@
   .notif-item-time{font-size:11.5px;color:var(--text-3)}
   .notif-menu-empty{padding:24px 16px;text-align:center;color:var(--text-3);font-size:13px}
 
-  /* Bảng danh mục lý do */
+  /* Bảng Danh mục Lý do */
   #view-list .tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:8px;padding:0 1px}
   #view-list table.tbl th{background:#f0f0f0}
   .reason-name-cell{font-size:13.5px;color:var(--text-1)}
-  .reason-type-cell{font-size:12.5px;color:var(--text-2)}
-  .reason-type-more{color:var(--primary);font-weight:600}
-
-  /* Combobox NHIỀU lựa chọn (checkbox) cho "Loại quyết định" — 1 Lý do có thể gắn nhiều loại cùng
-     lúc, copy pattern từ mh-admin-03/08 (form-combo-trigger/form-combo-item), dùng chung khung
-     .unit-combo-menu. */
-  .unit-combo{position:relative}
-  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
-  .unit-combo-menu.open{display:block}
-  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
-  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
-  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
-  .form-combo-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
-  .form-combo-item:hover{background:var(--primary-light);color:var(--primary)}
-  .form-combo-item input[type="checkbox"]{flex-shrink:0;cursor:pointer}
-  .form-combo-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -76,13 +60,30 @@
           <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
         </ul>
       </li>
-      <li class="active">
+      <li>
         <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
-        <ul class="sb-sub open">
+        <ul class="sb-sub">
           <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
-          <li class="active"><a href="#">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
           <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">🏆&nbsp; Quản lý Khen thưởng &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-09_rewardtypelist.html">Danh hiệu Khen thưởng</a></li><li><a href="mh-admin-17_rewardperiodtype.html">Hình thức khen thưởng</a></li>
+          <li><a href="mh-admin-10_rewardproposal.html">Đề xuất Khen thưởng</a></li>
+          <li><a href="mh-admin-11_rewardlist.html">Danh sách Khen thưởng</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Quản lý Kỷ luật &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-12_disciplinetypelist.html">Hình thức Kỷ luật</a></li>
+          <li class="active"><a href="#">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-13_disciplineproposal.html">Đề xuất Kỷ luật</a></li>
+          <li><a href="mh-admin-14_disciplinelist.html">Danh sách Kỷ luật</a></li>
         </ul>
       </li>
       <li>
@@ -98,7 +99,7 @@
   <div class="main">
     <!-- ═══ HEADER ═══ -->
     <header class="app-header">
-      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Danh mục Lý do</b></div>
+      <div class="h-breadcrumb" id="breadcrumb">Quản lý Kỷ luật / <b style="color:var(--text-1)">Danh mục Lý do</b></div>
       <div class="h-right">
         <div class="bw" id="notif-wrap">
           <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
@@ -115,29 +116,25 @@
     <div class="content">
 
       <!-- ═══════════════════════════════════════════════════════
-           VIEW — DANH MỤC LÝ DO (MH-ADMIN-16, view: list) — mỗi Lý do thuộc đúng 1 Loại quyết định
-           (đối chiếu DECISION_CATALOG ở mh-admin-06/08), dùng để đổ vào droplist "Danh mục Lý do"
-           khi Tạo/Sửa quyết định (xem TYPE_REASON_CATEGORIES ở mh-admin-08 — cùng nội dung dữ liệu,
-           không kết nối kỹ thuật thật giữa 2 file vì đây là 2 trang tĩnh độc lập, giống quan hệ
-           DECISION_CATALOG giữa mh-admin-06/08 hiện có).
+           VIEW — Danh mục Lý do KỶ LUẬT (MH-ADMIN-18, view: list) — tách riêng khỏi
+           mh-admin-12 (Hình thức Kỷ luật) theo yêu cầu; danh mục lý do độc lập, không
+           gắn với Hình thức kỷ luật nào, dùng để đổ vào droplist "Danh mục lý do" khi
+           lập đề xuất kỷ luật ở mh-admin-13.
       ═══════════════════════════════════════════════════════ -->
       <div id="view-list">
 
         <div class="flex justify-between items-center mb-16">
           <div>
-            <h2 style="margin:0;font-size:18px">Danh mục Lý do</h2>
+            <h2 style="margin:0;font-size:18px">Danh mục Lý do Kỷ luật</h2>
           </div>
           <div class="flex gap-8">
             <button class="btn btn-primary" onclick="openAddReasonModal()">＋ Thêm mới</button>
           </div>
         </div>
 
-        <!-- Bộ lọc: Tìm tên lý do + Loại quyết định -->
+        <!-- Bộ lọc: Tìm tên lý do -->
         <div class="filter-bar">
           <input class="fc" id="reason-search" type="text" placeholder="🔍 Tìm tên lý do…" autocomplete="off" style="width:300px">
-          <select class="fc" id="type-filter-select" style="width:320px">
-            <option value="all">Tất cả loại quyết định</option>
-          </select>
         </div>
 
         <div class="tbl-wrap">
@@ -146,7 +143,6 @@
               <tr>
                 <th style="width:48px">STT</th>
                 <th>Tên lý do</th>
-                <th style="width:320px">Loại quyết định</th>
                 <th style="width:110px">Cập nhật</th>
                 <th style="width:90px">Thao tác</th>
               </tr>
@@ -172,19 +168,9 @@
     </div>
     <div class="modal-bd">
 
-      <div class="fi">
-        <label>Loại quyết định<span class="req">*</span> <span class="text-muted text-sm" style="font-weight:400">(chọn được nhiều)</span></label>
-        <div class="unit-combo" id="new-reason-type-combo">
-          <button type="button" class="fc form-combo-trigger" id="new-reason-type-trigger" onclick="event.stopPropagation();toggleReasonTypeMenu()">
-            <span id="new-reason-type-label">— Chọn loại quyết định —</span><span class="form-combo-arrow">▾</span>
-          </button>
-          <div class="unit-combo-menu" id="new-reason-type-menu"></div>
-        </div>
-      </div>
-
       <div class="fi" style="margin-bottom:0">
         <label>Tên lý do<span class="req">*</span></label>
-        <input class="fc" id="new-reason-name" placeholder="VD: Cảnh báo học vụ lần 1">
+        <input class="fc" id="new-reason-name" placeholder="VD: Đi trễ giờ thi">
       </div>
 
     </div>
@@ -198,63 +184,18 @@
 <script src="_utils.js"></script>
 <script>
 /* ============================================================
-   DATA — Loại quyết định (rút gọn tên, đối chiếu DECISION_CATALOG ở mh-admin-06/08)
-   ============================================================ */
-const DECISION_TYPES = [
-  'Quyết định cấp mã SV và phân lớp cho SV',
-  'Quyết định công nhận điểm rèn luyện toàn khoá',
-  'Quyết định điều chỉnh',
-  'Quyết định thay đổi họ tên sinh viên',
-  'Quyết định thu hồi quyết định nghỉ học tạm thời',
-  'Quyết định buộc thôi học do quá 2 lần cảnh báo',
-  'Quyết định chuyển khoá, ngành, lớp',
-  'Quyết định chuyển trường đến',
-  'Quyết định chuyển trường đi',
-  'Quyết định công nhận điểm từ các cơ sở đào tạo',
-  'Quyết định công nhận tốt nghiệp',
-  'Quyết định cử đi thực tập tốt nghiệp',
-  'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
-  'Quyết định nghỉ học tạm thời/bảo lưu',
-  'Quyết định nhập trường/trúng tuyển',
-  'Quyết định quay trở lại học tập',
-  'Quyết định thôi học',
-  'Quyết định xoá tên',
-  'Quyết định thay đổi đơn vị đào tạo',
-  'Quyết định giao đề tài và phân công GVHD',
-  'Quyết định thay đổi đề tài',
-];
-
-document.getElementById('type-filter-select').insertAdjacentHTML('beforeend',
-  DECISION_TYPES.map(t => `<option value="${t}">${t}</option>`).join(''));
-
-/* ============================================================
-   DATA — danh mục Lý do (mock), đúng nội dung TYPE_REASON_CATEGORIES đang hardcode ở mh-admin-08 —
-   mỗi Lý do có thể gắn NHIỀU Loại quyết định (typeNames là mảng, chọn qua combobox checkbox ở
-   modal Thêm/Sửa, xem toggleReasonType()). Hiện mới cấu hình cho 5 loại đã có sẵn lý do; 16 loại còn
-   lại chưa có lý do nào, người dùng tự thêm khi cần (droplist "Danh mục Lý do" ở loại đó sẽ để
-   trống, không bắt buộc chọn).
+   DATA — Danh mục Lý do (mock) — danh mục lý do độc lập, không gắn với Hình thức kỷ luật nào.
    ============================================================ */
 const REASONS = [
-  { id:'r1', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 1', updated:'20/07/2026' },
-  { id:'r2', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 2', updated:'20/07/2026' },
-  { id:'r3', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Đình chỉ học tập có thời hạn', updated:'20/07/2026' },
-  { id:'r4', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm quy chế thi', updated:'20/07/2026' },
-  { id:'r5', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Xuất sắc', updated:'18/07/2026' },
-  { id:'r6', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Giỏi', updated:'18/07/2026' },
-  { id:'r7', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Khá', updated:'18/07/2026' },
-  { id:'r8', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Trung bình', updated:'18/07/2026' },
-  { id:'r9', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do sức khoẻ', updated:'15/07/2026' },
-  { id:'r10', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do gia đình', updated:'15/07/2026' },
-  { id:'r11', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do kinh tế', updated:'15/07/2026' },
-  { id:'r12', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đi nghĩa vụ quân sự', updated:'15/07/2026' },
-  { id:'r13', typeNames:['Quyết định thôi học'], name:'Tự nguyện thôi học', updated:'12/07/2026' },
-  { id:'r14', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do kết quả học tập', updated:'12/07/2026' },
-  { id:'r15', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do vi phạm quy chế', updated:'12/07/2026' },
-  { id:'r16', typeNames:['Quyết định thôi học'], name:'Quá thời hạn đào tạo tối đa', updated:'12/07/2026' },
-  { id:'r17', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Gian lận trong học tập', updated:'10/07/2026' },
-  { id:'r18', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm nội quy ký túc xá', updated:'10/07/2026' },
-  { id:'r19', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm pháp luật', updated:'10/07/2026' },
-  { id:'r20', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm khác', updated:'10/07/2026' },
+  { id:'r1', name:'Vi phạm nề nếp học tập', updated:'21/07/2026' },
+  { id:'r2', name:'Vi phạm thái độ, ứng xử', updated:'21/07/2026' },
+  { id:'r3', name:'Vi phạm học vụ — kiểm tra, thi cử', updated:'21/07/2026' },
+  { id:'r4', name:'Vi phạm hồ sơ, giấy tờ — hành chính sinh viên', updated:'21/07/2026' },
+  { id:'r5', name:'Vi phạm tài sản — cơ sở vật chất, thư viện', updated:'21/07/2026' },
+  { id:'r6', name:'Vi phạm an ninh trật tự — an toàn xã hội', updated:'21/07/2026' },
+  { id:'r7', name:'Vi phạm đạo đức, văn hoá — lối sống', updated:'21/07/2026' },
+  { id:'r8', name:'Vi phạm pháp luật và tệ nạn xã hội', updated:'21/07/2026' },
+  { id:'r9', name:'Các vi phạm khác', updated:'21/07/2026' },
 ];
 
 let editingReasonId = null;
@@ -262,8 +203,8 @@ let modalMode = 'add';
 
 /* == Dropdown thông báo (chuông trên header) == */
 const NOTIFICATIONS = [
-  { id:'n1', unread:true, ico:'📋', title:'Lý do mới "Vi phạm khác" vừa được thêm vào danh mục', time:'2 giờ trước' },
-  { id:'n2', unread:true, ico:'✏️', title:'Danh mục Lý do quyết định thôi học vừa được cập nhật', time:'1 ngày trước' },
+  { id:'n1', unread:true, ico:'📋', title:'Lý do mới "Đánh nhau, gây rối trật tự công cộng" vừa được thêm vào danh mục', time:'2 giờ trước' },
+  { id:'n2', unread:true, ico:'✏️', title:'Danh mục lý do "Buộc thôi học" vừa được cập nhật', time:'1 ngày trước' },
 ];
 
 function renderNotifMenu(){
@@ -305,22 +246,19 @@ document.addEventListener('click', e => {
 
 updateNotifBadge();
 
-/* == Bảng danh mục Lý do == */
+/* == Bảng Danh mục Lý do == */
 const REASON_PAGE_SIZE = 20;
 let currentPage = 1;
 
-function currentTypeFilter(){ return document.getElementById('type-filter-select').value; }
 function currentReasonSearch(){ return document.getElementById('reason-search').value.trim().toLowerCase(); }
 
 function reasonById(id){ return REASONS.find(r => r.id === id); }
 
 function renderGrid(){
   const tbody = document.getElementById('reason-tbody');
-  const typeFilter = currentTypeFilter();
   const nameQuery = currentReasonSearch();
 
   let list = REASONS.slice();
-  if (typeFilter !== 'all') list = list.filter(r => r.typeNames.includes(typeFilter));
   if (nameQuery) list = list.filter(r => r.name.toLowerCase().includes(nameQuery));
 
   const totalPages = Math.max(1, Math.ceil(list.length / REASON_PAGE_SIZE));
@@ -331,7 +269,6 @@ function renderGrid(){
     <tr>
       <td class="text-muted">${(currentPage-1)*REASON_PAGE_SIZE + idx + 1}</td>
       <td><span class="reason-name-cell">${r.name}</span></td>
-      <td><span class="reason-type-cell">${r.typeNames[0]}${r.typeNames.length > 1 ? ` <span class="reason-type-more">+${r.typeNames.length - 1}</span>` : ''}</span></td>
       <td class="text-muted">${r.updated}</td>
       <td>
         <div class="tbl-actions">
@@ -343,7 +280,7 @@ function renderGrid(){
           </button>
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="4"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -369,39 +306,7 @@ function renderPagination(totalItems, totalPages){
 
 function goToPage(p){ currentPage = p; renderGrid(); }
 
-document.getElementById('type-filter-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
 document.getElementById('reason-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
-
-/* == Combobox NHIỀU lựa chọn (checkbox) cho "Loại quyết định" ở modal Thêm/Sửa — copy pattern từ
-   mh-admin-03/08 (selectedFormNames/toggleFormName). selectedReasonTypes giữ Set các loại đang
-   tích, đọc lại khi bấm Lưu (doSaveReason()). == */
-let selectedReasonTypes = new Set();
-
-function renderReasonTypeMenu(){
-  document.getElementById('new-reason-type-menu').innerHTML = DECISION_TYPES.map(t => {
-    const checked = selectedReasonTypes.has(t) ? 'checked' : '';
-    return `<label class="form-combo-item">
-      <input type="checkbox" ${checked} onchange="toggleReasonType(${JSON.stringify(t)}, this.checked)">
-      <span>${t}</span>
-    </label>`;
-  }).join('');
-}
-function updateReasonTypeLabel(){
-  const el = document.getElementById('new-reason-type-label');
-  el.textContent = selectedReasonTypes.size === 0
-    ? '— Chọn loại quyết định —'
-    : `${selectedReasonTypes.size} loại quyết định đã chọn`;
-}
-function toggleReasonType(typeName, checked){
-  if (checked) selectedReasonTypes.add(typeName); else selectedReasonTypes.delete(typeName);
-  updateReasonTypeLabel();
-}
-function openReasonTypeMenu(){ renderReasonTypeMenu(); document.getElementById('new-reason-type-menu').classList.add('open'); }
-function closeReasonTypeMenu(){ document.getElementById('new-reason-type-menu').classList.remove('open'); }
-function toggleReasonTypeMenu(){ document.getElementById('new-reason-type-menu').classList.contains('open') ? closeReasonTypeMenu() : openReasonTypeMenu(); }
-document.addEventListener('click', e => {
-  if (!document.getElementById('new-reason-type-combo').contains(e.target)) closeReasonTypeMenu();
-});
 
 /* == Popup Thêm/Sửa lý do == */
 function openAddReasonModal(){
@@ -409,8 +314,6 @@ function openAddReasonModal(){
   modalMode = 'add';
   document.getElementById('new-reason-modal-title').textContent = 'Thêm lý do';
   document.getElementById('new-reason-submit-btn').textContent = 'Thêm mới';
-  selectedReasonTypes = new Set();
-  updateReasonTypeLabel();
   document.getElementById('new-reason-name').value = '';
   openModal('modal-new-reason');
 }
@@ -421,29 +324,24 @@ function openEditReasonModal(id){
   modalMode = 'edit';
   document.getElementById('new-reason-modal-title').textContent = 'Sửa lý do';
   document.getElementById('new-reason-submit-btn').textContent = 'Lưu thay đổi';
-  selectedReasonTypes = new Set(r.typeNames);
-  updateReasonTypeLabel();
   document.getElementById('new-reason-name').value = r.name;
   openModal('modal-new-reason');
 }
 
 function doSaveReason(){
-  const typeNames = [...selectedReasonTypes];
   const name = document.getElementById('new-reason-name').value.trim();
 
-  if (!typeNames.length){ showToast('Vui lòng chọn ít nhất 1 Loại quyết định', 'err'); return; }
   if (!name){ showToast('Vui lòng nhập tên lý do', 'err'); return; }
-  if (REASONS.some(r => r.id !== editingReasonId && r.name.toLowerCase() === name.toLowerCase() && r.typeNames.some(t => typeNames.includes(t)))){
-    showToast('Lý do này đã tồn tại ở ít nhất 1 loại quyết định đã chọn', 'err');
+  if (REASONS.some(r => r.id !== editingReasonId && r.name.toLowerCase() === name.toLowerCase())){
+    showToast('Lý do này đã tồn tại trong danh mục', 'err');
     return;
   }
 
   if (modalMode === 'add'){
-    REASONS.unshift({ id: 'r' + Date.now(), typeNames, name, updated: 'Hôm nay' });
+    REASONS.unshift({ id: 'r' + Date.now(), name, updated: 'Hôm nay' });
     showToast('Đã thêm lý do mới', 'ok');
   } else {
     const r = reasonById(editingReasonId);
-    r.typeNames = typeNames;
     r.name = name;
     r.updated = 'Hôm nay';
     showToast('Đã lưu thay đổi', 'ok');
@@ -465,7 +363,7 @@ function confirmDeleteReason(id){
       renderGrid();
     },
     'Xoá', 'btn-danger',
-    `Lý do "${r.name}" (${r.typeNames.join(', ')}) sẽ bị xoá khỏi danh mục — các quyết định đã dùng lý do này trước đó vẫn giữ nguyên dữ liệu cũ, không bị ảnh hưởng.`,
+    `Lý do "${r.name}" sẽ bị xoá khỏi danh mục — các đề xuất kỷ luật đã dùng lý do này trước đó vẫn giữ nguyên dữ liệu cũ, không bị ảnh hưởng.`,
     'Huỷ'
   );
 }

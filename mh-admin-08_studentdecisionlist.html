@@ -332,7 +332,7 @@
                 <th>Loại quyết định</th>
                 <th style="width:110px">Số QĐ</th>
                 <th style="width:100px">Ngày QĐ</th>
-                <th style="width:110px">Năm học</th>
+                <th style="width:150px">Học kỳ áp dụng</th>
                 <th style="width:180px">Người tạo</th>
                 <th style="width:100px">Ngày tạo</th>
                 <th style="width:90px">Số lượng SV</th>
@@ -3266,7 +3266,7 @@ function renderGrid(){
       <td><span class="di-sv-name">${d.typeName}</span></td>
       <td>${d.code ? `<span class="di-code">${d.code}</span>` : ''}</td>
       <td class="text-muted">${d.effectiveDate || '—'}</td>
-      <td class="text-muted">${d.academicYear || '—'}</td>
+      <td class="text-muted">${d.semesterStart && d.academicYear ? `${d.semesterStart} - ${d.academicYear}` : '—'}</td>
       <td>${userDisplayHtml(d.createdBy)}</td>
       <td class="text-muted">${d.created}</td>
       <td class="text-muted">${d.students.length}</td>

@@ -272,11 +272,11 @@
     </div>
     <div class="modal-ft">
       <button class="btn btn-default" id="subm-btn-close" data-close="modal-submit-form">Huỷ</button>
-      <button class="btn btn-default" onclick="previewSubmitForm()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        Preview
-      </button>
-      <button class="btn btn-default" onclick="downloadSubmitFormWord()">
+      <!-- Chỉ hiện khi đang XEM LẠI đơn đã nộp (viewOnly, dữ liệu đã đầy đủ) — khi đang soạn dở
+           (chưa nộp) ẨN nút này, tránh tải file thiếu dữ liệu vì các trường có thể chưa điền
+           xong; muốn tải phải qua bước Xem trước bắt buộc khi bấm "Nộp" (modal-preview-form).
+           Toggle ở applySubmViewOnlyMode(). -->
+      <button class="btn btn-default" id="subm-btn-download" onclick="downloadSubmitFormWord()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         Tải đơn
       </button>
@@ -381,12 +381,15 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: Xem trước nội dung đơn ═══ -->
+<!-- ═══ MODAL: Xem trước nội dung đơn — mở khi bấm "Nộp" ở popup Nhập đơn (xem confirmSubmitForm()),
+     hiển thị đầy đủ nội dung đơn đã điền để sinh viên kiểm tra lại lần cuối trước khi nộp thật.
+     "Huỷ" đóng hẳn, quay về danh sách biểu mẫu (không quay lại popup Nhập đơn); "Xác nhận" mới
+     thực sự ghi đơn vào Lịch sử, xem doConfirmSubmit(). ═══ -->
 <div class="overlay hidden" id="modal-preview-form">
   <div class="modal-box w700">
     <div class="modal-hd">
       <div>
-        <h3 class="modal-title" id="preview-title">Preview đơn</h3>
+        <h3 class="modal-title" id="preview-title">Xem trước đơn</h3>
       </div>
       <button class="modal-close" data-close="modal-preview-form">✕</button>
     </div>
@@ -394,11 +397,12 @@
       <div class="adet-content-preview" id="preview-content"></div>
     </div>
     <div class="modal-ft">
-      <button class="btn btn-default" data-close="modal-preview-form">Đóng</button>
+      <button class="btn btn-default" onclick="cancelPreviewSubmit()">Huỷ</button>
       <button class="btn btn-default" onclick="downloadSubmitFormWord()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         Tải đơn
       </button>
+      <button class="btn btn-primary" onclick="doConfirmSubmit()">Xác nhận</button>
     </div>
   </div>
 </div>
@@ -1085,6 +1089,7 @@ function applySubmViewOnlyMode(viewOnly){
     document.getElementById('subm-recipient-phone').readOnly = true;
   }
   modalBd.querySelectorAll('#subm-extra-fields input[type=file]').forEach(el => { el.disabled = !!viewOnly; });
+  document.getElementById('subm-btn-download').style.display = viewOnly ? '' : 'none';
   document.getElementById('subm-btn-draft').style.display = viewOnly ? 'none' : '';
   document.getElementById('subm-btn-confirm').style.display = viewOnly ? 'none' : '';
   document.getElementById('subm-btn-close').textContent = viewOnly ? 'Đóng' : 'Huỷ';
@@ -1245,7 +1250,8 @@ function collectSubmExtraValues(f){
 }
 
 /* Thay các token #code trong content mẫu bằng dữ liệu sinh viên cố định + giá trị
-   đã kê khai — token không có giá trị (chưa điền) giữ nguyên gạch chân trống. */
+   đã kê khai — token chưa có giá trị (sinh viên chưa nhập) để TRỐNG, không còn gạch chấm
+   "……" giả lập chỗ điền tay như trước (theo yêu cầu: để trống đúng những gì đã nhập). */
 function fillSubmFormContent(f){
   const extraValues = collectSubmExtraValues(f);
   const tokens = {
@@ -1257,22 +1263,19 @@ function fillSubmFormContent(f){
   };
   return (f.content || '').replace(/#(\w+)/g, (match, code) => {
     const val = tokens[code];
-    return val ? val : '……………………';
+    return val ? val : '';
   });
 }
 
-/* Xem trước nội dung đơn ngay trong popup — cùng dữ liệu (mẫu + kê khai) với "Tải đơn",
-   để sinh viên kiểm tra lại trước khi tải file hoặc nộp. */
-function previewSubmitForm(){
+/* Hiển thị nội dung đơn đã điền trong popup Xem trước — dùng chung khi bấm "Nộp" ở popup
+   Nhập đơn (xem confirmSubmitForm()), để sinh viên kiểm tra lại lần cuối trước khi Xác nhận. */
+function renderPreviewSubmitForm(){
   const f = currentSubmitForm;
   if (!f) return;
-  if (!f.content){
-    showToast('Biểu mẫu này chưa có nội dung mẫu để xem trước.', 'err');
-    return;
-  }
   document.getElementById('preview-title').textContent = f.name;
-  document.getElementById('preview-content').innerHTML = fillSubmFormContent(f);
-  openModal('modal-preview-form');
+  document.getElementById('preview-content').innerHTML = f.content
+    ? fillSubmFormContent(f)
+    : '<p class="text-muted">Biểu mẫu này chưa có nội dung mẫu để xem trước.</p>';
 }
 
 /* Xuất file Word (.doc) chứa nội dung đơn theo mẫu đã cấu hình ở mh-admin-02,
@@ -1322,6 +1325,10 @@ function saveSubmitFormDraft(){
   showToast('Đã lưu nháp. Bạn có thể tiếp tục hoàn thiện đơn này ở tab "Lịch sử".', 'ok');
 }
 
+/* Bấm "Nộp" ở popup Nhập đơn — không nộp thẳng, mà mở popup Xem trước (modal-preview-form)
+   để sinh viên kiểm tra đầy đủ nội dung đã kê khai trước khi Xác nhận thật sự (xem
+   doConfirmSubmit()). Đóng hẳn popup Nhập đơn trước khi mở Xem trước — "Huỷ" ở popup Xem
+   trước sẽ không quay lại popup Nhập đơn nữa (theo yêu cầu, tránh giữ 2 popup chồng nhau). */
 function confirmSubmitForm(){
   if (currentSubmitForm && formNeedsReturn(currentSubmitForm)){
     const cccdBlock = document.getElementById('subm-recipient-cccd-block');
@@ -1335,6 +1342,32 @@ function confirmSubmitForm(){
   }
 
   closeModal('modal-submit-form');
+  renderPreviewSubmitForm();
+  openModal('modal-preview-form');
+}
+
+/* "Huỷ" ở popup Xem trước — đóng hẳn, không giữ lại dữ liệu vừa kê khai (theo yêu cầu). */
+function cancelPreviewSubmit(){
+  closeModal('modal-preview-form');
+}
+
+/* "Xác nhận" ở popup Xem trước — nộp đơn thật sự, ghi 1 bản ghi "Chờ duyệt" vào Lịch sử
+   chung (cùng cấu trúc steps[] với dữ liệu mock HISTORY sẵn có), rồi đóng popup. */
+function doConfirmSubmit(){
+  const f = currentSubmitForm;
+  if (!f) return;
+  const now = new Date();
+  const submittedDate = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  const copies = formNeedsReturn(f) ? (Number(document.getElementById('subm-copies').value) || 1) : null;
+  HISTORY.unshift({
+    formId: f.id, code: '—', name: f.name, submitted: submittedDate, status: 'Chờ duyệt',
+    returned: 'Chưa trả', handler: '', returnedDate: '', copies,
+    steps: [{ step: 'Nộp yêu cầu', note: 'Đã nộp qua cổng thông tin', time: `${submittedDate} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}` }],
+  });
+  currentHistoryPage = 1;
+  renderHistoryTable();
+
+  closeModal('modal-preview-form');
   showToast('Đã nộp đơn thành công. Bạn có thể theo dõi ở tab "Lịch sử".', 'ok');
 }
 

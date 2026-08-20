@@ -406,6 +406,13 @@
           <div class="sec-title"><span class="sec-badge">2</span> Danh sách sinh viên <span class="tag tag-default" id="cd-sv-count">0</span></div>
 
           <div id="ddet-sv-view">
+            <div class="flex gap-8" style="margin-bottom:12px">
+              <input class="fc" id="ddet-sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="flex:1" oninput="renderDetailSvTable(proposalById(editingProposalId), this.value)">
+              <!-- Xuất dữ liệu Danh sách sinh viên ra file .xlsx thật — hiện ở MỌI trạng thái đề xuất
+                   đã tồn tại, cùng cơ chế exportDecisionStudentsXlsx() ở mh-admin-08. Xuất TOÀN BỘ
+                   danh sách đã lưu, không theo bộ lọc ô tìm kiếm đang gõ. -->
+              <button type="button" class="btn btn-default" onclick="exportProposalStudentsXlsx()">Xuất dữ liệu</button>
+            </div>
             <div class="tbl-wrap">
               <table class="tbl">
                 <thead><tr id="ddet-sv-thead-row"></tr></thead>
@@ -1033,6 +1040,34 @@ function closeDetail(){
   renderGrid();
 }
 
+/* Bảng Danh sách sinh viên ở chế độ Xem — có ô tìm kiếm theo tên/MSSV/CTĐT, cùng cơ chế
+   renderDecisionStudents() ở mh-admin-08. Đề xuất đang "Chờ duyệt" vẫn cho phép cập nhật nhanh
+   Hình thức kỷ luật/Ghi chú từng SV ngay ở đây (không cần bấm "Chỉnh sửa" toàn bộ đề xuất) — thao
+   tác trực tiếp lên p.students qua openSvEditQuick()/saveSvEditQuick(), tách khỏi luồng cdStudents
+   dùng cho form Sửa/Tạo mới. idx trong nút Sửa LUÔN là index gốc trong p.students (không phải index
+   sau khi lọc), vì 1 MSSV có thể lặp 2 dòng nên không dùng mssv làm khoá duy nhất được. Cột Thao
+   tác LUÔN hiển thị ở mọi trạng thái để bố cục bảng ổn định — nút Sửa chỉ disable khi không đủ
+   điều kiện. */
+function renderDetailSvTable(p, query){
+  const canQuickEditSv = p.status === 'Chờ duyệt';
+  document.getElementById('ddet-sv-thead-row').innerHTML =
+    '<th style="width:36px"><input type="checkbox"></th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:180px">Hình thức kỷ luật</th><th style="width:200px">Phân loại lý do</th><th style="width:150px">Học kỳ bắt đầu</th><th style="width:150px">Học kỳ kết thúc</th><th>Ghi chú</th><th style="width:60px">Thao tác</th>';
+  const rows = p.students || [];
+  const q = (query || '').trim().toLowerCase();
+  const shown = rows
+    .map((r, idx) => ({ r, idx }))
+    .filter(({ r }) => !q || (r.name || '').toLowerCase().includes(q) || (r.mssv || '').toLowerCase().includes(q) || (r.ctdt || '').toLowerCase().includes(q));
+  document.getElementById('ddet-sv-tbody').innerHTML = shown.map(({ r, idx }) =>
+    `<tr><td><input type="checkbox"></td><td>${r.mssv}</td><td>${r.name}</td><td>${r.lopHc || ''}</td><td>${UNIT_LABEL[r.unit] || ''}</td><td>${r.ctdt}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : ''}</td><td>${reasonById(r.reasonId) ? reasonById(r.reasonId).name : ''}</td><td class="text-muted">${r.semesterStart || ''}</td><td class="text-muted">${r.semesterEnd || ''}</td><td class="text-muted">${r.note || ''}</td>
+    <td>
+      <button type="button" class="icon-btn" title="${canQuickEditSv ? 'Sửa Hình thức/Ghi chú' : 'Chỉ sửa được khi đang Chờ duyệt'}" ${canQuickEditSv ? '' : 'disabled'} onclick="openSvEditQuick(${idx})">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </td></tr>`
+  ).join('') || `<tr><td colspan="12"><div class="tbl-empty">${q ? 'Không tìm thấy sinh viên phù hợp' : 'Chưa có sinh viên nào'}</div></td></tr>`;
+  document.getElementById('cd-sv-count').textContent = rows.length + ' SV';
+}
+
 function renderDetail(){
   const p = proposalById(editingProposalId);
   applyMode('view');
@@ -1048,24 +1083,8 @@ function renderDetail(){
   document.getElementById('ddet-issue-code').textContent = p.issueCode || '';
   document.getElementById('ddet-issue-effective').textContent = toVnDate(p.issueEffective);
 
-  /* Đề xuất đang "Chờ duyệt" vẫn cho phép cập nhật nhanh Hình thức kỷ luật/Ghi chú từng SV ngay ở
-     chế độ Xem (không cần bấm "Chỉnh sửa" toàn bộ đề xuất) — thao tác trực tiếp lên p.students qua
-     openSvEditQuick()/saveSvEditQuick(), tách khỏi luồng cdStudents dùng cho form Sửa/Tạo mới.
-     Cột Thao tác LUÔN hiển thị ở mọi trạng thái để bố cục bảng ổn định — nút Sửa chỉ disable
-     khi không đủ điều kiện (không phải Chờ duyệt), không ẩn hẳn cột. */
-  const canQuickEditSv = p.status === 'Chờ duyệt';
-  document.getElementById('ddet-sv-thead-row').innerHTML =
-    '<th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:180px">Hình thức kỷ luật</th><th style="width:200px">Phân loại lý do</th><th style="width:150px">Học kỳ bắt đầu</th><th style="width:150px">Học kỳ kết thúc</th><th>Ghi chú</th><th style="width:60px">Thao tác</th>';
-  const rows = p.students || [];
-  document.getElementById('ddet-sv-tbody').innerHTML = rows.map((r, idx) =>
-    `<tr><td>${r.mssv}</td><td>${r.name}</td><td>${r.lopHc || ''}</td><td>${UNIT_LABEL[r.unit] || ''}</td><td>${r.ctdt}</td><td>${typeById(r.typeId) ? typeById(r.typeId).name : ''}</td><td>${reasonById(r.reasonId) ? reasonById(r.reasonId).name : ''}</td><td class="text-muted">${r.semesterStart || ''}</td><td class="text-muted">${r.semesterEnd || ''}</td><td class="text-muted">${r.note || ''}</td>
-    <td>
-      <button type="button" class="icon-btn" title="${canQuickEditSv ? 'Sửa Hình thức/Ghi chú' : 'Chỉ sửa được khi đang Chờ duyệt'}" ${canQuickEditSv ? '' : 'disabled'} onclick="openSvEditQuick(${idx})">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </button>
-    </td></tr>`
-  ).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có sinh viên nào</div></td></tr>`;
-  document.getElementById('cd-sv-count').textContent = rows.length + ' SV';
+  document.getElementById('ddet-sv-search').value = '';
+  renderDetailSvTable(p, '');
 
   const proc = processById(p.processId);
   const canEdit = p.status === 'Nháp' || p.status === 'Yêu cầu chỉnh sửa';
@@ -1081,6 +1100,29 @@ function renderDetail(){
 }
 
 function toggleBtn(id, show){ document.getElementById(id).style.display = show ? '' : 'none'; }
+
+/* Xuất dữ liệu Danh sách sinh viên (p.students) ra file .xlsx thật — bộ cột khớp đúng bảng đang
+   hiển thị ở Khối 2 (xem renderDetail()), cùng cơ chế exportDecisionStudentsXlsx() ở mh-admin-08.
+   Xuất TOÀN BỘ danh sách đã lưu của đề xuất đang xem. */
+function exportProposalStudentsXlsx(){
+  const p = proposalById(editingProposalId);
+  const rows = p.students || [];
+  if (!rows.length){ showToast('Danh sách sinh viên đang trống, không có gì để xuất', 'warn'); return; }
+
+  const header = ['STT','MSSV','Họ và tên','Lớp HC','Đơn vị','CTĐT','Hình thức kỷ luật','Phân loại lý do','Học kỳ bắt đầu','Học kỳ kết thúc','Ghi chú'];
+  const data = rows.map((r, i) => [
+    i + 1, r.mssv, r.name, r.lopHc || '', UNIT_LABEL[r.unit] || '', r.ctdt,
+    typeById(r.typeId) ? typeById(r.typeId).name : '', reasonById(r.reasonId) ? reasonById(r.reasonId).name : '',
+    r.semesterStart || '', r.semesterEnd || '', r.note || '',
+  ]);
+
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...data]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet, 'Danh sách SV');
+  const fileName = `danh-sach-sv-${(p.code || 'de-xuat-ky-luat').toLowerCase()}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast(`Đã xuất "${fileName}" (${rows.length} SV)`, 'ok');
+}
 
 function applyMode(mode){
   ddetMode = mode;
@@ -1246,7 +1288,7 @@ function saveSvEdit(){
   if (svEditTarget === cdStudents){
     renderCdSvTable();
   } else {
-    renderDetail();
+    renderDetailSvTable(proposalById(editingProposalId), document.getElementById('ddet-sv-search').value);
     showToast('Đã cập nhật Hình thức kỷ luật', 'ok');
   }
 }

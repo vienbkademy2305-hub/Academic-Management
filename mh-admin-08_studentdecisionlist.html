@@ -39,8 +39,11 @@
   .form-combo-item input[type="checkbox"]{flex-shrink:0;cursor:pointer}
   .form-combo-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* Ô tìm kiếm bên trong menu Học kỳ/Tổ chức phụ trách (di-semester-menu/di-unit-combo-menu) — đứng
-     NGOÀI phần cuộn của danh sách bên dưới (sticky ở trên), tránh bị cuộn mất theo danh sách dài. */
-  #di-semester-menu, #di-unit-combo-menu{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:visible;padding:6px}
+     NGOÀI phần cuộn của danh sách bên dưới (sticky ở trên), tránh bị cuộn mất theo danh sách dài.
+     CHỈ áp display:flex khi menu đang mở (.open) — nếu áp thẳng lên ID sẽ đè mất display:none mặc
+     định của .unit-combo-menu (ID có độ ưu tiên cao hơn class), khiến menu luôn hiện sẵn ngoài
+     màn hình, đẩy layout xuống và che mất hàng tab trạng thái phía dưới filter-bar. */
+  #di-semester-menu.open, #di-unit-combo-menu.open{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:visible;padding:6px}
   #di-semester-menu-list, #di-unit-menu-list{overflow-y:auto;max-height:260px}
   /* Nhãn nhóm "Năm học" trong dropdown Lớp HC mới (cd-reassign-lop) — gom lớp theo năm học để phân
      biệt các lớp trùng tên nhưng khác năm (VD CT4501 của năm học 2024-2025 khác CT4501 của

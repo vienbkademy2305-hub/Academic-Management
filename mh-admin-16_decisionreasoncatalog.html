@@ -148,6 +148,7 @@
                 <th>Tên lý do</th>
                 <th style="width:320px">Loại quyết định</th>
                 <th style="width:110px">Cập nhật</th>
+                <th style="width:100px">Trạng thái</th>
                 <th style="width:90px">Thao tác</th>
               </tr>
             </thead>
@@ -235,26 +236,26 @@ document.getElementById('type-filter-select').insertAdjacentHTML('beforeend',
    trống, không bắt buộc chọn).
    ============================================================ */
 const REASONS = [
-  { id:'r1', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 1', updated:'20/07/2026' },
-  { id:'r2', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 2', updated:'20/07/2026' },
-  { id:'r3', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Đình chỉ học tập có thời hạn', updated:'20/07/2026' },
-  { id:'r4', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm quy chế thi', updated:'20/07/2026' },
-  { id:'r5', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Xuất sắc', updated:'18/07/2026' },
-  { id:'r6', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Giỏi', updated:'18/07/2026' },
-  { id:'r7', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Khá', updated:'18/07/2026' },
-  { id:'r8', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Trung bình', updated:'18/07/2026' },
-  { id:'r9', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do sức khoẻ', updated:'15/07/2026' },
-  { id:'r10', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do gia đình', updated:'15/07/2026' },
-  { id:'r11', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do kinh tế', updated:'15/07/2026' },
-  { id:'r12', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đi nghĩa vụ quân sự', updated:'15/07/2026' },
-  { id:'r13', typeNames:['Quyết định thôi học'], name:'Tự nguyện thôi học', updated:'12/07/2026' },
-  { id:'r14', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do kết quả học tập', updated:'12/07/2026' },
-  { id:'r15', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do vi phạm quy chế', updated:'12/07/2026' },
-  { id:'r16', typeNames:['Quyết định thôi học'], name:'Quá thời hạn đào tạo tối đa', updated:'12/07/2026' },
-  { id:'r17', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Gian lận trong học tập', updated:'10/07/2026' },
-  { id:'r18', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm nội quy ký túc xá', updated:'10/07/2026' },
-  { id:'r19', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm pháp luật', updated:'10/07/2026' },
-  { id:'r20', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm khác', updated:'10/07/2026' },
+  { id:'r1', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 1', status:'active', updated:'20/07/2026' },
+  { id:'r2', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 2', status:'active', updated:'20/07/2026' },
+  { id:'r3', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Đình chỉ học tập có thời hạn', status:'active', updated:'20/07/2026' },
+  { id:'r4', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm quy chế thi', status:'active', updated:'20/07/2026' },
+  { id:'r5', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Xuất sắc', status:'active', updated:'18/07/2026' },
+  { id:'r6', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Giỏi', status:'active', updated:'18/07/2026' },
+  { id:'r7', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Khá', status:'active', updated:'18/07/2026' },
+  { id:'r8', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Trung bình', status:'active', updated:'18/07/2026' },
+  { id:'r9', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do sức khoẻ', status:'active', updated:'15/07/2026' },
+  { id:'r10', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do gia đình', status:'active', updated:'15/07/2026' },
+  { id:'r11', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do kinh tế', status:'active', updated:'15/07/2026' },
+  { id:'r12', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đi nghĩa vụ quân sự', status:'active', updated:'15/07/2026' },
+  { id:'r13', typeNames:['Quyết định thôi học'], name:'Tự nguyện thôi học', status:'active', updated:'12/07/2026' },
+  { id:'r14', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do kết quả học tập', status:'active', updated:'12/07/2026' },
+  { id:'r15', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do vi phạm quy chế', status:'active', updated:'12/07/2026' },
+  { id:'r16', typeNames:['Quyết định thôi học'], name:'Quá thời hạn đào tạo tối đa', status:'active', updated:'12/07/2026' },
+  { id:'r17', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Gian lận trong học tập', status:'active', updated:'10/07/2026' },
+  { id:'r18', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm nội quy ký túc xá', status:'active', updated:'10/07/2026' },
+  { id:'r19', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm pháp luật', status:'active', updated:'10/07/2026' },
+  { id:'r20', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm khác', status:'active', updated:'10/07/2026' },
 ];
 
 let editingReasonId = null;
@@ -333,17 +334,22 @@ function renderGrid(){
       <td><span class="reason-name-cell">${r.name}</span></td>
       <td><span class="reason-type-cell">${r.typeNames[0]}${r.typeNames.length > 1 ? ` <span class="reason-type-more">+${r.typeNames.length - 1}</span>` : ''}</span></td>
       <td class="text-muted">${r.updated}</td>
+      <td><span class="tag ${r.status==='active'?'tag-success':'tag-default'}">${r.status==='active'?'Active':'Inactive'}</span></td>
       <td>
         <div class="tbl-actions">
           <button class="icon-btn" title="Sửa" onclick="openEditReasonModal('${r.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="icon-btn danger" title="Xoá" onclick="confirmDeleteReason('${r.id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+          ${r.status==='active' ? `
+          <button class="icon-btn" title="Chuyển sang Inactive" onclick="confirmToggleReasonStatus('${r.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>` : `
+          <button class="icon-btn" title="Chuyển sang Active" onclick="confirmToggleReasonStatus('${r.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="6"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -439,7 +445,7 @@ function doSaveReason(){
   }
 
   if (modalMode === 'add'){
-    REASONS.unshift({ id: 'r' + Date.now(), typeNames, name, updated: 'Hôm nay' });
+    REASONS.unshift({ id: 'r' + Date.now(), typeNames, name, status: 'active', updated: 'Hôm nay' });
     showToast('Đã thêm lý do mới', 'ok');
   } else {
     const r = reasonById(editingReasonId);
@@ -454,20 +460,21 @@ function doSaveReason(){
   renderGrid();
 }
 
-function confirmDeleteReason(id){
+/* Không cho xoá lý do khỏi danh mục nữa (các quyết định đã dùng lý do này vẫn tham chiếu tới id) —
+   chỉ cho chuyển Active/Inactive, cùng pattern confirmToggleTypeStatus() ở mh-admin-09. Inactive
+   nghĩa là ẩn khỏi danh sách lựa chọn khi tạo quyết định mới, không ảnh hưởng dữ liệu cũ. */
+function confirmToggleReasonStatus(id){
   const r = reasonById(id);
-  showConfirm(
-    `Xoá lý do "${r.name}"?`,
-    () => {
-      const idx = REASONS.findIndex(x => x.id === id);
-      if (idx !== -1) REASONS.splice(idx, 1);
-      showToast('Đã xoá lý do', 'ok');
-      renderGrid();
-    },
-    'Xoá', 'btn-danger',
-    `Lý do "${r.name}" (${r.typeNames.join(', ')}) sẽ bị xoá khỏi danh mục — các quyết định đã dùng lý do này trước đó vẫn giữ nguyên dữ liệu cũ, không bị ảnh hưởng.`,
-    'Huỷ'
-  );
+  const toActive = r.status !== 'active';
+  const msg = toActive
+    ? `Chuyển lý do "${r.name}" sang Active?`
+    : `Chuyển lý do "${r.name}" sang Inactive?`;
+  showConfirm(msg, () => {
+    r.status = toActive ? 'active' : 'inactive';
+    r.updated = 'Hôm nay';
+    showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
+    renderGrid();
+  }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
 }
 
 renderGrid();

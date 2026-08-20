@@ -144,6 +144,7 @@
                 <th style="width:48px">STT</th>
                 <th>Tên lý do</th>
                 <th style="width:110px">Cập nhật</th>
+                <th style="width:100px">Trạng thái</th>
                 <th style="width:90px">Thao tác</th>
               </tr>
             </thead>
@@ -187,15 +188,15 @@
    DATA — Danh mục Lý do (mock) — danh mục lý do độc lập, không gắn với Hình thức kỷ luật nào.
    ============================================================ */
 const REASONS = [
-  { id:'r1', name:'Vi phạm nề nếp học tập', updated:'21/07/2026' },
-  { id:'r2', name:'Vi phạm thái độ, ứng xử', updated:'21/07/2026' },
-  { id:'r3', name:'Vi phạm học vụ — kiểm tra, thi cử', updated:'21/07/2026' },
-  { id:'r4', name:'Vi phạm hồ sơ, giấy tờ — hành chính sinh viên', updated:'21/07/2026' },
-  { id:'r5', name:'Vi phạm tài sản — cơ sở vật chất, thư viện', updated:'21/07/2026' },
-  { id:'r6', name:'Vi phạm an ninh trật tự — an toàn xã hội', updated:'21/07/2026' },
-  { id:'r7', name:'Vi phạm đạo đức, văn hoá — lối sống', updated:'21/07/2026' },
-  { id:'r8', name:'Vi phạm pháp luật và tệ nạn xã hội', updated:'21/07/2026' },
-  { id:'r9', name:'Các vi phạm khác', updated:'21/07/2026' },
+  { id:'r1', name:'Vi phạm nề nếp học tập', status:'active', updated:'21/07/2026' },
+  { id:'r2', name:'Vi phạm thái độ, ứng xử', status:'active', updated:'21/07/2026' },
+  { id:'r3', name:'Vi phạm học vụ — kiểm tra, thi cử', status:'active', updated:'21/07/2026' },
+  { id:'r4', name:'Vi phạm hồ sơ, giấy tờ — hành chính sinh viên', status:'active', updated:'21/07/2026' },
+  { id:'r5', name:'Vi phạm tài sản — cơ sở vật chất, thư viện', status:'active', updated:'21/07/2026' },
+  { id:'r6', name:'Vi phạm an ninh trật tự — an toàn xã hội', status:'active', updated:'21/07/2026' },
+  { id:'r7', name:'Vi phạm đạo đức, văn hoá — lối sống', status:'active', updated:'21/07/2026' },
+  { id:'r8', name:'Vi phạm pháp luật và tệ nạn xã hội', status:'active', updated:'21/07/2026' },
+  { id:'r9', name:'Các vi phạm khác', status:'active', updated:'21/07/2026' },
 ];
 
 let editingReasonId = null;
@@ -270,17 +271,22 @@ function renderGrid(){
       <td class="text-muted">${(currentPage-1)*REASON_PAGE_SIZE + idx + 1}</td>
       <td><span class="reason-name-cell">${r.name}</span></td>
       <td class="text-muted">${r.updated}</td>
+      <td><span class="tag ${r.status==='active'?'tag-success':'tag-default'}">${r.status==='active'?'Active':'Inactive'}</span></td>
       <td>
         <div class="tbl-actions">
           <button class="icon-btn" title="Sửa" onclick="openEditReasonModal('${r.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
-          <button class="icon-btn danger" title="Xoá" onclick="confirmDeleteReason('${r.id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+          ${r.status==='active' ? `
+          <button class="icon-btn" title="Chuyển sang Inactive" onclick="confirmToggleReasonStatus('${r.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </button>` : `
+          <button class="icon-btn" title="Chuyển sang Active" onclick="confirmToggleReasonStatus('${r.id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+          </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="4"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="5"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -338,7 +344,7 @@ function doSaveReason(){
   }
 
   if (modalMode === 'add'){
-    REASONS.unshift({ id: 'r' + Date.now(), name, updated: 'Hôm nay' });
+    REASONS.unshift({ id: 'r' + Date.now(), name, status: 'active', updated: 'Hôm nay' });
     showToast('Đã thêm lý do mới', 'ok');
   } else {
     const r = reasonById(editingReasonId);
@@ -352,20 +358,21 @@ function doSaveReason(){
   renderGrid();
 }
 
-function confirmDeleteReason(id){
+/* Không cho xoá lý do khỏi danh mục nữa (các đề xuất kỷ luật đã dùng lý do này vẫn tham chiếu tới
+   id) — chỉ cho chuyển Active/Inactive, cùng pattern confirmToggleTypeStatus() ở mh-admin-09.
+   Inactive nghĩa là ẩn khỏi danh sách lựa chọn khi tạo đề xuất mới, không ảnh hưởng dữ liệu cũ. */
+function confirmToggleReasonStatus(id){
   const r = reasonById(id);
-  showConfirm(
-    `Xoá lý do "${r.name}"?`,
-    () => {
-      const idx = REASONS.findIndex(x => x.id === id);
-      if (idx !== -1) REASONS.splice(idx, 1);
-      showToast('Đã xoá lý do', 'ok');
-      renderGrid();
-    },
-    'Xoá', 'btn-danger',
-    `Lý do "${r.name}" sẽ bị xoá khỏi danh mục — các đề xuất kỷ luật đã dùng lý do này trước đó vẫn giữ nguyên dữ liệu cũ, không bị ảnh hưởng.`,
-    'Huỷ'
-  );
+  const toActive = r.status !== 'active';
+  const msg = toActive
+    ? `Chuyển lý do "${r.name}" sang Active?`
+    : `Chuyển lý do "${r.name}" sang Inactive?`;
+  showConfirm(msg, () => {
+    r.status = toActive ? 'active' : 'inactive';
+    r.updated = 'Hôm nay';
+    showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
+    renderGrid();
+  }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
 }
 
 renderGrid();

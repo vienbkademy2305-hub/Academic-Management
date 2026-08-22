@@ -150,13 +150,13 @@
 
   /* Bảng Danh sách SV ở khối "Sửa/Tạo mới" đổi bộ cột theo Loại quyết định (xem CD_SV_THEAD_HTML):
      mặc định 11 cột (STT, MSSV, Họ tên, Lớp HC, Đơn vị, Ngành, CTĐT, Trạng thái hiện tại, Phân loại
-     lý do, Ghi chú, xoá); TYPE_TRAINING_SCORE 12 cột do "Danh mục Lý do" tách thành "ĐTB niên khoá"
+     lý do, Ghi chú, xoá); TYPE_TRAINING_SCORE 12 cột do "Phân loại lý do" tách thành "ĐTB niên khoá"
      + "Xếp loại toàn khoá"; TYPE_INTERNSHIP 11 cột riêng (STT, MSSV, Họ tên, Ngày sinh, Lớp HC,
      CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng dẫn, Ghi chú, xoá); TYPE_TOPIC_ASSIGNMENT 10 cột
      riêng (STT, MSSV, Họ tên, Lớp HC, CTĐT, Tên đề tài, Giảng viên hướng dẫn, Đơn vị công tác, Ghi
      chú, xoá); TYPE_TOPIC_CHANGE dùng lại đúng bộ cột của TYPE_TOPIC_ASSIGNMENT, chỉ đổi "Tên đề
      tài" thành "Đề tài"; TYPE_DISCIPLINE 10 cột riêng (STT, MSSV, CTĐT, Loại kỷ luật, Năm học, Học
-     kỳ bắt đầu, Học kỳ kết thúc, Lý do, Danh mục Lý do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG
+     kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG
      SV, tách biệt với Năm học/Học kỳ CHUNG ở khối 1 (áp dụng cho cả quyết định). */
   .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
   .cd-sv-reason-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-1);background:#fff;font-family:inherit}
@@ -858,7 +858,7 @@
         <input type="file" id="cd-sv-import-file" accept=".xlsx" onchange="onCreateImportFileChange(this)">
       </div>
       <!-- Tạm ẩn ghi chú định dạng cột theo yêu cầu — giữ nguyên để dễ khôi phục khi cần bật lại.
-      <div class="f-hint">File gồm 4 cột: Mã sinh viên (bắt buộc), Mã CTĐT, Danh mục Lý do, Ghi chú. Bỏ trống Mã CTĐT nếu MSSV chỉ học 1 CTĐT — MSSV học nhiều CTĐT mà bỏ trống sẽ được báo lại để chọn tay, không tự suy đoán.</div>
+      <div class="f-hint">File gồm 6 cột: STT, Mã sinh viên (bắt buộc), Họ và tên, Mã CTĐT, Phân loại lý do, Ghi chú. Bỏ trống Mã CTĐT nếu MSSV chỉ học 1 CTĐT — MSSV học song song nhiều CTĐT mà bỏ trống sẽ tự tách thành nhiều dòng xem trước. Xem sheet "Hướng dẫn"/"Danh mục" trong file mẫu để biết chi tiết.</div>
       -->
 
       <!-- Xem trước kết quả đọc file trước khi thêm/cập nhật thật vào danh sách — hiện ngay sau khi
@@ -1522,7 +1522,7 @@ const TYPE_UNIT_CHANGE = 'Quyết định thay đổi đơn vị đào tạo';
    thị field liên quan vẫn giữ nguyên chỉ để KHÔNG làm vỡ hiển thị các bản ghi lịch sử cũ (nếu còn). */
 const TYPE_REWARD = 'Quyết định khen thưởng';
 
-/* Loại quyết định duy nhất thay cột "Danh mục Lý do" trong bảng Danh sách sinh viên (khối 3) bằng
+/* Loại quyết định duy nhất thay cột "Phân loại lý do" trong bảng Danh sách sinh viên (khối 3) bằng
    2 cột riêng "ĐTB niên khoá" và "Xếp loại toàn khoá" — mỗi SV có điểm/xếp loại rèn luyện khác nhau
    nên cần nhập theo từng dòng, không dùng chung 1 danh mục lý do như các loại quyết định khác. */
 const TYPE_TRAINING_SCORE = 'Quyết định công nhận điểm rèn luyện toàn khoá';
@@ -1538,7 +1538,7 @@ const TYPE_INTERNSHIP = 'Quyết định cử đi thực tập tốt nghiệp';
 
 /* Loại quyết định duy nhất dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3) cho việc giao đề
    tài & phân công GVHD: STT, MSSV, Họ và tên, Lớp HC, CTĐT, Tên đề tài, Giảng viên hướng dẫn, Đơn
-   vị công tác, Ghi chú — không dùng Danh mục Lý do vì không liên quan. Tên đề tài/GVHD/Đơn vị công
+   vị công tác, Ghi chú — không dùng Phân loại lý do vì không liên quan. Tên đề tài/GVHD/Đơn vị công
    tác nhập tay riêng cho từng SV (mỗi SV có thể làm đề tài khác nhau, GVHD khác nhau), xem
    renderCreateDecisionStudents(). Cố tình KHÔNG dùng lại field "gvhd" của TYPE_INTERNSHIP dù cùng
    nhãn "Giảng viên hướng dẫn" — 2 loại quyết định độc lập nhau, tách field riêng (gvhdDeTai) để đổi
@@ -1561,7 +1561,7 @@ const TYPE_REVIEWER_ASSIGNMENT = 'Quyết định phân công giảng viên ph�
 const TYPE_REVIEWER_ASSIGNMENT_EARLY = 'Quyết định phân công giảng viên phản biện (bảo vệ trước thời hạn)';
 
 /* Quyết định kỷ luật — dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3): STT, MSSV, CTĐT, Loại
-   kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Danh mục Lý do — vì mỗi SV trong CÙNG 1
+   kỷ luật, Năm học, Học kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do — vì mỗi SV trong CÙNG 1
    đợt kỷ luật có thể bị áp hình thức khác nhau (SV này Khiển trách, SV khác Đình chỉ 2 học kỳ) nên
    Loại kỷ luật + thời hạn phải khai theo TỪNG dòng, không dùng chung 1 giá trị như khối 1. Khối 1
    (Năm học/Học kỳ áp dụng chung) VẪN giữ nguyên, không ẩn — theo yêu cầu, không lược bỏ. */
@@ -1577,7 +1577,7 @@ const DISCIPLINE_ACADEMIC_YEAR_OPTIONS = ['2024-2025', '2025-2026', '2026-2027',
 const DISCIPLINE_SEMESTER_OPTIONS = ['Học kỳ 1', 'Học kỳ 2', 'Học kỳ hè'];
 
 /* Quyết định nghỉ học tạm thời/bảo lưu — dùng bộ cột riêng ở bảng Danh sách sinh viên (khối 3): thêm
-   "Học kỳ bắt đầu"/"Học kỳ kết thúc" NGAY SAU "Trạng thái hiện tại" (trước "Danh mục Lý do"), vì mỗi
+   "Học kỳ bắt đầu"/"Học kỳ kết thúc" NGAY SAU "Trạng thái hiện tại" (trước "Phân loại lý do"), vì mỗi
    SV trong CÙNG 1 đợt bảo lưu có thể bảo lưu thời hạn khác nhau (SV này bảo lưu 1 học kỳ, SV khác bảo
    lưu cả năm) nên phải khai theo TỪNG dòng, không dùng chung 1 giá trị như khối 1 — giống pattern đã
    có ở TYPE_DISCIPLINE. Khối 1 (Năm học/Học kỳ áp dụng chung) VẪN giữ nguyên, không ẩn.
@@ -1590,11 +1590,11 @@ const TYPE_LEAVE = 'Quyết định nghỉ học tạm thời/bảo lưu';
    phải đổi lớp), nên cần hỏi trước rồi mới hiện ô chọn Lớp HC mới nếu có. */
 const TYPE_REASSIGN_CLASS = 'Quyết định quay trở lại học tập';
 
-/* Danh mục Lý do — danh sách PHẲNG, mỗi lý do có thể gắn NHIỀU Loại quyết định (typeNames là mảng,
+/* Phân loại lý do — danh sách PHẲNG, mỗi lý do có thể gắn NHIỀU Loại quyết định (typeNames là mảng,
    VD "Vi phạm quy chế thi" dùng chung cho cả "Xử lý học vụ" và "Kỷ luật") — dùng để gắn cho TỪNG
    sinh viên trong danh sách (VD cùng 1 quyết định xử lý học vụ nhưng SV này bị cảnh báo lần 1, SV
    khác lần 2). Hiện mới cấu hình cho 5 loại đã có quy trình xử lý; các loại còn lại sẽ bổ sung sau.
-   Dữ liệu ở đây ĐỒNG BỘ NỘI DUNG với REASONS ở mh-admin-09 (Danh mục Lý do) — không có kết nối kỹ
+   Dữ liệu ở đây ĐỒNG BỘ NỘI DUNG với REASONS ở mh-admin-09 (Phân loại lý do) — không có kết nối kỹ
    thuật thật giữa 2 file (2 trang tĩnh độc lập, giống quan hệ DECISION_CATALOG giữa mh-admin-06/08
    hiện có). Sửa 1 bên thì nhớ sửa bên còn lại cho khớp. reasonsForType() lọc động theo Loại quyết
    định đang chọn, thay cho object tra cứu trực tiếp trước đây (không hỗ trợ 1 lý do nhiều loại). */
@@ -1784,11 +1784,11 @@ function onCreateDecisionTypeChange(){
     document.getElementById('cd-reviewer-assignment-dothuongdan').value = '';
   }
 
-  // Đổi loại quyết định thì bộ Danh mục Lý do cũng đổi theo — lý do đã gán trước đó (theo loại
+  // Đổi loại quyết định thì bộ Phân loại lý do cũng đổi theo — lý do đã gán trước đó (theo loại
   // cũ) không còn hợp lệ, đặt lại về trống để tránh hiển thị nhầm lý do của loại quyết định khác.
   if (createDecisionStudents.some(s => s.lyDo)){
     createDecisionStudents.forEach(s => s.lyDo = '');
-    showToast('Đã đặt lại Danh mục Lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
+    showToast('Đã đặt lại Phân loại lý do của các sinh viên đã thêm do đổi Loại quyết định', 'warn');
   }
 
   // Rời khỏi TYPE_TRAINING_SCORE thì ĐTB niên khoá/Xếp loại toàn khoá đã nhập trước đó cũng không
@@ -2096,9 +2096,9 @@ function removeDdetFile(e){
 /* == Danh sách sinh viên trong quyết định đang tạo ==
    Khoá theo s.id (không phải s.mssv) xuyên suốt — 1 MSSV có thể xuất hiện 2 lần trong danh sách
    này nếu là 2 CTĐT khác nhau của cùng 1 sinh viên, đó là hợp lệ, không phải trùng lặp.
-   Mỗi dòng có thêm "lyDo" — Danh mục Lý do riêng của sinh viên đó trong quyết định này, chọn
+   Mỗi dòng có thêm "lyDo" — Phân loại lý do riêng của sinh viên đó trong quyết định này, chọn
    theo bộ lý do của Loại quyết định đang chọn (xem reasonsForType()/REASONS), có thể để trống.
-   Riêng TYPE_TRAINING_SCORE thay cột "Danh mục Lý do" bằng "ĐTB niên khoá" (dtbNienKhoa, nhập tay)
+   Riêng TYPE_TRAINING_SCORE thay cột "Phân loại lý do" bằng "ĐTB niên khoá" (dtbNienKhoa, nhập tay)
    + "Xếp loại toàn khoá" (xepLoaiToanKhoa, chọn theo XEP_LOAI_TOAN_KHOA_OPTIONS); riêng TYPE_INTERNSHIP
    dùng hẳn 1 bộ cột khác (xem CD_SV_THEAD_HTML/CD_SV_COL_COUNT) — vì cột không chỉ khác nội dung mà
    còn khác cả VỊ TRÍ (Ngày sinh chen giữa Họ và tên/Lớp HC) nên không thể ẩn/hiện cột tĩnh như
@@ -2112,7 +2112,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:120px">Đơn vị</th>
     <th style="width:150px">CTĐT</th>
     <th style="width:110px">Trạng thái hiện tại</th>
-    <th style="width:170px">Danh mục Lý do</th>
+    <th style="width:170px">Phân loại lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:50px"></th>`,
   leave: `
@@ -2125,7 +2125,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:110px">Trạng thái hiện tại</th>
     <th style="width:130px">Học kỳ bắt đầu</th>
     <th style="width:130px">Học kỳ kết thúc</th>
-    <th style="width:170px">Danh mục Lý do</th>
+    <th style="width:170px">Phân loại lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:50px"></th>`,
   trainingScore: `
@@ -2184,7 +2184,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:120px">Học kỳ bắt đầu</th>
     <th style="width:120px">Học kỳ kết thúc</th>
     <th style="width:170px">Lý do</th>
-    <th style="width:170px">Danh mục Lý do</th>
+    <th style="width:170px">Phân loại lý do</th>
     <th style="width:50px"></th>`,
   reviewerAssignment: `
     <th style="width:36px"><input type="checkbox" id="cd-sv-check-all" onchange="toggleCdSvSelectAll(this.checked)"></th>
@@ -2609,11 +2609,11 @@ document.addEventListener('click', e => {
   if (!document.getElementById('cd-sv-add-combo').contains(e.target)) closeCreateDecisionAddMenu();
 });
 
-/* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Danh mục Lý do, Ghi chú) — giải quyết
+/* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Phân loại lý do, Ghi chú) — giải quyết
    bài toán 1 quyết định áp dụng cho hàng chục/hàng trăm SV cùng lúc, và Mã CTĐT trong file tự giải
    quyết luôn ca mập mờ (MSSV học nhiều CTĐT) thay vì phải báo lại rồi chọn tay như khi thêm từng SV.
    Chỉ báo lại (không chặn các dòng còn lại) khi: thiếu Mã sinh viên, không khớp danh bạ, MSSV có
-   nhiều CTĐT mà bỏ trống Mã CTĐT, hoặc Danh mục Lý do không khớp danh mục của Loại quyết định. */
+   nhiều CTĐT mà bỏ trống Mã CTĐT, hoặc Phân loại lý do không khớp danh mục của Loại quyết định. */
 function openCreateDecisionImportModal(){
   document.getElementById('cd-sv-import-file').value = '';
   document.getElementById('cd-import-filepick').classList.remove('has-file');
@@ -2647,12 +2647,12 @@ function removeCreateImportFile(e){
 const CD_SV_EXPORT_COLUMNS = {
   default: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
-    ['CTĐT','ctdt'], ['Danh mục Lý do','lyDo'], ['Ghi chú','lyDoText'],
+    ['CTĐT','ctdt'], ['Phân loại lý do','lyDo'], ['Ghi chú','lyDoText'],
   ],
   leave: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
     ['CTĐT','ctdt'], ['Học kỳ bắt đầu','leaveSemesterStart'], ['Học kỳ kết thúc','leaveSemesterEnd'],
-    ['Danh mục Lý do','lyDo'], ['Ghi chú','lyDoText'],
+    ['Phân loại lý do','lyDo'], ['Ghi chú','lyDoText'],
   ],
   trainingScore: [
     ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Đơn vị','donViQuanLy'],
@@ -2674,7 +2674,7 @@ const CD_SV_EXPORT_COLUMNS = {
   discipline: [
     ['MSSV','mssv'], ['CTĐT','ctdt'], ['Loại kỷ luật','disciplineType'], ['Năm học','disciplineYear'],
     ['Học kỳ bắt đầu','disciplineSemesterStart'], ['Học kỳ kết thúc','disciplineSemesterEnd'],
-    ['Lý do','disciplineReasonText'], ['Danh mục Lý do','lyDo'],
+    ['Lý do','disciplineReasonText'], ['Phân loại lý do','lyDo'],
   ],
 };
 function exportCreateDecisionStudentsXlsx(){
@@ -2697,47 +2697,130 @@ function exportCreateDecisionStudentsXlsx(){
 
 /* Tải file mẫu import — file .xlsx thật (dựng bằng SheetJS, không phải mock). Định dạng cột phụ
    thuộc Loại quyết định đang chọn ở modal Tạo quyết định (đồng bộ với buildImportPreview()):
-   - Mặc định 4 cột: Mã sinh viên, Mã CTĐT, Danh mục Lý do, Ghi chú.
-   - TYPE_INTERNSHIP 6 cột riêng: Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
-     dẫn, Ghi chú — không có Danh mục Lý do vì loại quyết định này không dùng khái niệm đó.
+   - Mặc định: STT, Mã sinh viên*, Họ và tên, Mã CTĐT, Phân loại lý do, Ghi chú.
+   - TYPE_INTERNSHIP: STT, Mã sinh viên*, Họ và tên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên
+     hướng dẫn, Ghi chú — không có Phân loại lý do vì loại quyết định này không dùng khái niệm đó.
+   "STT" và "Họ và tên" chỉ để đối chiếu bằng mắt khi điền file (không bắt buộc, không dùng để tra
+   cứu) — parser BỎ QUA row[0] (STT) và row[2] (Họ và tên), đọc dữ liệu thật từ row[1] (Mã sinh viên)
+   và row[3] trở đi (Mã CTĐT/Phân loại lý do/...), xem buildImportPreview(). Hệ thống luôn tra sinh
+   viên qua Mã sinh viên + Mã CTĐT (STUDENT_DIRECTORY), không đọc giá trị 2 cột STT/Họ và tên.
+   Cột bắt buộc đánh dấu "*" trong tên cột (SheetJS bản community đang nhúng không hỗ trợ tô màu
+   chữ — đó là tính năng bản Pro trả phí — nên dùng quy ước dấu *, giải thích rõ ở sheet "Hướng dẫn").
    Cả 2 bộ dữ liệu mẫu đều khớp sẵn với STUDENT_DIRECTORY (đã test import ra 10/10 "Hợp lệ"), minh
    hoạ đủ tình huống: MSSV 1 CTĐT bỏ trống Mã CTĐT, MSSV học song song 2 CTĐT phải ghi rõ Mã CTĐT
-   (20120301 lặp lại 2 dòng), và các cột không bắt buộc vừa để trống vừa điền. */
+   (20120301 lặp lại 2 dòng), và các cột không bắt buộc vừa để trống vừa điền.
+   File gồm 3 sheet: "Danh sách SV" (nhập liệu, sheet đầu tiên — parser luôn đọc sheet đầu tiên bất
+   kể tên, xem previewImportFile(); có AutoFilter ở dòng tiêu đề), "Hướng dẫn" (bảng STT/Tên cột/
+   Hướng dẫn nhập, 1 dòng = 1 cột của sheet "Danh sách SV", đúng thứ tự thật), "Danh mục" (liệt kê
+   sẵn giá trị hợp lệ để copy vào cột tương ứng, tránh gõ sai/gõ nhầm lý do thuộc loại quyết định
+   khác — tránh dòng bị âm thầm bỏ trống lý do khi import). Cột Phân loại lý do trong sheet Danh mục
+   CHỈ liệt kê lý do của ĐÚNG Loại quyết định đang chọn ở modal lúc bấm "Tải file mẫu" (dùng lại
+   reasonsForType(type), cùng danh sách buildImportPreview() dùng để đối chiếu khi đọc file) — đổi
+   Loại quyết định rồi tải lại file mẫu sẽ ra đúng bộ lý do khác. Bảng CTĐT trong sheet Danh mục có
+   2 cột Mã CTĐT + Tên CTĐT (chỉ cột Mã CTĐT được copy vào sheet "Danh sách SV", cột Tên CTĐT chỉ để
+   đối chiếu cho dễ nhận diện mã nào ứng với ngành nào) — hiện lấy từ STUDENT_DIRECTORY (dữ liệu
+   mock) — cần thay bằng danh mục CTĐT thật khi có.
+   Về style: đã thử nghiệm thật (mở file .xlsx xuất ra, soi xl/styles.xml) — bản SheetJS community
+   đang nhúng ghi ĐÚNG AutoFilter ra file nhưng ÂM THẦM BỎ QUA style tô nền/in đậm dòng tiêu đề (set
+   ws['A1'].s không có tác dụng khi ghi), nên KHÔNG áp dụng tô màu nền cho header, chỉ dùng AutoFilter. */
 function downloadImportTemplateXlsx(){
   const type = document.getElementById('cd-type').value;
   const isInternship = type === TYPE_INTERNSHIP;
 
   const header = isInternship
-    ? ['Mã sinh viên', 'Mã CTĐT', 'Cơ sở thực tập', 'Địa chỉ', 'Giảng viên hướng dẫn', 'Ghi chú']
-    : ['Mã sinh viên', 'Mã CTĐT', 'Danh mục Lý do', 'Ghi chú'];
-  const sampleRows = isInternship ? [
-    ['20120302', '', 'Công ty TNHH FPT Software', 'Toà nhà FPT, Q. Cầu Giấy, Hà Nội', 'ThS. Nguyễn Văn A', ''],
-    ['20120303', '', 'Tập đoàn Viettel', 'Số 1 Trần Hữu Dực, Q. Nam Từ Liêm, Hà Nội', 'TS. Trần Thị B', ''],
-    ['20120305', '', 'Công ty CP VNG', '182 Lê Đại Hành, Q.11, TP.HCM', 'ThS. Lê Văn C', 'Thực tập từ xa 2 buổi/tuần'],
-    ['20120306', '', '', '', '', ''],
-    ['20120301', 'CNTT', 'Công ty TNHH Samsung Electronics VN', 'KCN Yên Phong, Bắc Ninh', 'ThS. Phạm Thị D', ''],
-    ['20120301', 'QTKD-SB', '', '', '', ''],
-    ['20120310', 'HTTT', 'Ngân hàng TMCP Ngoại thương VN', '198 Trần Quang Khải, Hà Nội', 'TS. Hoàng Văn E', ''],
-    ['20120088', 'KHMT', '', '', '', ''],
-    ['20120044', 'HTTT', 'Công ty CP MISA', 'Tòa nhà MISA, Q. Từ Liêm, Hà Nội', 'ThS. Đỗ Thị G', ''],
-    ['20120320', '', '', '', '', ''],
+    ? ['STT', 'Mã sinh viên *', 'Họ và tên', 'Mã CTĐT', 'Cơ sở thực tập', 'Địa chỉ', 'Giảng viên hướng dẫn', 'Ghi chú']
+    : ['STT', 'Mã sinh viên *', 'Họ và tên', 'Mã CTĐT', 'Phân loại lý do', 'Ghi chú'];
+  const sampleRowsRaw = isInternship ? [
+    ['20120302', 'Nguyễn Hoàng Nam', '', 'Công ty TNHH FPT Software', 'Toà nhà FPT, Q. Cầu Giấy, Hà Nội', 'ThS. Nguyễn Văn A', ''],
+    ['20120303', 'Lý Thị Thu Hương', '', 'Tập đoàn Viettel', 'Số 1 Trần Hữu Dực, Q. Nam Từ Liêm, Hà Nội', 'TS. Trần Thị B', ''],
+    ['20120305', 'Trần Văn Bảo', '', 'Công ty CP VNG', '182 Lê Đại Hành, Q.11, TP.HCM', 'ThS. Lê Văn C', 'Thực tập từ xa 2 buổi/tuần'],
+    ['20120306', 'Nguyễn Thị Mai Anh', '', '', '', '', ''],
+    ['20120301', 'Hoàng Minh Đức', 'CNTT', 'Công ty TNHH Samsung Electronics VN', 'KCN Yên Phong, Bắc Ninh', 'ThS. Phạm Thị D', ''],
+    ['20120301', 'Hoàng Minh Đức', 'QTKD-SB', '', '', '', ''],
+    ['20120310', 'Bùi Thị Ánh Tuyết', 'HTTT', 'Ngân hàng TMCP Ngoại thương VN', '198 Trần Quang Khải, Hà Nội', 'TS. Hoàng Văn E', ''],
+    ['20120088', 'Hoàng Văn Nam', 'KHMT', '', '', '', ''],
+    ['20120044', 'Đặng Thị Quỳnh', 'HTTT', 'Công ty CP MISA', 'Tòa nhà MISA, Q. Từ Liêm, Hà Nội', 'ThS. Đỗ Thị G', ''],
+    ['20120320', 'Cao Thị Yến Nhi', '', '', '', '', ''],
   ] : [
-    ['20120302', '', 'Cảnh báo học vụ lần 1', ''],
-    ['20120303', '', 'Cảnh báo học vụ lần 2', ''],
-    ['20120305', '', '', 'Nghỉ học không phép quá số buổi quy định'],
-    ['20120306', '', '', ''],
-    ['20120301', 'CNTT', '', ''],
-    ['20120301', 'QTKD-SB', 'Vi phạm quy chế thi', 'Sử dụng tài liệu trái phép trong phòng thi'],
-    ['20120310', 'HTTT', '', ''],
-    ['20120088', 'KHMT', '', ''],
-    ['20120044', 'HTTT', '', ''],
-    ['20120320', '', 'Đình chỉ học tập có thời hạn', ''],
+    ['20120302', 'Nguyễn Hoàng Nam', '', 'Cảnh báo học vụ lần 1', ''],
+    ['20120303', 'Lý Thị Thu Hương', '', 'Cảnh báo học vụ lần 2', ''],
+    ['20120305', 'Trần Văn Bảo', '', '', 'Nghỉ học không phép quá số buổi quy định'],
+    ['20120306', 'Nguyễn Thị Mai Anh', '', '', ''],
+    ['20120301', 'Hoàng Minh Đức', 'CNTT', '', ''],
+    ['20120301', 'Hoàng Minh Đức', 'QTKD-SB', 'Vi phạm quy chế thi', 'Sử dụng tài liệu trái phép trong phòng thi'],
+    ['20120310', 'Bùi Thị Ánh Tuyết', 'HTTT', '', ''],
+    ['20120088', 'Hoàng Văn Nam', 'KHMT', '', ''],
+    ['20120044', 'Đặng Thị Quỳnh', 'HTTT', '', ''],
+    ['20120320', 'Cao Thị Yến Nhi', '', 'Đình chỉ học tập có thời hạn', ''],
   ];
+  // STT chỉ để đánh số cho dễ nhìn khi mở file — không bắt buộc, không được đọc khi import (xem
+  // buildImportPreview() đọc lệch cột sang phải 1 so với bản không có STT).
+  const sampleRows = sampleRowsRaw.map((row, i) => [i + 1, ...row]);
   const fileName = isInternship ? 'mau-import-danh-sach-thuc-tap-tot-nghiep.xlsx' : 'mau-import-danh-sach-sinh-vien.xlsx';
 
-  const sheet = XLSX.utils.aoa_to_sheet([header, ...sampleRows]);
+  const dataSheet = XLSX.utils.aoa_to_sheet([header, ...sampleRows]);
+  // AutoFilter (nút lọc ở dòng tiêu đề) — SheetJS bản community đang nhúng ghi được tính năng cấu
+  // trúc này ra file thật (đã kiểm chứng bằng cách mở file .xlsx và soi xl/worksheets/sheet1.xml),
+  // KHÁC với tô màu nền/in đậm ở dưới (guideSheet) là style thật sự thì bản này ghi ra không có tác
+  // dụng (silently dropped) nên không dùng — xem comment ở đầu hàm.
+  dataSheet['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:0,c:header.length-1} }) };
+
+  // Sheet Hướng dẫn trình bày dạng BẢNG 3 cột (STT | Tên cột | Hướng dẫn nhập) — mỗi dòng ứng với
+  // đúng 1 cột trong sheet "Danh sách SV", theo ĐÚNG thứ tự cột thật để dễ đối chiếu khi điền file.
+  const guideColHints = {
+    'STT': 'Không bắt buộc, chỉ để đánh số cho dễ nhìn — hệ thống không đọc cột này.',
+    'Mã sinh viên *': 'Bắt buộc. Phải khớp với danh bạ sinh viên trong hệ thống, nếu không sẽ không import được dòng đó.',
+    'Họ và tên': 'Không bắt buộc, chỉ để đối chiếu bằng mắt cho đúng sinh viên — hệ thống không đọc cột này, tên hiển thị khi import lấy tự động theo Mã sinh viên đã khớp.',
+    'Mã CTĐT': 'Không bắt buộc. Nếu MSSV học song song nhiều CTĐT và bỏ trống cột này, hệ thống tự tách dòng đó thành nhiều dòng xem trước (1 dòng/CTĐT) để chọn — xem danh sách mã hợp lệ ở sheet "Danh mục".',
+    'Phân loại lý do': 'Không bắt buộc. Sheet "Danh mục" của file này đã liệt kê sẵn đúng lý do hợp lệ cho Loại quyết định đang chọn — chỉ copy từ đó. Đổi Loại quyết định thì phải tải lại file mẫu mới.',
+    'Ghi chú': 'Không bắt buộc, nhập tự do.',
+    'Cơ sở thực tập': 'Không bắt buộc, tên đơn vị sinh viên đi thực tập.',
+    'Địa chỉ': 'Không bắt buộc, địa chỉ của cơ sở thực tập.',
+    'Giảng viên hướng dẫn': 'Không bắt buộc, tên giảng viên hướng dẫn thực tập.',
+  };
+  const guideRows = [
+    ['STT', 'Tên cột', 'Hướng dẫn nhập'],
+    ...header.map((h, i) => [i + 1, h, guideColHints[h] || '']),
+    [],
+    ['Ghi chú thêm:'],
+    ['Nhập dữ liệu bắt đầu từ dòng 2 của sheet "Danh sách SV" (dòng 1 là tiêu đề cột, không xoá).'],
+    ['Không đổi tên, không thêm/bớt cột, không đổi thứ tự cột trong sheet "Danh sách SV".'],
+    ['Có dòng lỗi khi xem trước (preview) thì không import được toàn bộ file — sửa lại đúng dòng lỗi trong file rồi chọn lại file đó.'],
+  ];
+  const guideSheet = XLSX.utils.aoa_to_sheet(guideRows);
+  guideSheet['!cols'] = [{ wch:6 }, { wch:22 }, { wch:90 }];
+
+  // Chỉ liệt kê Phân loại lý do CỦA ĐÚNG Loại quyết định đang chọn ở modal (reasonsForType(type),
+  // cùng danh sách dùng để đối chiếu khi đọc file ở buildImportPreview()) — không liệt kê gộp lý do
+  // của TẤT CẢ loại quyết định như bản trước, để tránh người dùng copy nhầm lý do thuộc loại khác
+  // (gõ đúng chính tả nhưng sai loại quyết định thì hệ thống vẫn âm thầm bỏ trống lý do, không báo
+  // lỗi — xem buildValidPreviewRow()). Mã CTĐT không phụ thuộc Loại quyết định nên vẫn liệt kê đủ.
+  const reasonNames = isInternship ? [] : reasonsForType(type);
+  // 1 Mã CTĐT khớp đúng 1 Tên CTĐT trong STUDENT_DIRECTORY (mock) — lấy theo bản ghi đầu tiên gặp
+  // mỗi mã, đủ dùng vì dữ liệu mock hiện không có mã nào trỏ tới 2 tên khác nhau.
+  const ctdtList = [...new Map(STUDENT_DIRECTORY.filter(s => s.ctdtCode).map(s => [s.ctdtCode, s.ctdt])).entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  const reasonColHeader = isInternship
+    ? 'Phân loại lý do (loại quyết định này không dùng)'
+    : (reasonNames.length ? `Phân loại lý do hợp lệ cho "${type}"` : `Phân loại lý do hợp lệ cho "${type}" (chưa cấu hình lý do nào)`);
+  // Thêm cột STT ở đầu mỗi bảng con, cùng phong cách bảng với sheet "Hướng dẫn" — đánh số riêng cho
+  // từng bảng (Phân loại lý do và CTĐT không cùng số dòng nên KHÔNG dùng chung 1 cột STT cho cả hai,
+  // để trống STT ở dòng nào cột đó không có giá trị, tránh đánh số nhảy cóc gây hiểu nhầm).
+  const catalogRowCount = Math.max(reasonNames.length, ctdtList.length);
+  const catalogRows = [
+    ['STT', reasonColHeader, 'STT', 'Mã CTĐT', 'Tên CTĐT'],
+    ...Array.from({ length: catalogRowCount }, (_, i) => [
+      reasonNames[i] ? i + 1 : '', reasonNames[i] || '',
+      ctdtList[i] ? i + 1 : '', ctdtList[i] ? ctdtList[i][0] : '', ctdtList[i] ? ctdtList[i][1] : '',
+    ]),
+  ];
+  const catalogSheet = XLSX.utils.aoa_to_sheet(catalogRows);
+  catalogSheet['!cols'] = [{ wch:6 }, { wch:40 }, { wch:6 }, { wch:14 }, { wch:34 }];
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheet, 'Danh sách SV');
+  XLSX.utils.book_append_sheet(wb, dataSheet, 'Danh sách SV');
+  XLSX.utils.book_append_sheet(wb, guideSheet, 'Hướng dẫn');
+  XLSX.utils.book_append_sheet(wb, catalogSheet, 'Danh mục');
   XLSX.writeFile(wb, fileName);
   showToast(`Đã tải xuống "${fileName}"`, 'ok');
 }
@@ -2750,7 +2833,7 @@ function downloadImportTemplateXlsx(){
 let importPreviewRows = [];
 /* Bộ cột của lần import gần nhất — quyết định header/ô hiển thị ở renderImportPreview() và các
    trường được ghi lại khi commitImportPreview(). 'internship' khi Loại quyết định = TYPE_INTERNSHIP
-   (đọc Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn thay vì Danh mục Lý do), còn lại dùng 'default'. */
+   (đọc Cơ sở thực tập/Địa chỉ/Giảng viên hướng dẫn thay vì Phân loại lý do), còn lại dùng 'default'. */
 let importPreviewMode = 'default';
 const CD_IMPORT_PREVIEW_PAGE_SIZE = 20;
 let cdImportPreviewPage = 1;
@@ -2774,10 +2857,12 @@ function previewImportFile(file){
   reader.onload = e => {
     try {
       const wb = XLSX.read(e.target.result, { type:'array' });
+      // Luôn đọc SHEET ĐẦU TIÊN ("Danh sách SV") bất kể tên — file mẫu tải từ downloadImportTemplateXlsx()
+      // có thêm sheet "Hướng dẫn"/"Danh mục" phía sau, không ảnh hưởng vì chỉ lấy theo vị trí sheet.
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      // Đọc rộng ra 6 cột (đủ cho cả 2 định dạng: mặc định dùng 4 cột đầu, TYPE_INTERNSHIP dùng đủ 6)
+      // Đọc rộng ra 8 cột (đủ cho cả 2 định dạng: mặc định dùng 6 cột đầu, TYPE_INTERNSHIP dùng đủ 8)
       const rows = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'', blankrows:false })
-        .map(r => [r[0], r[1], r[2], r[3], r[4], r[5]].map(v => (v === undefined || v === null) ? '' : String(v).trim()));
+        .map(r => [r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]].map(v => (v === undefined || v === null) ? '' : String(v).trim()));
       buildImportPreview(rows, type);
     } catch (err){
       showToast('File .xlsx không hợp lệ hoặc bị lỗi, vui lòng kiểm tra lại file.', 'err');
@@ -2786,54 +2871,64 @@ function previewImportFile(file){
   reader.readAsArrayBuffer(file);
 }
 
-/* TYPE_INTERNSHIP đọc file 6 cột (Mã sinh viên, Mã CTĐT, Cơ sở thực tập, Địa chỉ, Giảng viên hướng
-   dẫn, Ghi chú) — không có Danh mục Lý do vì loại quyết định này không dùng khái niệm đó, xem
-   TYPE_INTERNSHIP ở phần khai báo hằng số. Các loại quyết định còn lại giữ nguyên 4 cột như cũ. */
+/* TYPE_INTERNSHIP đọc file 8 cột (STT, Mã sinh viên, Họ và tên, Mã CTĐT, Cơ sở thực tập, Địa chỉ,
+   Giảng viên hướng dẫn, Ghi chú) — không có Phân loại lý do vì loại quyết định này không dùng khái
+   niệm đó, xem TYPE_INTERNSHIP ở phần khai báo hằng số. Các loại quyết định còn lại giữ nguyên 6 cột
+   (STT, Mã sinh viên, Họ và tên, Mã CTĐT, Phân loại lý do, Ghi chú). Cột "STT" (row[0]) và "Họ và
+   tên" (row[2]) CHỈ để người nhập liệu đối chiếu bằng mắt — không đọc giá trị 2 cột này, tên hiển
+   thị luôn lấy từ STUDENT_DIRECTORY theo Mã sinh viên đã khớp, xem downloadImportTemplateXlsx(). */
 function buildImportPreview(rows, type){
   importPreviewMode = type === TYPE_INTERNSHIP ? 'internship' : 'default';
   const reasons = reasonsForType(type);
   rows = rows.filter(r => r.some(c => (c || '').trim() !== ''));
-  // Bỏ dòng tiêu đề nếu dòng đầu là header (VD "Mã sinh viên,Mã CTĐT,Danh mục Lý do"), không phải dữ liệu thật
-  if (rows.length && /mã sinh viên|mssv/i.test(rows[0][0] || '')) rows = rows.slice(1);
+  // Bỏ dòng tiêu đề nếu dòng đầu là header (VD "STT,Mã sinh viên,Họ và tên,Mã CTĐT,Phân loại lý do"), không phải dữ liệu thật
+  if (rows.length && /mã sinh viên|mssv/i.test(rows[0][1] || '')) rows = rows.slice(1);
 
-  importPreviewRows = rows.map(row => {
-    const mssvRaw = (row[0] || '').trim();
-    const ctdtCodeRaw = (row[1] || '').trim();
-    if (!mssvRaw) return { mssv:'—', status:'missingMssv' };
-
-    let matches = STUDENT_DIRECTORY.filter(x => x.mssv.toLowerCase() === mssvRaw.toLowerCase());
-    if (ctdtCodeRaw){
-      matches = matches.filter(x => x.ctdtCode.toLowerCase() === ctdtCodeRaw.toLowerCase());
-      if (!matches.length) return { mssv:mssvRaw, status:'notFound' };
-    } else if (matches.length > 1){
-      return { mssv:mssvRaw, status:'ambiguous' };
-    } else if (!matches.length){
-      return { mssv:mssvRaw, status:'notFound' };
-    }
-
-    const s = matches[0];
-    // SV đã có sẵn trong danh sách (khối 3) — không còn chặn import nữa, để dòng đi tiếp như bình
-    // thường và đánh dấu isUpdate để commitImportPreview() CẬP NHẬT lại thông tin của đúng dòng đó
-    // thay vì thêm trùng, xem comment ở commitImportPreview(). Admin vẫn thấy rõ dòng nào sẽ ghi đè
-    // qua nhãn "Sẽ cập nhật" (không phải lỗi, không tô đỏ, vẫn tính vào Import được).
+  // Dựng 1 dòng preview "hợp lệ" từ 1 bản ghi STUDENT_DIRECTORY (s) + dữ liệu còn lại của dòng file
+  // (row) — tách riêng vì trường hợp song ngành bỏ trống Mã CTĐT cần gọi hàm này NHIỀU LẦN (1 lần/
+  // CTĐT) để tách ra nhiều dòng preview, xem nhánh "matches.length > 1" bên dưới.
+  function buildValidPreviewRow(s, row){
     const isUpdate = createDecisionStudents.some(x => x.id === s.id);
-
     if (importPreviewMode === 'internship'){
-      const cstt = (row[2] || '').trim();
-      const diaChiCstt = (row[3] || '').trim();
-      const gvhd = (row[4] || '').trim();
-      const lyDoText = (row[5] || '').trim();
+      const cstt = (row[4] || '').trim();
+      const diaChiCstt = (row[5] || '').trim();
+      const gvhd = (row[6] || '').trim();
+      const lyDoText = (row[7] || '').trim();
       return { mssv:s.mssv, name:s.name, ctdt:s.ctdt, cstt, diaChiCstt, gvhd, lyDoText, student:s, status:'valid', selected:true, isUpdate };
     }
-
-    const lyDoRaw = (row[2] || '').trim();
-    const lyDoTextRaw = (row[3] || '').trim();
+    const lyDoRaw = (row[4] || '').trim();
+    const lyDoTextRaw = (row[5] || '').trim();
     let lyDo = '';
     if (lyDoRaw){
       const matched = reasons.find(r => r.toLowerCase() === lyDoRaw.toLowerCase());
       if (matched) lyDo = matched;
     }
     return { mssv:s.mssv, name:s.name, ctdt:s.ctdt, lyDo, lyDoText:lyDoTextRaw, student:s, status:'valid', selected:true, isUpdate };
+  }
+
+  importPreviewRows = rows.flatMap(row => {
+    const mssvRaw = (row[1] || '').trim();
+    const ctdtCodeRaw = (row[3] || '').trim();
+    if (!mssvRaw) return [{ mssv:'—', status:'missingMssv' }];
+
+    let matches = STUDENT_DIRECTORY.filter(x => x.mssv.toLowerCase() === mssvRaw.toLowerCase());
+    if (ctdtCodeRaw){
+      matches = matches.filter(x => x.ctdtCode.toLowerCase() === ctdtCodeRaw.toLowerCase());
+      if (!matches.length) return [{ mssv:mssvRaw, status:'notFound' }];
+    } else if (matches.length > 1){
+      // Song ngành bỏ trống Mã CTĐT — KHÔNG còn báo lỗi "cần chọn tay" nữa, tự tách dòng gốc thành
+      // N dòng preview (1 dòng/CTĐT đang học), mặc định đều tick chọn như dòng hợp lệ bình thường,
+      // để Admin tự bỏ chọn dòng không cần import thay vì phải sửa lại file rồi chọn lại từ đầu.
+      return matches.map(s => buildValidPreviewRow(s, row));
+    } else if (!matches.length){
+      return [{ mssv:mssvRaw, status:'notFound' }];
+    }
+
+    // SV đã có sẵn trong danh sách (khối 3) — không còn chặn import nữa, để dòng đi tiếp như bình
+    // thường và đánh dấu isUpdate để commitImportPreview() CẬP NHẬT lại thông tin của đúng dòng đó
+    // thay vì thêm trùng, xem comment ở commitImportPreview(). Admin vẫn thấy rõ dòng nào sẽ ghi đè
+    // qua nhãn "Sẽ cập nhật" (không phải lỗi, không tô đỏ, vẫn tính vào Import được).
+    return [buildValidPreviewRow(matches[0], row)];
   });
 
   cdImportPreviewPage = 1;
@@ -2841,20 +2936,21 @@ function buildImportPreview(rows, type){
 }
 
 const IMPORT_STATUS_LABEL = {
-  notFound:'Không khớp danh bạ',
-  ambiguous:'Nhiều CTĐT — cần chọn tay', missingMssv:'Thiếu Mã sinh viên',
+  notFound:'Không khớp danh bạ', missingMssv:'Thiếu Mã sinh viên',
 };
 const CD_IMPORT_THEAD_HTML = {
   default: `
     <th style="width:32px"><input type="checkbox" id="cd-import-preview-check-all" onchange="toggleAllImportPreviewSelection(this.checked)"></th>
+    <th style="width:44px">STT</th>
     <th style="width:120px">Mã SV</th>
     <th style="width:170px">Họ và tên</th>
     <th style="width:150px">CTĐT</th>
-    <th style="width:150px">Danh mục Lý do</th>
+    <th style="width:150px">Phân loại lý do</th>
     <th style="width:170px">Ghi chú</th>
     <th style="width:170px">Lỗi</th>`,
   internship: `
     <th style="width:32px"><input type="checkbox" id="cd-import-preview-check-all" onchange="toggleAllImportPreviewSelection(this.checked)"></th>
+    <th style="width:44px">STT</th>
     <th style="width:110px">Mã SV</th>
     <th style="width:150px">Họ và tên</th>
     <th style="width:120px">CTĐT</th>
@@ -2888,6 +2984,7 @@ function renderImportPreview(){
     if (importPreviewMode === 'internship') return `
     <tr class="${r.status === 'valid' ? '' : 'cd-import-row-issue'}">
       <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
+      <td class="text-muted">${idx + 1}</td>
       <td><span class="di-code">${r.mssv}</span></td>
       <td style="white-space:nowrap">${r.name || '—'}</td>
       <td class="text-muted">${r.ctdt || '—'}</td>
@@ -2901,6 +2998,7 @@ function renderImportPreview(){
     return `
     <tr class="${r.status === 'valid' ? '' : 'cd-import-row-issue'}">
       <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
+      <td class="text-muted">${idx + 1}</td>
       <td><span class="di-code">${r.mssv}</span></td>
       <td style="white-space:nowrap">${r.name || '—'}</td>
       <td class="text-muted">${r.ctdt || '—'}</td>
@@ -3457,17 +3555,17 @@ const DDET_SV_CHECK_TH = `<th style="width:36px"><input type="checkbox"></th>`;
 /* Cột cuối — "Thao tác" (nút bút chì), bấm để sửa INLINE đúng dòng đó (đổi các cell field-riêng
    theo Loại quyết định thành input/select, giống hệt khối Sửa/Tạo) mà không cần vào chế độ Sửa
    toàn bộ quyết định — xem ddetSvEditingId/toggleDdetSvEditRow()/saveDdetSvRow(). Các cột định danh
-   (MSSV/Họ tên/Lớp/CTĐT...) KHÔNG sửa được ở đây, chỉ field ghi chú/Danh mục Lý do/thông tin bổ
+   (MSSV/Họ tên/Lớp/CTĐT...) KHÔNG sửa được ở đây, chỉ field ghi chú/Phân loại lý do/thông tin bổ
    sung theo từng SV. */
 const DDET_SV_ACTION_TH = `<th style="width:90px">Thao tác</th>`;
 const DDET_SV_THEAD_HTML = {
-  default: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:170px">Danh mục Lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
-  leave: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:130px">Học kỳ bắt đầu</th><th style="width:130px">Học kỳ kết thúc</th><th style="width:170px">Danh mục Lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  default: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  leave: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:130px">Học kỳ bắt đầu</th><th style="width:130px">Học kỳ kết thúc</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   trainingScore: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:110px">ĐTB niên khoá</th><th style="width:140px">Xếp loại toàn khoá</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   internship: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:100px">Ngày sinh</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:180px">Cơ sở thực tập</th><th style="width:200px">Địa chỉ</th><th style="width:150px">GVHD</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicChange: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:220px">Đề tài cũ (theo QĐ)</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
-  discipline: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">CTĐT</th><th style="width:190px">Loại kỷ luật</th><th style="width:110px">Năm học</th><th style="width:120px">Học kỳ bắt đầu</th><th style="width:120px">Học kỳ kết thúc</th><th style="width:170px">Lý do</th><th>Danh mục Lý do</th>${DDET_SV_ACTION_TH}`,
+  discipline: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">CTĐT</th><th style="width:190px">Loại kỷ luật</th><th style="width:110px">Năm học</th><th style="width:120px">Học kỳ bắt đầu</th><th style="width:120px">Học kỳ kết thúc</th><th style="width:170px">Lý do</th><th>Phân loại lý do</th>${DDET_SV_ACTION_TH}`,
   reviewerAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:130px">Lớp học phần</th><th style="width:150px">CTĐT</th><th style="width:200px">Tên đề tài</th><th style="width:150px">GVHD</th><th style="width:150px">GVPB</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
 };
 const DDET_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:11, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };

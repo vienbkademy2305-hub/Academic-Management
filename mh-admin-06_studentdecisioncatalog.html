@@ -282,10 +282,8 @@
         </div>
 
         <div class="fi" style="margin-bottom:0">
-          <label>Tổ chức phụ trách<span class="req">*</span></label>
-          <select class="fc" id="new-decision-unit">
-            <option value="" selected disabled>— Chọn đơn vị phụ trách —</option>
-          </select>
+          <label>Tổ chức phụ trách</label>
+          <input class="fc" id="new-decision-unit-display" type="text" readonly disabled style="background:#f5f5f5;color:var(--text-2)">
         </div>
       </div>
 
@@ -313,7 +311,7 @@
             </div>
             <div class="fi" style="margin-bottom:0">
               <label style="font-weight:400">Số điểm<span class="req">*</span></label>
-              <input class="fc" id="new-decision-drl-value" type="number" min="0" placeholder="Nhập số điểm" style="text-align:center">
+              <input class="fc" id="new-decision-drl-value" type="number" min="0" step="1" placeholder="Nhập số điểm" style="text-align:center">
             </div>
           </div>
         </div>
@@ -603,9 +601,11 @@ const UNITS = [
 ];
 const UNIT_LABEL = Object.fromEntries(UNITS.map(u => [u.value, u.label]));
 
-/* Danh sách 22 quyết định thật, 20 đầu gộp từ 2 nguồn nghiệp vụ và loại bỏ trùng lặp
-   (VD "Khen thưởng", "Kỷ luật", "Nghỉ học tạm thời", "Quay trở lại học tập", "Thôi học",
-   "Xoá tên" xuất hiện ở cả 2 nguồn — chỉ giữ lại 1 bản ghi cho mỗi loại); d21/d22 bổ sung sau. */
+/* Danh sách 23 quyết định thật, 20 đầu gộp từ 2 nguồn nghiệp vụ và loại bỏ trùng lặp
+   (VD "Kỷ luật", "Nghỉ học tạm thời", "Quay trở lại học tập", "Thôi học", "Xoá tên"
+   xuất hiện ở cả 2 nguồn — chỉ giữ lại 1 bản ghi cho mỗi loại); d21/d22 bổ sung sau.
+   QĐ14 (Quyết định khen thưởng) đã bị bỏ khỏi danh mục theo yêu cầu — mã QĐ14 để
+   trống, các mã còn lại (QĐ15–QĐ24) giữ nguyên như cũ, không dồn số. */
 const DECISIONS = [
   { id:'d1', itemId:1, code:'QĐ01', name:'Quyết định cấp mã SV và phân lớp cho SV', unit:'u-daotao', newStatus:'danghoc', noChange:false, updFields:['status','cohortclass'], status:'active', updated:'20/07/2026', fileNameDh:'mau-qd-cap-ma-sv-phan-lop-dh.docx', fileNameSdh:'mau-qd-cap-ma-sv-phan-lop-sdh.docx', processId: null },
   { id:'d2', itemId:2, code:'QĐ02', name:'Quyết định công nhận điểm rèn luyện toàn khoá', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'18/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
@@ -620,7 +620,6 @@ const DECISIONS = [
   { id:'d11', itemId:11, code:'QĐ11', name:'Quyết định công nhận tốt nghiệp', unit:'u-daotao', newStatus:'totnghiep', noChange:false, updFields:['status'], status:'active', updated:'28/06/2026', fileNameDh:'mau-qd-cong-nhan-tot-nghiep-dh.docx', fileNameSdh:'mau-qd-cong-nhan-tot-nghiep-sdh.docx', processId: 'p2' },
   { id:'d12', itemId:12, code:'QĐ12', name:'Quyết định cử đi thực tập tốt nghiệp', unit:'u-daotao', newStatus:'', noChange:true, updFields:[], status:'active', updated:'03/07/2026', fileNameDh:'', fileNameSdh:'', processId: null },
   { id:'d13', itemId:13, code:'QĐ13', name:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', unit:'u-khaothi', newStatus:'', noChange:true, updFields:[], status:'active', updated:'14/07/2026', fileNameDh:'mau-qd-xu-ly-hoc-vu-dh.docx', fileNameSdh:'mau-qd-xu-ly-hoc-vu-sdh.docx', processId: 'p1' },
-  { id:'d14', itemId:14, code:'QĐ14', name:'Quyết định khen thưởng', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'16/07/2026', fileNameDh:'mau-qd-khen-thuong-dh.docx', fileNameSdh:'mau-qd-khen-thuong-sdh.docx', processId: null },
   { id:'d15', itemId:15, code:'QĐ15', name:'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)', unit:'u-ctsv', newStatus:'', noChange:true, updFields:[], status:'active', updated:'16/07/2026', fileNameDh:'mau-qd-ky-luat-dh.docx', fileNameSdh:'mau-qd-ky-luat-sdh.docx', processId: null },
   { id:'d16', itemId:16, code:'QĐ16', name:'Quyết định nghỉ học tạm thời/bảo lưu', unit:'u-ctsv', newStatus:'baoluu', noChange:false, updFields:['status'],
     expiryAlert:{ enabled:true, leadDays:30,
@@ -700,7 +699,7 @@ function unitsHtml(d){
 
 function templateFilesHtml(d){
   const count = (d.fileNameDh ? 1 : 0) + (d.fileNameSdh ? 1 : 0);
-  if (!count) return '<span class="text-muted text-sm">—</span>';
+  if (!count) return '';
   return `<span class="text-link" onclick="event.stopPropagation();openTemplateFilesModal('${d.id}')">${count} file</span>`;
 }
 
@@ -778,6 +777,15 @@ function goToDataFieldsPage(p){ dataFieldsPage = p; renderDataFieldsGrid(); }
 
 document.getElementById('data-fields-search').addEventListener('input', () => { dataFieldsPage = 1; renderDataFieldsGrid(); });
 
+/* Parse cột "Cập nhật" (dd/mm/yyyy hoặc literal "Hôm nay") thành mốc thời gian để sort —
+   "Hôm nay" luôn coi là mới nhất, ngày dd/mm/yyyy parse theo đúng định dạng hiển thị. */
+function parseUpdatedDate(updated){
+  if (updated === 'Hôm nay') return Date.now();
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(updated || '');
+  if (!m) return 0;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])).getTime();
+}
+
 function renderDecGrid(){
   const tbody = document.getElementById('dec-tbody');
   const statusFilter = currentStatusFilter();
@@ -787,13 +795,14 @@ function renderDecGrid(){
   if (statusFilter !== 'all') list = list.filter(d => d.status === statusFilter);
   if (nameQuery) list = list.filter(d => d.name.toLowerCase().includes(nameQuery));
   if (selectedDecUnitId) list = list.filter(d => selectedDecUnitId === '__dh__' ? !d.unit : d.unit === selectedDecUnitId);
+  list.sort((a, b) => parseUpdatedDate(b.updated) - parseUpdatedDate(a.updated));
 
   const totalPages = Math.max(1, Math.ceil(list.length / DEC_PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
   const pageList = list.slice((currentPage-1)*DEC_PAGE_SIZE, currentPage*DEC_PAGE_SIZE);
 
   tbody.innerHTML = pageList.map((d, idx) => `
-    <tr class="dec-row" style="cursor:pointer" onclick="openEditDecisionModal('${d.id}')">
+    <tr class="dec-row">
       <td class="text-muted">${(currentPage-1)*DEC_PAGE_SIZE + idx + 1}</td>
       <td><span class="dec-code">${d.code}</span></td>
       <td><span class="dec-name-cell">${d.name}</span></td>
@@ -801,7 +810,7 @@ function renderDecGrid(){
       <td>${templateFilesHtml(d)}</td>
       <td><span class="tag ${d.status==='active'?'tag-success':'tag-default'}">${d.status==='active'?'Active':'Inactive'}</span></td>
       <td class="text-muted">${d.updated}</td>
-      <td onclick="event.stopPropagation()">
+      <td>
         <div class="tbl-actions">
           <button class="icon-btn" title="Gán quy trình xử lý" onclick="openProcessPicker('${d.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
@@ -818,7 +827,7 @@ function renderDecGrid(){
           </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có quyết định nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="8"><div class="tbl-empty">Không có dữ liệu</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -890,8 +899,12 @@ document.addEventListener('click', e => {
 
 renderDecGrid();
 
-document.getElementById('new-decision-unit').insertAdjacentHTML('beforeend',
-  UNITS.map(u => `<option value="${u.value}">${u.label}</option>`).join(''));
+/* Tổ chức phụ trách hiển thị chỉ đọc trong modal Sửa — gán cố định sẵn theo từng loại quyết định
+   (xem DECISIONS[].unit), không còn dropdown để chọn/đổi. */
+function unitLabel(value){
+  const u = UNITS.find(x => x.value === value);
+  return u ? u.label : '—';
+}
 
 /* == Switch "Sử dụng trong đánh giá ĐRL" — bật → xổ xuống chọn Loại điểm (Điểm cộng
    HOẶC Điểm trừ, chỉ 1 trong 2) và nhập Số điểm tương ứng; tắt → ẩn đi và trả về
@@ -1008,7 +1021,7 @@ function openEditDecisionModal(id){
   document.getElementById('new-decision-submit-btn').textContent = 'Lưu thay đổi';
   document.getElementById('new-decision-code').value = d.code;
   document.getElementById('new-decision-name').value = d.name;
-  document.getElementById('new-decision-unit').value = d.unit || '';
+  document.getElementById('new-decision-unit-display').value = unitLabel(d.unit);
   document.getElementById('new-decision-use-in-drl-switch').checked = !!d.useInDrl;
   toggleUseInDrlConfig(!!d.useInDrl);
   document.getElementById('new-decision-drl-type').value = d.drlType || '';
@@ -1027,16 +1040,16 @@ function openEditDecisionModal(id){
 /* == Lưu cấu hình quyết định đang sửa == */
 function doSaveDecision(){
   const name = document.getElementById('new-decision-name').value.trim();
-  const unit = document.getElementById('new-decision-unit').value;
 
   if (!name){ showToast('Vui lòng nhập tên quyết định', 'err'); return; }
-  if (!unit){ showToast('Vui lòng chọn đơn vị phụ trách', 'err'); return; }
 
   if (document.getElementById('new-decision-use-in-drl-switch').checked){
     const drlType = document.getElementById('new-decision-drl-type').value;
     const drlValueRaw = document.getElementById('new-decision-drl-value').value;
     if (!drlType){ showToast('Vui lòng chọn Loại điểm cho đánh giá ĐRL', 'err'); return; }
-    if (drlValueRaw === '' || Number(drlValueRaw) <= 0){ showToast('Vui lòng nhập Số điểm cho đánh giá ĐRL', 'err'); return; }
+    if (drlValueRaw === ''){ showToast('Vui lòng nhập Số điểm cho đánh giá ĐRL', 'err'); return; }
+    if (Number(drlValueRaw) <= 0){ showToast('Số điểm phải lớn hơn 0', 'err'); return; }
+    if (!Number.isInteger(Number(drlValueRaw))){ showToast('Số điểm phải là số nguyên', 'err'); return; }
   }
 
   if (document.getElementById('expiry-alert-enabled-switch').checked){
@@ -1068,7 +1081,6 @@ function doSaveDecision(){
 
   const d = decById(editingDecisionId);
   d.name = name;
-  d.unit = unit;
   d.useInDrl = document.getElementById('new-decision-use-in-drl-switch').checked;
   d.drlType = d.useInDrl ? document.getElementById('new-decision-drl-type').value : '';
   d.drlValue = d.useInDrl ? Number(document.getElementById('new-decision-drl-value').value) : 0;
@@ -1077,7 +1089,7 @@ function doSaveDecision(){
   d.fileNameSdh = fileNameSdh;
   d.status = document.getElementById('new-decision-status').value;
   d.updated = 'Hôm nay';
-  showToast('Đã lưu thay đổi quyết định', 'ok');
+  showToast('Đã cập nhật thành công', 'ok');
 
   closeModal('modal-new-decision');
   renderDecGrid();
@@ -1092,7 +1104,7 @@ function confirmToggleDecisionStatus(id){
   showConfirm(msg, () => {
     d.status = toActive ? 'active' : 'inactive';
     d.updated = 'Hôm nay';
-    showToast(toActive ? 'Đã chuyển sang Active' : 'Đã chuyển sang Inactive', 'ok');
+    showToast('Đã cập nhật thành công', 'ok');
     renderDecGrid();
   }, toActive ? 'Chuyển Active' : 'Chuyển Inactive', toActive ? 'btn-primary' : 'btn-danger');
 }
@@ -1214,7 +1226,7 @@ function saveProcessPicker(){
   d.updated = 'Hôm nay';
   closeProcessPicker();
   renderDecGrid();
-  showToast('Đã gán quy trình xử lý', 'ok');
+  showToast('Đã cập nhật thành công', 'ok');
 }
 
 document.getElementById('process-picker-search').addEventListener('focus', openProcessPickerMenu);

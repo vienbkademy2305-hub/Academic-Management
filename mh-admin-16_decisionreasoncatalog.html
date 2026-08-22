@@ -138,6 +138,11 @@
           <select class="fc" id="type-filter-select" style="width:320px">
             <option value="all">Tất cả loại quyết định</option>
           </select>
+          <select class="fc" id="status-filter-select" style="width:180px">
+            <option value="all">Tất cả trạng thái</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
 
         <div class="tbl-wrap">
@@ -311,6 +316,7 @@ const REASON_PAGE_SIZE = 20;
 let currentPage = 1;
 
 function currentTypeFilter(){ return document.getElementById('type-filter-select').value; }
+function currentStatusFilter(){ return document.getElementById('status-filter-select').value; }
 function currentReasonSearch(){ return document.getElementById('reason-search').value.trim().toLowerCase(); }
 
 function reasonById(id){ return REASONS.find(r => r.id === id); }
@@ -318,10 +324,12 @@ function reasonById(id){ return REASONS.find(r => r.id === id); }
 function renderGrid(){
   const tbody = document.getElementById('reason-tbody');
   const typeFilter = currentTypeFilter();
+  const statusFilter = currentStatusFilter();
   const nameQuery = currentReasonSearch();
 
   let list = REASONS.slice();
   if (typeFilter !== 'all') list = list.filter(r => r.typeNames.includes(typeFilter));
+  if (statusFilter !== 'all') list = list.filter(r => r.status === statusFilter);
   if (nameQuery) list = list.filter(r => r.name.toLowerCase().includes(nameQuery));
 
   const totalPages = Math.max(1, Math.ceil(list.length / REASON_PAGE_SIZE));
@@ -376,6 +384,7 @@ function renderPagination(totalItems, totalPages){
 function goToPage(p){ currentPage = p; renderGrid(); }
 
 document.getElementById('type-filter-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
+document.getElementById('status-filter-select').addEventListener('change', () => { currentPage = 1; renderGrid(); });
 document.getElementById('reason-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
 
 /* == Combobox NHIỀU lựa chọn (checkbox) cho "Loại quyết định" ở modal Thêm/Sửa — copy pattern từ

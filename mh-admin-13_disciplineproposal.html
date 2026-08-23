@@ -423,10 +423,10 @@
 
           <div id="ddet-sv-edit" style="display:none">
             <div class="cd-sv-toolbar">
-              <div class="unit-combo" id="cd-sv-add-combo" style="flex:1">
-                <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV để thêm…" autocomplete="off">
-                <div class="unit-combo-menu" id="cd-sv-add-menu"></div>
-              </div>
+              <!-- Chỉ còn lọc trong danh sách đã thêm (KHÔNG còn thêm mới ở đây) — thêm mới giao hẳn
+                   cho popup "+ Thêm sinh viên" (openAddStudentModal()), xem renderCdSvTable(). -->
+              <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="flex:1" oninput="renderCdSvTable()">
+              <button type="button" class="btn btn-default" onclick="openAddStudentModal()">+ Thêm sinh viên</button>
               <button type="button" class="btn btn-default" onclick="openImportSvModal()">Import DS sinh viên</button>
             </div>
             <div class="tbl-wrap">
@@ -440,14 +440,14 @@
 
         <div class="ddet-action-bar">
           <button class="btn btn-default" id="ddet-btn-edit" style="display:none" onclick="openEditProposal()">Chỉnh sửa</button>
-          <button class="btn btn-primary" id="ddet-btn-submit-draft" style="display:none" onclick="submitDraft()">Nộp duyệt</button>
+          <button class="btn btn-primary" id="ddet-btn-submit-draft" style="display:none" onclick="submitDraft()">Nộp</button>
           <button class="btn btn-danger" id="ddet-btn-reject" style="display:none" onclick="approveStep('reject')">Từ chối</button>
           <button class="btn btn-default" id="ddet-btn-revise" style="display:none" onclick="approveStep('revise')">Yêu cầu chỉnh sửa</button>
           <button class="btn btn-primary" id="ddet-btn-approve" style="display:none" onclick="approveStep('approve')">Đồng ý</button>
 
           <button class="btn btn-default" id="ddet-edit-btn-cancel" style="display:none" onclick="cancelEdit()">Huỷ</button>
           <button class="btn btn-default" id="cd-btn-save-draft" style="display:none" onclick="submitCreate(true)">Lưu nháp</button>
-          <button class="btn btn-primary" id="cd-btn-submit" style="display:none" onclick="submitCreate(false)">Nộp duyệt</button>
+          <button class="btn btn-primary" id="cd-btn-submit" style="display:none" onclick="submitCreate(false)">Nộp</button>
         </div>
       </div>
 
@@ -608,6 +608,22 @@
   </div>
 </div>
 
+<!-- Popup Thêm sinh viên — cùng pattern popup ở mh-admin-08 (modal-add-student). Chỉ 1 ô search —
+     KHÔNG hiện gợi ý khi ô trống, chỉ hiện danh sách khớp sau khi gõ (tìm theo Mã sinh viên/Họ
+     tên/CCCD). Click 1 dòng để thêm ngay, đóng popup luôn — mỗi lần chỉ thêm 1 SV. -->
+<div class="overlay hidden" id="modal-add-student">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title">Thêm sinh viên</h3>
+      <button class="modal-close" data-close="modal-add-student">✕</button>
+    </div>
+    <div class="modal-bd">
+      <input class="fc" id="add-student-modal-search" type="text" placeholder="🔍 Tìm theo Mã sinh viên, Họ tên hoặc CCCD…" autocomplete="off">
+      <div id="add-student-modal-list" style="margin-top:8px;max-height:360px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
 <script src="_utils.js"></script>
 <!-- SheetJS (nhúng local, không gọi CDN) — dùng để đọc thật file .xlsx nhị phân ở popup Import
      Danh sách sinh viên, cùng thư viện với popup Import ở mh-admin-10. -->
@@ -717,6 +733,9 @@ const STUDENT_DIRECTORY = [
   { mssv:'20120306', name:'Vũ Thị Kim Ngân', ctdt:'An toàn thông tin', lopHc:'CT4506', gpa:2.30, drl:56, unit:'u-cntt', status:'dangHoc' },
   { mssv:'20120309', name:'Đỗ Văn Khánh', ctdt:'Khoa học máy tính', lopHc:'CT4603', gpa:2.10, drl:49, unit:'u-cntt', status:'tamDung' },
 ];
+/* CCCD (mock) — sinh tự động theo thứ tự (12 số, không dùng dữ liệu thật) để hỗ trợ tìm kiếm theo
+   CCCD ở popup Thêm sinh viên (xem openAddStudentModal()), tránh phải nhập tay cho từng dòng ở trên. */
+STUDENT_DIRECTORY.forEach((s, i) => { s.cccd = '079' + String(200000000 + i * 137).padStart(9, '0').slice(0, 9); });
 
 /* ============================================================
    DATA — đề xuất kỷ luật (mock)
@@ -1183,13 +1202,26 @@ function cancelEdit(){
   else closeDetail();
 }
 
-/* Bảng SV: checkbox, MSSV, Họ tên, Lớp HC, Đơn vị, CTĐT, Hình thức kỷ luật, Ghi chú, Thao tác
-   (Sửa Hình thức/Ghi chú qua popup + Xoá) — copy pattern renderCdSvTable() từ mh-admin-10, bỏ
-   GPA/ĐRL vì không cần thiết cho luồng kỷ luật (không dùng để xét chọn như khen thưởng). */
+/* Bảng SV: checkbox, MSSV, Họ tên, Lớp HC, Đơn vị, CTĐT, Hình thức kỷ luật, Phân loại lý do, Học
+   kỳ bắt đầu/kết thúc, Ghi chú, Thao tác (chỉ Xoá) — copy pattern renderCdSvTable() từ mh-admin-10,
+   bỏ GPA/ĐRL vì không cần thiết cho luồng kỷ luật (không dùng để xét chọn như khen thưởng).
+   Toàn bộ field riêng theo SV sửa TRỰC TIẾP ngay trong dòng (select/input) — không cần mở
+   modal-sv-edit nữa ở chế độ Tạo mới/Chỉnh sửa toàn bộ đề xuất. modal-sv-edit/openSvEdit() vẫn giữ
+   cho chế độ Sửa nhanh ở view mode khi đề xuất đang "Chờ duyệt" (xem openSvEditQuick()) — 2 ngữ
+   cảnh khác nhau, không gộp. */
 function renderCdSvTable(){
   document.getElementById('cd-sv-thead-row').innerHTML =
-    '<th style="width:40px"></th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:180px">Hình thức kỷ luật</th><th style="width:200px">Phân loại lý do</th><th style="width:150px">Học kỳ bắt đầu</th><th style="width:150px">Học kỳ kết thúc</th><th>Ghi chú</th><th style="width:70px">Thao tác</th>';
-  document.getElementById('cd-sv-tbody').innerHTML = cdStudents.map((r, idx) => `
+    '<th style="width:40px"></th><th style="width:110px">MSSV</th><th>Họ và tên</th><th style="width:90px">Lớp HC</th><th style="width:140px">Đơn vị</th><th>CTĐT</th><th style="width:170px">Hình thức kỷ luật</th><th style="width:170px">Phân loại lý do</th><th style="width:140px">Học kỳ bắt đầu</th><th style="width:140px">Học kỳ kết thúc</th><th style="width:160px">Ghi chú</th><th style="width:50px">Thao tác</th>';
+
+  // Ô cd-sv-add-search giờ CHỈ lọc trong danh sách đã thêm (không còn thêm mới ở đây — xem
+  // openAddStudentModal()). Giữ nguyên INDEX GỐC trong cdStudents (không dùng idx của mảng đã lọc)
+  // để setCdRowType()/setCdRowReason()/.../removeCdRow() luôn trỏ đúng dòng.
+  const filterQ = (document.getElementById('cd-sv-add-search').value || '').trim().toLowerCase();
+  const rows = cdStudents
+    .map((r, idx) => ({ r, idx }))
+    .filter(({ r }) => !filterQ || (r.name || '').toLowerCase().includes(filterQ) || (r.mssv || '').toLowerCase().includes(filterQ) || (r.ctdt || '').toLowerCase().includes(filterQ));
+
+  document.getElementById('cd-sv-tbody').innerHTML = rows.map(({ r, idx }) => `
     <tr>
       <td><input type="checkbox" class="cd-sv-check" data-idx="${idx}"></td>
       <td>${r.mssv}</td>
@@ -1197,22 +1229,44 @@ function renderCdSvTable(){
       <td>${r.lopHc || ''}</td>
       <td>${UNIT_LABEL[r.unit] || ''}</td>
       <td>${r.ctdt}</td>
-      <td>${typeById(r.typeId) ? typeById(r.typeId).name : '<span class="text-muted">— Chưa chọn —</span>'}</td>
-      <td>${reasonById(r.reasonId) ? reasonById(r.reasonId).name : '<span class="text-muted">— Chưa phân loại —</span>'}</td>
-      <td class="text-muted">${r.semesterStart || ''}</td>
-      <td class="text-muted">${r.semesterEnd || ''}</td>
-      <td class="text-muted">${r.note || ''}</td>
+      <td>
+        <select class="fc" onchange="setCdRowType(${idx}, this.value)">
+          <option value="" ${!r.typeId?'selected':''} disabled>— Chọn —</option>
+          ${DISCIPLINE_TYPES.map(t => `<option value="${t.id}" ${t.id===r.typeId?'selected':''}>${t.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="fc" onchange="setCdRowReason(${idx}, this.value)">
+          <option value="" ${!r.reasonId?'selected':''}>— Chưa phân loại —</option>
+          ${REASONS.map(rs => `<option value="${rs.id}" ${rs.id===r.reasonId?'selected':''}>${rs.name}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="fc" onchange="setCdRowSemesterStart(${idx}, this.value)">
+          <option value="" ${!r.semesterStart?'selected':''}>— Chọn học kỳ —</option>
+          ${ALL_SEMESTERS.map(s => `<option value="${s}" ${s===r.semesterStart?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select class="fc" onchange="setCdRowSemesterEnd(${idx}, this.value)">
+          <option value="" ${!r.semesterEnd?'selected':''}>— Chọn học kỳ —</option>
+          ${ALL_SEMESTERS.map(s => `<option value="${s}" ${s===r.semesterEnd?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td><input class="fc" type="text" value="${(r.note || '').replace(/"/g,'&quot;')}" placeholder="Ghi chú…" onchange="setCdRowNote(${idx}, this.value)"></td>
       <td>
         <div class="tbl-actions">
-          <button type="button" class="icon-btn" title="Sửa Hình thức/Ghi chú" onclick="openSvEdit(${idx})">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
           <button type="button" class="icon-btn danger" title="Xoá" onclick="removeCdRow(${idx})">✕</button>
         </div>
       </td>
     </tr>`
-  ).join('') || `<tr><td colspan="11"><div class="tbl-empty">Chưa có sinh viên nào — tìm và thêm ở ô phía trên</div></td></tr>`;
+  ).join('') || `<tr><td colspan="12"><div class="tbl-empty">${filterQ ? `Không tìm thấy sinh viên nào khớp "${document.getElementById('cd-sv-add-search').value}"` : 'Chưa có sinh viên nào — bấm "+ Thêm sinh viên" hoặc Import để bắt đầu'}</div></td></tr>`;
 }
+function setCdRowType(idx, typeId){ if (typeId) cdStudents[idx].typeId = typeId; }
+function setCdRowReason(idx, reasonId){ cdStudents[idx].reasonId = reasonId; }
+function setCdRowSemesterStart(idx, value){ cdStudents[idx].semesterStart = value; }
+function setCdRowSemesterEnd(idx, value){ cdStudents[idx].semesterEnd = value; }
+function setCdRowNote(idx, value){ cdStudents[idx].note = value.trim(); }
 
 /* Tài liệu đính kèm (Khối 1) — chọn nhiều file cùng lúc, cộng dồn vào cdDocuments, mỗi file 1
    dòng có nút Xoá riêng. Demo UI thuần (không đọc/lưu nội dung file thật), chỉ giữ tên + kích
@@ -1245,10 +1299,11 @@ function renderCdDocList(){
 }
 
 /* == Popup Sửa Hình thức kỷ luật / Ghi chú cho 1 SV ==
-   Dùng chung 1 modal cho 2 ngữ cảnh, phân biệt qua svEditTarget:
-   - Form Sửa/Tạo mới toàn bộ đề xuất (openSvEdit): sửa trên mảng tạm cdStudents.
-   - Sửa nhanh ngay ở chế độ Xem khi đề xuất đang "Chờ duyệt" (openSvEditQuick): sửa thẳng vào
-     p.students của đề xuất đang xem, không cần bấm "Chỉnh sửa" toàn bộ. */
+   Chỉ còn dùng cho Sửa nhanh ngay ở chế độ Xem khi đề xuất đang "Chờ duyệt" (openSvEditQuick) —
+   sửa thẳng vào p.students của đề xuất đang xem, không cần bấm "Chỉnh sửa" toàn bộ. Ở form Sửa/Tạo
+   mới toàn bộ đề xuất, các field này đã sửa trực tiếp inline trong bảng (xem renderCdSvTable()/
+   setCdRowType()/setCdRowReason()/setCdRowSemesterStart()/setCdRowSemesterEnd()/setCdRowNote()),
+   không qua modal này nữa. */
 let svEditIdx = null;
 let svEditTarget = null;
 function fillSvEditModal(r){
@@ -1261,12 +1316,6 @@ function fillSvEditModal(r){
   document.getElementById('sved-semester-end').innerHTML = `<option value="" ${!r.semesterEnd?'selected':''}>— Chọn học kỳ —</option>
     ${ALL_SEMESTERS.map(s => `<option value="${s}" ${s===r.semesterEnd?'selected':''}>${s}</option>`).join('')}`;
   document.getElementById('sved-note').value = r.note || '';
-}
-function openSvEdit(idx){
-  svEditIdx = idx;
-  svEditTarget = cdStudents;
-  fillSvEditModal(cdStudents[idx]);
-  openModal('modal-sv-edit');
 }
 function openSvEditQuick(idx){
   const p = proposalById(editingProposalId);
@@ -1285,12 +1334,8 @@ function saveSvEdit(){
   r.semesterEnd = document.getElementById('sved-semester-end').value;
   r.note = document.getElementById('sved-note').value.trim();
   closeModal('modal-sv-edit');
-  if (svEditTarget === cdStudents){
-    renderCdSvTable();
-  } else {
-    renderDetailSvTable(proposalById(editingProposalId), document.getElementById('ddet-sv-search').value);
-    showToast('Đã cập nhật Hình thức kỷ luật', 'ok');
-  }
+  renderDetailSvTable(proposalById(editingProposalId), document.getElementById('ddet-sv-search').value);
+  showToast('Đã cập nhật Hình thức kỷ luật', 'ok');
 }
 
 /* == Import Danh sách sinh viên từ file Excel (.xlsx) thật.
@@ -1516,29 +1561,55 @@ function removeCdRow(idx){
   renderCdSvTable();
 }
 
-/* Ô tìm-thêm SV — tìm theo tên/MSSV, copy pattern setupSvAddCombo() từ mh-admin-10 (bản rút gọn,
-   không có nhánh tìm theo lớp hành chính vì kỷ luật không có khái niệm Tập thể/chọn cả lớp). */
+/* Ô cd-sv-add-search — chỉ reset về rỗng khi mở Tạo mới/Sửa (thêm mới đã chuyển hẳn sang popup
+   "+ Thêm sinh viên", xem openAddStudentModal()); oninput lọc gán trực tiếp trong HTML. */
 function setupSvAddCombo(){
-  const input = document.getElementById('cd-sv-add-search');
-  const menu = document.getElementById('cd-sv-add-menu');
-  input.placeholder = '🔍 Tìm theo tên hoặc MSSV để thêm…';
-  input.value = '';
-  function render(q){
-    const query = (q||'').toLowerCase();
-    const items = STUDENT_DIRECTORY.filter(x => x.name.toLowerCase().includes(query) || x.mssv.includes(query));
-    menu.innerHTML = items.map(x => `<div class="unit-combo-item" data-k="${x.mssv}">${x.mssv} — ${x.name}</div>`).join('') || '<div class="unit-combo-empty">Không tìm thấy</div>';
-    menu.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
-      const key = el.dataset.k;
-      if (!cdStudents.some(s => s.mssv === key)){ const s = STUDENT_DIRECTORY.find(x => x.mssv === key); cdStudents.push({ ...s, typeId:'', note:'' }); }
-      input.value = '';
-      menu.classList.remove('open');
-      renderCdSvTable();
-    }));
-  }
-  input.oninput = () => { render(input.value); menu.classList.add('open'); };
-  input.onfocus = () => { render(''); menu.classList.add('open'); };
-  document.addEventListener('click', e => { if (!input.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('open'); });
+  document.getElementById('cd-sv-add-search').value = '';
 }
+
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+/* Popup "Thêm sinh viên" — lối tắt thay cho gõ trực tiếp vào ô combobox cd-sv-add-search, cùng
+   pattern popup ở mh-admin-08. Chỉ 1 ô search, không hiện gợi ý khi trống, chỉ hiện sau khi gõ.
+   Click 1 dòng để thêm ngay qua TÁI DÙNG đúng shape object của setupSvAddCombo() — đóng popup luôn
+   sau khi thêm, mỗi lần chỉ thêm 1 SV. */
+function openAddStudentModal(){
+  document.getElementById('add-student-modal-search').value = '';
+  renderAddStudentModalList('');
+  openModal('modal-add-student');
+  document.getElementById('add-student-modal-search').focus();
+}
+function renderAddStudentModalList(query){
+  const q = (query || '').trim().toLowerCase();
+  const list = document.getElementById('add-student-modal-list');
+  if (!q){ list.innerHTML = ''; return; }
+  const matches = STUDENT_DIRECTORY.filter(s =>
+    s.name.toLowerCase().includes(q) || s.mssv.toLowerCase().includes(q) || (s.cccd || '').includes(q)
+  );
+  if (!matches.length){
+    list.innerHTML = `<div class="unit-combo-empty">Không tìm thấy sinh viên nào khớp "${query}"</div>`;
+    return;
+  }
+  list.innerHTML = matches.map(s => {
+    const already = cdStudents.some(x => x.mssv === s.mssv);
+    return already
+      ? `<div class="unit-combo-item" style="cursor:default;color:var(--text-3)">${s.mssv} — ${s.name} <span class="text-muted">· ${s.ctdt}</span> <span class="tag tag-default" style="margin-left:4px">Đã thêm</span></div>`
+      : `<div class="unit-combo-item" onclick="pickAddStudentModalRow('${s.mssv}')">${highlightMatch(s.mssv, q)} — ${highlightMatch(s.name, q)} <span class="text-muted">· ${s.ctdt}</span></div>`;
+  }).join('');
+}
+function pickAddStudentModalRow(mssv){
+  if (!cdStudents.some(s => s.mssv === mssv)){
+    const s = STUDENT_DIRECTORY.find(x => x.mssv === mssv);
+    cdStudents.push({ ...s, typeId:'', reasonId:'', semesterStart:'', semesterEnd:'', note:'' });
+    renderCdSvTable();
+  }
+  closeModal('modal-add-student');
+}
+document.getElementById('add-student-modal-search').addEventListener('input', () => renderAddStudentModalList(document.getElementById('add-student-modal-search').value));
 
 function validateCd(){
   const academicYear = document.getElementById('cd-academic-year').value;

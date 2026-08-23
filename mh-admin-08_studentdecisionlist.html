@@ -158,7 +158,7 @@
      tài" thành "Đề tài"; TYPE_DISCIPLINE 10 cột riêng (STT, MSSV, CTĐT, Loại kỷ luật, Năm học, Học
      kỳ bắt đầu, Học kỳ kết thúc, Lý do, Phân loại lý do, xoá) — Năm học/Học kỳ ở đây khai theo TỪNG
      SV, tách biệt với Năm học/Học kỳ CHUNG ở khối 1 (áp dụng cho cả quyết định). */
-  .cd-sv-toolbar{display:flex;gap:8px;margin-bottom:12px}
+  .cd-sv-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
   .cd-sv-reason-select{width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-1);background:#fff;font-family:inherit}
 
   /* Popup xem/tải mẫu file (.docx quyết định + .xlsx import danh sách SV) — copy pattern từ mh-admin-06 */
@@ -686,8 +686,8 @@
           <div class="sec-title"><span class="sec-badge">2</span> Danh sách sinh viên <span class="tag tag-default" id="ddet-sv-title" style="margin-left:6px"></span> <span class="tag tag-default" id="cd-sv-count" style="margin-left:6px;display:none">0 SV</span></div>
 
           <div id="ddet-sv-view">
-            <div class="flex gap-8" style="margin-bottom:12px">
-              <input class="fc" id="ddet-sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="flex:1">
+            <div class="flex gap-8" style="margin-bottom:12px;flex-wrap:wrap">
+              <input class="fc" id="ddet-sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="flex:1;min-width:200px">
               <!-- Xuất dữ liệu — hiện ở MỌI trạng thái quyết định đã tồn tại (Nháp/Chờ duyệt/Đã
                    duyệt/Từ chối/Yêu cầu chỉnh sửa), khác nút cùng tên ở khối Sửa (#cd-sv-btn-export,
                    chỉ hiện khi đang bấm Chỉnh sửa) — xem exportDecisionStudentsXlsx(). -->
@@ -705,17 +705,21 @@
 
           <div id="ddet-sv-edit" style="display:none">
             <div class="cd-sv-toolbar">
-              <div class="unit-combo" id="cd-sv-add-combo" style="flex:1">
-                <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV để thêm…" autocomplete="off">
-                <div class="unit-combo-menu" id="cd-sv-add-menu"></div>
-              </div>
+              <!-- Chỉ còn lọc trong danh sách đã thêm (KHÔNG còn thêm mới ở đây) — thêm mới giao hẳn
+                   cho popup "+ Thêm sinh viên" (openAddStudentModal()), xem renderCreateDecisionStudents(). -->
+              <input class="fc" id="cd-sv-add-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV trong danh sách…" autocomplete="off" style="flex:1;min-width:200px" oninput="cdSvPage = 1; renderCreateDecisionStudents();">
               <!-- Chỉ hiện khi có ≥1 dòng được tích chọn qua checkbox đầu bảng, xem toggleCdSvRow()/
                    updateCdSvDeleteSelectedBtn(). -->
               <button type="button" class="btn btn-danger" id="cd-sv-btn-delete-selected" style="display:none" onclick="deleteCdSvSelected()">Xóa đã chọn (0)</button>
+              <!-- Thứ tự cố định: Thêm sinh viên → Import danh sách → Xuất dữ liệu. -->
+              <!-- Thêm sinh viên — mở popup tìm-chọn 1 SV (modal-add-student, xem openAddStudentModal()).
+                   Chỉ hiện ở khối Sửa/Tạo mới — người dùng cần bấm "Chỉnh sửa" (từ Nháp/Yêu cầu chỉnh
+                   sửa) hoặc đang "Tạo quyết định" mới thấy nút này, không có ở màn Xem (view mode). -->
+              <button type="button" class="btn btn-default" onclick="openAddStudentModal()">+ Thêm sinh viên</button>
+              <button type="button" class="btn btn-default" onclick="openCreateDecisionImportModal()">Import danh sách</button>
               <!-- Xuất dữ liệu — CHỈ hiện khi đang Sửa quyết định có sẵn (editingDecisionCode có giá
                    trị), ẨN khi đang Tạo mới vì chưa có gì để xuất. Toggle ở ddetApplyMode(). -->
               <button type="button" class="btn btn-default" id="cd-sv-btn-export" style="display:none" onclick="exportCreateDecisionStudentsXlsx()">Xuất dữ liệu</button>
-              <button type="button" class="btn btn-default" onclick="openCreateDecisionImportModal()">Import danh sách</button>
             </div>
             <div class="tbl-wrap">
               <table class="tbl" style="min-width:1150px">
@@ -734,8 +738,8 @@
              ddetMode==='view') và nhóm edit/create (ddet-edit-btn-*, hiện khi ddetMode!=='view'). -->
         <div class="ddet-action-bar">
           <button class="btn btn-default" id="ddet-btn-edit" style="display:none" onclick="openEditExistingDecision()">Chỉnh sửa</button>
-          <button class="btn btn-primary" id="ddet-btn-submit-draft" style="display:none" onclick="submitDraftDecision()">Nộp duyệt</button>
-          <button class="btn btn-primary" id="ddet-btn-resubmit" style="display:none" onclick="resubmitDecision()">Nộp lại</button>
+          <button class="btn btn-primary" id="ddet-btn-submit-draft" style="display:none" onclick="submitDraftDecision()">Nộp</button>
+          <button class="btn btn-primary" id="ddet-btn-resubmit" style="display:none" onclick="resubmitDecision()">Nộp</button>
           <button class="btn btn-warning" id="ddet-btn-revise" style="display:none" onclick="approveDecision('revise')">Yêu cầu chỉnh sửa</button>
           <button class="btn btn-danger" id="ddet-btn-reject" style="display:none" onclick="approveDecision('reject')">Từ chối</button>
           <button class="btn btn-primary" id="ddet-btn-approve" style="display:none" onclick="approveDecision('approve')">Đồng ý</button>
@@ -744,7 +748,7 @@
                submitCreateDecision()/cd-btn-* id để JS gốc không cần sửa. -->
           <button class="btn btn-default" id="ddet-edit-btn-cancel" style="display:none" onclick="ddetCancelEdit()">Huỷ</button>
           <button class="btn btn-default" id="cd-btn-save-draft" style="display:none" onclick="submitCreateDecision(true)">Lưu nháp</button>
-          <button class="btn btn-primary" id="cd-btn-submit" style="display:none" onclick="submitCreateDecision(false)">Tạo quyết định</button>
+          <button class="btn btn-primary" id="cd-btn-submit" style="display:none" onclick="submitCreateDecision(false)">Nộp</button>
         </div>
       </div>
 
@@ -882,6 +886,24 @@
     <div class="modal-ft">
       <button class="btn btn-default" data-close="modal-cd-import-students">Huỷ</button>
       <button class="btn btn-primary" id="cd-import-commit-btn" onclick="commitImportPreview()">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Popup Thêm sinh viên — thay cho dropdown gợi ý inline cũ dưới ô cd-sv-add-search, cho phép tìm
+     theo Mã sinh viên/Họ tên/CCCD trong 1 popup riêng. Giữ đúng kiểu combobox cũ: gõ vào ô → danh
+     sách gợi ý xổ ngay dưới ô trong CÙNG popup → click 1 dòng bất kỳ để thêm ngay (giữ popup mở để
+     tiếp tục thêm SV khác), xem openAddStudentModal()/renderAddStudentModalList()/
+     pickAddStudentModalRow(). -->
+<div class="overlay hidden" id="modal-add-student">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title">Thêm sinh viên</h3>
+      <button class="modal-close" data-close="modal-add-student">✕</button>
+    </div>
+    <div class="modal-bd">
+      <input class="fc" id="add-student-modal-search" type="text" placeholder="🔍 Tìm theo Mã sinh viên, Họ tên hoặc CCCD…" autocomplete="off">
+      <div id="add-student-modal-list" style="margin-top:8px;max-height:360px;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -1932,6 +1954,11 @@ const STUDENT_DIRECTORY = [
   { id:'sd53', mssv:'20120349', name:'Hồ Minh Hùng', ngaySinh:'18/12/2003', lop:'CT4505', donViQuanLy:'Khoa CNTT', ctdt:'Kỹ thuật phần mềm', nganh:'Kỹ thuật phần mềm', status:'danghoc', ctdtCode:'KTPM' },
   { id:'sd54', mssv:'20120350', name:'Ngô Thanh Nga', ngaySinh:'03/07/2004', lop:'CT4506', donViQuanLy:'Khoa CNTT', ctdt:'An toàn thông tin', nganh:'An toàn thông tin', status:'danghoc', ctdtCode:'ATTT' },
 ];
+/* CCCD (mock) — sinh tự động theo id (12 số, không dùng dữ liệu thật) để hỗ trợ tìm kiếm theo CCCD
+   ở popup Thêm sinh viên (xem openAddStudentModal()), tránh phải nhập tay 12 số cho từng dòng ở
+   trên. 2 dòng cùng 1 người (sd01/sd02, sd11/sd12) vẫn ra CCCD khác nhau vì tính theo "id" — chấp
+   nhận được vì đây chỉ là dữ liệu demo, không phải nghiệp vụ thật (1 người chỉ có 1 CCCD). */
+STUDENT_DIRECTORY.forEach((s, i) => { s.cccd = '079' + String(200000000 + i * 137).padStart(9, '0').slice(0, 9); });
 
 /* Yêu cầu đổi đề tài của SV (mock) — mô phỏng dữ liệu đã có ở màn mh-sv-05_mychangerequests (SV tự
    khai đề tài hiện tại + số QĐ giao đề tài + đề tài mới đề xuất). Dùng làm nguồn auto-fill khi Admin
@@ -2003,9 +2030,7 @@ function deleteCdSvSelected(){
 function openCreateDecisionNew(){
   editingDecisionCode = null;
   openingDecisionId = null;
-  // Reset text về mặc định "Tạo quyết định" — tránh giữ text "Nộp lại"/"Nộp duyệt" còn sót lại từ
-  // lần trước đó bấm "Chỉnh sửa" 1 bản ghi có sẵn (xem openEditExistingDecision()).
-  document.getElementById('cd-btn-submit').textContent = 'Tạo quyết định';
+  document.getElementById('cd-btn-submit').textContent = 'Nộp';
   document.getElementById('cd-type').value = '';
   document.getElementById('cd-type-search').value = '';
   document.getElementById('cd-academic-year').value = '';
@@ -2221,9 +2246,9 @@ function cdSvCheckboxCellHtml(s){
    danh sách nhiều GV thực hiện ở màn khác, VD mh-kcm-07/gvList), rút gọn còn tên đầu tiên + "..."
    nếu còn nữa. Nhận cả string đơn (dữ liệu legacy) lẫn mảng (nhiều GV) để không phá field cũ. */
 function gvListSummaryHtml(value){
-  if (!value) return '—';
+  if (!value) return '';
   const list = Array.isArray(value) ? value : [value];
-  if (!list.length) return '—';
+  if (!list.length) return '';
   const extra = list.length > 1 ? ` <span style="color:var(--text-3)">... (${list.length})</span>` : '';
   return `${list[0]}${extra}`;
 }
@@ -2237,10 +2262,17 @@ function renderCreateDecisionStudents(){
 
   document.getElementById('cd-sv-count').textContent = createDecisionStudents.length + ' SV';
 
-  const totalPages = Math.max(1, Math.ceil(createDecisionStudents.length / CD_SV_PAGE_SIZE));
+  // Lọc theo ô cd-sv-add-search (nay chỉ lọc trong danh sách đã thêm, KHÔNG còn thêm mới ở đây —
+  // xem HTML cd-sv-add-search + openAddStudentModal() cho việc thêm mới).
+  const filterQ = (document.getElementById('cd-sv-add-search').value || '').trim().toLowerCase();
+  const filteredStudents = filterQ
+    ? createDecisionStudents.filter(s => (s.name || '').toLowerCase().includes(filterQ) || (s.mssv || '').toLowerCase().includes(filterQ) || (s.ctdt || '').toLowerCase().includes(filterQ))
+    : createDecisionStudents;
+
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / CD_SV_PAGE_SIZE));
   if (cdSvPage > totalPages) cdSvPage = totalPages;
   const pageStart = (cdSvPage - 1) * CD_SV_PAGE_SIZE;
-  const pageStudents = createDecisionStudents.slice(pageStart, pageStart + CD_SV_PAGE_SIZE);
+  const pageStudents = filteredStudents.slice(pageStart, pageStart + CD_SV_PAGE_SIZE);
 
   document.getElementById('cd-sv-tbody').innerHTML = pageStudents.length ? pageStudents.map((s) => {
 
@@ -2249,8 +2281,8 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.ngaySinh || '—'}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.ngaySinh || ''}</td>
+      <td class="text-muted">${s.lop || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập cơ sở thực tập…" value="${s.cstt || ''}" onchange="setCreateDecisionStudentCstt('${s.id}', this.value)"></td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập địa chỉ…" value="${s.diaChiCstt || ''}" onchange="setCreateDecisionStudentDiaChiCstt('${s.id}', this.value)"></td>
@@ -2263,8 +2295,8 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.lopHocPhan || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.lopHocPhan || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập tên đề tài…" value="${s.tenDeTai || ''}" onchange="setCreateDecisionStudentTenDeTai('${s.id}', this.value)"></td>
       <td class="text-muted">${gvListSummaryHtml(s.gvhdDeTai)}</td>
@@ -2278,7 +2310,7 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập tên đề tài…" value="${s.tenDeTai || ''}" onchange="setCreateDecisionStudentTenDeTai('${s.id}', this.value)"></td>
       <td class="text-muted">${gvListSummaryHtml(s.gvhdDeTai)}</td>
@@ -2291,7 +2323,7 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td>${s.oldDecisionCode
           ? `<div class="text-muted">${s.oldTenDeTai}</div><div style="font-size:12px;color:var(--muted,#888)">Theo QĐ số ${s.oldDecisionCode} ngày ${s.oldDecisionDate}</div>`
@@ -2307,8 +2339,8 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
       <td><input class="cd-sv-reason-select" type="text" inputmode="decimal" placeholder="Nhập ĐTB…" value="${s.dtbNienKhoa || ''}" onchange="setCreateDecisionStudentDtb('${s.id}', this.value)"></td>
@@ -2365,8 +2397,8 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
       <td>
@@ -2395,8 +2427,8 @@ function renderCreateDecisionStudents(){
       ${cdSvCheckboxCellHtml(s)}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
       <td>
@@ -2407,13 +2439,13 @@ function renderCreateDecisionStudents(){
       </td>
       ${cdSvNoteAndDeleteCellsHtml(s)}
     </tr>`;
-  }).join('') : `<tr><td colspan="${CD_SV_COL_COUNT[mode]}"><div class="tbl-empty">Chưa có sinh viên nào trong danh sách</div></td></tr>`;
+  }).join('') : `<tr><td colspan="${CD_SV_COL_COUNT[mode]}"><div class="tbl-empty">${filterQ ? `Không tìm thấy sinh viên nào khớp "${document.getElementById('cd-sv-add-search').value}"` : 'Chưa có sinh viên nào trong danh sách'}</div></td></tr>`;
 
   const checkAll = document.getElementById('cd-sv-check-all');
   if (checkAll) checkAll.checked = pageStudents.length > 0 && pageStudents.every(s => cdSvSelectedIds.has(s.id));
   updateCdSvDeleteSelectedBtn();
 
-  renderCreateDecisionStudentsPagination(createDecisionStudents.length, totalPages);
+  renderCreateDecisionStudentsPagination(filteredStudents.length, totalPages);
 }
 
 function renderCreateDecisionStudentsPagination(totalItems, totalPages){
@@ -2585,29 +2617,41 @@ function removeCreateDecisionStudent(id){
   renderCreateDecisionStudents();
 }
 
-/* Combobox tìm + thêm từng sinh viên — gõ tên hoặc MSSV; nếu MSSV đó học nhiều CTĐT thì mỗi CTĐT
-   hiện thành 1 dòng riêng trong gợi ý (kèm tên CTĐT) để Admin chọn đúng chương trình cần áp dụng,
-   không gộp chung thành 1 "sinh viên" mập mờ. */
-function renderCreateDecisionAddMenu(query){
-  const q = (query || '').trim();
-  const menu = document.getElementById('cd-sv-add-menu');
-  const matches = q ? STUDENT_DIRECTORY.filter(s => s.name.toLowerCase().includes(q.toLowerCase()) || s.mssv.toLowerCase().includes(q.toLowerCase())) : STUDENT_DIRECTORY;
-  menu.innerHTML = matches.length ? matches.map(s => `
-    <div class="unit-combo-item" onclick="pickCreateDecisionStudent('${s.id}')">${highlightMatch(s.name, q)} <span class="text-muted">— ${s.mssv} · ${s.ctdt}</span></div>`).join('')
-    : `<div class="unit-combo-empty">Không tìm thấy sinh viên nào khớp "${q}"</div>`;
+/* Popup "Thêm sinh viên" — điểm truy cập DUY NHẤT để thêm SV mới (ô cd-sv-add-search ở toolbar nay
+   chỉ lọc trong danh sách đã thêm, xem renderCreateDecisionStudents()). Chỉ 1 ô search — KHÔNG hiện
+   gợi ý nào khi ô trống, chỉ hiện danh sách khớp sau khi người dùng gõ (tìm theo Mã sinh viên/Họ
+   tên/CCCD). Click 1 dòng để thêm qua addCreateDecisionStudent() — TÁI DÙNG nguyên logic
+   nghiệp vụ theo loại quyết định (topic change auto-fill, reviewer assignment...), chỉ khác cách
+   chọn SV. Mỗi lần chỉ thêm được 1 SV — chọn xong đóng popup luôn, không giữ mở thêm liên tiếp. */
+function openAddStudentModal(){
+  document.getElementById('add-student-modal-search').value = '';
+  renderAddStudentModalList('');
+  openModal('modal-add-student');
+  document.getElementById('add-student-modal-search').focus();
 }
-function openCreateDecisionAddMenu(){ renderCreateDecisionAddMenu(document.getElementById('cd-sv-add-search').value); document.getElementById('cd-sv-add-menu').classList.add('open'); }
-function closeCreateDecisionAddMenu(){ document.getElementById('cd-sv-add-menu').classList.remove('open'); }
-function pickCreateDecisionStudent(id){
+function renderAddStudentModalList(query){
+  const q = (query || '').trim().toLowerCase();
+  const list = document.getElementById('add-student-modal-list');
+  if (!q){ list.innerHTML = ''; return; }
+  const matches = STUDENT_DIRECTORY.filter(s =>
+    s.name.toLowerCase().includes(q) || s.mssv.toLowerCase().includes(q) || (s.cccd || '').includes(q)
+  );
+  if (!matches.length){
+    list.innerHTML = `<div class="unit-combo-empty">Không tìm thấy sinh viên nào khớp "${query}"</div>`;
+    return;
+  }
+  list.innerHTML = matches.map(s => {
+    const already = createDecisionStudents.some(x => x.id === s.id);
+    return already
+      ? `<div class="unit-combo-item" style="cursor:default;color:var(--text-3)">${s.mssv} — ${s.name} <span class="text-muted">· ${s.ctdt}</span> <span class="tag tag-default" style="margin-left:4px">Đã thêm</span></div>`
+      : `<div class="unit-combo-item" onclick="pickAddStudentModalRow('${s.id}')">${highlightMatch(s.mssv, q)} — ${highlightMatch(s.name, q)} <span class="text-muted">· ${s.ctdt}</span></div>`;
+  }).join('');
+}
+function pickAddStudentModalRow(id){
   addCreateDecisionStudent(id);
-  document.getElementById('cd-sv-add-search').value = '';
-  closeCreateDecisionAddMenu();
+  closeModal('modal-add-student');
 }
-document.getElementById('cd-sv-add-search').addEventListener('focus', openCreateDecisionAddMenu);
-document.getElementById('cd-sv-add-search').addEventListener('input', openCreateDecisionAddMenu);
-document.addEventListener('click', e => {
-  if (!document.getElementById('cd-sv-add-combo').contains(e.target)) closeCreateDecisionAddMenu();
-});
+document.getElementById('add-student-modal-search').addEventListener('input', () => renderAddStudentModalList(document.getElementById('add-student-modal-search').value));
 
 /* Import từ file Excel .xlsx (4 cột: Mã sinh viên*, Mã CTĐT, Phân loại lý do, Ghi chú) — giải quyết
    bài toán 1 quyết định áp dụng cho hàng chục/hàng trăm SV cùng lúc, và Mã CTĐT trong file tự giải
@@ -2909,7 +2953,7 @@ function buildImportPreview(rows, type){
   importPreviewRows = rows.flatMap(row => {
     const mssvRaw = (row[1] || '').trim();
     const ctdtCodeRaw = (row[3] || '').trim();
-    if (!mssvRaw) return [{ mssv:'—', status:'missingMssv' }];
+    if (!mssvRaw) return [{ mssv:'', status:'missingMssv' }];
 
     let matches = STUDENT_DIRECTORY.filter(x => x.mssv.toLowerCase() === mssvRaw.toLowerCase());
     if (ctdtCodeRaw){
@@ -2986,8 +3030,8 @@ function renderImportPreview(){
       <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
       <td class="text-muted">${idx + 1}</td>
       <td><span class="di-code">${r.mssv}</span></td>
-      <td style="white-space:nowrap">${r.name || '—'}</td>
-      <td class="text-muted">${r.ctdt || '—'}</td>
+      <td style="white-space:nowrap">${r.name || ''}</td>
+      <td class="text-muted">${r.ctdt || ''}</td>
       <td class="text-muted">${r.cstt || ''}</td>
       <td class="text-muted">${r.diaChiCstt || ''}</td>
       <td class="text-muted">${r.gvhd || ''}</td>
@@ -3000,8 +3044,8 @@ function renderImportPreview(){
       <td><input type="checkbox" ${r.status === 'valid' ? '' : 'disabled'} ${r.selected ? 'checked' : ''} onchange="toggleImportPreviewRowSelection(${idx}, this.checked)"></td>
       <td class="text-muted">${idx + 1}</td>
       <td><span class="di-code">${r.mssv}</span></td>
-      <td style="white-space:nowrap">${r.name || '—'}</td>
-      <td class="text-muted">${r.ctdt || '—'}</td>
+      <td style="white-space:nowrap">${r.name || ''}</td>
+      <td class="text-muted">${r.ctdt || ''}</td>
       <td class="text-muted">${r.lyDo || ''}</td>
       <td class="text-muted">${r.lyDoText || ''}</td>
       ${errCellHtml}
@@ -3366,8 +3410,8 @@ function renderGrid(){
       <td class="text-muted">${(currentPage-1)*DI_PAGE_SIZE + idx + 1}</td>
       <td><span class="di-sv-name">${d.typeName}</span></td>
       <td>${d.code ? `<span class="di-code">${d.code}</span>` : ''}</td>
-      <td class="text-muted">${d.effectiveDate || '—'}</td>
-      <td class="text-muted">${d.semesterStart && d.academicYear ? `${d.semesterStart} - ${d.academicYear}` : '—'}</td>
+      <td class="text-muted">${d.effectiveDate || ''}</td>
+      <td class="text-muted">${d.semesterStart && d.academicYear ? `${d.semesterStart} - ${d.academicYear}` : ''}</td>
       <td>${userDisplayHtml(d.createdBy)}</td>
       <td class="text-muted">${d.created}</td>
       <td class="text-muted">${d.students.length}</td>
@@ -3492,7 +3536,7 @@ function renderDecisionSteps(d){
 
     // Mặc định: bước CHƯA tới lượt (tương lai, chưa có lịch sử) — hiện cùng nhãn/tag "Chờ duyệt"
     // (tag-warning) với bước đang xử lý hiện tại, không còn phân biệt riêng "Chưa tới lượt" nữa.
-    let handler = '—', time = '—', label = 'Chờ duyệt', tagClass = 'tag-warning', note = '';
+    let handler = '', time = '', label = 'Chờ duyệt', tagClass = 'tag-warning', note = '';
     const receivedTime = isSubmitStep ? null : prevStepTime;
 
     if (isCurrentStep && d.status === 'Chờ duyệt'){
@@ -3502,14 +3546,14 @@ function renderDecisionSteps(d){
       label = 'Chờ duyệt';
       tagClass = 'tag-warning';
     } else if (historyEntry){
-      handler = historyEntry.handler || '—';
-      time = historyEntry.time || '—';
+      handler = historyEntry.handler || '';
+      time = historyEntry.time || '';
       label = historyEntry.status;
       tagClass = STATUS_TAG_CLASS[historyEntry.status] || 'tag-default';
       note = historyEntry.note || '';
-      prevStepTime = time !== '—' ? time : prevStepTime;
+      prevStepTime = time !== '' ? time : prevStepTime;
     } else if (d.status === 'Từ chối'){
-      handler = step.approvers.length ? step.approvers.join(', ') : '—';
+      handler = step.approvers.length ? step.approvers.join(', ') : '';
       label = 'Bỏ qua';
       tagClass = 'tag-default';
     } else if (step.approvers.length){
@@ -3523,8 +3567,8 @@ function renderDecisionSteps(d){
       <td class="text-muted">${isSubmitStep ? '' : (step.dept || '')}</td>
       <td class="text-muted">${isSubmitStep ? '' : (step.role || '')}</td>
       <td>${handler}</td>
-      <td class="text-muted">${receivedTime || (isSubmitStep && time !== '—' ? time : '')}</td>
-      <td class="text-muted">${time === '—' ? '' : time}</td>
+      <td class="text-muted">${receivedTime || (isSubmitStep && time !== '' ? time : '')}</td>
+      <td class="text-muted">${time}</td>
       <td><span class="tag ${tagClass}">${label}</span></td>
       <td class="text-muted">${note}</td>
     </tr>`;
@@ -3651,20 +3695,20 @@ function renderDecisionStudents(d, query){
       : (canEditSv ? `<td><button type="button" class="icon-btn" title="Chỉnh sửa" onclick="toggleDdetSvEditRow(${idx})">✎</button></td>` : `<td></td>`);
     const ghiChuCell = isEditing
       ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-ghichu-${idx}" value="${s.lyDoText || ''}"></td>`
-      : `<td class="text-muted">${s.lyDoText || '—'}</td>`;
+      : `<td class="text-muted">${s.lyDoText || ''}</td>`;
 
     if (mode === 'reviewerAssignment') return `
     <tr>
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.lopHocPhan || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || '—'}</td>`}
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.lopHocPhan || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || ''}</td>`}
       <td class="text-muted">${gvListSummaryHtml(s.gvhdDeTai)}</td>
       <td class="text-muted">${gvListSummaryHtml(s.gvpb)}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || '—'}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3674,11 +3718,11 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.ngaySinh || '—'}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-cstt-${idx}" value="${s.cstt || ''}"></td>` : `<td class="text-muted">${s.cstt || '—'}</td>`}
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-diachi-${idx}" value="${s.diaChiCstt || ''}"></td>` : `<td class="text-muted">${s.diaChiCstt || '—'}</td>`}
+      <td class="text-muted">${s.ngaySinh || ''}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-cstt-${idx}" value="${s.cstt || ''}"></td>` : `<td class="text-muted">${s.cstt || ''}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-diachi-${idx}" value="${s.diaChiCstt || ''}"></td>` : `<td class="text-muted">${s.diaChiCstt || ''}</td>`}
       <td class="text-muted">${gvListSummaryHtml(s.gvhd)}</td>
       ${ghiChuCell}
       ${actionCell}
@@ -3689,11 +3733,11 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || '—'}</td>`}
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || ''}</td>`}
       <td class="text-muted">${gvListSummaryHtml(s.gvhdDeTai)}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || '—'}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3706,14 +3750,14 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
       <td>${s.oldDecisionCode
           ? `<div class="text-muted">${s.oldTenDeTai}</div><div style="font-size:12px;color:var(--muted,#888)">Theo QĐ số ${s.oldDecisionCode} ngày ${s.oldDecisionDate}</div>`
           : `<span class="text-muted">—</span>`}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || '—'}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-tendetai-${idx}" value="${s.tenDeTai || ''}"></td>` : `<td class="text-muted">${s.tenDeTai || ''}</td>`}
       <td class="text-muted">${gvListSummaryHtml(s.gvhdDeTai)}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || '—'}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-donvicongtac-${idx}" value="${s.donViCongTac || ''}"></td>` : `<td class="text-muted">${s.donViCongTac || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3723,12 +3767,12 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" inputmode="decimal" id="ddet-sv-edit-dtb-${idx}" value="${s.dtbNienKhoa || ''}"></td>` : `<td class="text-muted">${s.dtbNienKhoa || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-xeploai-${idx}"><option value="">— Chưa xếp loại —</option>${XEP_LOAI_TOAN_KHOA_OPTIONS.map(x => `<option value="${x}" ${s.xepLoaiToanKhoa === x ? 'selected' : ''}>${x}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.xepLoaiToanKhoa || '—'}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" inputmode="decimal" id="ddet-sv-edit-dtb-${idx}" value="${s.dtbNienKhoa || ''}"></td>` : `<td class="text-muted">${s.dtbNienKhoa || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-xeploai-${idx}"><option value="">— Chưa xếp loại —</option>${XEP_LOAI_TOAN_KHOA_OPTIONS.map(x => `<option value="${x}" ${s.xepLoaiToanKhoa === x ? 'selected' : ''}>${x}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.xepLoaiToanKhoa || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3737,13 +3781,13 @@ function renderDecisionStudents(d, query){
     <tr>
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluatloai-${idx}"><option value="">— Chọn loại kỷ luật —</option>${DISCIPLINE_TYPE_OPTIONS.map(o => `<option value="${o}" ${s.disciplineType === o ? 'selected' : ''}>${o}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineType || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluatnam-${idx}"><option value="">— Năm học —</option>${DISCIPLINE_ACADEMIC_YEAR_OPTIONS.map(y => `<option value="${y}" ${s.disciplineYear === y ? 'selected' : ''}>${y}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineYear || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluathkbd-${idx}"><option value="">— Chọn học kỳ —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterStart === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineSemesterStart || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluathkkt-${idx}"><option value="">— Không áp dụng —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterEnd === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineSemesterEnd || '—'}</td>`}
-      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-kyluatlydo-${idx}" value="${s.disciplineReasonText || ''}"></td>` : `<td class="text-muted">${s.disciplineReasonText || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || '—'}</td>`}
+      <td class="text-muted">${s.ctdt || ''}</td>
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluatloai-${idx}"><option value="">— Chọn loại kỷ luật —</option>${DISCIPLINE_TYPE_OPTIONS.map(o => `<option value="${o}" ${s.disciplineType === o ? 'selected' : ''}>${o}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineType || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluatnam-${idx}"><option value="">— Năm học —</option>${DISCIPLINE_ACADEMIC_YEAR_OPTIONS.map(y => `<option value="${y}" ${s.disciplineYear === y ? 'selected' : ''}>${y}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineYear || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluathkbd-${idx}"><option value="">— Chọn học kỳ —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterStart === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineSemesterStart || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-kyluathkkt-${idx}"><option value="">— Không áp dụng —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.disciplineSemesterEnd === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.disciplineSemesterEnd || ''}</td>`}
+      ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-kyluatlydo-${idx}" value="${s.disciplineReasonText || ''}"></td>` : `<td class="text-muted">${s.disciplineReasonText || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || ''}</td>`}
       ${actionCell}
     </tr>`;
 
@@ -3752,13 +3796,13 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-nghihockbd-${idx}"><option value="">— Chọn học kỳ —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.leaveSemesterStart === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.leaveSemesterStart || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-nghihockkt-${idx}"><option value="">— Không áp dụng —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.leaveSemesterEnd === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.leaveSemesterEnd || '—'}</td>`}
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || '—'}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-nghihockbd-${idx}"><option value="">— Chọn học kỳ —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.leaveSemesterStart === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.leaveSemesterStart || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-nghihockkt-${idx}"><option value="">— Không áp dụng —</option>${DISCIPLINE_SEMESTER_OPTIONS.map(sm => `<option value="${sm}" ${s.leaveSemesterEnd === sm ? 'selected' : ''}>${sm}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.leaveSemesterEnd || ''}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3768,11 +3812,11 @@ function renderDecisionStudents(d, query){
       ${checkCell}
       <td><span class="di-code">${s.mssv}</span></td>
       <td>${s.name}</td>
-      <td class="text-muted">${s.lop || '—'}</td>
-      <td class="text-muted">${s.donViQuanLy || '—'}</td>
-      <td class="text-muted">${s.ctdt || '—'}</td>
+      <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.donViQuanLy || ''}</td>
+      <td class="text-muted">${s.ctdt || ''}</td>
       <td>${studentStatusTagHtml(s.status)}</td>
-      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || '—'}</td>`}
+      ${isEditing ? `<td><select class="cd-sv-reason-select" id="ddet-sv-edit-phanloai-${idx}" ${reasons.length ? '' : 'disabled'}><option value="">${reasons.length ? '— Chưa phân loại —' : '— Không có danh mục —'}</option>${reasons.map(r => `<option value="${r}" ${s.lyDo === r ? 'selected' : ''}>${r}</option>`).join('')}</select></td>` : `<td class="text-muted">${s.lyDo || ''}</td>`}
       ${ghiChuCell}
       ${actionCell}
     </tr>`;
@@ -3875,31 +3919,31 @@ function ddetRenderChangeFields(d){
   document.getElementById('ddet-new-ctdt-block').style.display = showTransfer ? '' : 'none';
   document.getElementById('ddet-new-lophc-block').style.display = showTransfer ? '' : 'none';
   if (showTransfer){
-    document.getElementById('ddet-new-khoa').textContent = d.newKhoa || '—';
-    document.getElementById('ddet-new-ctdt').textContent = d.newCtdt || '—';
-    document.getElementById('ddet-new-lophc').textContent = d.newLopHc || '—';
+    document.getElementById('ddet-new-khoa').textContent = d.newKhoa || '';
+    document.getElementById('ddet-new-ctdt').textContent = d.newCtdt || '';
+    document.getElementById('ddet-new-lophc').textContent = d.newLopHc || '';
   }
 
   const showReassign = type === TYPE_REASSIGN_CLASS;
   document.getElementById('ddet-reassign-lop-block').style.display = showReassign ? '' : 'none';
-  if (showReassign) document.getElementById('ddet-reassign-lop').textContent = d.reassignLop || '—';
+  if (showReassign) document.getElementById('ddet-reassign-lop').textContent = d.reassignLop || '';
 
   const showUnitChange = type === TYPE_UNIT_CHANGE;
   document.getElementById('ddet-new-donvi-block').style.display = showUnitChange ? '' : 'none';
-  if (showUnitChange) document.getElementById('ddet-new-donvi').textContent = d.newDonViDaoTao || '—';
+  if (showUnitChange) document.getElementById('ddet-new-donvi').textContent = d.newDonViDaoTao || '';
 
   const showReward = type === TYPE_REWARD;
   document.getElementById('ddet-reward-form-block').style.display = showReward ? '' : 'none';
-  if (showReward) document.getElementById('ddet-reward-form').textContent = d.rewardForm || '—';
+  if (showReward) document.getElementById('ddet-reward-form').textContent = d.rewardForm || '';
 
   const showTopicChange = type === TYPE_TOPIC_CHANGE;
   document.getElementById('ddet-topic-change-lophocphan-block').style.display = showTopicChange ? '' : 'none';
   document.getElementById('ddet-topic-change-dothuongdan-block').style.display = showTopicChange ? '' : 'none';
   document.getElementById('ddet-topic-change-oldcode-block').style.display = showTopicChange ? '' : 'none';
   if (showTopicChange){
-    document.getElementById('ddet-topic-change-lophocphan').textContent = d.topicChangeLopHocPhan || '—';
-    document.getElementById('ddet-topic-change-dothuongdan').textContent = d.topicChangeDotHuongDan || '—';
-    document.getElementById('ddet-topic-change-oldcode').textContent = d.topicChangeOldCode || '—';
+    document.getElementById('ddet-topic-change-lophocphan').textContent = d.topicChangeLopHocPhan || '';
+    document.getElementById('ddet-topic-change-dothuongdan').textContent = d.topicChangeDotHuongDan || '';
+    document.getElementById('ddet-topic-change-oldcode').textContent = d.topicChangeOldCode || '';
   }
 
   // Đợt hướng dẫn — field cấp-quyết-định (d.reviewerAssignmentDotHuongDan), fallback đọc từ SV đầu
@@ -3909,7 +3953,7 @@ function ddetRenderChangeFields(d){
   document.getElementById('ddet-reviewer-assignment-dothuongdan-block').style.display = showReviewerAssignment ? '' : 'none';
   if (showReviewerAssignment){
     const dotHuongDan = d.reviewerAssignmentDotHuongDan || (d.students[0] && d.students[0].dotHuongDan) || '';
-    document.getElementById('ddet-reviewer-assignment-dothuongdan').textContent = dotHuongDan || '—';
+    document.getElementById('ddet-reviewer-assignment-dothuongdan').textContent = dotHuongDan || '';
   }
 }
 
@@ -3920,12 +3964,12 @@ function openDecisionDetail(id){
 
   document.getElementById('ddet-title').textContent = 'Chi tiết quyết định';
   document.getElementById('ddet-sv-title').textContent = `${d.students.length} SV`;
-  document.getElementById('ddet-content-view').textContent = d.content || '—';
+  document.getElementById('ddet-content-view').textContent = d.content || '';
   document.getElementById('ddet-sv-search').value = '';
   renderDecisionStudents(d, '');
   document.getElementById('ddet-type').textContent = d.typeName;
-  document.getElementById('ddet-academic-year').textContent = d.academicYear || '—';
-  document.getElementById('ddet-semester-start').textContent = d.semesterStart || '—';
+  document.getElementById('ddet-academic-year').textContent = d.academicYear || '';
+  document.getElementById('ddet-semester-start').textContent = d.semesterStart || '';
   document.getElementById('ddet-file').value = '';
   document.getElementById('ddet-filepick').classList.remove('has-file');
   ddetRenderChangeFields(d);
@@ -3948,7 +3992,7 @@ function openDecisionDetail(id){
   document.getElementById('ddet-issue-pending-note').style.display = (hasIssued || canEditIssueInline) ? 'none' : '';
   if (hasIssued){
     document.getElementById('ddet-issue-code').textContent = d.code;
-    document.getElementById('ddet-issue-effective').textContent = d.effectiveDate || '—';
+    document.getElementById('ddet-issue-effective').textContent = d.effectiveDate || '';
   } else if (canEditIssueInline){
     // Prefill giá trị nháp đã nhập từ lúc Tạo/Sửa (draftIssue*, xem submitCreateDecision()), cho
     // chỉnh lại lần cuối trước khi chốt thật ở đúng bước Ban hành.
@@ -4036,7 +4080,7 @@ function openEditExistingDecision(){
   // Nút "Lưu nháp" chỉ có ý nghĩa khi bản ghi gốc đang là Nháp — sửa từ "Yêu cầu chỉnh sửa" đã có
   // lịch sử duyệt, không cho lùi về Nháp, chỉ được Nộp lại (xem OQ đã chốt với user).
   document.getElementById('cd-btn-save-draft').style.display = d.status === 'Nháp' ? '' : 'none';
-  document.getElementById('cd-btn-submit').textContent = d.status === 'Nháp' ? 'Nộp duyệt' : 'Nộp lại';
+  document.getElementById('cd-btn-submit').textContent = 'Nộp';
   pickCdType(d.typeName);
   document.getElementById('cd-academic-year').value = d.academicYear || '';
   document.getElementById('cd-semester-start').value = d.semesterStart || '';
@@ -4056,6 +4100,7 @@ function openEditExistingDecision(){
   createDecisionStudents = d.students.map(s => ({ ...s }));
   cdSvSelectedIds.clear();
   cdSvPage = 1;
+  document.getElementById('cd-sv-add-search').value = '';
   renderCreateDecisionStudents();
   ddetApplyMode('edit');
 }

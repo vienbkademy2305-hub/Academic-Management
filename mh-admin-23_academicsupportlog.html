@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghi nhận hỗ trợ | Ban Đào tạo</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Ghi nhận hỗ trợ (MH-ADMIN-23, MOCKUP BRAINSTORM v1) ==========
+     Drill-down từ mh-admin-19 (cột #Tư vấn) và mh-admin-22 — ghi nhận buổi tư vấn/gặp gỡ với SV
+     đang ở diện cảnh báo học tập. Form + bảng lịch sử dùng JS thật (push vào mảng, render lại),
+     khớp mức độ tương tác các trang mock khác trong dự án — không phải form disabled thuần tuý. */
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Ban Đào tạo</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Cảnh báo học tập &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-21_academicwarninglevels.html">Cài đặt thông số</a></li>
+          <li><a href="mh-admin-20_academicwarningbatch.html">Xét cảnh báo học tập</a></li>
+          <li class="active"><a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">
+        <a href="mh-admin-19_academicwarningreview.html">Cảnh báo học tập</a> /
+        <a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a> /
+        Hoàng Minh Đức / <b style="color:var(--text-1)">Ghi nhận hỗ trợ</b>
+      </div>
+      <div class="h-right">
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="margin:0;font-size:18px">Ghi nhận hỗ trợ — Hoàng Minh Đức (20120301)</h2>
+        <a class="btn btn-default" href="mh-admin-22_academicsupportprogress.html">← Xem tiến độ cải thiện</a>
+      </div>
+
+      <div class="card mb-16">
+        <div class="card-hd"><h3 class="card-title">Ghi nhận buổi tư vấn / gặp gỡ mới</h3></div>
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Ngày gặp <span class="req">*</span></label>
+            <input class="fc" type="text" id="f-ngay" placeholder="dd/mm/yyyy">
+          </div>
+          <div class="fi">
+            <label>Người ghi nhận</label>
+            <input class="fc" type="text" id="f-nguoi" value="Nguyễn Văn Admin" disabled>
+          </div>
+        </div>
+        <div class="fi">
+          <label>Nội dung trao đổi <span class="req">*</span></label>
+          <textarea class="fc" id="f-noidung" rows="3" placeholder="SV chia sẻ khó khăn, nội dung tư vấn..."></textarea>
+        </div>
+        <div class="fi">
+          <label>Kế hoạch cải thiện</label>
+          <textarea class="fc" id="f-kehoach" rows="2" placeholder="Đăng ký học lại, tham gia lớp phụ đạo..."></textarea>
+        </div>
+        <div class="f-row col-2">
+          <div class="fi">
+            <label>Ngày hẹn tiếp theo</label>
+            <input class="fc" type="text" id="f-hentiep" placeholder="dd/mm/yyyy">
+          </div>
+        </div>
+        <div class="f-actions">
+          <button class="btn btn-primary" onclick="addSupportLog()">Lưu ghi nhận</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><h3 class="card-title">Lịch sử các buổi hỗ trợ đã ghi nhận</h3></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr><th style="width:110px">Ngày gặp</th><th style="width:160px">Người ghi nhận</th><th>Nội dung tóm tắt</th><th style="width:110px">Hẹn tiếp theo</th></tr>
+            </thead>
+            <tbody id="log-tbody"><!-- rendered by JS --></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* Mock lịch sử hỗ trợ của SV 20120301 — độc lập với soTuVan ở mh-admin-19 (không đồng bộ số thật,
+   chỉ minh hoạ ý tưởng cho vòng brainstorm này). */
+const SUPPORT_LOGS = [
+  { ngay:'15/01/2026', nguoi:'Nguyễn Văn Admin', noidung:'Trao đổi đầu kỳ về tình trạng cảnh báo, thống nhất kế hoạch học lại 2 học phần.', hentiep:'12/03/2026' },
+  { ngay:'12/03/2026', nguoi:'Nguyễn Văn Admin', noidung:'Khó khăn sắp xếp thời gian tự học — hướng dẫn lập kế hoạch theo tuần.', hentiep:'10/04/2026' },
+];
+
+function renderLogs(){
+  document.getElementById('log-tbody').innerHTML = SUPPORT_LOGS.length ? SUPPORT_LOGS.map(l => `
+    <tr>
+      <td>${l.ngay}</td>
+      <td>${l.nguoi}</td>
+      <td>${l.noidung}</td>
+      <td>${l.hentiep || '<span class="text-muted">—</span>'}</td>
+    </tr>`).join('') : `<tr><td colspan="4"><div class="tbl-empty">Chưa có buổi hỗ trợ nào được ghi nhận</div></td></tr>`;
+}
+
+function addSupportLog(){
+  const ngay = document.getElementById('f-ngay').value.trim();
+  const noidung = document.getElementById('f-noidung').value.trim();
+  if (!ngay || !noidung){
+    showToast('Vui lòng nhập Ngày gặp và Nội dung trao đổi', 'err');
+    return;
+  }
+  SUPPORT_LOGS.unshift({
+    ngay,
+    nguoi: document.getElementById('f-nguoi').value,
+    noidung,
+    hentiep: document.getElementById('f-hentiep').value.trim(),
+  });
+  renderLogs();
+  ['f-ngay','f-noidung','f-kehoach','f-hentiep'].forEach(id => document.getElementById(id).value = '');
+  showToast('Đã lưu ghi nhận buổi hỗ trợ');
+}
+
+renderLogs();
+</script>
+</body>
+</html>

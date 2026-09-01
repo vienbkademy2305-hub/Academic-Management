@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xét cảnh báo học tập | Ban Đào tạo</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Quản lý Đợt xét Cảnh báo học tập (MH-ADMIN-20, MOCKUP THẢO LUẬN) ==========
+     Bố cục dựng theo đúng benchmark screenshot user cung cấp ("SOS / QUẢN LÝ ĐỢT XÉT SOS") —
+     1 đợt = 1 cấu hình phạm vi rà soát (Khoa/Khóa/Ngành/Lớp) + mốc thời gian, KHÔNG phải quy trình
+     duyệt nhiều bước. Bấm "Xem" ở 1 đợt sẽ mở mh-admin-19 (Cảnh báo học tập) lọc sẵn theo đợt đó. */
+  .hidden{display:none}
+  /* table.tbl dùng table-layout:auto ở _styles.css dùng chung — với 14 cột, width khai báo trên
+     <th> chỉ là gợi ý và bị ép co lại (đặc biệt cột "Tên đợt" không set width). Ghi đè fixed CHỈ
+     cho trang này để width các cột được tôn trọng đúng, bảng tự tràn ngang (.tbl-wrap đã có
+     overflow-x:auto) thay vì bóp chữ xuống dòng liên tục. */
+  #tbl-batches{table-layout:fixed}
+  /* Tên đợt có thể dài — ép 1 dòng, thừa chữ thì "...", hover xem full qua title (tooltip trình
+     duyệt mặc định, không cần dựng component riêng). */
+  .td-ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+  .toolbar{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px}
+  .filter-bar select.fc{width:auto;min-width:130px}
+  .rows-select{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2)}
+
+  /* Bộ lọc "Học kỳ" và "Khoa" dạng droplist có ô tìm kiếm riêng — copy nguyên pattern
+     setupDroplistFilter()/toggleFilterMenu() từ mh-admin-10/11/13/14/24 để nhất quán trải nghiệm lọc
+     trong toàn dự án (bấm mở ra toàn bộ danh sách, gõ để lọc gợi ý, chọn 1 mục tự đóng lại). */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Ban Đào tạo</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Cảnh báo học tập &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-21_academicwarninglevels.html">Cài đặt thông số</a></li>
+          <li class="active"><a href="#">Xét cảnh báo học tập</a></li>
+          <li><a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Cảnh báo học tập / <b style="color:var(--text-1)">Xét cảnh báo học tập</b></div>
+      <div class="h-right">
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="margin:0;font-size:18px">Xét cảnh báo học tập</h2>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="goCreateBatch()">＋ Thêm mới</button>
+      </div>
+
+      <!-- Bộ lọc -->
+      <div class="filter-bar">
+        <div class="unit-combo" id="f-hocky-combo" style="width:200px">
+          <button type="button" class="fc form-combo-trigger" id="f-hocky-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('f-hocky')">
+            <span id="f-hocky-combo-label">Tất cả học kỳ</span><span class="form-combo-arrow">▾</span>
+          </button>
+          <div class="unit-combo-menu" id="f-hocky-combo-menu">
+            <input class="fc" id="f-hocky-search" type="text" placeholder="🔍 Tìm học kỳ…" autocomplete="off" style="margin-bottom:4px">
+            <div id="f-hocky-combo-list"></div>
+          </div>
+        </div>
+        <div class="unit-combo" id="f-khoa-combo" style="width:200px">
+          <button type="button" class="fc form-combo-trigger" id="f-khoa-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('f-khoa')">
+            <span id="f-khoa-combo-label">Tất cả khoa</span><span class="form-combo-arrow">▾</span>
+          </button>
+          <div class="unit-combo-menu" id="f-khoa-combo-menu">
+            <input class="fc" id="f-khoa-search" type="text" placeholder="🔍 Tìm khoa…" autocomplete="off" style="margin-bottom:4px">
+            <div id="f-khoa-combo-list"></div>
+          </div>
+        </div>
+        <select class="fc" id="f-trangthai">
+          <option value="">Tất cả trạng thái</option>
+          <option value="nhap">Nháp</option>
+          <option value="choxacnhan">Gửi Khoa xác nhận</option>
+          <option value="congbo">Đã công bố</option>
+        </select>
+        <input class="fc" id="f-search" type="text" placeholder="🔍 Tìm theo Mã đợt hoặc Tên đợt…" autocomplete="off" style="width:260px">
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl" id="tbl-batches">
+          <thead>
+            <tr>
+              <th style="width:40px">STT</th>
+              <th style="width:150px">Mã đợt</th>
+              <th style="width:230px">Tên đợt</th>
+              <th style="width:110px">Năm học</th>
+              <th style="width:110px">Học kỳ</th>
+              <th style="width:120px">Hệ đào tạo</th>
+              <th style="width:170px">Trạng thái người học</th>
+              <th style="width:130px">Ngày bắt đầu</th>
+              <th style="width:130px">Ngày kết thúc</th>
+              <th style="width:100px">Trạng thái</th>
+              <th style="width:140px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"><!-- rendered by JS --></tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center mt-8">
+        <div class="rows-select">Số bản ghi mỗi trang
+          <select class="fc" id="f-pagesize" style="width:auto" onchange="currentPage=1;renderTable()">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="pg-info" id="result-count"></div>
+      </div>
+      <div class="pagination" id="pagination"><!-- rendered by JS --></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   GHI CHÚ — MOCKUP THẢO LUẬN (chưa phải spec chốt)
+   Nguồn tham chiếu bố cục: screenshot "SOS / QUẢN LÝ ĐỢT XÉT SOS" user cung cấp — 1 đợt = 1 cấu
+   hình phạm vi (Khoa/Khóa/Ngành/Lớp) + mốc thời gian rà soát, KHÔNG phải quy trình duyệt.
+   ============================================================ */
+
+/* Mức cảnh báo — ĐỒNG BỘ NỘI DUNG với WARNING_LEVELS ở mh-admin-21 (Cài đặt thông số), 2 trang
+   tĩnh độc lập không kết nối kỹ thuật thật, giống quan hệ DECISION_CATALOG mh-admin-06/08. Sửa 1
+   bên nhớ sửa bên còn lại. Ngưỡng KHÔNG còn hard-code/"Cài đặt thông số" ở màn này — đã chuyển
+   thành danh mục cấu hình được ở mh-admin-21.
+   CHỐT: chỉ 1 mức đúng Điều 17 khoản 1 (a/b/c) — đã bỏ mức "cảnh báo lần 2" (sai, xem giải thích
+   chi tiết ở mh-admin-19/21). */
+let WARNING_LEVELS = [
+  { id:'lv1', name:'Cảnh báo học tập lần 1', order:1, status:'active',
+    conditions:[
+      { chiTieu:'diemTbKyDau', sosanh:'<', giaTri:0.80, noiTiep:'or' },
+      { chiTieu:'diemTbKySau', sosanh:'<', giaTri:1.00, noiTiep:'or' },
+      { chiTieu:'diemTbTichLuyNam1', sosanh:'<', giaTri:1.20, noiTiep:'or' },
+      { chiTieu:'diemTbTichLuyNam2', sosanh:'<', giaTri:1.40, noiTiep:'or' },
+      { chiTieu:'diemTbTichLuyNam3', sosanh:'<', giaTri:1.60, noiTiep:'or' },
+      { chiTieu:'diemTbTichLuyNamSau', sosanh:'<', giaTri:1.80, noiTiep:'or' },
+      { chiTieu:'tinChiNoDong', sosanh:'>', giaTri:24, noiTiep:'or' },
+    ] },
+];
+
+/* CHỐT (BA quyết định): kết quả rà soát của 1 đợt là SNAPSHOT cố định tại thời điểm chạy — dùng
+   đúng danh mục Mức cảnh báo đang cấu hình lúc đó (snapshotLevels). Sau này sửa mức ở mh-admin-21
+   KHÔNG làm đổi kết quả các đợt đã chạy trước đó — chỉ áp dụng cho đợt chạy sau. daChayLuc rỗng =
+   đợt chưa chạy rà soát lần nào, chưa có kết quả để xem. */
+const BATCHES = [
+  { id:'b1', maDot:'SOS-HK1-2627-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2026-2027',
+    hocKy:'HK1', namHoc:'2026-2027', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT, Khoa Ngoại ngữ', khoaHoc:'K45, K46',
+    heDaoTao:'Chính quy', ctdt:'Công nghệ thông tin, Ngôn ngữ Anh', trangThaiSV:['danghoc','baoluu'],
+    lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'choxacnhan',
+    daChayLuc:'25/08/2026 08:05', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)),
+    xacNhanBatDau:'26/08/2026 08:00', xacNhanKetThuc:'02/09/2026 17:00' },
+  { id:'b2', maDot:'SOS-HK1-2627-2', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Kinh tế',
+    hocKy:'HK1', namHoc:'2026-2027', truongVien:'Viện Kinh tế', khoa:'Khoa Kinh tế', khoaHoc:'K45',
+    heDaoTao:'Chính quy, Liên thông', ctdt:'', trangThaiSV:['danghoc','baoluu'],
+    lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'nhap',
+    daChayLuc:'', snapshotLevels:null },
+  { id:'b3', maDot:'SOS-HK2-2526-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2025-2026',
+    hocKy:'HK2', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K44, K45, K46',
+    heDaoTao:'', ctdt:'CTĐT Công nghệ thông tin (CLC)', trangThaiSV:['danghoc'],
+    lop:'', batDau:'10/03/2026 08:00', ketThuc:'25/03/2026 23:59', status:'congbo',
+    daChayLuc:'10/03/2026 08:03', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)) },
+  /* Đợt test: HK2/2026-2027 — học kỳ này KHÔNG khớp mock LOP_CHUA_KHOA_DIEM ở mh-admin-24 (mock đó
+     chỉ có lớp chưa khoá điểm ở HK1/2026-2027), dùng để test kịch bản "học kỳ đã khoá điểm hết":
+     bấm "Sửa" mở mh-admin-24 rồi bấm Chạy rà soát — popup xác nhận sẽ KHÔNG có dòng cảnh báo. */
+  { id:'b4', maDot:'SOS-HK2-2627-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2026-2027',
+    hocKy:'HK2', namHoc:'2026-2027', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K45',
+    heDaoTao:'Chính quy', ctdt:'', trangThaiSV:['danghoc'],
+    lop:'', batDau:'10/01/2027 08:00', ketThuc:'25/01/2027 23:59', status:'nhap',
+    daChayLuc:'', snapshotLevels:null },
+  { id:'b5', maDot:'SOS-HK2-2627-2', tenDot:'Xét cảnh báo học tập HK2 2026-2027 — Khoa Ngoại ngữ',
+    hocKy:'HK2', namHoc:'2026-2027', truongVien:'Viện Ngoại ngữ', khoa:'Khoa Ngoại ngữ', khoaHoc:'K44, K45',
+    heDaoTao:'Chính quy', ctdt:'CTĐT Ngôn ngữ Anh', trangThaiSV:['danghoc'],
+    lop:'', batDau:'12/01/2027 08:00', ketThuc:'28/01/2027 23:59', status:'nhap',
+    daChayLuc:'', snapshotLevels:null },
+  { id:'b6', maDot:'SOS-HK3-2526-1', tenDot:'Xét cảnh báo học tập HK3 (hè) năm học 2025-2026',
+    hocKy:'HK3', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa Cơ khí', khoaHoc:'K43, K44',
+    heDaoTao:'Chính quy', ctdt:'', trangThaiSV:['danghoc','baoluu'],
+    lop:'', batDau:'15/06/2026 08:00', ketThuc:'30/06/2026 23:59', status:'congbo',
+    daChayLuc:'15/06/2026 08:10', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)) },
+  { id:'b7', maDot:'SOS-HK1-2526-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2025-2026',
+    hocKy:'HK1', namHoc:'2025-2026', truongVien:'Viện Du lịch', khoa:'Khoa Du lịch', khoaHoc:'K44, K45',
+    heDaoTao:'Chính quy, Vừa làm vừa học', ctdt:'', trangThaiSV:['danghoc'],
+    lop:'', batDau:'20/08/2025 08:00', ketThuc:'05/09/2025 23:59', status:'congbo',
+    daChayLuc:'20/08/2025 08:07', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)) },
+  { id:'b8', maDot:'SOS-HK1-2627-3', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Quản trị Kinh doanh',
+    hocKy:'HK1', namHoc:'2026-2027', truongVien:'Viện Kinh tế', khoa:'Khoa Quản trị Kinh doanh', khoaHoc:'K45, K46',
+    heDaoTao:'Chính quy', ctdt:'CTĐT Quản trị kinh doanh', trangThaiSV:['danghoc'],
+    lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'choxacnhan',
+    daChayLuc:'26/08/2026 09:30', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)),
+    xacNhanBatDau:'27/08/2026 08:00', xacNhanKetThuc:'05/09/2026 17:00' },
+  { id:'b9', maDot:'SOS-HK2-2526-2', tenDot:'Xét cảnh báo học tập HK2 2025-2026 — Khoa CNTT (CLC)',
+    hocKy:'HK2', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K46',
+    heDaoTao:'', ctdt:'CTĐT Công nghệ thông tin (CLC)', trangThaiSV:['danghoc'],
+    lop:'', batDau:'15/03/2026 08:00', ketThuc:'30/03/2026 23:59', status:'nhap',
+    daChayLuc:'', snapshotLevels:null },
+];
+
+/* Bộ lọc "Học kỳ" gộp cả năm học vào 1 giá trị (VD "HK1-2026-2027") — thay cho việc tách 2 filter
+   Học kỳ/Năm học riêng như trước (đã bỏ filter Năm học), vì cùng 1 "Học kỳ" (VD HK1) có thể tồn tại
+   ở nhiều năm học khác nhau, chỉ gộp lại mới xác định được ĐÚNG 1 đợt cụ thể để mặc định. */
+const droplistFilterMenus = {};
+const droplistFilterOpeners = {};
+function toggleFilterMenu(prefix){
+  const menu = droplistFilterMenus[prefix];
+  const isOpen = menu.classList.contains('open');
+  Object.values(droplistFilterMenus).forEach(m => m.classList.remove('open'));
+  if (!isOpen) droplistFilterOpeners[prefix]();
+}
+function setupDroplistFilter(prefix, allLabel, items, onPick, preselected){
+  let selected = preselected || '';
+  const triggerLabel = document.getElementById(`${prefix}-combo-label`);
+  const searchInput = document.getElementById(`${prefix}-search`);
+  const menu = document.getElementById(`${prefix}-combo-menu`);
+  const list = document.getElementById(`${prefix}-combo-list`);
+  droplistFilterMenus[prefix] = menu;
+  droplistFilterOpeners[prefix] = () => { searchInput.value = ''; render(''); menu.classList.add('open'); };
+
+  function render(query){
+    const q = (query || '').trim().toLowerCase();
+    const matches = q ? items.filter(it => it.label.toLowerCase().includes(q)) : items;
+    list.innerHTML = matches.length
+      ? [`<div class="unit-combo-item" data-v="">${allLabel}</div>`, ...matches.map(it => `<div class="unit-combo-item ${it.value===selected?'hl':''}" data-v="${it.value}">${it.label}</div>`)].join('')
+      : '<div class="unit-combo-empty">Không tìm thấy "' + query.trim() + '"</div>';
+    list.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      selected = el.dataset.v;
+      updateLabel();
+      menu.classList.remove('open');
+      onPick(selected);
+    }));
+  }
+  function updateLabel(){
+    const found = items.find(it => it.value === selected);
+    triggerLabel.textContent = found ? found.label : allLabel;
+  }
+
+  updateLabel();
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  document.addEventListener('click', e => {
+    if (!document.getElementById(`${prefix}-combo`).contains(e.target)) menu.classList.remove('open');
+  });
+}
+
+/* '25/08/2026 08:00' -> Date, để so sánh tìm đợt có ngày bắt đầu gần nhất (làm mặc định filter Học
+   kỳ khi vào trang). Không parse được thì bỏ qua, không cố đoán. */
+function parseVNDateTime(s){
+  const m = (s || '').match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+  return m ? new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0)) : null;
+}
+
+let selectedHocKy = '';
+let selectedKhoa = '';
+
+function populateFilterOptions(){
+  const hocKyMap = new Map();
+  BATCHES.forEach(b => hocKyMap.set(`${b.hocKy}::${b.namHoc}`, { value: `${b.hocKy}::${b.namHoc}`, label: `${b.hocKy}-${b.namHoc}` }));
+  const hocKyItems = [...hocKyMap.values()];
+
+  let ganNhat = '', ganNhatDate = null;
+  BATCHES.forEach(b => {
+    const d = parseVNDateTime(b.batDau);
+    if (d && (!ganNhatDate || d > ganNhatDate)){ ganNhatDate = d; ganNhat = `${b.hocKy}::${b.namHoc}`; }
+  });
+  selectedHocKy = ganNhat;
+  setupDroplistFilter('f-hocky', 'Tất cả học kỳ', hocKyItems, v => { selectedHocKy = v; currentPage = 1; renderTable(); }, ganNhat);
+
+  const khoas = [...new Set(BATCHES.flatMap(b => b.khoa.split(',').map(s => s.trim()).filter(Boolean)))];
+  setupDroplistFilter('f-khoa', 'Tất cả khoa', khoas.map(k => ({ value:k, label:k })), v => { selectedKhoa = v; currentPage = 1; renderTable(); });
+}
+
+function filteredBatches(){
+  const trangThai = document.getElementById('f-trangthai').value;
+  const kw = document.getElementById('f-search').value.trim().toLowerCase();
+  return BATCHES.filter(b => {
+    if (selectedHocKy && `${b.hocKy}::${b.namHoc}` !== selectedHocKy) return false;
+    if (selectedKhoa && !b.khoa.split(',').map(s => s.trim()).includes(selectedKhoa)) return false;
+    if (trangThai && b.status !== trangThai) return false;
+    if (kw && !(b.maDot.toLowerCase().includes(kw) || b.tenDot.toLowerCase().includes(kw))) return false;
+    return true;
+  });
+}
+
+function iconBtn(title, cls, svgInner, onclick){
+  return `<button class="icon-btn ${cls||''}" title="${title}" onclick="${onclick}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+  </button>`;
+}
+const ICO_VIEW = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+const ICO_EDIT = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>';
+const ICO_PUBLISH = '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>';
+/* Icon "disabled" nhưng VẪN bấm được (không dùng thuộc tính disabled thật) — bấm vào bắn toast nêu
+   lý do, vì thuộc tính disabled chặn hẳn hover/click nên không hiện được lý do khi user thắc mắc
+   "sao không bấm được". */
+function disabledIconBtn(reason, svgInner){
+  return `<button class="icon-btn" style="opacity:.35;cursor:not-allowed" onclick="showToast('${reason.replace(/'/g, "\\'")}', 'err')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+  </button>`;
+}
+
+/* Trạng thái đợt xét: Nháp (mới tạo/chưa chạy) → Chờ khoa xác nhận (đã chạy rà soát, Khoa quản lý
+   xem/xác nhận từng SV ở mh-admin-24) → Đã công bố (Admin bấm Công bố, chốt kết quả chính thức). */
+const STATUS_INFO = {
+  nhap:       { label:'Nháp',               cls:'tag-default' },
+  choxacnhan: { label:'Gửi Khoa xác nhận',   cls:'tag-warning' },
+  congbo:     { label:'Đã công bố',          cls:'tag-success' },
+};
+
+/* Trạng thái người học — LẤY ĐÚNG tập giá trị đang dùng trong dự án: NEW_STATUS_LABEL ở mh-admin-08
+   (Danh sách Quyết định) và STATUS_LABEL ở mh-admin-15 (Quá trình học tập), cũng là STUDENT_STATUS ở
+   mh-admin-24. SV chuyển giữa các trạng thái này mỗi khi có 1 Quyết định mới có hiệu lực — KHÔNG tự
+   thêm giá trị ngoài danh mục đó. Sửa 1 nơi nhớ sửa các nơi còn lại.
+   Màn này chỉ HIỂN THỊ (form cấu hình đợt đã chuyển sang mh-admin-24), nên chỉ cần bảng tra nhãn. */
+const STUDENT_STATUS_LABEL = {
+  danghoc:'Đang học', buocthoihoc:'Buộc thôi học', chuyentruong:'Chuyển trường đi',
+  totnghiep:'Tốt nghiệp', baoluu:'Bảo lưu', thoihoc:'Thôi học', xoaten:'Xoá tên',
+};
+function mselLabelsOf(key, vals){
+  return (vals || []).map(v => STUDENT_STATUS_LABEL[v] || v);
+}
+
+/* Cột "Trạng thái người học" trong bảng — chọn nhiều thì rút gọn "A +n" cho khỏi vỡ cột, hover
+   xem đủ qua title của <td>. */
+function renderTrangThaiSV(vals){
+  const labels = mselLabelsOf('trangthaisv', vals);
+  if (!labels.length) return '<span class="text-muted">Chưa cấu hình</span>';
+  return labels.length > 1 ? `${labels[0]} <span class="text-muted">+${labels.length-1}</span>` : labels[0];
+}
+
+let currentPage = 1;
+
+function renderTable(){
+  const all = filteredBatches();
+  const pageSize = parseInt(document.getElementById('f-pagesize').value);
+  const totalPages = Math.max(1, Math.ceil(all.length / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const list = all.slice(start, start + pageSize);
+
+  document.getElementById('result-count').textContent = `${all.length ? start+1 : 0}-${Math.min(start+pageSize, all.length)} / ${all.length} bản ghi`;
+
+  document.getElementById('tbody').innerHTML = list.length ? list.map((b, i) => `
+    <tr>
+      <td>${start+i+1}</td>
+      <td class="sv-code">${b.maDot}</td>
+      <td class="td-ellipsis" title="${b.tenDot}">${b.tenDot}</td>
+      <td>${b.namHoc}</td>
+      <td>${b.hocKy}</td>
+      <td>${b.heDaoTao || '<span class="text-muted">Tất cả</span>'}</td>
+      <td class="td-ellipsis" title="${mselLabelsOf('trangthaisv', b.trangThaiSV).join(', ')}">${renderTrangThaiSV(b.trangThaiSV)}</td>
+      <td class="text-muted">${b.batDau}</td>
+      <td class="text-muted">${b.ketThuc}</td>
+      <td><span class="tag ${STATUS_INFO[b.status].cls}">${STATUS_INFO[b.status].label}</span></td>
+      <td><div class="tbl-actions">
+        ${iconBtn('Xem danh sách cảnh báo của đợt', '', ICO_VIEW, `viewBatch('${b.id}')`)}
+        ${b.status==='congbo'
+          ? disabledIconBtn('Đợt đã công bố — không thể chỉnh sửa nữa', ICO_EDIT)
+          : iconBtn('Sửa thông tin đợt (mở màn chi tiết)', '', ICO_EDIT, `viewBatch('${b.id}')`)}
+        ${b.status==='choxacnhan'
+          ? iconBtn('Công bố kết quả đợt xét', 'success-btn', ICO_PUBLISH, `publishBatch('${b.id}')`)
+          : disabledIconBtn(b.status==='nhap' ? 'Đợt còn ở trạng thái Nháp — cần Gửi Khoa xác nhận trước khi công bố' : 'Đợt đã công bố rồi', ICO_PUBLISH)}
+      </div></td>
+    </tr>`).join('') : `<tr><td colspan="11"><div class="tbl-empty">Không có dữ liệu</div></td></tr>`;
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages){
+  const el = document.getElementById('pagination');
+  if (!BATCHES.length){ el.innerHTML = ''; return; }
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+function goToPage(p){ currentPage = p; renderTable(); }
+
+function publishBatch(id){
+  const b = BATCHES.find(x => x.id === id);
+  showConfirm(`Công bố kết quả đợt xét "${b.tenDot}"? Sau khi công bố, kết quả cảnh báo của đợt này được xem là chính thức.`, () => {
+    b.status = 'congbo';
+    renderTable();
+    showToast('Đã công bố kết quả đợt xét');
+  }, 'Công bố', 'btn-success');
+}
+
+/* CHỐT: đợt xét được TẠO/SỬA ngay tại màn chi tiết (mh-admin-24), không dùng popup nữa — form đã
+   13 field (6 droplist multi-select), và tạo xong người dùng gần như luôn muốn chạy rà soát rồi xem
+   kết quả ngay, popup thì phải đóng → về danh sách → tìm lại dòng → bấm chạy → bấm xem.
+   Màn này giờ chỉ còn là danh sách + điều hướng. */
+function goCreateBatch(){
+  window.location.href = 'mh-admin-24_academicwarningbatchdetail.html?mode=new';
+}
+
+function viewBatch(id){
+  const b = BATCHES.find(x => x.id === id);
+  const qs = new URLSearchParams({
+    maDot: b.maDot, tenDot: b.tenDot, hocKy: b.hocKy, namHoc: b.namHoc, dotHoc: b.dotHoc || '',
+    khoa: b.khoa || '', khoaHoc: b.khoaHoc || '', ctdt: b.ctdt || '', lop: b.lop || '',
+    /* Truyền nhãn (không phải value) để mh-admin-24 hiển thị thẳng, đúng cách các field phạm vi
+       khác đang truyền — bên nhận chỉ render, không cần biết danh mục value. */
+    trangThaiSV: mselLabelsOf('trangthaisv', b.trangThaiSV).join(', '),
+    batDau: b.batDau || '', ketThuc: b.ketThuc || '',
+    status: b.status, daChayLuc: b.daChayLuc || '',
+    xacNhanBatDau: b.xacNhanBatDau || '', xacNhanKetThuc: b.xacNhanKetThuc || '',
+  });
+  window.location.href = `mh-admin-24_academicwarningbatchdetail.html?${qs.toString()}`;
+}
+
+document.getElementById('f-trangthai').addEventListener('change', () => { currentPage = 1; renderTable(); });
+document.getElementById('f-search').addEventListener('input', () => { currentPage = 1; renderTable(); });
+
+populateFilterOptions();
+renderTable();
+</script>
+</body>
+</html>

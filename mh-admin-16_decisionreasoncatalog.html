@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="_styles.css">
 <style>
   /* ========== Page-specific: danh mục lý do quyết định sinh viên (MH-ADMIN-16) ========== */
+  .hidden{display:none}
 
   /* Dropdown thông báo — đồng bộ với các màn admin khác */
   .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
@@ -152,6 +153,7 @@
                 <th style="width:48px">STT</th>
                 <th>Tên lý do</th>
                 <th style="width:320px">Loại quyết định</th>
+                <th style="width:130px" title="Chỉ áp dụng cho lý do thuộc Quyết định nghỉ học tạm thời/bảo lưu — quyết định có tính thời gian nghỉ này vào thời gian đào tạo tối đa của SV hay không (Điều 2 khoản 5b)">Tính vào TG học</th>
                 <th style="width:110px">Cập nhật</th>
                 <th style="width:100px">Trạng thái</th>
                 <th style="width:90px">Thao tác</th>
@@ -188,9 +190,17 @@
         </div>
       </div>
 
-      <div class="fi" style="margin-bottom:0">
+      <div class="fi">
         <label>Tên lý do<span class="req">*</span></label>
         <input class="fc" id="new-reason-name" placeholder="VD: Cảnh báo học vụ lần 1">
+      </div>
+
+      <div class="fi" id="new-reason-tinhvaotg-wrap" style="margin-bottom:0">
+        <label>Tính vào thời gian học</label>
+        <select class="fc" id="new-reason-tinhvaotg">
+          <option value="1">Có</option>
+          <option value="0">Không</option>
+        </select>
       </div>
 
     </div>
@@ -233,6 +243,17 @@ const DECISION_TYPES = [
 document.getElementById('type-filter-select').insertAdjacentHTML('beforeend',
   DECISION_TYPES.map(t => `<option value="${t}">${t}</option>`).join(''));
 
+/* Field "tính vào thời gian học" — quyết định thời gian nghỉ/xử lý có bị cộng vào thời gian đào tạo
+   tối đa của SV không (Điều 2 khoản 5b, dùng ở heSoThoiGianHoc bên mh-admin-19/21/24). Áp dụng cho
+   mọi Lý do, mặc định CÓ tính. Riêng lý do bảo lưu, theo Điều 18 khoản 1 Quy chế đào tạo, CHỈ đúng
+   3 trường hợp sau KHÔNG tính vào thời gian đào tạo:
+   a) Được điều động vào lực lượng vũ trang (r12 — Đi nghĩa vụ quân sự)
+   b) Được điều động/đại diện quốc gia thi đấu, dự thi quốc tế hoặc thực hiện nhiệm vụ quốc gia,
+      quốc tế theo quyết định cơ quan có thẩm quyền (r21)
+   c) Ốm, thai sản hoặc tai nạn phải điều trị dài ngày, có chứng nhận của cơ sở khám chữa bệnh có
+      thẩm quyền theo quy định Bộ Y tế (r22)
+   Các lý do bảo lưu khác (khoản 2 — vì nhu cầu cá nhân, không thuộc a/b/c) vẫn CÓ tính. */
+
 /* ============================================================
    DATA — danh mục Lý do (mock), đúng nội dung TYPE_REASON_CATEGORIES đang hardcode ở mh-admin-08 —
    mỗi Lý do có thể gắn NHIỀU Loại quyết định (typeNames là mảng, chọn qua combobox checkbox ở
@@ -241,26 +262,28 @@ document.getElementById('type-filter-select').insertAdjacentHTML('beforeend',
    trống, không bắt buộc chọn).
    ============================================================ */
 const REASONS = [
-  { id:'r1', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 1', status:'active', updated:'20/07/2026' },
-  { id:'r2', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 2', status:'active', updated:'20/07/2026' },
-  { id:'r3', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Đình chỉ học tập có thời hạn', status:'active', updated:'20/07/2026' },
-  { id:'r4', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm quy chế thi', status:'active', updated:'20/07/2026' },
-  { id:'r5', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Xuất sắc', status:'active', updated:'18/07/2026' },
-  { id:'r6', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Giỏi', status:'active', updated:'18/07/2026' },
-  { id:'r7', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Khá', status:'active', updated:'18/07/2026' },
-  { id:'r8', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Trung bình', status:'active', updated:'18/07/2026' },
-  { id:'r9', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do sức khoẻ', status:'active', updated:'15/07/2026' },
-  { id:'r10', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do gia đình', status:'active', updated:'15/07/2026' },
-  { id:'r11', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do kinh tế', status:'active', updated:'15/07/2026' },
-  { id:'r12', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đi nghĩa vụ quân sự', status:'active', updated:'15/07/2026' },
-  { id:'r13', typeNames:['Quyết định thôi học'], name:'Tự nguyện thôi học', status:'active', updated:'12/07/2026' },
-  { id:'r14', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do kết quả học tập', status:'active', updated:'12/07/2026' },
-  { id:'r15', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do vi phạm quy chế', status:'active', updated:'12/07/2026' },
-  { id:'r16', typeNames:['Quyết định thôi học'], name:'Quá thời hạn đào tạo tối đa', status:'active', updated:'12/07/2026' },
-  { id:'r17', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Gian lận trong học tập', status:'active', updated:'10/07/2026' },
-  { id:'r18', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm nội quy ký túc xá', status:'active', updated:'10/07/2026' },
-  { id:'r19', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm pháp luật', status:'active', updated:'10/07/2026' },
-  { id:'r20', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm khác', status:'active', updated:'10/07/2026' },
+  { id:'r1', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 1', tinhVaoTGHoc:true, status:'active', updated:'20/07/2026' },
+  { id:'r2', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Cảnh báo học vụ lần 2', tinhVaoTGHoc:true, status:'active', updated:'20/07/2026' },
+  { id:'r3', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)'], name:'Đình chỉ học tập có thời hạn', tinhVaoTGHoc:true, status:'active', updated:'20/07/2026' },
+  { id:'r4', typeNames:['Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', 'Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm quy chế thi', tinhVaoTGHoc:true, status:'active', updated:'20/07/2026' },
+  { id:'r5', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Xuất sắc', tinhVaoTGHoc:true, status:'active', updated:'18/07/2026' },
+  { id:'r6', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Giỏi', tinhVaoTGHoc:true, status:'active', updated:'18/07/2026' },
+  { id:'r7', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Khá', tinhVaoTGHoc:true, status:'active', updated:'18/07/2026' },
+  { id:'r8', typeNames:['Quyết định công nhận tốt nghiệp'], name:'Tốt nghiệp loại Trung bình', tinhVaoTGHoc:true, status:'active', updated:'18/07/2026' },
+  { id:'r9', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do sức khoẻ', tinhVaoTGHoc:true, status:'active', updated:'15/07/2026' },
+  { id:'r10', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do gia đình', tinhVaoTGHoc:true, status:'active', updated:'15/07/2026' },
+  { id:'r11', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Lý do kinh tế', tinhVaoTGHoc:true, status:'active', updated:'15/07/2026' },
+  { id:'r12', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đi nghĩa vụ quân sự', tinhVaoTGHoc:false, status:'active', updated:'15/07/2026' },
+  { id:'r21', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Đại diện quốc gia thi đấu/thực hiện nhiệm vụ quốc gia, quốc tế', tinhVaoTGHoc:false, status:'active', updated:'15/07/2026' },
+  { id:'r22', typeNames:['Quyết định nghỉ học tạm thời/bảo lưu'], name:'Ốm, thai sản hoặc tai nạn dài ngày (có chứng nhận y tế)', tinhVaoTGHoc:false, status:'active', updated:'15/07/2026' },
+  { id:'r13', typeNames:['Quyết định thôi học'], name:'Tự nguyện thôi học', tinhVaoTGHoc:true, status:'active', updated:'12/07/2026' },
+  { id:'r14', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do kết quả học tập', tinhVaoTGHoc:true, status:'active', updated:'12/07/2026' },
+  { id:'r15', typeNames:['Quyết định thôi học'], name:'Buộc thôi học do vi phạm quy chế', tinhVaoTGHoc:true, status:'active', updated:'12/07/2026' },
+  { id:'r16', typeNames:['Quyết định thôi học'], name:'Quá thời hạn đào tạo tối đa', tinhVaoTGHoc:true, status:'active', updated:'12/07/2026' },
+  { id:'r17', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Gian lận trong học tập', tinhVaoTGHoc:true, status:'active', updated:'10/07/2026' },
+  { id:'r18', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm nội quy ký túc xá', tinhVaoTGHoc:true, status:'active', updated:'10/07/2026' },
+  { id:'r19', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm pháp luật', tinhVaoTGHoc:true, status:'active', updated:'10/07/2026' },
+  { id:'r20', typeNames:['Quyết định kỷ luật (Khiển trách/Cảnh cáo/Đình chỉ/Buộc thôi học)'], name:'Vi phạm khác', tinhVaoTGHoc:true, status:'active', updated:'10/07/2026' },
 ];
 
 let editingReasonId = null;
@@ -341,6 +364,7 @@ function renderGrid(){
       <td class="text-muted">${(currentPage-1)*REASON_PAGE_SIZE + idx + 1}</td>
       <td><span class="reason-name-cell">${r.name}</span></td>
       <td><span class="reason-type-cell">${r.typeNames[0]}${r.typeNames.length > 1 ? ` <span class="reason-type-more">+${r.typeNames.length - 1}</span>` : ''}</span></td>
+      <td><span class="tag ${r.tinhVaoTGHoc ? 'tag-success' : 'tag-default'}">${r.tinhVaoTGHoc ? 'Có' : 'Không'}</span></td>
       <td class="text-muted">${r.updated}</td>
       <td><span class="tag ${r.status==='active'?'tag-success':'tag-default'}">${r.status==='active'?'Active':'Inactive'}</span></td>
       <td>
@@ -357,7 +381,7 @@ function renderGrid(){
           </button>`}
         </div>
       </td>
-    </tr>`).join('') || `<tr><td colspan="6"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="7"><div class="tbl-empty">Chưa có lý do nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -396,7 +420,7 @@ function renderReasonTypeMenu(){
   document.getElementById('new-reason-type-menu').innerHTML = DECISION_TYPES.map(t => {
     const checked = selectedReasonTypes.has(t) ? 'checked' : '';
     return `<label class="form-combo-item">
-      <input type="checkbox" ${checked} onchange="toggleReasonType(${JSON.stringify(t)}, this.checked)">
+      <input type="checkbox" ${checked} onchange='toggleReasonType(${JSON.stringify(t)}, this.checked)'>
       <span>${t}</span>
     </label>`;
   }).join('');
@@ -427,6 +451,7 @@ function openAddReasonModal(){
   selectedReasonTypes = new Set();
   updateReasonTypeLabel();
   document.getElementById('new-reason-name').value = '';
+  document.getElementById('new-reason-tinhvaotg').value = '1';
   openModal('modal-new-reason');
 }
 
@@ -439,6 +464,7 @@ function openEditReasonModal(id){
   selectedReasonTypes = new Set(r.typeNames);
   updateReasonTypeLabel();
   document.getElementById('new-reason-name').value = r.name;
+  document.getElementById('new-reason-tinhvaotg').value = r.tinhVaoTGHoc === false ? '0' : '1';
   openModal('modal-new-reason');
 }
 
@@ -453,13 +479,16 @@ function doSaveReason(){
     return;
   }
 
+  const tinhVaoTGHoc = document.getElementById('new-reason-tinhvaotg').value === '1';
+
   if (modalMode === 'add'){
-    REASONS.unshift({ id: 'r' + Date.now(), typeNames, name, status: 'active', updated: 'Hôm nay' });
+    REASONS.unshift({ id: 'r' + Date.now(), typeNames, name, tinhVaoTGHoc, status: 'active', updated: 'Hôm nay' });
     showToast('Đã thêm lý do mới', 'ok');
   } else {
     const r = reasonById(editingReasonId);
     r.typeNames = typeNames;
     r.name = name;
+    r.tinhVaoTGHoc = tinhVaoTGHoc;
     r.updated = 'Hôm nay';
     showToast('Đã lưu thay đổi', 'ok');
   }

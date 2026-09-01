@@ -2720,16 +2720,27 @@ const CD_SV_EXPORT_COLUMNS = {
     ['Học kỳ bắt đầu','disciplineSemesterStart'], ['Học kỳ kết thúc','disciplineSemesterEnd'],
     ['Lý do','disciplineReasonText'], ['Phân loại lý do','lyDo'],
   ],
+  reviewerAssignment: [
+    ['MSSV','mssv'], ['Họ và tên','name'], ['Lớp HC','lop'], ['Lớp học phần','lopHocPhan'], ['CTĐT','ctdt'],
+    ['Tên đề tài','tenDeTai'], ['Giảng viên hướng dẫn','gvhdDeTai'], ['Giảng viên phản biện','gvpb'],
+    ['Đơn vị công tác','donViCongTac'], ['Ghi chú','lyDoText'],
+  ],
 };
+/* GVHD/GVPB có thể là mảng (nhiều GV đồng hướng dẫn/phản biện, xem gvListSummaryHtml()) — ép về
+   chuỗi "A, B" khi xuất Excel, nếu không SheetJS sẽ đọc nhầm phần tử mảng thành field "f" (formula)
+   của cell thay vì nối chuỗi, làm sai lệch dữ liệu xuất ra. */
+function cdSvExportCellValue(v){
+  return Array.isArray(v) ? v.join(', ') : (v || '');
+}
 function exportCreateDecisionStudentsXlsx(){
   if (!createDecisionStudents.length){ showToast('Danh sách sinh viên đang trống, không có gì để xuất', 'warn'); return; }
 
   const type = document.getElementById('cd-type').value;
-  const mode = type === TYPE_LEAVE ? 'leave' : (type === TYPE_INTERNSHIP ? 'internship' : (type === TYPE_TRAINING_SCORE ? 'trainingScore' : (type === TYPE_TOPIC_ASSIGNMENT ? 'topicAssignment' : (type === TYPE_TOPIC_CHANGE ? 'topicChange' : (type === TYPE_DISCIPLINE ? 'discipline' : 'default')))));
-  const columns = CD_SV_EXPORT_COLUMNS[mode];
+  const mode = ddetSvMode(type);
+  const columns = CD_SV_EXPORT_COLUMNS[mode] || CD_SV_EXPORT_COLUMNS.default;
 
   const header = ['STT', ...columns.map(c => c[0])];
-  const rows = createDecisionStudents.map((s, i) => [i + 1, ...columns.map(c => s[c[1]] || '')]);
+  const rows = createDecisionStudents.map((s, i) => [i + 1, ...columns.map(c => cdSvExportCellValue(s[c[1]]))]);
 
   const sheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();
@@ -3836,7 +3847,7 @@ function exportDecisionStudentsXlsx(){
   const columns = CD_SV_EXPORT_COLUMNS[mode] || CD_SV_EXPORT_COLUMNS.default;
 
   const header = ['STT', ...columns.map(c => c[0])];
-  const rows = d.students.map((s, i) => [i + 1, ...columns.map(c => s[c[1]] || '')]);
+  const rows = d.students.map((s, i) => [i + 1, ...columns.map(c => cdSvExportCellValue(s[c[1]]))]);
 
   const sheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const wb = XLSX.utils.book_new();

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiến độ cải thiện | Ban Đào tạo</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Tiến độ cải thiện (MH-ADMIN-22, MOCKUP BRAINSTORM v1) ==========
+     Drill-down từ mh-admin-19 (cột Họ tên SV) — xem chỉ số học tập của 1 SV cảnh báo qua nhiều kỳ
+     để nhận biết xu hướng, hỗ trợ nghiệp vụ "kịp thời support sinh viên" đang brainstorm.
+     2 trang tĩnh độc lập, chỉ truyền context qua link tĩnh — không data linking thật, đúng convention
+     dự án. Dữ liệu là mock demo, khớp 1 SV mẫu trong RECORDS của mh-admin-19 (mssv 20120301). */
+  .trend-up{color:var(--success)}
+  .trend-flat{color:var(--text-3)}
+  .trend-down{color:var(--error)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Ban Đào tạo</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Cảnh báo học tập &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-21_academicwarninglevels.html">Cài đặt thông số</a></li>
+          <li><a href="mh-admin-20_academicwarningbatch.html">Xét cảnh báo học tập</a></li>
+          <li class="active"><a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">
+        <a href="mh-admin-19_academicwarningreview.html">Cảnh báo học tập</a> /
+        <a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a> /
+        Hoàng Minh Đức / <b style="color:var(--text-1)">Tiến độ cải thiện</b>
+      </div>
+      <div class="h-right">
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="margin:0;font-size:18px">Tiến độ cải thiện</h2>
+        <a class="btn btn-default" href="mh-admin-19_academicwarningreview.html">← Về danh sách cảnh báo</a>
+      </div>
+
+      <div class="card mb-16">
+        <div class="flex items-center gap-16">
+          <div class="av" style="width:48px;height:48px;font-size:16px">MĐ</div>
+          <div>
+            <div class="text-bold" style="font-size:15px">Hoàng Minh Đức — MSSV 20120301</div>
+            <div class="text-sm text-muted">
+              Lớp CT4501 · Khoa CNTT ·
+              Mức cảnh báo hiện tại: <span class="tag tag-error">Mức 1</span>
+              (Cảnh báo học tập lần 1) · Số lần tích luỹ: 0
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><h3 class="card-title">Chỉ số học tập qua các kỳ</h3></div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Học kỳ</th><th>Điểm TB kỳ</th><th>Điểm TB tích luỹ</th>
+                <th>Tín chỉ nợ đọng</th><th>Mức cảnh báo</th><th>Xu hướng</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>HK1 2024-2025</td><td>0.55</td><td>0.55</td><td>4</td>
+                <td><span class="tag tag-error">Mức 1</span></td>
+                <td class="text-muted">—</td>
+              </tr>
+              <tr>
+                <td>HK2 2024-2025</td><td>0.60</td><td>0.58</td><td>5</td>
+                <td><span class="tag tag-error">Mức 1</span></td>
+                <td class="trend-flat">● Không đổi</td>
+              </tr>
+              <tr>
+                <td>HK1 2025-2026 <span class="text-muted text-sm">(hiện tại)</span></td><td>0.65</td><td>0.65</td><td>6</td>
+                <td><span class="tag tag-error">Mức 1</span></td>
+                <td class="trend-up">▲ Cải thiện nhẹ</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mt-16">
+        <a class="btn btn-primary" href="mh-admin-23_academicsupportlog.html">Xem lịch sử hỗ trợ →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+</body>
+</html>

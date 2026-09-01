@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cài đặt thông số | Ban Đào tạo</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Cài đặt thông số (MH-ADMIN-21, MOCKUP THẢO LUẬN) ==========
+     v3 — DẠNG BẢNG: mỗi dòng = 1 tiêu chí (không còn gộp theo "mức" như v1, không còn form cột cố
+     định như v2). Bảng hiển thị CẢ tiêu chí Active lẫn Inactive — đối chiếu đúng pattern danh mục
+     đã có trong dự án (mh-admin-16 Danh mục Lý do, mh-admin-09 Hình thức Khen thưởng): không xoá
+     cứng, chỉ chuyển Active/Inactive. Tiêu chí Active mới được áp dụng khi tính cảnh báo (logic
+     HOẶC giữa các tiêu chí Active) — khớp Điều 17 khoản 1/2. Nút "+ Thêm tiêu chí" đang ẩn theo yêu
+     cầu user — CONDITIONS vẫn hỗ trợ thêm tự do qua openCondModal(), chỉ ẩn lối vào UI. */
+  /* Multi-select droplist cho "Áp dụng trình độ năm học" — dự án chưa có component multi-select
+     dùng chung (setupDroplistFilter ở mh-admin-10/11/14 chỉ single-select), nên dựng riêng tại đây. */
+  .hidden{display:none}
+  .msel{position:relative}
+  .msel-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;background:#fff;text-align:left}
+  .msel-trigger .car{color:var(--text-3);font-size:11px;transition:transform .15s}
+  .msel-trigger.open .car{transform:rotate(180deg)}
+  /* position:fixed (không phải absolute) — modal-bd có overflow-y:auto, panel absolute sẽ bị cắt.
+     Toạ độ tính lại bằng JS mỗi lần mở (theo getBoundingClientRect của trigger). */
+  .msel-panel{position:fixed;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.12);padding:6px;z-index:1100;max-height:240px;overflow-y:auto}
+  .msel-panel.hidden{display:none}
+  .msel-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:4px;font-size:13px;cursor:pointer}
+  .msel-item:hover{background:var(--primary-light)}
+  .msel-item input{margin:0}
+  .msel-divider{height:1px;background:var(--border);margin:4px 2px}
+  .rows-select{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Ban Đào tạo</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Cảnh báo học tập &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Cài đặt thông số</a></li>
+          <li><a href="mh-admin-20_academicwarningbatch.html">Xét cảnh báo học tập</a></li>
+          <li><a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Cảnh báo học tập / <b style="color:var(--text-1)">Cài đặt thông số</b></div>
+      <div class="h-right"><div class="av" id="hd-avatar">AD</div></div>
+    </header>
+
+    <div class="content">
+
+      <div class="flex justify-between items-center mb-16">
+        <div>
+          <h2 style="margin:0;font-size:18px">Cài đặt thông số</h2>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Thông số cảnh báo</th>
+              <th style="width:150px">So sánh</th>
+              <th style="width:100px">Giá trị</th>
+              <th style="width:220px">Áp dụng trình độ năm học</th>
+              <th style="width:110px">Trạng thái</th>
+              <th style="width:90px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="cond-tbody"><!-- rendered by JS --></tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center mt-8">
+        <div class="rows-select">Số bản ghi mỗi trang
+          <select class="fc" id="f-pagesize" style="width:auto" onchange="currentPage=1;renderTable()">
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="pg-info" id="result-count"></div>
+      </div>
+      <div class="pagination" id="pagination"><!-- rendered by JS --></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Thêm/Sửa tiêu chí ═══ -->
+<div class="overlay hidden" id="modal-cond">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="modal-cond-title">Thêm tiêu chí</h3>
+      <button class="modal-close" data-close="modal-cond">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Tiêu chí<span class="req">*</span></label>
+        <select class="fc" id="cf-chitieu"></select>
+      </div>
+      <div class="f-row col-2">
+        <div class="fi">
+          <label>So sánh<span class="req">*</span></label>
+          <select class="fc" id="cf-sosanh"></select>
+        </div>
+        <div class="fi">
+          <label>Giá trị<span class="req">*</span></label>
+          <input class="fc" type="number" step="0.05" id="cf-giatri">
+        </div>
+      </div>
+      <div class="fi" id="cf-apdungnam-wrap">
+        <label>Áp dụng cho trình độ năm học</label>
+        <div class="msel">
+          <button type="button" class="fc msel-trigger" id="cf-apdungnam-trigger" onclick="toggleApDungNamPanel()">
+            <span id="cf-apdungnam-trigger-label">Mọi trình độ</span>
+            <span class="car">▾</span>
+          </button>
+          <div class="msel-panel hidden" id="cf-apdungnam-panel"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-cond">Huỷ</button>
+      <button class="btn btn-primary" onclick="saveCondition()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* Đồng bộ Ý NGHĨA (không đồng bộ kỹ thuật) với WARNING_LEVELS ở mh-admin-19/20 — các tiêu chí
+   Active ở đây khớp 1-1 với 7 điều kiện của lv1 tại 2 trang đó. Sửa 1 bên nhớ sửa bên còn lại. */
+/* Trình độ năm học áp dụng là field riêng (apDungNam, mảng số) trên TỪNG dòng, dùng chung cho MỌI
+   chỉ tiêu — không riêng "Điểm TB tích luỹ" (bản trước ẩn field này với các chỉ tiêu khác, user
+   yêu cầu mở lại vì tất cả chỉ tiêu đều nên chỉnh được, không chỉ đúng khoản 1b). Để trống/không
+   chọn năm nào = áp dụng cho mọi trình độ năm học (không giới hạn) — đúng hành vi mặc định của 6/7
+   tiêu chí gốc. Đối chiếu Điều 17 khoản 4: trình độ năm học tính theo N/M, tối đa đến năm thứ 6 —
+   1 dòng có thể áp dụng nhiều năm cùng lúc (VD năm 4/5/6 cùng chung 1 ngưỡng 1.80 như khoản 1b). */
+/* 2 chỉ tiêu tcDangKy/tcTichLuy: KHÔNG có ngưỡng nào trong Điều 17/Điều 11 đã đối chiếu — thêm vào
+   danh sách chọn theo yêu cầu user để tự nhập ngưỡng qua "+ Thêm tiêu chí" khi cần, không tự bịa
+   giá trị mặc định. Tên field khớp đúng tcDangKy/tcTichLuy đã có sẵn trong RECORDS ở mh-admin-19. */
+/* soLanCanhBaoLienTiep + soKyKhongDangKyLienTiep + heSoThoiGianHoc: KHÁC bản chất 6 tiêu chí điểm/
+   tín chỉ đầu tiên — những tiêu chí đó là ngưỡng của khoản 1 (dẫn tới nhãn "Cảnh báo"), còn 3 tiêu
+   chí này ứng với khoản 2a/2c/2b (→ "Dự kiến buộc thôi học", không phải mức cảnh báo nặng hơn).
+   - soKyKhongDangKyLienTiep (2c) và heSoThoiGianHoc (2b, Điều 2 khoản 5b: tối đa 2 lần thời gian
+     chuẩn toàn khoá — heSoThoiGianHoc = số kỳ/năm đã học ÷ thời gian chuẩn theo CTĐT của SV) có thể
+     đúng với SV KHÔNG hề vi phạm khoản 1 nào — nhưng mh-admin-19 hiện chỉ liệt kê SV đã khớp khoản 1
+     (WARNING_ROWS lọc theo lv1), nên SV chỉ vi phạm riêng 2b/2c mà không vi phạm khoản 1 sẽ KHÔNG
+     xuất hiện trong danh sách — giới hạn đã biết, chưa mở rộng phạm vi màn theo yêu cầu này.
+   - heSoThoiGianHoc là TỶ SỐ tính sẵn (không phải số kỳ tuyệt đối) vì "thời gian chuẩn toàn khoá"
+     khác nhau theo từng CTĐT/ngành (Điều 2 khoản 5a: 4-6 năm tuỳ ngành) — quy về 1 hệ số chung mới
+     so sánh được bằng 1 ngưỡng duy nhất (≥2) cho mọi SV, đúng khuôn "chỉ tiêu so sánh giá trị" của
+     bảng này.
+   Vẫn để chung 1 bảng theo yêu cầu user, chỉ khác nhãn/ý nghĩa khi hiển thị ở mh-admin-19
+   (trangThaiCanhBao()). */
+const CHI_TIEU_OPTIONS = [
+  { value:'diemTbKyDau',   label:'Điểm TB học kỳ (kỳ đầu của khoá)' },
+  { value:'diemTbKySau',   label:'Điểm TB học kỳ (các kỳ tiếp theo)' },
+  { value:'diemTbTichLuy', label:'Điểm TB tích luỹ' },
+  { value:'tinChiNoDong',  label:'Số tín chỉ nợ đọng từ đầu khoá' },
+  { value:'tcDangKy',      label:'Số tín chỉ đăng ký trong kỳ' },
+  { value:'tcTichLuy',     label:'Số tín chỉ tích luỹ' },
+  { value:'soLanCanhBaoLienTiep', label:'Số lần cảnh báo liên tiếp' },
+  { value:'soKyKhongDangKyLienTiep', label:'Số kỳ chính liên tiếp không đăng ký học tập' },
+  { value:'heSoThoiGianHoc', label:'Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT' },
+];
+const SOSANH_OPTIONS = [ {v:'<',l:'nhỏ hơn (<)'}, {v:'<=',l:'nhỏ hơn hoặc bằng (≤)'}, {v:'=',l:'bằng (=)'}, {v:'>',l:'lớn hơn (>)'}, {v:'>=',l:'lớn hơn hoặc bằng (≥)'} ];
+const NAM_HOC_OPTIONS = [1,2,3,4,5,6];
+
+let CONDITIONS = [
+  { id:'c1', chiTieu:'diemTbKyDau', sosanh:'<', giaTri:0.80, apDungNam:null, status:'active' },
+  { id:'c2', chiTieu:'diemTbKySau', sosanh:'<', giaTri:1.00, apDungNam:null, status:'active' },
+  { id:'c3', chiTieu:'diemTbTichLuy', sosanh:'<', giaTri:1.20, apDungNam:[1], status:'active' },
+  { id:'c4', chiTieu:'diemTbTichLuy', sosanh:'<', giaTri:1.40, apDungNam:[2], status:'active' },
+  { id:'c5', chiTieu:'diemTbTichLuy', sosanh:'<', giaTri:1.60, apDungNam:[3], status:'active' },
+  { id:'c6', chiTieu:'diemTbTichLuy', sosanh:'<', giaTri:1.80, apDungNam:[4,5,6], status:'active' },
+  { id:'c7', chiTieu:'tinChiNoDong', sosanh:'>', giaTri:24, apDungNam:null, status:'active' },
+  { id:'c8', chiTieu:'soLanCanhBaoLienTiep', sosanh:'>=', giaTri:2, apDungNam:null, status:'active' },
+  { id:'c9', chiTieu:'soKyKhongDangKyLienTiep', sosanh:'>=', giaTri:2, apDungNam:null, status:'active' },
+  { id:'c10', chiTieu:'heSoThoiGianHoc', sosanh:'>=', giaTri:2, apDungNam:null, status:'active' },
+];
+
+function chiTieuLabel(v){ return (CHI_TIEU_OPTIONS.find(o=>o.value===v)||{}).label || v; }
+function sosanhLabel(v){ return (SOSANH_OPTIONS.find(o=>o.v===v)||{}).l || v; }
+/* Riêng "heSoThoiGianHoc" lưu dạng bội số của thời gian chuẩn toàn khoá (VD 2 = gấp 2 lần) vì mỗi
+   CTĐT có số năm chuẩn khác nhau — không quy ra 1 cặp "năm X/Y" cố định chung cho mọi SV được. */
+function giaTriCellHtml(c){ return `<b>${c.giaTri}</b>`; }
+function apDungNamHtml(c){
+  if (!c.apDungNam || !c.apDungNam.length) return '<span class="text-muted">Mọi trình độ</span>';
+  const [first, ...rest] = c.apDungNam;
+  const full = c.apDungNam.map(n => `Năm ${n}`).join(', ');
+  if (!rest.length) return `<span class="tag tag-blue">Năm ${first}</span>`;
+  return `<span class="tag tag-blue" title="${full}">Năm ${first}</span> <span class="tag tag-default" title="${full}">+${rest.length}</span>`;
+}
+
+function iconBtn(title, cls, svgInner, onclick){
+  return `<button class="icon-btn ${cls||''}" title="${title}" onclick="${onclick}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgInner}</svg>
+  </button>`;
+}
+const ICO_EDIT = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>';
+const ICO_LOCK = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+const ICO_UNLOCK = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+
+let currentPage = 1;
+
+function renderTable(){
+  const pageSize = parseInt(document.getElementById('f-pagesize').value);
+  const totalPages = Math.max(1, Math.ceil(CONDITIONS.length / pageSize));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = CONDITIONS.slice(start, start + pageSize);
+
+  document.getElementById('result-count').textContent = `${CONDITIONS.length ? start+1 : 0}-${Math.min(start+pageSize, CONDITIONS.length)} / ${CONDITIONS.length} bản ghi`;
+
+  document.getElementById('cond-tbody').innerHTML = pageRows.map((c,i) => `
+    <tr>
+      <td>${start+i+1}</td>
+      <td>${chiTieuLabel(c.chiTieu)}</td>
+      <td>${sosanhLabel(c.sosanh)}</td>
+      <td>${giaTriCellHtml(c)}</td>
+      <td>${apDungNamHtml(c)}</td>
+      <td><span class="tag ${c.status==='active'?'tag-success':'tag-default'}">${c.status==='active'?'Active':'Inactive'}</span></td>
+      <td class="tbl-actions">
+        ${iconBtn('Sửa', '', ICO_EDIT, `openCondModal('${c.id}')`)}
+        ${c.status==='active'
+          ? iconBtn('Chuyển sang Inactive', '', ICO_LOCK, `toggleStatus('${c.id}')`)
+          : iconBtn('Chuyển sang Active', 'success-btn', ICO_UNLOCK, `toggleStatus('${c.id}')`)}
+      </td>
+    </tr>`).join('');
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages){
+  const el = document.getElementById('pagination');
+  if (!CONDITIONS.length){ el.innerHTML = ''; return; }
+  let btns = '';
+  for (let i = 1; i <= totalPages; i++){
+    btns += `<button type="button" class="pg-btn ${i===currentPage?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  el.innerHTML = `
+    <button type="button" class="pg-btn" ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">‹</button>
+    ${btns}
+    <button type="button" class="pg-btn" ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">›</button>`;
+}
+function goToPage(p){ currentPage = p; renderTable(); }
+
+let editingId = null;
+
+function populateSelects(){
+  document.getElementById('cf-chitieu').innerHTML = CHI_TIEU_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  document.getElementById('cf-sosanh').innerHTML = SOSANH_OPTIONS.map(o => `<option value="${o.v}">${o.l}</option>`).join('');
+}
+
+function populateApDungNam(selected){
+  const isAll = !selected || !selected.length || selected.length === NAM_HOC_OPTIONS.length;
+  document.getElementById('cf-apdungnam-panel').innerHTML = `
+    <label class="msel-item">
+      <input type="checkbox" id="cf-nam-all" ${isAll ? 'checked' : ''} onchange="onToggleNamAll()"> <b>Mọi trình độ</b>
+    </label>
+    <div class="msel-divider"></div>
+    ${NAM_HOC_OPTIONS.map(n => `
+    <label class="msel-item">
+      <input type="checkbox" class="cf-nam-chk" value="${n}" ${isAll || (selected && selected.includes(n)) ? 'checked' : ''} onchange="onToggleNamItem()"> Năm ${n}
+    </label>`).join('')}`;
+  updateApDungNamTrigger();
+}
+
+function onToggleNamAll(){
+  const checked = document.getElementById('cf-nam-all').checked;
+  document.querySelectorAll('.cf-nam-chk').forEach(el => { el.checked = checked; });
+  updateApDungNamTrigger();
+}
+
+function onToggleNamItem(){
+  const boxes = [...document.querySelectorAll('.cf-nam-chk')];
+  document.getElementById('cf-nam-all').checked = boxes.every(el => el.checked);
+  updateApDungNamTrigger();
+}
+
+function readApDungNam(){
+  return [...document.querySelectorAll('.cf-nam-chk:checked')].map(el => parseInt(el.value, 10));
+}
+
+function updateApDungNamTrigger(){
+  const vals = readApDungNam();
+  const isAll = !vals.length || vals.length === NAM_HOC_OPTIONS.length;
+  document.getElementById('cf-apdungnam-trigger-label').textContent = isAll ? 'Mọi trình độ' : vals.map(n => `Năm ${n}`).join(', ');
+}
+
+function toggleApDungNamPanel(){
+  const panel = document.getElementById('cf-apdungnam-panel');
+  const trigger = document.getElementById('cf-apdungnam-trigger');
+  const willOpen = panel.classList.contains('hidden');
+  if (willOpen){
+    const r = trigger.getBoundingClientRect();
+    panel.style.left = r.left + 'px';
+    panel.style.top = (r.bottom + 4) + 'px';
+    panel.style.width = r.width + 'px';
+  }
+  panel.classList.toggle('hidden');
+  trigger.classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('cf-apdungnam-wrap');
+  if (wrap && !wrap.contains(e.target)){
+    document.getElementById('cf-apdungnam-panel').classList.add('hidden');
+    document.getElementById('cf-apdungnam-trigger').classList.remove('open');
+  }
+});
+
+function openCondModal(id){
+  editingId = id || null;
+  populateSelects();
+  if (id){
+    const c = CONDITIONS.find(x => x.id === id);
+    document.getElementById('modal-cond-title').textContent = 'Sửa tiêu chí';
+    document.getElementById('cf-chitieu').value = c.chiTieu;
+    document.getElementById('cf-sosanh').value = c.sosanh;
+    document.getElementById('cf-giatri').value = c.giaTri;
+    populateApDungNam(c.apDungNam);
+  } else {
+    document.getElementById('modal-cond-title').textContent = 'Thêm tiêu chí';
+    document.getElementById('cf-giatri').value = '';
+    populateApDungNam(null);
+  }
+  openModal('modal-cond');
+}
+
+function saveCondition(){
+  const chiTieu = document.getElementById('cf-chitieu').value;
+  const sosanh = document.getElementById('cf-sosanh').value;
+  const giaTri = parseFloat(document.getElementById('cf-giatri').value);
+  if (Number.isNaN(giaTri)){ showToast('Vui lòng nhập Giá trị', 'err'); return; }
+
+  const apDungNamRaw = readApDungNam();
+  const apDungNam = (apDungNamRaw.length && apDungNamRaw.length < NAM_HOC_OPTIONS.length) ? apDungNamRaw : null;
+
+  if (editingId){
+    const c = CONDITIONS.find(x => x.id === editingId);
+    c.chiTieu = chiTieu; c.sosanh = sosanh; c.giaTri = giaTri; c.apDungNam = apDungNam;
+  } else {
+    CONDITIONS.push({ id:'c' + Date.now(), chiTieu, sosanh, giaTri, apDungNam, status:'active' });
+  }
+  closeModal('modal-cond');
+  renderTable();
+  showToast('Đã lưu tiêu chí');
+}
+
+function toggleStatus(id){
+  const c = CONDITIONS.find(x => x.id === id);
+  const toActive = c.status !== 'active';
+  showConfirm(
+    toActive ? `Chuyển "${chiTieuLabel(c.chiTieu)}" sang Active?` : `Chuyển "${chiTieuLabel(c.chiTieu)}" sang Inactive? Tiêu chí này sẽ không còn được áp dụng khi tính cảnh báo.`,
+    () => { c.status = toActive ? 'active' : 'inactive'; renderTable(); showToast('Đã cập nhật trạng thái tiêu chí'); },
+    toActive ? 'Kích hoạt' : 'Chuyển Inactive', toActive ? 'btn-success' : 'btn-warning'
+  );
+}
+
+renderTable();
+</script>
+</body>
+</html>

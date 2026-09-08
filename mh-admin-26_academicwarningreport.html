@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Báo cáo cảnh báo học tập | Ban Đào tạo</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Báo cáo cảnh báo học tập (MH-ADMIN-26, MOCKUP BRAINSTORM v1) ==========
+     Dựng theo đúng 2 biểu mẫu giấy của Trường:
+       BC1 — "Tổng hợp chi tiết sinh viên bị cảnh báo học tập NN lần liên tiếp học kỳ ..."
+       BC2 — "Tổng hợp số lượng sinh viên bị cảnh báo học tập học kỳ ..."
+     Cả 2 chỉ đọc từ ĐỢT ĐÃ CÔNG BỐ — nếu đọc cả đợt nháp thì số báo cáo sẽ nhảy mỗi lần có người
+     chạy rà soát thử, không dùng để trình ký được.
+     Header bảng nhiều tầng (colspan/rowspan) giữ đúng cấu trúc bản giấy, khác các bảng khác trong dự
+     án vốn để header phẳng 1 tầng — vì đây là báo cáo để in/xuất, không phải bảng thao tác. */
+  .tbl-rp{border-collapse:collapse;width:100%;font-size:12.5px}
+  .tbl-rp th,.tbl-rp td{border:1px solid var(--border);padding:6px 8px;text-align:center;vertical-align:middle}
+  .tbl-rp thead th{background:var(--bg-2,#f5f5f5);font-weight:600;font-size:12px;line-height:1.35}
+  .tbl-rp td.l{text-align:left}
+  /* Ô kỳ SV KHÔNG được xét (bảo lưu/đình chỉ theo quyết định) — tô xám như bản giấy. Phân biệt với ô
+     trắng rỗng nghĩa là kỳ đó CÓ xét mà không bị cảnh báo. Hai thứ này rất dễ lẫn nên có chú thích
+     ngay dưới bảng. */
+  .c-nx{background:#e8e8e8;color:var(--text-3)}
+  .c-cb{background:#fff2e8;font-weight:600}
+  /* Dòng gộp "Tổng số SV ... lần cảnh báo LIÊN TIẾP" chèn giữa bảng, đúng vị trí bản giấy */
+  .r-sum td{background:#eef4ff;font-weight:600}
+  .rp-title{text-align:center;margin:0 0 4px;font-size:15px;font-weight:700;text-transform:uppercase}
+  .rp-sub{text-align:center;font-size:12.5px;color:var(--text-3);margin-bottom:16px}
+  .legend{display:flex;gap:18px;align-items:center;font-size:12.5px;color:var(--text-3);margin-top:10px}
+  .legend i{display:inline-block;width:14px;height:14px;border:1px solid var(--border);vertical-align:-2px;margin-right:5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Ban Đào tạo</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">📜&nbsp; Quyết định người học &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
+          <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
+          <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Biến động sinh viên</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚠️&nbsp; Cảnh báo học tập &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-21_academicwarninglevels.html">Cài đặt thông số</a></li>
+          <li><a href="mh-admin-20_academicwarningbatch.html">Xét cảnh báo học tập</a></li>
+          <li><a href="mh-admin-19_academicwarningreview.html">Danh sách cảnh báo</a></li>
+          <li class="active"><a href="mh-admin-26_academicwarningreport.html">Báo cáo cảnh báo</a></li>
+        </ul>
+      </li>
+      <li>
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <header class="app-header">
+      <div class="h-breadcrumb">
+        <a href="mh-admin-20_academicwarningbatch.html">Cảnh báo học tập</a> /
+        <b style="color:var(--text-1)">Báo cáo cảnh báo</b>
+      </div>
+      <div class="h-right"><div class="av" id="hd-avatar">AD</div></div>
+    </header>
+
+    <div class="content">
+      <div class="flex justify-between items-center mb-16">
+        <h2 style="margin:0;font-size:18px">Báo cáo cảnh báo học tập</h2>
+      </div>
+
+      <div class="tab-container">
+        <div class="tabs-nav">
+          <button type="button" class="tab-btn active" data-tab="tab-bc1">Chi tiết SV cảnh báo liên tiếp</button>
+          <button type="button" class="tab-btn" data-tab="tab-bc2">Tổng hợp số lượng</button>
+        </div>
+
+        <!-- ─────────── BC1 ─────────── -->
+        <div class="tab-pane active" id="tab-bc1">
+          <div class="toolbar" style="justify-content:space-between">
+            <div class="filter-bar" style="margin-bottom:0">
+              <select class="fc" id="b1-hocky" style="width:auto;min-width:180px" onchange="renderBC1()"></select>
+              <!-- "03 lần liên tiếp" ở bản giấy là chỗ ĐỂ TRỐNG ĐIỀN TAY, nên đưa thành bộ lọc chứ
+                   không gán cứng vào tiêu đề. -->
+              <select class="fc" id="b1-solan" style="width:auto;min-width:190px" onchange="renderBC1()">
+                <option value="2">Cảnh báo 2 lần liên tiếp</option>
+                <option value="3" selected>Cảnh báo 3 lần liên tiếp</option>
+                <option value="4">Cảnh báo từ 4 lần liên tiếp</option>
+              </select>
+              <select class="fc" id="b1-khoa" style="width:auto;min-width:180px" onchange="renderBC1()"></select>
+            </div>
+            <div class="flex gap-8">
+              <button class="btn btn-default" onclick="showToast('Đã xuất Excel báo cáo chi tiết sinh viên cảnh báo liên tiếp')">⬇ Export file</button>
+              <button class="btn btn-default" onclick="window.print()">In báo cáo</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="rp-title" id="b1-title">Tổng hợp chi tiết sinh viên bị cảnh báo học tập</div>
+            <div class="rp-sub" id="b1-sub"></div>
+            <div class="tbl-wrap">
+              <table class="tbl-rp" id="tbl-bc1">
+                <thead id="b1-thead"></thead>
+                <tbody id="b1-tbody"></tbody>
+              </table>
+            </div>
+            <div class="legend">
+              <span><i style="background:#fff2e8"></i>Kỳ bị cảnh báo</span>
+              <span><i style="background:#fff"></i>Kỳ có xét, không bị cảnh báo</span>
+              <span><i class="c-nx" style="background:#e8e8e8"></i>Kỳ không xét — sinh viên bảo lưu hoặc bị đình chỉ theo quyết định</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────── BC2 ─────────── -->
+        <div class="tab-pane" id="tab-bc2">
+          <div class="toolbar" style="justify-content:space-between">
+            <div class="filter-bar" style="margin-bottom:0">
+              <select class="fc" id="b2-hocky" style="width:auto;min-width:180px" onchange="renderBC2()"></select>
+              <select class="fc" id="b2-khoa" style="width:auto;min-width:180px" onchange="renderBC2()"></select>
+            </div>
+            <div class="flex gap-8">
+              <button class="btn btn-default" onclick="showToast('Đã xuất Excel báo cáo tổng hợp số lượng sinh viên bị cảnh báo')">⬇ Export file</button>
+              <button class="btn btn-default" onclick="window.print()">In báo cáo</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="rp-title" id="b2-title">Tổng hợp số lượng sinh viên bị cảnh báo học tập</div>
+            <div class="rp-sub" id="b2-sub"></div>
+            <div class="tbl-wrap">
+              <table class="tbl-rp" id="tbl-bc2">
+                <thead id="b2-thead"></thead>
+                <tbody id="b2-tbody"></tbody>
+              </table>
+            </div>
+            <div class="legend">
+              <span><b>Quy mô</b> = số sinh viên đang học của (Khoa × CTĐT × Khoá) tại học kỳ báo cáo — đếm từ bảng trạng thái sinh viên theo kỳ, KHÔNG lấy từ kết quả đợt xét.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ============================================================
+   DATA — mock. Nguồn thật: kết quả các ĐỢT XÉT ĐÃ CÔNG BỐ (mh-admin-20/24) + bảng trạng thái sinh
+   viên theo kỳ. 2 trang tĩnh độc lập, không kết nối kỹ thuật với mh-admin-24.
+   ============================================================ */
+
+/* Dãy học kỳ theo THỨ TỰ THỜI GIAN — báo cáo BC1 lấy N kỳ gần nhất tính ngược từ kỳ đang xét.
+   Phải so sánh theo thứ tự trong danh sách này, KHÔNG so chuỗi "HK1"/"HK2" (HK2 2026-2027 phải nhỏ
+   hơn HK1 2027-2028). */
+const KY = [
+  { id:'2025-1', ten:'HK1 2025-2026' },
+  { id:'2025-2', ten:'HK2 2025-2026' },
+  { id:'2025-3', ten:'HK hè 2025-2026' },
+  { id:'2026-1', ten:'HK1 2026-2027' },
+  { id:'2026-2', ten:'HK2 2026-2027' },
+];
+const KY_XET = '2026-2';   // kỳ đang xét mặc định
+
+const KHOA_LIST = ['Khoa CNTT', 'Khoa Ngoại ngữ', 'Khoa Quản trị Kinh doanh', 'Khoa Cơ khí', 'Khoa Du lịch'];
+
+/* BC1 — mỗi SV có: hồ sơ + trạng thái tại kỳ xét + khoảng kỳ của quyết định (nếu có) + lịch sử cảnh
+   báo theo từng kỳ.
+   ls[kyId]: 'cb' = bị cảnh báo · 'kh' = có xét, không bị cảnh báo · 'nx' = KHÔNG XÉT (bảo lưu/đình chỉ)
+   Ô 'nx' chính là ô tô xám ở bản giấy — sinh viên không học kỳ đó nên không thể kết luận.
+   Chuỗi liên tiếp BỎ QUA ô 'nx': ô đó không cộng vào chuỗi mà cũng không cắt chuỗi. */
+const BC1_SV = [
+  { khoa:'Khoa CNTT', ctdt:'Công nghệ thông tin', khoaHoc:'K16', lop:'CNTT2.23107.1', ten:'Đặng Minh Khang', mssv:'23104521',
+    trangThai:'Bảo lưu', qdTu:'HK1 2026-2027', qdDen:'HK1 2026-2027',
+    ls:{ '2025-1':'kh', '2025-2':'cb', '2025-3':'cb', '2026-1':'nx', '2026-2':'cb' } },
+  { khoa:'Khoa CNTT', ctdt:'Công nghệ thông tin', khoaHoc:'K17', lop:'CNTT3.21104.1', ten:'Nguyễn Thị Cẩm Tú', mssv:'21102770',
+    trangThai:'Đang học', qdTu:'', qdDen:'',
+    ls:{ '2025-1':'kh', '2025-2':'cb', '2025-3':'kh', '2026-1':'cb', '2026-2':'cb' } },
+  { khoa:'Khoa Quản trị Kinh doanh', ctdt:'Quản trị kinh doanh', khoaHoc:'K16', lop:'QTKD3.22105.1', ten:'Vũ Thị Hồng Nhung', mssv:'22103456',
+    trangThai:'Đình chỉ học tập', qdTu:'HK1 2026-2027', qdDen:'HK1 2026-2027',
+    ls:{ '2025-1':'kh', '2025-2':'cb', '2025-3':'cb', '2026-1':'nx', '2026-2':'cb' } },
+  { khoa:'Khoa Cơ khí', ctdt:'Kỹ thuật cơ khí', khoaHoc:'K15', lop:'CK1.21102.1', ten:'Lê Văn Đạt', mssv:'21102233',
+    trangThai:'Đang học', qdTu:'', qdDen:'',
+    ls:{ '2025-1':'cb', '2025-2':'cb', '2025-3':'cb', '2026-1':'cb', '2026-2':'cb' } },
+  { khoa:'Khoa Ngoại ngữ', ctdt:'Ngôn ngữ Anh', khoaHoc:'K14', lop:'NNA1.20101.1', ten:'Phạm Thị Bích', mssv:'20101122',
+    trangThai:'Đang học', qdTu:'', qdDen:'',
+    ls:{ '2025-1':'kh', '2025-2':'kh', '2025-3':'kh', '2026-1':'cb', '2026-2':'cb' } },
+  { khoa:'Khoa Ngoại ngữ', ctdt:'Ngôn ngữ Anh', khoaHoc:'K16', lop:'NNA2.23106.1', ten:'Trịnh Quang Huy', mssv:'23104880',
+    trangThai:'Bảo lưu', qdTu:'HK1 2026-2027', qdDen:'HK2 2026-2027',
+    ls:{ '2025-1':'cb', '2025-2':'cb', '2025-3':'kh', '2026-1':'nx', '2026-2':'nx' } },
+];
+
+/* BC2 — mock đã tổng hợp sẵn theo (Khoa × CTĐT × Khoá). Thật ra là kết quả GROUP BY từ kết quả đợt
+   đã công bố; riêng cột quy mô lấy từ bảng trạng thái sinh viên theo kỳ (đếm SV "Đang học"). */
+const KHOA_HOC = ['K13', 'K14', 'K15', 'K16', 'K17'];
+const BC2_ROWS = [
+  { khoa:'Khoa CNTT', ctdt:'Công nghệ thông tin',
+    d:{ K13:[120,3,1,0,0], K14:[145,5,2,1,0], K15:[160,8,3,1,0], K16:[175,11,4,2,1], K17:[180,14,3,0,0] } },
+  { khoa:'Khoa CNTT', ctdt:'Khoa học máy tính',
+    d:{ K13:[60,1,0,0,0], K14:[72,2,1,0,0], K15:[80,4,1,1,0], K16:[88,6,2,0,0], K17:[95,7,1,0,0] } },
+  { khoa:'Khoa Ngoại ngữ', ctdt:'Ngôn ngữ Anh',
+    d:{ K13:[90,2,1,0,0], K14:[102,4,2,1,1], K15:[110,5,1,0,0], K16:[118,7,3,1,0], K17:[124,9,2,0,0] } },
+  { khoa:'Khoa Quản trị Kinh doanh', ctdt:'Quản trị kinh doanh',
+    d:{ K13:[130,4,2,0,0], K14:[148,6,2,1,0], K15:[155,9,4,2,0], K16:[168,12,5,2,1], K17:[172,15,4,1,0] } },
+  { khoa:'Khoa Cơ khí', ctdt:'Kỹ thuật cơ khí',
+    d:{ K13:[70,2,1,1,0], K14:[85,3,2,1,0], K15:[92,6,3,1,1], K16:[99,8,3,1,0], K17:[105,10,2,0,0] } },
+  { khoa:'Khoa Du lịch', ctdt:'Du lịch',
+    d:{ K13:[55,1,0,0,0], K14:[64,2,1,0,0], K15:[70,3,1,0,0], K16:[76,5,2,1,0], K17:[82,6,1,0,0] } },
+];
+
+/* ============================================================
+   BC1
+   ============================================================ */
+function kyIndex(id){ return KY.findIndex(k => k.id === id); }
+
+/* Số kỳ CÓ XÉT liên tiếp gần nhất mà SV bị cảnh báo, tính ngược từ kỳ đang xét.
+   Ô 'nx' bị BỎ QUA khỏi dãy — không cộng, không cắt. Nếu để 'nx' cắt chuỗi thì sinh viên chỉ cần
+   bảo lưu 1 kỳ là thoát diện buộc thôi học vĩnh viễn. */
+function chuoiLienTiep(sv, kyId){
+  let n = 0;
+  for (let i = kyIndex(kyId); i >= 0; i--){
+    const v = sv.ls[KY[i].id];
+    if (v === 'nx') continue;
+    if (v === 'cb') n++;
+    else break;
+  }
+  return n;
+}
+/* N kỳ hiển thị trong ma trận: bản giấy để 6 cột + 1 cột kỳ đang xét. Ở đây giãn theo số lần liên
+   tiếp đang lọc, tối thiểu 5 cột, để báo cáo không thừa cột trắng khi lọc "2 lần liên tiếp". */
+function cotKy(kyId, soLan){
+  const end = kyIndex(kyId);
+  const n = Math.max(5, Number(soLan) + 2);
+  return KY.slice(Math.max(0, end - n + 1), end + 1);
+}
+function renderBC1(){
+  const kyId = document.getElementById('b1-hocky').value;
+  const soLan = document.getElementById('b1-solan').value;
+  const khoa = document.getElementById('b1-khoa').value;
+  const cols = cotKy(kyId, soLan);
+  const tenKy = KY[kyIndex(kyId)].ten;
+
+  document.getElementById('b1-title').textContent =
+    `Tổng hợp chi tiết sinh viên bị cảnh báo học tập ${String(soLan).padStart(2,'0')} lần liên tiếp — ${tenKy}`;
+  document.getElementById('b1-sub').textContent =
+    `Trường Đại học Phenikaa · Nguồn: các đợt xét đã công bố · Kỳ đang xét: ${tenKy}`;
+
+  /* Header 3 tầng, giữ đúng cấu trúc bản giấy: nhóm "Thông tin SV" gộp Trạng thái SV + Thông tin
+     của Quyết định (Từ học kỳ / Đến hết học kỳ). */
+  document.getElementById('b1-thead').innerHTML = `
+    <tr>
+      <th rowspan="3" style="width:40px">STT</th>
+      <th rowspan="3" style="width:150px">Khoa</th>
+      <th rowspan="3" style="width:160px">Chương trình đào tạo</th>
+      <th rowspan="3" style="width:55px">Khoá</th>
+      <th rowspan="3" style="width:120px">Lớp</th>
+      <th rowspan="3" style="width:150px">Sinh viên</th>
+      <th rowspan="3" style="width:100px">Mã sinh viên</th>
+      <th colspan="3">Thông tin SV</th>
+      <th colspan="${cols.length}">Học kỳ bị cảnh báo</th>
+    </tr>
+    <tr>
+      <th rowspan="2" style="width:120px">Trạng thái SV</th>
+      <th colspan="2">Thông tin của Quyết định</th>
+      ${cols.map((k, i) => `<th rowspan="2" style="width:95px">${k.ten}${i === cols.length-1 ? '<br><i style="font-weight:400">(Kỳ đang xét)</i>' : ''}</th>`).join('')}
+    </tr>
+    <tr>
+      <th style="width:110px">Từ học kỳ</th>
+      <th style="width:110px">Đến hết học kỳ</th>
+    </tr>`;
+
+  /* Lọc: chỉ SV đạt đúng mức chuỗi đang chọn. Mức "từ 4 lần" gom mọi giá trị >= 4. */
+  const dat = BC1_SV.filter(sv => {
+    if (khoa && sv.khoa !== khoa) return false;
+    const n = chuoiLienTiep(sv, kyId);
+    return Number(soLan) >= 4 ? n >= 4 : n === Number(soLan);
+  });
+
+  const tbody = document.getElementById('b1-tbody');
+  if (!dat.length){
+    tbody.innerHTML = `<tr><td colspan="${10 + cols.length}"><div class="tbl-empty">Không có sinh viên nào thuộc diện này</div></td></tr>`;
+    return;
+  }
+
+  /* Gộp theo Khoa, mỗi nhóm có 1 dòng tổng như bản giấy. */
+  let html = '', stt = 0;
+  const nhom = {};
+  dat.forEach(sv => (nhom[sv.khoa] = nhom[sv.khoa] || []).push(sv));
+  Object.entries(nhom).forEach(([tenKhoa, ds]) => {
+    ds.forEach(sv => {
+      stt++;
+      html += `<tr>
+        <td>${stt}</td>
+        <td class="l">${sv.khoa}</td>
+        <td class="l">${sv.ctdt}</td>
+        <td>${sv.khoaHoc}</td>
+        <td>${sv.lop}</td>
+        <td class="l">${sv.ten}</td>
+        <td>${sv.mssv}</td>
+        <td>${sv.trangThai}</td>
+        <td>${sv.qdTu || ''}</td>
+        <td>${sv.qdDen || ''}</td>
+        ${cols.map(k => {
+          const v = sv.ls[k.id];
+          if (v === 'nx') return `<td class="c-nx" title="Không xét — sinh viên bảo lưu/đình chỉ theo quyết định">Không xét</td>`;
+          if (v === 'cb') return `<td class="c-cb">x</td>`;
+          return `<td></td>`;
+        }).join('')}
+      </tr>`;
+    });
+    html += `<tr class="r-sum">
+      <td colspan="3" class="l">Tổng số SV ${soLan} lần cảnh báo LIÊN TIẾP — ${tenKhoa}</td>
+      <td colspan="${7 + cols.length}" class="l">${ds.length}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+/* ============================================================
+   BC2
+   ============================================================ */
+function renderBC2(){
+  const kyId = document.getElementById('b2-hocky').value;
+  const khoa = document.getElementById('b2-khoa').value;
+  const tenKy = KY[kyIndex(kyId)].ten;
+
+  document.getElementById('b2-title').textContent = `Tổng hợp số lượng sinh viên bị cảnh báo học tập — ${tenKy}`;
+  document.getElementById('b2-sub').textContent = `Bộ Giáo dục và Đào tạo · Trường Đại học Phenikaa · Nguồn: các đợt xét đã công bố`;
+
+  document.getElementById('b2-thead').innerHTML = `
+    <tr>
+      <th rowspan="2" style="width:40px">STT</th>
+      <th rowspan="2" style="width:170px">KHOA</th>
+      <th rowspan="2" style="width:180px">Chương trình đào tạo</th>
+      ${KHOA_HOC.map(k => `<th colspan="5">${k}</th>`).join('')}
+      <th rowspan="2" style="width:80px">Tổng<br>Quy mô</th>
+      <th rowspan="2" style="width:150px">Tổng số SV bị cảnh báo<br><i style="font-weight:400">(ở học kỳ đang xét và các học kỳ liền kề trước đó)</i></th>
+    </tr>
+    <tr>
+      ${KHOA_HOC.map(() => `
+        <th style="width:60px">Quy mô</th>
+        <th style="width:52px">Lần 1</th>
+        <th style="width:62px">CB 2 lần<br>liên tiếp</th>
+        <th style="width:62px">CB 3 lần<br>liên tiếp</th>
+        <th style="width:70px">CB từ 4 lần<br>liên tiếp</th>`).join('')}
+    </tr>`;
+
+  const rows = BC2_ROWS.filter(r => !khoa || r.khoa === khoa);
+  const tong = [0, 0, 0, 0, 0];
+  let html = '';
+  rows.forEach((r, i) => {
+    let quyMo = 0, canhBao = 0;
+    const cells = KHOA_HOC.map(k => {
+      const d = r.d[k] || [0, 0, 0, 0, 0];
+      quyMo += d[0];
+      canhBao += d[1] + d[2] + d[3] + d[4];
+      d.forEach((v, j) => tong[j] += v);
+      return d.map((v, j) => `<td${j === 0 ? ' style="background:#fafafa"' : ''}>${v || ''}</td>`).join('');
+    }).join('');
+    html += `<tr>
+      <td>${i + 1}</td><td class="l">${r.khoa}</td><td class="l">${r.ctdt}</td>
+      ${cells}
+      <td style="font-weight:600">${quyMo}</td>
+      <td style="font-weight:600">${canhBao}</td>
+    </tr>`;
+  });
+  const tongQuyMo = rows.reduce((a, r) => a + KHOA_HOC.reduce((b, k) => b + (r.d[k] ? r.d[k][0] : 0), 0), 0);
+  const tongCB = rows.reduce((a, r) => a + KHOA_HOC.reduce((b, k) => b + (r.d[k] ? r.d[k].slice(1).reduce((c, v) => c + v, 0) : 0), 0), 0);
+  html += `<tr class="r-sum">
+    <td colspan="3" class="l">TỔNG CỘNG</td>
+    ${KHOA_HOC.map(() => '<td></td><td></td><td></td><td></td><td></td>').join('')}
+    <td>${tongQuyMo}</td><td>${tongCB}</td>
+  </tr>`;
+  document.getElementById('b2-tbody').innerHTML = html;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function fillSelect(id, items, all){
+  const el = document.getElementById(id);
+  el.innerHTML = (all ? `<option value="">${all}</option>` : '')
+    + items.map(o => `<option value="${o.v}" ${o.sel ? 'selected' : ''}>${o.t}</option>`).join('');
+}
+const kyOpts = KY.map(k => ({ v:k.id, t:k.ten, sel:k.id === KY_XET }));
+fillSelect('b1-hocky', kyOpts);
+fillSelect('b2-hocky', kyOpts);
+fillSelect('b1-khoa', KHOA_LIST.map(k => ({ v:k, t:k })), 'Tất cả khoa');
+fillSelect('b2-khoa', KHOA_LIST.map(k => ({ v:k, t:k })), 'Tất cả khoa');
+renderBC1();
+renderBC2();
+</script>
+</body>
+</html>

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quá trình học tập | Khoa CNTT</title>
+<title>Biến động sinh viên | Khoa CNTT</title>
 <link rel="stylesheet" href="_styles.css">
 <style>
-  /* ========== Page-specific: quá trình học tập sinh viên (MH-ADMIN-15) ========== */
+  /* ========== Page-specific: biến động sinh viên (MH-ADMIN-15) ========== */
 
   /* Dropdown thông báo — đồng bộ với các màn admin khác */
   .notif-menu{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200}
@@ -33,6 +33,15 @@
   .bd-field-tag{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em}
   .bd-old-val{color:var(--text-2)}
   .bd-new-val{color:var(--text-1);font-weight:600}
+  /* Droplist bộ lọc — dùng lại pattern .unit-combo/.form-combo-trigger của mh-admin-19/20 */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);max-height:280px;overflow-y:auto;z-index:50;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+  .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
   tr.bd-row{cursor:pointer}
   tr.bd-row:hover td{background:var(--primary-light)}
 </style>
@@ -74,7 +83,7 @@
           <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
           <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
-          <li class="active"><a href="#">Quá trình học tập</a></li>
+          <li class="active"><a href="#">Biến động sinh viên</a></li>
         </ul>
       </li>
       <li>
@@ -90,7 +99,7 @@
   <div class="main">
     <!-- ═══ HEADER ═══ -->
     <header class="app-header">
-      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Quá trình học tập</b></div>
+      <div class="h-breadcrumb" id="breadcrumb">Quyết định SV / <b style="color:var(--text-1)">Biến động sinh viên</b></div>
       <div class="h-right">
         <div class="bw" id="notif-wrap">
           <button class="btn btn-link" style="font-size:18px" onclick="event.stopPropagation();toggleNotifMenu()">🔔</button>
@@ -112,9 +121,10 @@
            không kết nối kỹ thuật thật, 2 trang tĩnh độc lập). Lọc theo MSSV/Họ tên để xem nhanh
            lịch sử 1 sinh viên mà không cần mở trang Chi tiết riêng. Giá trị cũ/mới hiển thị 2 cột
            tách biệt — chỉ có giá trị khi quyết định đó thực sự đổi 1 field theo dõi được (trạng
-           thái học vụ, ngành/CTĐT, lớp hành chính, đơn vị đào tạo, họ tên); quyết định không đổi
-           field nào (VD giao đề tài, công nhận điểm rèn luyện...) để trống 2 cột này, KHÔNG bị ẩn
-           khỏi bảng — vẫn liệt kê đủ để trả lời "sinh viên này có những QĐ gì".
+           thái học vụ — gồm cả đình chỉ học tập, ngành/CTĐT, lớp hành chính, đơn vị đào tạo). Bảng
+           CHỈ lưu 4 nhóm biến động đó; các quyết định khác (giao đề tài, cử đi thực tập, xử lý học
+           vụ, thay đổi họ tên) KHÔNG xuất hiện ở đây. Cột Học kỳ bắt đầu/kết thúc = khoảng học kỳ
+           quyết định có hiệu lực (QĐ không có mốc kết thúc, VD thôi học, để trống cột sau).
       ═══════════════════════════════════════════════════════ -->
       <div id="view-list">
 
@@ -126,6 +136,33 @@
 
         <!-- Bộ lọc: Tìm tên/MSSV -->
         <div class="filter-bar">
+          <div class="unit-combo" id="f-hocky-combo" style="width:190px">
+            <button type="button" class="fc form-combo-trigger" id="f-hocky-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('f-hocky')">
+              <span id="f-hocky-combo-label">Tất cả học kỳ QĐ</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="f-hocky-combo-menu">
+              <input class="fc" id="f-hocky-search" type="text" placeholder="🔍 Tìm học kỳ…" autocomplete="off" style="margin-bottom:4px">
+              <div id="f-hocky-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="f-loaiqd-combo" style="width:280px">
+            <button type="button" class="fc form-combo-trigger" id="f-loaiqd-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('f-loaiqd')">
+              <span id="f-loaiqd-combo-label">Tất cả loại quyết định</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="f-loaiqd-combo-menu">
+              <input class="fc" id="f-loaiqd-search" type="text" placeholder="🔍 Tìm loại quyết định…" autocomplete="off" style="margin-bottom:4px">
+              <div id="f-loaiqd-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="f-trangthai-combo" style="width:200px">
+            <button type="button" class="fc form-combo-trigger" id="f-trangthai-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('f-trangthai')">
+              <span id="f-trangthai-combo-label">Tất cả trạng thái mới</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="f-trangthai-combo-menu">
+              <input class="fc" id="f-trangthai-search" type="text" placeholder="🔍 Tìm trạng thái…" autocomplete="off" style="margin-bottom:4px">
+              <div id="f-trangthai-combo-list"></div>
+            </div>
+          </div>
           <input class="fc" id="sv-search" type="text" placeholder="🔍 Tìm theo tên hoặc MSSV…" autocomplete="off" style="width:280px">
         </div>
 
@@ -137,17 +174,21 @@
                 <th style="width:110px">MSSV</th>
                 <th style="width:140px">Họ và tên</th>
                 <th>Loại quyết định</th>
-                <th style="width:120px">Số quyết định</th>
-                <th style="width:100px">Ngày quyết định</th>
+                <th style="width:130px">Học kỳ quyết định</th>
+                <th style="width:120px">Số QĐ</th>
+                <th style="width:100px">Ngày QĐ</th>
+                <th style="width:120px">Học kỳ bắt đầu</th>
+                <th style="width:120px">Học kỳ kết thúc</th>
                 <th style="width:110px">Trạng thái cũ</th>
                 <th style="width:110px">Trạng thái mới</th>
+                <th style="width:110px">Niên khoá cũ</th>
+                <th style="width:110px">Niên khoá mới</th>
                 <th style="width:130px">Ngành/CTĐT cũ</th>
                 <th style="width:130px">Ngành/CTĐT mới</th>
                 <th style="width:100px">Lớp HC cũ</th>
                 <th style="width:100px">Lớp HC mới</th>
                 <th style="width:140px">Đơn vị đào tạo cũ</th>
                 <th style="width:140px">Đơn vị đào tạo mới</th>
-                <th style="width:100px">Hiệu lực</th>
               </tr>
             </thead>
             <tbody id="bd-tbody">
@@ -172,14 +213,13 @@
 const STATUS_LABEL = {
   danghoc:'Đang học', buocthoihoc:'Buộc thôi học', chuyentruong:'Chuyển trường đi',
   totnghiep:'Tốt nghiệp', baoluu:'Bảo lưu', thoihoc:'Thôi học', xoaten:'Xoá tên',
+  dinhchi:'Đình chỉ học tập',
 };
-const STATUS_TAG_CLASS = {
-  danghoc:'tag-success', buocthoihoc:'tag-error', chuyentruong:'tag-purple',
-  totnghiep:'tag-blue', baoluu:'tag-warning', thoihoc:'tag-error', xoaten:'tag-error',
-};
-function statusTagHtml(statusCode){
+/* Trạng thái hiển thị dạng TEXT thuần (không dùng tag màu) theo yêu cầu — bảng đã nhiều cột, tag
+   màu làm dòng bị rối. */
+function statusTextHtml(statusCode){
   if (!statusCode) return '<span class="text-muted">—</span>';
-  return `<span class="tag ${STATUS_TAG_CLASS[statusCode] || 'tag-default'}">${STATUS_LABEL[statusCode] || statusCode}</span>`;
+  return STATUS_LABEL[statusCode] || statusCode;
 }
 
 /* Loại quyết định nào làm SV đổi trạng thái học vụ — ĐỒNG BỘ NỘI DUNG với TYPE_NEW_STATUS ở
@@ -197,12 +237,13 @@ const TYPE_NEW_STATUS = {
   'Quyết định quay trở lại học tập': 'danghoc',
   'Quyết định thôi học': 'thoihoc',
   'Quyết định xoá tên': 'xoaten',
+  'Quyết định đình chỉ học tập': 'dinhchi',
 };
 
 /* ============================================================
    DATA — Danh sách Quyết định THẬT, đúng nội dung DECISION_INSTANCES ở mh-admin-08 (ĐỒNG BỘ NỘI
    DUNG, không kết nối kỹ thuật thật — 2 trang tĩnh độc lập, sửa 1 bên thì nhớ sửa bên còn lại).
-   Timeline "Quá trình học tập" của mỗi SV được TỰ ĐỘNG SUY RA từ danh sách này (buildTimelines()),
+   Danh sách biến động của mỗi SV được TỰ ĐỘNG SUY RA từ danh sách này (buildTimelines()),
    không còn data timeline bịa tay riêng như trước — mỗi quyết định ĐÃ DUYỆT có SV nào trong
    students[] thì SV đó tự có 1 mốc trong timeline.
    ============================================================ */
@@ -222,7 +263,7 @@ const DECISION_INSTANCES = [
       { mssv:'20120206', name:'Trương Văn Kiên', lop:'', ctdt:'Công nghệ thông tin' },
     ] },
   { id:'i3', code:'QDSV-000150', typeName:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)',
-    created:'20/06/2026', status:'Đã duyệt',
+    created:'20/06/2026', status:'Đã duyệt', startSemester:'HK2 2025-2026', endSemester:'HK2 2025-2026',
     students:[
       { mssv:'20120207', name:'Lê Thị Hạnh', lop:'', ctdt:'Công nghệ thông tin' },
       { mssv:'20120208', name:'Phan Văn Đạt', lop:'', ctdt:'An toàn thông tin' },
@@ -246,7 +287,7 @@ const DECISION_INSTANCES = [
       { mssv:'20120218', name:'Lý Văn Phát', lop:'', ctdt:'An toàn thông tin' },
     ] },
   { id:'i6', code:'QDSV-000241', typeName:'Quyết định công nhận tốt nghiệp',
-    created:'01/07/2026', status:'Đã duyệt',
+    created:'01/07/2026', status:'Đã duyệt', startSemester:'HK2 2025-2026',
     students:[
       { mssv:'20120219', name:'Nguyễn Thị Thảo', lop:'', ctdt:'Công nghệ thông tin' },
       { mssv:'20120220', name:'Trần Văn Khoa', lop:'', ctdt:'Khoa học máy tính' },
@@ -268,58 +309,192 @@ const DECISION_INSTANCES = [
     created:'18/07/2026', status:'Chờ duyệt',
     students:[ { mssv:'20120067', name:'Ngô Thị Thu', lop:'', ctdt:'Công nghệ thông tin' } ] },
   { id:'i9', code:'QDSV-000180', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
-    created:'22/06/2026', status:'Đã duyệt',
+    created:'22/06/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', endSemester:'HK2 2026-2027',
     students:[ { mssv:'20120088', name:'Hoàng Văn Nam', lop:'', ctdt:'Khoa học máy tính' } ] },
   { id:'i10', code:'', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
     created:'25/06/2026', status:'Từ chối',
     students:[ { mssv:'20120044', name:'Đặng Thị Quỳnh', lop:'', ctdt:'Hệ thống thông tin' } ] },
   { id:'i11', code:'QDSV-000310', typeName:'Quyết định thôi học',
-    created:'19/07/2026', status:'Đã duyệt',
+    created:'19/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027',
     students:[
       { mssv:'20120230', name:'Trịnh Văn Sơn', lop:'', ctdt:'Công nghệ thông tin' },
       { mssv:'20120231', name:'Mai Văn Cường', lop:'', ctdt:'Kỹ thuật phần mềm' },
       { mssv:'20120232', name:'Lâm Thị Hồng', lop:'', ctdt:'Khoa học máy tính' },
     ] },
   { id:'i12', code:'QDSV-000318', typeName:'Quyết định thôi học',
-    created:'21/07/2026', status:'Đã duyệt',
+    created:'21/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027',
     students:[ { mssv:'20120071', name:'Lý Thị Hương', lop:'', ctdt:'Hệ thống thông tin' } ] },
   { id:'i13', code:'QDSV-000401', typeName:'Quyết định chuyển khoá, ngành, lớp',
-    created:'22/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    created:'22/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', effectiveDate:'01/08/2026',
+    oldNienKhoa:'K48 (2020-2024)', newNienKhoa:'K51 (2023-2027)',
     oldCtdt:'Công nghệ thông tin', newCtdt:'Kỹ thuật phần mềm', oldLopHc:'CT4801', newLopHc:'CT5101',
     students:[ { mssv:'20120260', name:'Trần Văn Hậu', lop:'CT5101', ctdt:'Kỹ thuật phần mềm' } ] },
   { id:'i14', code:'QDSV-000402', typeName:'Quyết định thay đổi đơn vị đào tạo',
-    created:'22/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    created:'22/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', effectiveDate:'01/08/2026',
     oldDonViDaoTao:'Trường Công nghệ', newDonViDaoTao:'Khoa Công nghệ thông tin',
     students:[ { mssv:'20120261', name:'Ngô Thị Kiều', lop:'', ctdt:'An toàn thông tin' } ] },
   { id:'i15', code:'QDSV-000403', typeName:'Quyết định thay đổi họ tên sinh viên',
-    created:'23/07/2026', status:'Đã duyệt', effectiveDate:'25/07/2026',
+    created:'23/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', effectiveDate:'25/07/2026',
     oldName:'Trần Văn Hậu', newName:'Trần Văn Hậu Anh',
     students:[ { mssv:'20120260', name:'Trần Văn Hậu Anh', lop:'CT5101', ctdt:'Kỹ thuật phần mềm' } ] },
   { id:'i16', code:'QDSV-000404', typeName:'Quyết định quay trở lại học tập',
-    created:'23/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026',
+    created:'23/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', effectiveDate:'01/08/2026',
     students:[ { mssv:'20120263', name:'Vương Thị Ngọc', lop:'', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i19', code:'QDSV-000407', typeName:'Quyết định đình chỉ học tập',
+    created:'10/06/2026', status:'Đã duyệt', startSemester:'HK2 2025-2026', endSemester:'HK1 2026-2027', effectiveDate:'15/06/2026',
+    students:[
+      { mssv:'20120263', name:'Vương Thị Ngọc', lop:'', ctdt:'Hệ thống thông tin' },
+      { mssv:'20120209', name:'Ngô Thị Bảo', lop:'', ctdt:'Hệ thống thông tin' },
+    ] },
   { id:'i17', code:'QDSV-000405', typeName:'Quyết định giao đề tài và phân công GVHD',
-    created:'24/07/2026', status:'Đã duyệt', effectiveDate:'26/07/2026',
+    created:'24/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', endSemester:'HK1 2026-2027', effectiveDate:'26/07/2026',
     students:[ { mssv:'20120260', name:'Trần Văn Hậu Anh', lop:'CT5101', ctdt:'Kỹ thuật phần mềm' } ] },
+  /* ── Dữ liệu mẫu bổ sung: các CHUỖI biến động đầy đủ của 1 sinh viên (nhập trường → bảo lưu/đình
+     chỉ → quay lại → chuyển ngành/lớp → tốt nghiệp/thôi học), để thấy rõ cột "Trạng thái cũ" được
+     suy ra từ quyết định TRƯỚC ĐÓ của chính sinh viên đó. ── */
+
+  /* ── 5 QUYẾT ĐỊNH NGHỈ dùng chung nội dung với mh-admin-24 (Xét cảnh báo học tập): màn cảnh báo
+     quét trạng thái SV tại kỳ xét bằng cách tìm QĐ nghỉ có [Học kỳ bắt đầu .. Học kỳ kết thúc]
+     TRÙM lên kỳ đó; SV không có QĐ nào trùm = Đang học. Sửa 1 bên thì nhớ sửa bên còn lại — 2 trang
+     tĩnh độc lập, không kết nối kỹ thuật thật. QĐ nghỉ TRỌN NĂM HỌC vẫn chỉ 1 dòng (HK1 → HK2). ── */
+  { id:'i41', code:'QDSV-000501', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'01/08/2026', status:'Đã duyệt', effectiveDate:'01/09/2026',
+    startSemester:'HK1 2026-2027', endSemester:'HK2 2026-2027',
+    students:[ { mssv:'23104521', name:'Đặng Minh Khang', lop:'CNTT2.23107.1', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i42', code:'QDSV-000502', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'05/08/2026', status:'Đã duyệt', effectiveDate:'01/09/2026',
+    startSemester:'HK1 2026-2027', endSemester:'HK1 2026-2027',
+    students:[ { mssv:'23104880', name:'Trịnh Quang Huy', lop:'NNA2.23106.1', ctdt:'Ngôn ngữ Anh' } ] },
+  { id:'i43', code:'QDSV-000503', typeName:'Quyết định đình chỉ học tập',
+    created:'12/07/2026', status:'Đã duyệt', effectiveDate:'01/09/2026',
+    startSemester:'HK1 2026-2027', endSemester:'HK1 2026-2027',
+    students:[ { mssv:'22103456', name:'Vũ Thị Hồng Nhung', lop:'QTKD3.22105.1', ctdt:'Quản trị kinh doanh' } ] },
+  { id:'i44', code:'QDSV-000504', typeName:'Quyết định đình chỉ học tập',
+    created:'20/07/2026', status:'Đã duyệt', effectiveDate:'01/09/2026',
+    startSemester:'HK1 2026-2027', endSemester:'HK2 2026-2027',
+    students:[ { mssv:'22103990', name:'Đỗ Hoàng Long', lop:'CK2.22103.1', ctdt:'Kỹ thuật cơ khí' } ] },
+  { id:'i45', code:'QDSV-000505', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'08/08/2026', status:'Đã duyệt', effectiveDate:'01/10/2026',
+    startSemester:'HK1 2026-2027', endSemester:'HK1 2026-2027',
+    students:[ { mssv:'23104915', name:'Lương Bảo Ngọc', lop:'QTKD1.23108.1', ctdt:'Quản trị kinh doanh' } ] },
+
+  /* SV 20120301 — chuỗi đầy đủ: nhập trường → bảo lưu → quay lại → chuyển ngành+lớp → tốt nghiệp */
+  { id:'i20', code:'QDSV-000020', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2020', status:'Đã duyệt', effectiveDate:'05/09/2020', startSemester:'HK1 2020-2021',
+    students:[ { mssv:'20120301', name:'Nguyễn Minh Anh', lop:'CT4801', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i21', code:'QDSV-000088', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'10/12/2022', status:'Đã duyệt', effectiveDate:'01/01/2023',
+    startSemester:'HK2 2022-2023', endSemester:'HK1 2023-2024',
+    students:[ { mssv:'20120301', name:'Nguyễn Minh Anh', lop:'CT4801', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i22', code:'QDSV-000101', typeName:'Quyết định quay trở lại học tập',
+    created:'15/08/2023', status:'Đã duyệt', effectiveDate:'01/09/2023', startSemester:'HK1 2023-2024',
+    students:[ { mssv:'20120301', name:'Nguyễn Minh Anh', lop:'CT4801', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i23', code:'QDSV-000133', typeName:'Quyết định chuyển khoá, ngành, lớp',
+    created:'20/08/2024', status:'Đã duyệt', effectiveDate:'01/09/2024', startSemester:'HK1 2024-2025',
+    oldNienKhoa:'K48 (2020-2024)', newNienKhoa:'K49 (2021-2025)',
+    oldCtdt:'Công nghệ thông tin', newCtdt:'Khoa học máy tính', oldLopHc:'CT4801', newLopHc:'CT4901',
+    students:[ { mssv:'20120301', name:'Nguyễn Minh Anh', lop:'CT4901', ctdt:'Khoa học máy tính' } ] },
+  { id:'i24', code:'QDSV-000250', typeName:'Quyết định công nhận tốt nghiệp',
+    created:'25/06/2026', status:'Đã duyệt', effectiveDate:'30/06/2026', startSemester:'HK2 2025-2026',
+    students:[ { mssv:'20120301', name:'Nguyễn Minh Anh', lop:'CT4901', ctdt:'Khoa học máy tính' } ] },
+
+  /* SV 20120302 — nhập trường → buộc thôi học do quá 2 lần cảnh báo */
+  { id:'i25', code:'QDSV-000021', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2020', status:'Đã duyệt', effectiveDate:'05/09/2020', startSemester:'HK1 2020-2021',
+    students:[ { mssv:'20120302', name:'Lê Quốc Bảo', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
+  { id:'i26', code:'QDSV-000205', typeName:'Quyết định buộc thôi học do quá 2 lần cảnh báo',
+    created:'10/01/2026', status:'Đã duyệt', effectiveDate:'15/01/2026', startSemester:'HK1 2025-2026',
+    students:[ { mssv:'20120302', name:'Lê Quốc Bảo', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
+
+  /* SV 20120303 — nhập trường → đình chỉ học tập 1 học kỳ → quay trở lại học tập */
+  { id:'i27', code:'QDSV-000022', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2020', status:'Đã duyệt', effectiveDate:'05/09/2020', startSemester:'HK1 2020-2021',
+    students:[ { mssv:'20120303', name:'Phạm Thu Hà', lop:'CT4803', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i28', code:'QDSV-000198', typeName:'Quyết định đình chỉ học tập',
+    created:'05/09/2025', status:'Đã duyệt', effectiveDate:'15/09/2025',
+    startSemester:'HK1 2025-2026', endSemester:'HK2 2025-2026',
+    students:[ { mssv:'20120303', name:'Phạm Thu Hà', lop:'CT4803', ctdt:'Hệ thống thông tin' } ] },
+  { id:'i29', code:'QDSV-000212', typeName:'Quyết định quay trở lại học tập',
+    created:'10/01/2026', status:'Đã duyệt', effectiveDate:'20/01/2026', startSemester:'HK2 2025-2026',
+    students:[ { mssv:'20120303', name:'Phạm Thu Hà', lop:'CT4803', ctdt:'Hệ thống thông tin' } ] },
+
+  /* SV 20120304 — nhập trường → chuyển trường đi */
+  { id:'i30', code:'QDSV-000023', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2020', status:'Đã duyệt', effectiveDate:'05/09/2020', startSemester:'HK1 2020-2021',
+    students:[ { mssv:'20120304', name:'Trần Gia Huy', lop:'CT4801', ctdt:'Công nghệ thông tin' } ] },
+  { id:'i31', code:'QDSV-000221', typeName:'Quyết định chuyển trường đi',
+    created:'20/02/2026', status:'Đã duyệt', effectiveDate:'01/03/2026', startSemester:'HK2 2025-2026',
+    students:[ { mssv:'20120304', name:'Trần Gia Huy', lop:'CT4801', ctdt:'Công nghệ thông tin' } ] },
+
+  /* SV 20120305 — chuyển trường đến → thay đổi đơn vị đào tạo */
+  { id:'i32', code:'QDSV-000190', typeName:'Quyết định chuyển trường đến',
+    created:'20/08/2025', status:'Đã duyệt', effectiveDate:'01/09/2025', startSemester:'HK1 2025-2026',
+    students:[ { mssv:'20120305', name:'Đỗ Khánh Linh', lop:'CT4804', ctdt:'An toàn thông tin' } ] },
+  { id:'i33', code:'QDSV-000408', typeName:'Quyết định thay đổi đơn vị đào tạo',
+    created:'15/07/2026', status:'Đã duyệt', effectiveDate:'01/08/2026', startSemester:'HK1 2026-2027',
+    oldDonViDaoTao:'Trường Công nghệ', newDonViDaoTao:'Khoa Công nghệ thông tin',
+    students:[ { mssv:'20120305', name:'Đỗ Khánh Linh', lop:'CT4804', ctdt:'An toàn thông tin' } ] },
+
+  /* SV 20120306 — nhập trường → xoá tên khỏi danh sách sinh viên */
+  { id:'i34', code:'QDSV-000024', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2020', status:'Đã duyệt', effectiveDate:'05/09/2020', startSemester:'HK1 2020-2021',
+    students:[ { mssv:'20120306', name:'Vũ Hải Đăng', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
+  { id:'i35', code:'QDSV-000199', typeName:'Quyết định xoá tên',
+    created:'05/10/2025', status:'Đã duyệt', effectiveDate:'10/10/2025', startSemester:'HK1 2025-2026',
+    students:[ { mssv:'20120306', name:'Vũ Hải Đăng', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
+
+  /* SV 20120307 — chỉ đổi LỚP hành chính, không đổi ngành (cặp cột Ngành/CTĐT để trống) */
+  { id:'i36', code:'QDSV-000409', typeName:'Quyết định chuyển khoá, ngành, lớp',
+    created:'10/07/2026', status:'Đã duyệt', effectiveDate:'15/07/2026', startSemester:'HK1 2026-2027',
+    oldLopHc:'CT4802', newLopHc:'CT4803',
+    students:[ { mssv:'20120307', name:'Bùi Tuấn Kiệt', lop:'CT4803', ctdt:'Kỹ thuật phần mềm' } ] },
+
+  /* SV 20120311 — chỉ lùi NIÊN KHOÁ (học lại với khoá sau), giữ nguyên ngành; cặp cột Ngành/CTĐT
+     để trống, chỉ Niên khoá và Lớp HC có giá trị. */
+  { id:'i40', code:'QDSV-000410', typeName:'Quyết định chuyển khoá, ngành, lớp',
+    created:'20/07/2026', status:'Đã duyệt', effectiveDate:'01/09/2026', startSemester:'HK1 2026-2027',
+    oldNienKhoa:'K49 (2021-2025)', newNienKhoa:'K50 (2022-2026)', oldLopHc:'CT4902', newLopHc:'CT5002',
+    students:[ { mssv:'20120311', name:'Chu Đức Thắng', lop:'CT5002', ctdt:'Khoa học máy tính' } ] },
+
+  /* Quyết định nhiều SV: nhập trường khoá 2021 (4 SV) → bảo lưu 3 SV → thu hồi bảo lưu 1 SV */
+  { id:'i37', code:'QDSV-000030', typeName:'Quyết định nhập trường/trúng tuyển',
+    created:'20/08/2021', status:'Đã duyệt', effectiveDate:'05/09/2021', startSemester:'HK1 2021-2022',
+    students:[
+      { mssv:'20120308', name:'Hoàng Thuỳ Dương', lop:'CT4901', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120309', name:'Đặng Nhật Minh', lop:'CT4901', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120310', name:'Lý Thanh Trúc', lop:'CT4902', ctdt:'Khoa học máy tính' },
+      { mssv:'20120311', name:'Chu Đức Thắng', lop:'CT4902', ctdt:'Khoa học máy tính' },
+    ] },
+  { id:'i38', code:'QDSV-000203', typeName:'Quyết định nghỉ học tạm thời/bảo lưu',
+    created:'05/12/2025', status:'Đã duyệt', effectiveDate:'01/01/2026',
+    startSemester:'HK2 2025-2026', endSemester:'HK1 2026-2027',
+    students:[
+      { mssv:'20120308', name:'Hoàng Thuỳ Dương', lop:'CT4901', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120309', name:'Đặng Nhật Minh', lop:'CT4901', ctdt:'Công nghệ thông tin' },
+      { mssv:'20120310', name:'Lý Thanh Trúc', lop:'CT4902', ctdt:'Khoa học máy tính' },
+    ] },
+  { id:'i39', code:'QDSV-000215', typeName:'Quyết định thu hồi quyết định nghỉ học tạm thời',
+    created:'20/01/2026', status:'Đã duyệt', effectiveDate:'25/01/2026', startSemester:'HK2 2025-2026',
+    students:[ { mssv:'20120308', name:'Hoàng Thuỳ Dương', lop:'CT4901', ctdt:'Công nghệ thông tin' } ] },
+
   { id:'i18', code:'QDSV-000406', typeName:'Quyết định cử đi thực tập tốt nghiệp',
-    created:'24/07/2026', status:'Đã duyệt', effectiveDate:'05/08/2026',
+    created:'24/07/2026', status:'Đã duyệt', startSemester:'HK1 2026-2027', endSemester:'HK1 2026-2027', effectiveDate:'05/08/2026',
     students:[ { mssv:'20120265', name:'Phạm Thị Hà', lop:'CT4802', ctdt:'Kỹ thuật phần mềm' } ] },
 ];
 
-/* Field nào tạo mốc "biến động" trên timeline ngoài trạng thái học vụ — đối chiếu updFields của
-   DECISION_CATALOG ở mh-admin-06/08 (chuyển khoá/ngành/lớp dùng cohortclass+program, thay đổi đơn
-   vị đào tạo dùng unit, thay đổi họ tên dùng field name — name hiện CHƯA có trong updFields ở
-   mh-admin-06, xem OQ trong FEATURE-BRIEF.md của epic student-decision-timeline). Loại quyết định
-   không khớp field nào ở đây (VD giao đề tài, công nhận điểm rèn luyện...) KHÔNG tạo mốc timeline,
-   nhưng vẫn xuất hiện trong bảng "Tất cả quyết định" phía trên. */
+/* Field nào tạo "biến động" ngoài trạng thái học vụ — đối chiếu updFields của DECISION_CATALOG ở
+   mh-admin-06/08 (chuyển khoá/ngành/lớp dùng cohortclass+program, thay đổi đơn vị đào tạo dùng
+   unit). PHẠM VI MÀN NÀY (user chốt): chỉ trạng thái học vụ (gồm đình chỉ học tập), lớp hành
+   chính, CTĐT/ngành và đơn vị đào tạo. Quyết định thay đổi họ tên sinh viên là biến động HỒ SƠ,
+   KHÔNG thuộc màn Biến động sinh viên — bản ghi i15 vẫn giữ trong mock để đồng bộ nội dung với
+   DECISION_INSTANCES ở mh-admin-08, nhưng không sinh dòng nào ở bảng dưới. */
 const FIELD_CHANGE_RULES = [
   { typeNames:['Quyết định chuyển khoá, ngành, lớp'], fields:[
+      { label:'Niên khoá', oldKey:'oldNienKhoa', newKey:'newNienKhoa' },
       { label:'Chương trình đào tạo', oldKey:'oldCtdt', newKey:'newCtdt' },
       { label:'Lớp hành chính', oldKey:'oldLopHc', newKey:'newLopHc' } ] },
   { typeNames:['Quyết định thay đổi đơn vị đào tạo'], fields:[
       { label:'Đơn vị đào tạo', oldKey:'oldDonViDaoTao', newKey:'newDonViDaoTao' } ] },
-  { typeNames:['Quyết định thay đổi họ tên sinh viên'], fields:[
-      { label:'Họ và tên', oldKey:'oldName', newKey:'newName' } ] },
 ];
 function fieldChangeRuleFor(typeName){ return FIELD_CHANGE_RULES.find(r => r.typeNames.includes(typeName)); }
 
@@ -330,7 +505,7 @@ function fieldChangeRuleFor(typeName){ return FIELD_CHANGE_RULES.find(r => r.typ
    - allDecisions: MỌI quyết định (kể cả updFields rỗng, VD giao đề tài) — hiển thị ở bảng "Tất cả
      quyết định", trả lời trực tiếp "SV này có những QĐ gì" mà không lọc bớt.
    - timeline: CHỈ các quyết định có tạo biến động theo dõi được — đổi trạng thái học vụ
-     (TYPE_NEW_STATUS) hoặc đổi field khác (FIELD_CHANGE_RULES: ngành/lớp, đơn vị đào tạo, họ tên).
+     (TYPE_NEW_STATUS) hoặc đổi field khác (FIELD_CHANGE_RULES: ngành/lớp, đơn vị đào tạo).
      fromStatus của 1 mốc trạng thái = toStatus của mốc trạng thái TRƯỚC ĐÓ (cùng SV, sắp theo
      ngày); mốc đầu tiên có fromStatus rỗng. Mốc field-change không có from/toStatus, hiển thị dạng
      "Field: cũ → mới" (xem renderTimelineCard()).
@@ -341,12 +516,28 @@ function parseVnDateForSort(str){
   const [d, m, y] = str.split('/');
   return `${y}${m.padStart(2,'0')}${d.padStart(2,'0')}`;
 }
-/* 4 cặp cột cũ/mới riêng biệt: Trạng thái, Ngành/CTĐT, Lớp HC, Đơn vị đào tạo. Quyết định không
-   đổi field đó để trống đúng cặp cột tương ứng (KHÔNG loại dòng khỏi bảng — quyết định không đổi
-   field nào, VD giao đề tài, vẫn có 1 dòng với toàn bộ 4 cặp để trống).
+
+/* Học kỳ ban hành quyết định — suy ra từ Ngày QĐ (mock không lưu riêng field này): tháng 8–12 và
+   tháng 1 thuộc HK1 của năm học đó, tháng 2–7 thuộc HK2 của năm học trước. Khi làm thật, học kỳ
+   ban hành nên lấy từ học kỳ đang mở tại thời điểm ký chứ không suy từ ngày. */
+function semesterOfDecisionDate(str){
+  if (!str) return '';
+  const [, m, y] = str.split('/').map(Number);
+  if (m >= 8) return `HK1 ${y}-${y+1}`;
+  if (m === 1) return `HK1 ${y-1}-${y}`;
+  return `HK2 ${y-1}-${y}`;
+}
+/* 4 cặp cột cũ/mới riêng biệt: Trạng thái, Ngành/CTĐT, Lớp HC, Đơn vị đào tạo. Chỉ nhận quyết định
+   có biến động: đổi trạng thái học vụ (TYPE_NEW_STATUS) hoặc đổi field theo dõi được
+   (FIELD_CHANGE_RULES: ngành/CTĐT + lớp HC, đơn vị đào tạo). Quyết định ngoài phạm vi này (giao đề
+   tài, cử đi thực tập, xử lý học vụ, thay đổi họ tên) bị loại khỏi bảng. Quyết định có biến động nhưng không
+   động tới field nào của 1 cặp cột thì để trống đúng cặp cột đó.
    Trạng thái CŨ không có sẵn trong DECISION_INSTANCES (chỉ có TYPE_NEW_STATUS = trạng thái MỚI) nên
    phải suy ra bằng cách duyệt các QĐ đổi trạng thái theo đúng thứ tự thời gian của từng SV — trạng
    thái cũ của 1 mốc = trạng thái mới của mốc TRƯỚC ĐÓ (cùng SV); mốc đầu tiên chưa có gì trước đó. */
+/* Loại quyết định ĐẦU VÀO — sinh viên chưa từng có trạng thái trước đó, cột Trạng thái cũ để trống. */
+const ENTRY_TYPE_NAMES = ['Quyết định nhập trường/trúng tuyển', 'Quyết định chuyển trường đến'];
+
 function buildDecisionRows(){
   const statusEvents = [];
   DECISION_INSTANCES.forEach(d => {
@@ -374,17 +565,27 @@ function buildDecisionRows(){
 
     const toStatus = TYPE_NEW_STATUS[d.typeName];
     const rule = fieldChangeRuleFor(d.typeName);
+    if (!toStatus && !rule) return; // QĐ không tạo biến động nào — không lên bảng
     const fieldOf = label => rule && rule.fields.find(f => f.label === label && (d[f.oldKey] || d[f.newKey]));
+    const nienKhoaField = fieldOf('Niên khoá');
     const ctdtField = fieldOf('Chương trình đào tạo');
     const lopField = fieldOf('Lớp hành chính');
     const donViField = fieldOf('Đơn vị đào tạo');
 
     d.students.forEach(s => {
-      const oldStatus = toStatus ? (oldStatusByDecisionAndStudent[`${d.id}|${s.mssv}`] || '') : '';
+      /* Trạng thái cũ = trạng thái mới của QĐ đổi trạng thái TRƯỚC ĐÓ của chính SV này. Nếu hệ
+         thống chưa có QĐ nào trước đó (VD dữ liệu mới nhập từ kỳ này) thì mặc định "Đang học" —
+         phải đang học mới có QĐ bảo lưu/đình chỉ/thôi học. Riêng QĐ đầu vào thì để trống. */
+      const prevStatus = oldStatusByDecisionAndStudent[`${d.id}|${s.mssv}`] || '';
+      const oldStatus = !toStatus ? ''
+        : (prevStatus || (ENTRY_TYPE_NAMES.includes(d.typeName) ? '' : 'danghoc'));
       rows.push({
         mssv:s.mssv, name:s.name, decisionCode:code, decisionTypeName:d.typeName, decisionDate:d.created, effectiveDate:dateStr, sortKey,
-        oldStatus: toStatus ? (STATUS_LABEL[oldStatus] || (oldStatus ? oldStatus : '')) : '',
-        newStatus: toStatus ? (STATUS_LABEL[toStatus] || toStatus) : '',
+        decisionSemester: semesterOfDecisionDate(d.created),
+        startSemester: d.startSemester || '', endSemester: d.endSemester || '',
+        oldStatus: toStatus ? oldStatus : '',
+        newStatus: toStatus ? toStatus : '',
+        oldNienKhoa: nienKhoaField ? (d[nienKhoaField.oldKey] || '') : '', newNienKhoa: nienKhoaField ? (d[nienKhoaField.newKey] || '') : '',
         oldCtdt: ctdtField ? (d[ctdtField.oldKey] || '') : '', newCtdt: ctdtField ? (d[ctdtField.newKey] || '') : '',
         oldLop: lopField ? (d[lopField.oldKey] || '') : '', newLop: lopField ? (d[lopField.newKey] || '') : '',
         oldDonVi: donViField ? (d[donViField.oldKey] || '') : '', newDonVi: donViField ? (d[donViField.newKey] || '') : '',
@@ -446,16 +647,86 @@ let currentPage = 1;
 
 function currentSvSearch(){ return document.getElementById('sv-search').value.trim().toLowerCase(); }
 
+/* Droplist lọc (học kỳ QĐ / loại QĐ / trạng thái mới) — cùng helper setupDroplistFilter với
+   mh-admin-19/20: trigger + panel có ô tìm, chọn 1 giá trị, mục đầu là "Tất cả…". */
+const droplistFilterMenus = {};
+const droplistFilterOpeners = {};
+function toggleFilterMenu(prefix){
+  const menu = droplistFilterMenus[prefix];
+  const isOpen = menu.classList.contains('open');
+  Object.values(droplistFilterMenus).forEach(m => m.classList.remove('open'));
+  if (!isOpen) droplistFilterOpeners[prefix]();
+}
+function setupDroplistFilter(prefix, allLabel, items, onPick, preselected){
+  let selected = preselected || '';
+  const triggerLabel = document.getElementById(`${prefix}-combo-label`);
+  const searchInput = document.getElementById(`${prefix}-search`);
+  const menu = document.getElementById(`${prefix}-combo-menu`);
+  const list = document.getElementById(`${prefix}-combo-list`);
+  droplistFilterMenus[prefix] = menu;
+  droplistFilterOpeners[prefix] = () => { searchInput.value = ''; render(''); menu.classList.add('open'); };
+
+  function render(query){
+    const q = (query || '').trim().toLowerCase();
+    const matches = q ? items.filter(it => it.label.toLowerCase().includes(q)) : items;
+    list.innerHTML = matches.length
+      ? [`<div class="unit-combo-item" data-v="">${allLabel}</div>`, ...matches.map(it => `<div class="unit-combo-item ${it.value===selected?'hl':''}" data-v="${it.value}">${it.label}</div>`)].join('')
+      : '<div class="unit-combo-empty">Không tìm thấy "' + query.trim() + '"</div>';
+    list.querySelectorAll('.unit-combo-item').forEach(el => el.addEventListener('click', () => {
+      selected = el.dataset.v; updateLabel(); menu.classList.remove('open'); onPick(selected);
+    }));
+  }
+  function updateLabel(){ const found = items.find(it => it.value === selected); triggerLabel.textContent = found ? found.label : allLabel; }
+  updateLabel();
+  searchInput.addEventListener('input', () => render(searchInput.value));
+  document.addEventListener('click', e => { if (!document.getElementById(`${prefix}-combo`).contains(e.target)) menu.classList.remove('open'); });
+}
+
+let selectedHocKyQD = '';
+let selectedLoaiQD = '';
+let selectedTrangThaiMoi = '';
+
+/* Khoá sắp xếp học kỳ: năm học trước rồi tới số học kỳ — "HK1 2026-2027" (20261) mới hơn
+   "HK2 2025-2026" (20252). So chuỗi thuần sẽ sai vì "HK2" > "HK1". */
+function semesterSortKey(sem){
+  const m = /^HK(\d)\s+(\d{4})/.exec(sem || '');
+  return m ? Number(m[2]) * 10 + Number(m[1]) : 0;
+}
+
+/* Options lấy thẳng từ dữ liệu đang hiển thị — không hard-code, thêm QĐ mới là droplist tự có.
+   Bộ lọc Học kỳ quyết định MẶC ĐỊNH chọn học kỳ mới nhất có dữ liệu (không phải "Tất cả") — mở màn
+   ra là thấy ngay biến động của kỳ hiện hành, muốn xem toàn bộ thì chọn lại "Tất cả học kỳ QĐ". */
+function setupFilters(){
+  const semesters = [...new Set(DECISION_ROWS.map(r => r.decisionSemester).filter(Boolean))]
+    .sort((a, b) => semesterSortKey(b) - semesterSortKey(a));
+  selectedHocKyQD = semesters[0] || '';
+  const types = [...new Set(DECISION_ROWS.map(r => r.decisionTypeName))].sort((a, b) => a.localeCompare(b, 'vi'));
+  const statuses = [...new Set(DECISION_ROWS.map(r => r.newStatus).filter(Boolean))];
+
+  setupDroplistFilter('f-hocky', 'Tất cả học kỳ QĐ', semesters.map(v => ({ value:v, label:v })),
+    v => { selectedHocKyQD = v; currentPage = 1; renderGrid(); }, selectedHocKyQD);
+  setupDroplistFilter('f-loaiqd', 'Tất cả loại quyết định', types.map(v => ({ value:v, label:v })),
+    v => { selectedLoaiQD = v; currentPage = 1; renderGrid(); });
+  setupDroplistFilter('f-trangthai', 'Tất cả trạng thái mới', statuses.map(v => ({ value:v, label:STATUS_LABEL[v] || v })),
+    v => { selectedTrangThaiMoi = v; currentPage = 1; renderGrid(); });
+}
+
 function renderGrid(){
   const tbody = document.getElementById('bd-tbody');
   const query = currentSvSearch();
 
   let list = DECISION_ROWS.slice();
   if (query) list = list.filter(r => r.name.toLowerCase().includes(query) || r.mssv.toLowerCase().includes(query));
+  if (selectedHocKyQD) list = list.filter(r => r.decisionSemester === selectedHocKyQD);
+  if (selectedLoaiQD) list = list.filter(r => r.decisionTypeName === selectedLoaiQD);
+  if (selectedTrangThaiMoi) list = list.filter(r => r.newStatus === selectedTrangThaiMoi);
 
   const totalPages = Math.max(1, Math.ceil(list.length / BD_PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
   const pageList = list.slice((currentPage-1)*BD_PAGE_SIZE, currentPage*BD_PAGE_SIZE);
+
+  const oldCell = v => v ? `<span class="bd-old-val">${v}</span>` : '<span class="text-muted">—</span>';
+  const newCell = v => v ? `<span class="bd-new-val">${v}</span>` : '<span class="text-muted">—</span>';
 
   tbody.innerHTML = pageList.length ? pageList.map((r, idx) => `
     <tr class="bd-row" onclick="openDecisionInMh08('${r.decisionCode}')">
@@ -463,12 +734,22 @@ function renderGrid(){
       <td><span class="sv-code">${r.mssv}</span></td>
       <td><span class="sv-name-cell">${r.name}</span></td>
       <td>${r.decisionTypeName}</td>
+      <td class="text-muted">${r.decisionSemester || '—'}</td>
       <td><span class="sv-code">${r.decisionCode}</span></td>
       <td class="text-muted">${r.decisionDate || '—'}</td>
-      <td>${r.oldValue ? `<span class="bd-old-val">${r.oldValue}</span>` : '<span class="text-muted">—</span>'}</td>
-      <td>${r.newValue ? `<span class="bd-new-val">${r.newValue}</span>` : '<span class="text-muted">—</span>'}</td>
-      <td class="text-muted">${r.effectiveDate}</td>
-    </tr>`).join('') : `<tr><td colspan="9"><div class="tbl-empty">Không tìm thấy biến động nào khớp bộ lọc đang chọn</div></td></tr>`;
+      <td class="text-muted">${r.startSemester || '—'}</td>
+      <td class="text-muted">${r.endSemester || '—'}</td>
+      <td>${statusTextHtml(r.oldStatus)}</td>
+      <td class="bd-new-val">${statusTextHtml(r.newStatus)}</td>
+      <td>${oldCell(r.oldNienKhoa)}</td>
+      <td>${newCell(r.newNienKhoa)}</td>
+      <td>${oldCell(r.oldCtdt)}</td>
+      <td>${newCell(r.newCtdt)}</td>
+      <td>${oldCell(r.oldLop)}</td>
+      <td>${newCell(r.newLop)}</td>
+      <td>${oldCell(r.oldDonVi)}</td>
+      <td>${newCell(r.newDonVi)}</td>
+    </tr>`).join('') : `<tr><td colspan="19"><div class="tbl-empty">Không tìm thấy biến động nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -496,6 +777,7 @@ function goToPage(p){ currentPage = p; renderGrid(); }
 
 document.getElementById('sv-search').addEventListener('input', () => { currentPage = 1; renderGrid(); });
 
+setupFilters();
 renderGrid();
 
 /* Mở Chi tiết quyết định tương ứng ở mh-admin-08 — truyền mã QĐ qua query string, mh-admin-08

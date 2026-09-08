@@ -60,7 +60,7 @@
           <li><a href="mh-admin-06_studentdecisioncatalog.html">Cấu hình Quyết định</a></li>
           <li><a href="mh-admin-16_decisionreasoncatalog.html">Danh mục Lý do</a></li>
           <li><a href="mh-admin-08_studentdecisionlist.html">Danh sách Quyết định</a></li>
-          <li><a href="mh-admin-15_studentacademicprocess.html">Quá trình học tập</a></li>
+          <li><a href="mh-admin-15_studentacademicprocess.html">Biến động sinh viên</a></li>
         </ul>
       </li>
       <li class="active">
@@ -116,7 +116,7 @@
         <select class="fc" id="f-trangthai">
           <option value="">Tất cả trạng thái</option>
           <option value="nhap">Nháp</option>
-          <option value="choxacnhan">Gửi Khoa xác nhận</option>
+          <option value="choxacnhan">Chờ xác nhận</option>
           <option value="congbo">Đã công bố</option>
         </select>
         <input class="fc" id="f-search" type="text" placeholder="🔍 Tìm theo Mã đợt hoặc Tên đợt…" autocomplete="off" style="width:260px">
@@ -132,10 +132,15 @@
               <th style="width:110px">Năm học</th>
               <th style="width:110px">Học kỳ</th>
               <th style="width:120px">Hệ đào tạo</th>
-              <th style="width:170px">Trạng thái người học</th>
+              <!-- Cột "Trạng thái người học" ĐÃ BỎ: đó là phạm vi quét của đợt, xem ở màn chi tiết là
+                   đủ; đưa lên bảng danh sách chỉ chiếm 170px mà hiếm khi cần đối chiếu ngang giữa các đợt. -->
               <th style="width:130px">Ngày bắt đầu</th>
               <th style="width:130px">Ngày kết thúc</th>
               <th style="width:100px">Trạng thái</th>
+              <!-- Người lập: hệ thống TỰ GHI người bấm Lưu ở màn chi tiết, không có ô nhập tay. Sửa đợt
+                   rồi lưu lại thì ghi đè thành người sửa gần nhất — cột này trả lời "ai đang chịu
+                   trách nhiệm về đợt này", không phải "ai khai sinh ra nó". -->
+              <th style="width:160px">Người lập</th>
               <th style="width:140px">Thao tác</th>
             </tr>
           </thead>
@@ -190,19 +195,22 @@ let WARNING_LEVELS = [
    đúng danh mục Mức cảnh báo đang cấu hình lúc đó (snapshotLevels). Sau này sửa mức ở mh-admin-21
    KHÔNG làm đổi kết quả các đợt đã chạy trước đó — chỉ áp dụng cho đợt chạy sau. daChayLuc rỗng =
    đợt chưa chạy rà soát lần nào, chưa có kết quả để xem. */
+/* Người dùng đang đăng nhập — cùng quy ước CURRENT_USER đã dùng ở mh-admin-03. Hệ thống thật lấy
+   từ phiên đăng nhập; mockup gán cứng để cột "Người lập" có dữ liệu demo. */
+const CURRENT_USER = 'Nguyễn Văn Admin';
 const BATCHES = [
-  { id:'b1', maDot:'SOS-HK1-2627-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2026-2027',
+  { id:'b1', nguoiLap:'Nguyễn Văn Admin', maDot:'SOS-HK1-2627-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2026-2027',
     hocKy:'HK1', namHoc:'2026-2027', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT, Khoa Ngoại ngữ', khoaHoc:'K45, K46',
     heDaoTao:'Chính quy', ctdt:'Công nghệ thông tin, Ngôn ngữ Anh', trangThaiSV:['danghoc','baoluu'],
     lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'choxacnhan',
     daChayLuc:'25/08/2026 08:05', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)),
     xacNhanBatDau:'26/08/2026 08:00', xacNhanKetThuc:'02/09/2026 17:00' },
-  { id:'b2', maDot:'SOS-HK1-2627-2', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Kinh tế',
+  { id:'b2', nguoiLap:'Trần Thị Mai', maDot:'SOS-HK1-2627-2', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Kinh tế',
     hocKy:'HK1', namHoc:'2026-2027', truongVien:'Viện Kinh tế', khoa:'Khoa Kinh tế', khoaHoc:'K45',
     heDaoTao:'Chính quy, Liên thông', ctdt:'', trangThaiSV:['danghoc','baoluu'],
     lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'nhap',
     daChayLuc:'', snapshotLevels:null },
-  { id:'b3', maDot:'SOS-HK2-2526-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2025-2026',
+  { id:'b3', nguoiLap:'Nguyễn Văn Admin', maDot:'SOS-HK2-2526-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2025-2026',
     hocKy:'HK2', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K44, K45, K46',
     heDaoTao:'', ctdt:'CTĐT Công nghệ thông tin (CLC)', trangThaiSV:['danghoc'],
     lop:'', batDau:'10/03/2026 08:00', ketThuc:'25/03/2026 23:59', status:'congbo',
@@ -210,33 +218,33 @@ const BATCHES = [
   /* Đợt test: HK2/2026-2027 — học kỳ này KHÔNG khớp mock LOP_CHUA_KHOA_DIEM ở mh-admin-24 (mock đó
      chỉ có lớp chưa khoá điểm ở HK1/2026-2027), dùng để test kịch bản "học kỳ đã khoá điểm hết":
      bấm "Sửa" mở mh-admin-24 rồi bấm Chạy rà soát — popup xác nhận sẽ KHÔNG có dòng cảnh báo. */
-  { id:'b4', maDot:'SOS-HK2-2627-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2026-2027',
+  { id:'b4', nguoiLap:'Nguyễn Văn Admin', maDot:'SOS-HK2-2627-1', tenDot:'Xét cảnh báo học tập HK2 năm học 2026-2027',
     hocKy:'HK2', namHoc:'2026-2027', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K45',
     heDaoTao:'Chính quy', ctdt:'', trangThaiSV:['danghoc'],
     lop:'', batDau:'10/01/2027 08:00', ketThuc:'25/01/2027 23:59', status:'nhap',
     daChayLuc:'', snapshotLevels:null },
-  { id:'b5', maDot:'SOS-HK2-2627-2', tenDot:'Xét cảnh báo học tập HK2 2026-2027 — Khoa Ngoại ngữ',
+  { id:'b5', nguoiLap:'Lê Quốc Hùng', maDot:'SOS-HK2-2627-2', tenDot:'Xét cảnh báo học tập HK2 2026-2027 — Khoa Ngoại ngữ',
     hocKy:'HK2', namHoc:'2026-2027', truongVien:'Viện Ngoại ngữ', khoa:'Khoa Ngoại ngữ', khoaHoc:'K44, K45',
     heDaoTao:'Chính quy', ctdt:'CTĐT Ngôn ngữ Anh', trangThaiSV:['danghoc'],
     lop:'', batDau:'12/01/2027 08:00', ketThuc:'28/01/2027 23:59', status:'nhap',
     daChayLuc:'', snapshotLevels:null },
-  { id:'b6', maDot:'SOS-HK3-2526-1', tenDot:'Xét cảnh báo học tập HK3 (hè) năm học 2025-2026',
+  { id:'b6', nguoiLap:'Trần Thị Mai', maDot:'SOS-HK3-2526-1', tenDot:'Xét cảnh báo học tập HK3 (hè) năm học 2025-2026',
     hocKy:'HK3', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa Cơ khí', khoaHoc:'K43, K44',
     heDaoTao:'Chính quy', ctdt:'', trangThaiSV:['danghoc','baoluu'],
     lop:'', batDau:'15/06/2026 08:00', ketThuc:'30/06/2026 23:59', status:'congbo',
     daChayLuc:'15/06/2026 08:10', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)) },
-  { id:'b7', maDot:'SOS-HK1-2526-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2025-2026',
+  { id:'b7', nguoiLap:'Nguyễn Văn Admin', maDot:'SOS-HK1-2526-1', tenDot:'Xét cảnh báo học tập HK1 năm học 2025-2026',
     hocKy:'HK1', namHoc:'2025-2026', truongVien:'Viện Du lịch', khoa:'Khoa Du lịch', khoaHoc:'K44, K45',
     heDaoTao:'Chính quy, Vừa làm vừa học', ctdt:'', trangThaiSV:['danghoc'],
     lop:'', batDau:'20/08/2025 08:00', ketThuc:'05/09/2025 23:59', status:'congbo',
     daChayLuc:'20/08/2025 08:07', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)) },
-  { id:'b8', maDot:'SOS-HK1-2627-3', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Quản trị Kinh doanh',
+  { id:'b8', nguoiLap:'Ngô Thị Thu', maDot:'SOS-HK1-2627-3', tenDot:'Xét cảnh báo học tập HK1 2026-2027 — Khoa Quản trị Kinh doanh',
     hocKy:'HK1', namHoc:'2026-2027', truongVien:'Viện Kinh tế', khoa:'Khoa Quản trị Kinh doanh', khoaHoc:'K45, K46',
     heDaoTao:'Chính quy', ctdt:'CTĐT Quản trị kinh doanh', trangThaiSV:['danghoc'],
     lop:'', batDau:'25/08/2026 08:00', ketThuc:'10/09/2026 23:59', status:'choxacnhan',
     daChayLuc:'26/08/2026 09:30', snapshotLevels:JSON.parse(JSON.stringify(WARNING_LEVELS)),
     xacNhanBatDau:'27/08/2026 08:00', xacNhanKetThuc:'05/09/2026 17:00' },
-  { id:'b9', maDot:'SOS-HK2-2526-2', tenDot:'Xét cảnh báo học tập HK2 2025-2026 — Khoa CNTT (CLC)',
+  { id:'b9', nguoiLap:'Nguyễn Văn Admin', maDot:'SOS-HK2-2526-2', tenDot:'Xét cảnh báo học tập HK2 2025-2026 — Khoa CNTT (CLC)',
     hocKy:'HK2', namHoc:'2025-2026', truongVien:'Trường Công nghệ', khoa:'Khoa CNTT', khoaHoc:'K46',
     heDaoTao:'', ctdt:'CTĐT Công nghệ thông tin (CLC)', trangThaiSV:['danghoc'],
     lop:'', batDau:'15/03/2026 08:00', ketThuc:'30/03/2026 23:59', status:'nhap',
@@ -348,12 +356,12 @@ function disabledIconBtn(reason, svgInner){
    xem/xác nhận từng SV ở mh-admin-24) → Đã công bố (Admin bấm Công bố, chốt kết quả chính thức). */
 const STATUS_INFO = {
   nhap:       { label:'Nháp',               cls:'tag-default' },
-  choxacnhan: { label:'Gửi Khoa xác nhận',   cls:'tag-warning' },
+  choxacnhan: { label:'Chờ xác nhận',        cls:'tag-warning' },
   congbo:     { label:'Đã công bố',          cls:'tag-success' },
 };
 
 /* Trạng thái người học — LẤY ĐÚNG tập giá trị đang dùng trong dự án: NEW_STATUS_LABEL ở mh-admin-08
-   (Danh sách Quyết định) và STATUS_LABEL ở mh-admin-15 (Quá trình học tập), cũng là STUDENT_STATUS ở
+   (Danh sách Quyết định) và STATUS_LABEL ở mh-admin-15 (Biến động sinh viên), cũng là STUDENT_STATUS ở
    mh-admin-24. SV chuyển giữa các trạng thái này mỗi khi có 1 Quyết định mới có hiệu lực — KHÔNG tự
    thêm giá trị ngoài danh mục đó. Sửa 1 nơi nhớ sửa các nơi còn lại.
    Màn này chỉ HIỂN THỊ (form cấu hình đợt đã chuyển sang mh-admin-24), nên chỉ cần bảng tra nhãn. */
@@ -365,13 +373,9 @@ function mselLabelsOf(key, vals){
   return (vals || []).map(v => STUDENT_STATUS_LABEL[v] || v);
 }
 
-/* Cột "Trạng thái người học" trong bảng — chọn nhiều thì rút gọn "A +n" cho khỏi vỡ cột, hover
-   xem đủ qua title của <td>. */
-function renderTrangThaiSV(vals){
-  const labels = mselLabelsOf('trangthaisv', vals);
-  if (!labels.length) return '<span class="text-muted">Chưa cấu hình</span>';
-  return labels.length > 1 ? `${labels[0]} <span class="text-muted">+${labels.length-1}</span>` : labels[0];
-}
+/* renderTrangThaiSV() ĐÃ BỎ cùng cột "Trạng thái người học". Cần dựng lại thì: rút gọn "A +n" cho
+   khỏi vỡ cột, giá trị đầy đủ đưa vào title của <td>. Dữ liệu trangThaiSV vẫn còn trên từng đợt và
+   vẫn được truyền sang màn chi tiết, chỉ là không hiện ở bảng danh sách nữa. */
 
 let currentPage = 1;
 
@@ -393,10 +397,10 @@ function renderTable(){
       <td>${b.namHoc}</td>
       <td>${b.hocKy}</td>
       <td>${b.heDaoTao || '<span class="text-muted">Tất cả</span>'}</td>
-      <td class="td-ellipsis" title="${mselLabelsOf('trangthaisv', b.trangThaiSV).join(', ')}">${renderTrangThaiSV(b.trangThaiSV)}</td>
       <td class="text-muted">${b.batDau}</td>
       <td class="text-muted">${b.ketThuc}</td>
       <td><span class="tag ${STATUS_INFO[b.status].cls}">${STATUS_INFO[b.status].label}</span></td>
+      <td class="td-ellipsis" title="${b.nguoiLap || ''}">${b.nguoiLap || '<span class="text-muted">—</span>'}</td>
       <td><div class="tbl-actions">
         ${iconBtn('Xem danh sách cảnh báo của đợt', '', ICO_VIEW, `viewBatch('${b.id}')`)}
         ${b.status==='congbo'
@@ -404,7 +408,7 @@ function renderTable(){
           : iconBtn('Sửa thông tin đợt (mở màn chi tiết)', '', ICO_EDIT, `viewBatch('${b.id}')`)}
         ${b.status==='choxacnhan'
           ? iconBtn('Công bố kết quả đợt xét', 'success-btn', ICO_PUBLISH, `publishBatch('${b.id}')`)
-          : disabledIconBtn(b.status==='nhap' ? 'Đợt còn ở trạng thái Nháp — cần Gửi Khoa xác nhận trước khi công bố' : 'Đợt đã công bố rồi', ICO_PUBLISH)}
+          : disabledIconBtn(b.status==='nhap' ? 'Đợt còn ở trạng thái Nháp — cần Gửi xác nhận trước khi công bố' : 'Đợt đã công bố rồi', ICO_PUBLISH)}
       </div></td>
     </tr>`).join('') : `<tr><td colspan="11"><div class="tbl-empty">Không có dữ liệu</div></td></tr>`;
 
@@ -452,6 +456,9 @@ function viewBatch(id){
     trangThaiSV: mselLabelsOf('trangthaisv', b.trangThaiSV).join(', '),
     batDau: b.batDau || '', ketThuc: b.ketThuc || '',
     status: b.status, daChayLuc: b.daChayLuc || '',
+    /* Người lập đi kèm để màn chi tiết hiện đúng người chịu trách nhiệm đợt này; bấm Lưu ở bên đó
+       sẽ ghi đè thành người đang đăng nhập. */
+    nguoiLap: b.nguoiLap || '',
     xacNhanBatDau: b.xacNhanBatDau || '', xacNhanKetThuc: b.xacNhanKetThuc || '',
   });
   window.location.href = `mh-admin-24_academicwarningbatchdetail.html?${qs.toString()}`;

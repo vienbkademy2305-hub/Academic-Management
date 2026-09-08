@@ -201,6 +201,12 @@
   .c-na{background:repeating-linear-gradient(45deg,#fafafa,#fafafa 4px,#f0f0f0 4px,#f0f0f0 8px);
     color:var(--text-3)}
   .r-sum td{background:#f7fafd;font-weight:600}
+  /* Tiêu đề biểu mẫu — lấy nguyên từ mh-admin-26 để 2 màn in ra giống hệt nhau */
+  .rp-title{text-align:center;margin:0 0 4px;font-size:15px;font-weight:700;text-transform:uppercase}
+  .rp-sub{text-align:center;font-size:12.5px;color:var(--text-3);margin-bottom:16px}
+  /* Note kỹ thuật để dev đọc — không phải chú thích cho người dùng cuối, nên tách khỏi .legend */
+  .dev-note{border-left:3px solid var(--border);background:#fafbfc;padding:10px 12px;margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--text-2)}
+  .dev-note b.tag{display:inline-block;font-size:11px;letter-spacing:.4px;color:var(--text-3);margin-right:6px}
   .legend{display:flex;gap:18px;align-items:center;font-size:12.5px;color:var(--text-3);margin-top:10px;flex-wrap:wrap}
   .legend i{display:inline-block;width:14px;height:14px;border:1px solid var(--border);vertical-align:-2px;margin-right:5px}
 </style>
@@ -673,16 +679,50 @@
         <!-- Chú giải 4 loại ô ĐÃ BỎ theo yêu cầu. Ý nghĩa từng ô vẫn đọc được qua tooltip khi rê
              chuột vào chính ô đó ("Không xét — …", "Chưa có dữ liệu — …"). -->
       </div><!-- /tab-lientiep -->
-
+      <!-- ═══ TAB TỔNG HỢP SỐ LƯỢNG — DỰNG GIỐNG HỆT mh-admin-26 (Báo cáo cảnh báo học tập) ═══
+           Cùng một biểu mẫu giấy thì hai màn phải ra CÙNG một bảng: khoá xếp thành nhóm cột, mỗi
+           khoá 5 cột con, header 2 tầng. In ở màn nào cũng cho ra tờ giống nhau, cán bộ không phải
+           đối chiếu 2 kiểu trình bày.
+           Khác biệt duy nhất so với màn 26: ở đây đọc từ ĐỢT ĐANG MỞ (số dự kiến, chưa công bố) nên
+           không có bộ lọc học kỳ — học kỳ đã cố định theo đợt. -->
       <div class="tab-pane" id="tab-tonghop">
-        <div class="toolbar" style="justify-content:flex-end">
-          <button class="btn btn-default" onclick="showToast('Đã xuất Excel báo cáo tổng hợp số lượng sinh viên bị cảnh báo')">⬇ Export file</button>
+        <div class="toolbar" style="justify-content:space-between">
+          <div class="filter-bar" style="margin-bottom:0">
+          <!-- Dùng lại combo có ô tìm sẵn bên trong (setupDroplistFilter) giống bộ lọc Khoa ở tab
+               Sinh viên cảnh báo, thay cho <select> thường: danh sách CTĐT dài, cuộn tay rất mệt.
+               Ô tìm tự do đứng riêng ĐÃ BỎ — hai combo này đã có ô tìm của riêng chúng, để thêm một
+               ô nữa cùng soi vào 2 trường đó chỉ làm người dùng phân vân nên gõ vào đâu. -->
+          <div class="unit-combo" id="th-khoa-combo" style="width:230px">
+            <button type="button" class="fc form-combo-trigger" id="th-khoa-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('th-khoa')">
+              <span id="th-khoa-combo-label">Tất cả Khoa quản lý</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="th-khoa-combo-menu">
+              <input class="fc" id="th-khoa-search" type="text" placeholder="🔍 Tìm khoa quản lý…" autocomplete="off" style="margin-bottom:4px">
+              <div id="th-khoa-combo-list"></div>
+            </div>
+          </div>
+          <div class="unit-combo" id="th-ctdt-combo" style="width:280px">
+            <button type="button" class="fc form-combo-trigger" id="th-ctdt-combo-trigger" onclick="event.stopPropagation();toggleFilterMenu('th-ctdt')">
+              <span id="th-ctdt-combo-label">Tất cả Chương trình đào tạo</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="th-ctdt-combo-menu">
+              <input class="fc" id="th-ctdt-search" type="text" placeholder="🔍 Tìm chương trình đào tạo…" autocomplete="off" style="margin-bottom:4px">
+              <div id="th-ctdt-combo-list"></div>
+            </div>
+          </div>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-default" onclick="thExport()">⬇ Export file</button>
+          </div>
         </div>
-        <div class="tbl-wrap">
-          <table class="tbl-rp"><thead id="th-thead"></thead><tbody id="th-tbody"></tbody></table>
-        </div>
-        <div class="legend">
-          <span><b>Quy mô</b> = số sinh viên đang học của (Khoa × CTĐT × Khoá) tại học kỳ xét — đếm từ bảng trạng thái sinh viên theo kỳ, không lấy từ kết quả đợt.</span>
+        <div class="card">
+          <div class="rp-title" id="th-title">Tổng hợp số lượng sinh viên bị cảnh báo học tập</div>
+          <div class="tbl-wrap">
+            <table class="tbl-rp"><thead id="th-thead"></thead><tbody id="th-tbody"></tbody></table>
+          </div>
+          <div class="dev-note">
+            <b class="tag">NOTE CHO DEV</b><b>Quy mô</b> = số sinh viên của (Khoa × CTĐT × Khoá) có trạng thái hiện tại là Đang học, Bảo lưu hoặc Đình chỉ học tập. Thôi học / Buộc thôi học / Xoá tên / Tốt nghiệp / Chuyển trường đi đã rời trường nên không tính. Đếm từ hồ sơ sinh viên, KHÔNG lấy từ kết quả đợt xét.
+          </div>
         </div>
       </div><!-- /tab-tonghop -->
       </div><!-- /tab-container -->
@@ -2778,7 +2818,11 @@ const DOT_DA_CONGBO = {
   'SOS-HK2-2526-1': { hocKy:'HK2', namHoc:'2025-2026' },
 };
 /* Danh sách sinh viên BỊ CẢNH BÁO ở từng đợt đã công bố — khoá theo mssv::ctdt để sinh viên song
-   bằng có 2 dòng lịch sử độc lập, đúng cách tab này phân dòng. */
+   bằng có 2 dòng lịch sử độc lập, đúng cách tab này phân dòng.
+   PHÂN BỐ CHUỖI PHẢI BÁM THỰC TẾ: chạm 2 kỳ cảnh báo liên tiếp là sinh viên đã bị buộc thôi học nên
+   kỳ sau không còn trong danh sách. Vì thế lịch sử KHÔNG có ai bị cảnh báo 3 kỳ liên tiếp trở lên;
+   chuỗi dài nhất ở đợt đang xét là 3, chỉ rơi vào vài em đợt trước đã chạm 2 nhưng khoa đề nghị xem
+   xét lại / quyết định chưa kịp ban hành nên vẫn được xét tiếp kỳ này. */
 const KQ_DOT_CONGBO = {
   /* HK1 2023-2024 — 3 SV bị cảnh báo */
   'SOS-HK1-2324-1': [
@@ -2786,23 +2830,38 @@ const KQ_DOT_CONGBO = {
   ],
   /* HK2 2023-2024 — 6 SV bị cảnh báo */
   'SOS-HK2-2324-1': [
-    '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '21102233::Kỹ thuật cơ khí', '22103456::Quản trị kinh doanh', '21102770::Công nghệ thông tin', '23104880::Ngôn ngữ Anh',
+    '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '22103456::Quản trị kinh doanh',
+    '21102377::Kỹ thuật điện', '20101450::Kỹ thuật cơ khí', '20101122::Ngôn ngữ Anh',
   ],
   /* HK1 2024-2025 — 8 SV bị cảnh báo */
   'SOS-HK1-2425-1': [
-    '21102300::Quản trị kinh doanh', '20101450::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '21102233::Kỹ thuật cơ khí', '22103456::Quản trị kinh doanh', '21102770::Công nghệ thông tin',
+    '21102233::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí', '21102770::Công nghệ thông tin',
+    '23104880::Ngôn ngữ Anh', '22103455::Công nghệ thông tin', '21102401::Kế toán',
+    '23104588::Kỹ thuật phần mềm', '23104650::Dược học',
   ],
-  /* HK2 2024-2025 — 12 SV bị cảnh báo */
+  /* HK2 2024-2025 — 9 SV bị cảnh báo */
   'SOS-HK2-2425-1': [
-    '22103567::Quản trị kinh doanh', '22103455::Công nghệ thông tin', '21102377::Kỹ thuật điện', '23104915::Quản trị kinh doanh', '23104521::Công nghệ thông tin', '21102300::Quản trị kinh doanh', '20101450::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '21102233::Kỹ thuật cơ khí', '22103456::Quản trị kinh doanh',
+    '22103456::Quản trị kinh doanh', '21102377::Kỹ thuật điện', '23104915::Quản trị kinh doanh',
+    '23104521::Công nghệ thông tin', '20101450::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện',
+    '22103512::Kỹ thuật điện', '23104612::Công nghệ thông tin', '21102300::Quản trị kinh doanh',
   ],
-  /* HK1 2025-2026 — 19 SV bị cảnh báo */
+  /* HK1 2025-2026 — 14 SV bị cảnh báo. 4 em đầu bị cảnh báo tiếp ở HK2 2025-2026 (xem đợt dưới) —
+     đây chính là 4 trường hợp chuỗi 3 kỳ của đợt đang xét. */
   'SOS-HK1-2526-1': [
-    '23104612::Công nghệ thông tin', '23104650::Dược học', '22103512::Kỹ thuật điện', '21102401::Kế toán', '24105604::Hướng dẫn du lịch quốc tế', '23104588::Kỹ thuật phần mềm', '23104612::Ngôn ngữ Anh (song bằng)', '20101122::Ngôn ngữ Anh', '22103567::Quản trị kinh doanh', '22103455::Công nghệ thông tin', '21102377::Kỹ thuật điện', '23104915::Quản trị kinh doanh', '23104521::Công nghệ thông tin', '21102300::Quản trị kinh doanh', '20101450::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '21102233::Kỹ thuật cơ khí',
+    '21102233::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí',
+    '22103567::Quản trị kinh doanh', '23104650::Dược học', '21102401::Kế toán',
+    '24105604::Hướng dẫn du lịch quốc tế', '23104588::Kỹ thuật phần mềm',
+    '21102770::Công nghệ thông tin', '23104880::Ngôn ngữ Anh', '24105733::Kỹ thuật cơ khí',
+    '20101122::Ngôn ngữ Anh', '23104612::Ngôn ngữ Anh (song bằng)', '23104701::Ngôn ngữ Anh',
   ],
-  /* HK2 2025-2026 — 26 SV bị cảnh báo */
+  /* HK2 2025-2026 — 14 SV bị cảnh báo. 4 em đầu là kỳ cảnh báo thứ 2 liên tiếp, 10 em sau là kỳ
+     đầu tiên của chuỗi. */
   'SOS-HK2-2526-1': [
-    '25106101::Công nghệ thông tin', '25106102::Ngôn ngữ Anh', '25106210::Ngôn ngữ Anh', '24105733::Kỹ thuật cơ khí', '24105744::Kế toán', '23104701::Ngôn ngữ Anh', '24105370::Du lịch', '23104612::Công nghệ thông tin', '23104650::Dược học', '22103512::Kỹ thuật điện', '21102401::Kế toán', '24105604::Hướng dẫn du lịch quốc tế', '23104588::Kỹ thuật phần mềm', '23104612::Ngôn ngữ Anh (song bằng)', '20101122::Ngôn ngữ Anh', '22103567::Quản trị kinh doanh', '22103455::Công nghệ thông tin', '21102377::Kỹ thuật điện', '23104915::Quản trị kinh doanh', '23104521::Công nghệ thông tin', '21102300::Quản trị kinh doanh', '20101450::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103601::Kỹ thuật điện', '21102233::Kỹ thuật cơ khí',
+    '21102233::Kỹ thuật cơ khí', '22103601::Kỹ thuật cơ khí', '22103990::Kỹ thuật cơ khí',
+    '22103567::Quản trị kinh doanh', '22103601::Kỹ thuật điện', '21102300::Quản trị kinh doanh',
+    '20101450::Kỹ thuật cơ khí', '22103455::Công nghệ thông tin', '23104915::Quản trị kinh doanh',
+    '23104521::Công nghệ thông tin', '23104612::Công nghệ thông tin', '22103512::Kỹ thuật điện',
+    '24105744::Kế toán', '25106210::Ngôn ngữ Anh',
   ],
 };
 /* ═══ KHOÁ HỌC CỦA SINH VIÊN — dạng ngắn K12…K20 ═══
@@ -3174,70 +3233,277 @@ function ltUpdateChon(){
   all.checked = tong > 0 && chon === tong;
   all.indeterminate = chon > 0 && chon < tong;
 }
-
-/* KHOA_HOC_BC gán cứng K14–K18 ĐÃ BỎ: khoá mới (K19, K20) không có cột nào để đếm, mà hàm bóc khoá
-   lại fallback về 'K18' nên các em đó bị dồn nhầm sang khoá khác. Nay lấy động từ khoaHocList(). */
-/* Quy mô mock theo (Khoa × CTĐT × Khoá). Thật ra phải đếm sinh viên trạng thái "Đang học" ở kỳ xét
-   từ bảng trạng thái sinh viên theo kỳ — kết quả đợt KHÔNG có số này vì đợt chỉ chứa SV diện xét. */
+/* ═══ TỔNG HỢP SỐ LƯỢNG — DỰNG THEO ĐÚNG mh-admin-26 ═══
+   Khoá xếp thành NHÓM CỘT (mỗi khoá 5 cột con), header 2 tầng, đúng bản giấy. Đây là bảng ĐỂ IN
+   chứ không phải bảng thao tác: không sort, không lọc từng cột, không tick chọn dòng — nên header
+   lồng nhau chấp nhận được, đổi lại in ra khớp y hệt màn Báo cáo (mh-admin-26).
+   Danh sách khoá vẫn lấy động từ dữ liệu của đợt (khoaHocList()) chứ không gán cứng K14–K18: khoá
+   mới không có cột thì sinh viên khoá đó biến mất khỏi báo cáo mà không ai biết. */
+/* ═══ QUY MÔ = ĐẾM SINH VIÊN THEO TRẠNG THÁI HIỆN TẠI ═══
+   Quy tắc đã chốt: quy mô của một tổ hợp (Khoa × CTĐT × Khoá) là số sinh viên có TRẠNG THÁI HIỆN
+   TẠI thuộc 3 giá trị dưới đây. Cùng cách hiểu "hiện tại" với cổng phạm vi quét của đợt — KHÔNG
+   phải trạng thái tại kỳ xét.
+     Đang học · Bảo lưu · Đình chỉ học tập
+   Ba trạng thái này là "còn thuộc biên chế nhà trường": bảo lưu và đình chỉ chỉ tạm dừng học, các em
+   vẫn sẽ quay lại nên vẫn nằm trong quy mô. Ngược lại Thôi học / Buộc thôi học / Xoá tên / Tốt
+   nghiệp / Chuyển trường đi đã rời trường, đếm vào quy mô sẽ làm mẫu số phình lên và tỷ lệ cảnh báo
+   bị pha loãng.
+   Câu truy vấn thật:
+     SELECT COUNT(*) FROM sinh_vien
+     WHERE khoa_quan_ly = ? AND ctdt = ? AND khoa_hoc = ?
+       AND trang_thai_hien_tai IN ('danghoc','baoluu','dinhchi')
+   MOCK: STUDENTS ở màn này CHỈ chứa sinh viên thuộc diện xét của đợt, không phải toàn trường, nên
+   đếm trực tiếp trên đó sẽ ra quy mô ≈ số SV bị cảnh báo và tỷ lệ luôn xấp xỉ 100%. Vì vậy dựng một
+   bảng dân số giả lập, nhưng tách sẵn theo trạng thái và cộng đúng 3 trạng thái trên — để dev nhìn
+   ra ngay chỗ nào phải thay bằng truy vấn thật. */
+const QUY_MO_TRANG_THAI = ['danghoc', 'baoluu', 'dinhchi'];
+/* Quy mô toàn khoá (mock) — dùng làm biên độ cho từng tổ hợp bên dưới. */
 const QUY_MO_MOCK = { K12:95, K13:105, K14:120, K15:145, K16:160, K17:175, K18:180, K19:195, K20:210 };
 /* Khoá lạ (chưa khai quy mô) trả 0 thay vì undefined — undefined cộng vào tổng sẽ ra NaN, cả dòng
    tổng hợp hỏng theo mà nhìn không ra nguyên nhân. */
 function quyMoKhoa(kh){ return QUY_MO_MOCK[kh] || 0; }
+/* Dân số giả lập của một tổ hợp, tách theo trạng thái hiện tại. Suy từ tên tổ hợp nên CÙNG tổ hợp
+   luôn ra CÙNG con số, không nhảy mỗi lần render. Trả về đủ cả các trạng thái không tính vào quy mô
+   để thấy rõ là chúng bị loại có chủ đích, chứ không phải quên. */
+function danSoNhom(khoa, ctdt, kh){
+  const base = quyMoKhoa(kh);
+  if (!base) return { danghoc:0, baoluu:0, dinhchi:0, thoihoc:0, buocthoihoc:0 };
+  const s = `${khoa}|${ctdt}|${kh}`;
+  let h = 7;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 100000;
+  const tong = 20 + h % Math.max(1, Math.round(base / 4));   /* sĩ số tổ hợp, ~20…base/4 */
+  const baoluu  = h % 4;
+  const dinhchi = (h >> 3) % 3;
+  return {
+    danghoc:     tong - baoluu - dinhchi,
+    baoluu, dinhchi,
+    thoihoc:     (h >> 5) % 5,      /* đã rời trường — KHÔNG tính vào quy mô */
+    buocthoihoc: (h >> 7) % 4,      /* đã rời trường — KHÔNG tính vào quy mô */
+  };
+}
+function quyMoNhom(khoa, ctdt, kh){
+  const d = danSoNhom(khoa, ctdt, kh);
+  return QUY_MO_TRANG_THAI.reduce((a, k) => a + (d[k] || 0), 0);
+}
+/* Hai combo lọc của tab Tổng hợp — dựng 1 lần bằng setupDroplistFilter() dùng chung toàn dự án,
+   nên hành vi (bấm mới mở, gõ để lọc, chọn xong tự đóng) giống hệt bộ lọc Khoa ở tab Sinh viên
+   cảnh báo. Giá trị chọn giữ trong biến chứ không đọc ngược từ DOM: combo không phải <select>, hỏi
+   .value của nó sẽ ra undefined. */
+let thKhoa = '', thCtdt = '', thFilterDone = false;
+function fillThFilter(){
+  if (thFilterDone) return;
+  thFilterDone = true;
+  const uniq = f => [...new Set(STUDENTS.map(f).filter(Boolean))].sort();
+  setupDroplistFilter('th-khoa', 'Tất cả Khoa quản lý',
+    uniq(s => s.khoaQuanLy).map(k => ({ value:k, label:k })),
+    v => { thKhoa = v; renderTongHop(); });
+  /* CTĐT liệt kê toàn bộ chương trình có trong đợt, KHÔNG cắt theo khoa đang chọn: cán bộ hay chọn
+     ngược thứ tự (gõ tên ngành trước rồi mới nhớ ra khoa), cắt danh sách sẽ làm ngành biến mất một
+     cách khó hiểu. Chọn lệch cặp khoa/ngành thì bảng ra rỗng và báo rõ, đủ để nhận ra. */
+  setupDroplistFilter('th-ctdt', 'Tất cả Chương trình đào tạo',
+    uniq(s => s.ctdt).map(k => ({ value:k, label:k })),
+    v => { thCtdt = v; renderTongHop(); });
+}
+/* ═══ SỐ LIỆU TỔNG HỢP — MỘT NGUỒN CHO CẢ BẢNG TRÊN MÀN LẪN FILE XUẤT ═══
+   Bảng và file Excel phải ra CÙNG con số. Mỗi bên tự gom lại một lần thì chỉ cần sửa quy tắc ở một
+   chỗ là hai bên lệch nhau mà không ai phát hiện — sai số kiểu đó chỉ lộ ra khi báo cáo đã nộp.
+   Trả về: { khoaHoc, rows, tQM, tCB } với mỗi row = { khoa, ctdt, o: {K19: {qm, muc[4]} | null}, qm, cb }.
+   o[kh] = null nghĩa là tổ hợp KHÔNG TỒN TẠI ở đợt này → để trống cả 5 ô, khác hẳn với tồn tại mà
+   không có ai bị cảnh báo (có quy mô, 4 mức bằng 0). */
+function thTongHop(fKhoa, fCtdt){
+  const khoaHoc = khoaHocList();   /* cột khoá lấy từ chính dữ liệu của đợt, không gán cứng */
+  /* Từ khoá soi vào TÊN KHOA và TÊN CTĐT — đúng 2 cột định danh của một dòng tổng hợp. Không soi
+     vào tên/mã sinh viên: bảng này không có dòng nào là một sinh viên, gõ mã SV vào sẽ ra rỗng mà
+     người dùng không hiểu vì sao. Muốn tìm theo sinh viên thì dùng ô tìm ở tab Sinh viên cảnh báo. */
+  const loc = s => (!fKhoa || s.khoaQuanLy === fKhoa) && (!fCtdt || s.ctdt === fCtdt);
+
+  /* Gom SV diện cảnh báo theo (Khoa, CTĐT) rồi tách theo Khoá và mức chuỗi liên tiếp. Khoá bóc bằng
+     khoaHocLabel() — DÙNG CHUNG với tab Cảnh báo liên tiếp, hai tab tự bóc riêng thì lệch nhau.
+     Đọc qua dsCanhBao() nên đã qua cổng phạm vi quét, khớp con số của tab 1. */
+  const map = {};
+  dsCanhBao().filter(loc).forEach(s => {
+    const kh = khoaHocLabel(s);
+    if (!kh) return;   /* không bóc được khoá thì bỏ qua, không dồn bừa vào một cột */
+    const key = `${s.khoaQuanLy}||${s.ctdt}`;
+    map[key] = map[key] || {};
+    map[key][kh] = map[key][kh] || [0, 0, 0, 0];
+    const n = chuoiLienTiepBC(s);
+    /* n = 0 xảy ra với SV buộc thôi học theo khoản 2 (quá thời gian đào tạo, không đăng ký học tập)
+       — các em này không nằm trong chuỗi cảnh báo nào nên không thuộc mức nào cả. */
+    if (n >= 1) map[key][kh][n >= 4 ? 3 : n - 1]++;
+  });
+
+  /* CÁC Ô CÓ QUY MÔ ≠ CÁC Ô CÓ SINH VIÊN BỊ CẢNH BÁO.
+     Quy mô là con số của cả tổ hợp (Khoa × CTĐT × Khoá), tồn tại kể cả khi khoá đó không có em nào
+     bị cảnh báo. Chỉ điền quy mô ở ô có cảnh báo thì cột "Tổng Quy mô" hoá ra là "quy mô của riêng
+     các khoá có sinh viên bị cảnh báo" — mẫu số nhỏ đi, tỷ lệ cảnh báo bị thổi lên.
+     Tổ hợp nào CÓ TỒN TẠI lấy từ phạm vi quét của đợt (dsTrongDot) — cùng cách hiểu "trạng thái hiện
+     tại" với quy tắc đếm quy mô. */
+  const coSV = {};
+  dsTrongDot().filter(loc).forEach(s => {
+    const kh = khoaHocLabel(s);
+    if (!kh) return;
+    const key = `${s.khoaQuanLy}||${s.ctdt}`;
+    (coSV[key] = coSV[key] || new Set()).add(kh);
+  });
+
+  let tQM = 0, tCB = 0;
+  const rows = Object.keys(map).sort().map(key => {
+    const [khoa, ctdt] = key.split('||');
+    const o = {};
+    let qm = 0, cb = 0;
+    khoaHoc.forEach(kh => {
+      if (!(coSV[key] && coSV[key].has(kh))){ o[kh] = null; return; }
+      const muc = map[key][kh] || [0, 0, 0, 0];   /* có quy mô nhưng không em nào bị cảnh báo */
+      const q = quyMoNhom(khoa, ctdt, kh);
+      o[kh] = { qm:q, muc };
+      qm += q; cb += muc[0] + muc[1] + muc[2] + muc[3];
+    });
+    tQM += qm; tCB += cb;
+    return { khoa, ctdt, o, qm, cb };
+  });
+  return { khoaHoc, rows, tQM, tCB };
+}
 function renderTongHop(){
-  const KHOA_HOC_BC = khoaHocList();   /* cột khoá lấy từ chính dữ liệu của đợt, không gán cứng */
+  fillThFilter();
+  const { khoaHoc, rows, tQM, tCB } = thTongHop(thKhoa, thCtdt);
+
+  document.getElementById('th-title').textContent =
+    `Tổng hợp số lượng sinh viên bị cảnh báo học tập — ${kyXetLabel()}`;
+
   document.getElementById('th-thead').innerHTML = `
     <tr>
       <th rowspan="2" style="width:40px">STT</th>
-      <th rowspan="2" style="width:160px">KHOA</th>
-      <th rowspan="2" style="width:170px">Chương trình đào tạo</th>
-      ${KHOA_HOC_BC.map(k => `<th colspan="5">${k}</th>`).join('')}
-      <th rowspan="2" style="width:75px">Tổng<br>Quy mô</th>
-      <th rowspan="2" style="width:130px">Tổng số SV bị cảnh báo</th>
+      <th rowspan="2" style="width:170px">KHOA</th>
+      <th rowspan="2" style="width:180px">Chương trình đào tạo</th>
+      ${khoaHoc.map(k => `<th colspan="5">${k}</th>`).join('')}
+      <th rowspan="2" style="width:80px">Tổng<br>Quy mô</th>
+      <th rowspan="2" style="width:120px">Tổng số SV bị cảnh báo</th>
     </tr>
-    <tr>${KHOA_HOC_BC.map(() => `
-      <th style="width:58px">Quy mô</th><th style="width:50px">Lần 1</th>
-      <th style="width:60px">CB 2 lần<br>liên tiếp</th><th style="width:60px">CB 3 lần<br>liên tiếp</th>
-      <th style="width:66px">CB từ 4 lần<br>liên tiếp</th>`).join('')}</tr>`;
+    <tr>
+      ${khoaHoc.map(() => `
+        <th style="width:60px" title="Số SV của tổ hợp Khoa × CTĐT × Khoá có trạng thái hiện tại là Đang học, Bảo lưu hoặc Đình chỉ học tập">Quy mô</th>
+        <th style="width:52px">Lần 1</th>
+        <th style="width:62px">CB 2 lần<br>liên tiếp</th>
+        <th style="width:62px">CB 3 lần<br>liên tiếp</th>
+        <th style="width:70px">CB từ 4 lần<br>liên tiếp</th>`).join('')}
+    </tr>`;
 
-  /* Gom sinh viên diện cảnh báo theo (Khoa, CTĐT, Khoá) rồi đếm theo mức chuỗi liên tiếp. Khoá bóc
-     bằng khoaHocLabel() — DÙNG CHUNG với tab Cảnh báo liên tiếp, hai tab tự bóc riêng thì lệch nhau.
-     Đọc qua dsCanhBao() nên đã qua cổng phạm vi quét, khớp con số của tab 1. */
-  const map = {};
-  dsCanhBao().forEach(s => {
-    const key = `${s.khoaQuanLy}||${s.ctdt}`;
-    map[key] = map[key] || {};
-    const kh = khoaHocLabel(s);
-    if (!kh) return;   /* không bóc được khoá thì bỏ qua, không dồn bừa vào một cột */
-    map[key][kh] = map[key][kh] || [0, 0, 0, 0];
-    const n = chuoiLienTiepBC(s);
-    map[key][kh][n >= 4 ? 3 : Math.max(0, n - 1)]++;
-  });
-
-  const keys = Object.keys(map).sort();
   const tbody = document.getElementById('th-tbody');
-  if (!BATCH.daChayLuc || !keys.length){
-    tbody.innerHTML = `<tr><td colspan="${5 + KHOA_HOC_BC.length*5}"><div class="tbl-empty">${
-      BATCH.daChayLuc ? 'Không có dữ liệu' : 'Đợt xét chưa chạy rà soát'}</div></td></tr>`;
+  if (!BATCH.daChayLuc || !rows.length){
+    tbody.innerHTML = `<tr><td colspan="${5 + khoaHoc.length * 5}"><div class="tbl-empty">${
+      BATCH.daChayLuc ? 'Không có sinh viên nào khớp bộ lọc hiện tại' : 'Đợt xét chưa chạy rà soát'}</div></td></tr>`;
     return;
   }
-  let html = '', tQM = 0, tCB = 0;
-  keys.forEach((key, i) => {
-    const [khoa, ctdt] = key.split('||');
-    let qm = 0, cb = 0;
-    const cells = KHOA_HOC_BC.map(kh => {
-      const d = map[key][kh];
-      if (!d) return '<td style="background:#fcfcfd"></td><td></td><td></td><td></td><td></td>';
-      qm += quyMoKhoa(kh); cb += d[0] + d[1] + d[2] + d[3];
-      return `<td style="background:#fcfcfd">${quyMoKhoa(kh) || ''}</td>` + d.map(v => `<td>${v || ''}</td>`).join('');
+  let html = '';
+  rows.forEach((r, i) => {
+    const cells = khoaHoc.map(kh => {
+      const c = r.o[kh];
+      if (!c) return '<td style="background:#fafafa"></td><td></td><td></td><td></td><td></td>';
+      return `<td style="background:#fafafa">${c.qm || ''}</td>` + c.muc.map(v => `<td>${v || ''}</td>`).join('');
     }).join('');
-    tQM += qm; tCB += cb;
-    html += `<tr><td>${i+1}</td><td class="l">${khoa}</td><td class="l">${ctdt}</td>${cells}
-      <td style="font-weight:600">${qm}</td><td style="font-weight:600">${cb}</td></tr>`;
+    html += `<tr>
+      <td>${i + 1}</td><td class="l">${r.khoa}</td><td class="l">${r.ctdt}</td>
+      ${cells}
+      <td style="font-weight:600">${r.qm}</td>
+      <td style="font-weight:600">${r.cb}</td>
+    </tr>`;
   });
-  html += `<tr class="r-sum"><td colspan="3" class="l">TỔNG CỘNG</td>
-    ${KHOA_HOC_BC.map(() => '<td></td><td></td><td></td><td></td><td></td>').join('')}
-    <td>${tQM}</td><td>${tCB}</td></tr>`;
+  html += `<tr class="r-sum">
+    <td colspan="3" class="l">TỔNG CỘNG</td>
+    ${khoaHoc.map(() => '<td></td><td></td><td></td><td></td><td></td>').join('')}
+    <td>${tQM}</td><td>${tCB}</td>
+  </tr>`;
   tbody.innerHTML = html;
+}
+
+/* ═══ XUẤT EXCEL — GIỮ NGUYÊN LƯỚI 2 TẦNG CỦA BẢN GIẤY ═══
+   Chọn Excel chứ không phải Word: đây là bảng số nhiều cột, người nhận còn phải cộng/lọc/đối chiếu
+   tiếp. Word chỉ hợp với văn bản có lời văn. Dùng luôn SheetJS đã nhúng sẵn (_vendor-xlsx.min.js),
+   cùng cách mh-admin-08/10/13 và tab Cảnh báo liên tiếp đang xuất — không thêm thư viện mới.
+   Số liệu lấy từ thTongHop() — CÙNG hàm bảng trên màn đang dùng, nên file xuất không thể lệch bảng. */
+function thExport(){
+  if (!BATCH.daChayLuc){ showToast('Đợt xét chưa chạy rà soát', 'warn'); return; }
+  const { khoaHoc, rows, tQM, tCB } = thTongHop(thKhoa, thCtdt);
+  if (!rows.length){ showToast('Không có dữ liệu để xuất', 'warn'); return; }
+
+  const SO_CO_DINH = 3;                                   /* STT · KHOA · CTĐT */
+  const SO_COT = SO_CO_DINH + khoaHoc.length * 5 + 2;     /* + 2 cột tổng bên phải */
+  const dong = () => Array(SO_COT).fill('');
+  const aoa = [], merges = [];
+  const cQuocHieu = Math.max(SO_CO_DINH, Math.floor(SO_COT / 2));
+
+  const r0 = dong(); r0[0] = 'TRƯỜNG ĐẠI HỌC PHENIKAA'; r0[cQuocHieu] = 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM';
+  aoa.push(r0); merges.push({ s:{r:0,c:cQuocHieu}, e:{r:0,c:SO_COT-1} });
+  const r1 = dong(); r1[cQuocHieu] = 'Độc lập - Tự do - Hạnh phúc';
+  aoa.push(r1); merges.push({ s:{r:1,c:cQuocHieu}, e:{r:1,c:SO_COT-1} });
+  const r2 = dong();
+  r2[0] = `TỔNG HỢP SỐ LƯỢNG SINH VIÊN BỊ CẢNH BÁO HỌC TẬP HỌC KỲ: ${kyXetLabel()}`;
+  aoa.push(r2); merges.push({ s:{r:2,c:0}, e:{r:2,c:SO_COT-1} });
+  /* Lọc theo khoa nào thì ghi rõ ra file, để tờ in rời khỏi màn hình vẫn biết nó là số của ai. */
+  const dieuKien = [thKhoa && `Khoa quản lý: ${thKhoa}`, thCtdt && `Chương trình đào tạo: ${thCtdt}`].filter(Boolean);
+  if (dieuKien.length){
+    const r3 = dong(); r3[0] = dieuKien.join('   ·   ');
+    aoa.push(r3); merges.push({ s:{r:3,c:0}, e:{r:3,c:SO_COT-1} });
+  }
+
+  const HD = aoa.length;                                  /* dòng đầu của header 2 tầng */
+  const h1 = dong(), h2 = dong();
+  ['STT', 'KHOA', 'Chương trình đào tạo'].forEach((t, i) => {
+    h1[i] = t; merges.push({ s:{r:HD,c:i}, e:{r:HD+1,c:i} });
+  });
+  khoaHoc.forEach((kh, i) => {
+    const c = SO_CO_DINH + i * 5;
+    h1[c] = kh; merges.push({ s:{r:HD,c}, e:{r:HD,c:c+4} });
+    ['Quy mô', 'Lần 1', 'CB 2 lần liên tiếp', 'CB 3 lần liên tiếp', 'CB từ 4 lần liên tiếp']
+      .forEach((t, j) => h2[c + j] = t);
+  });
+  const cTongQM = SO_COT - 2, cTongCB = SO_COT - 1;
+  h1[cTongQM] = 'Tổng Quy mô';            merges.push({ s:{r:HD,c:cTongQM}, e:{r:HD+1,c:cTongQM} });
+  h1[cTongCB] = 'Tổng số SV bị cảnh báo'; merges.push({ s:{r:HD,c:cTongCB}, e:{r:HD+1,c:cTongCB} });
+  aoa.push(h1, h2);
+
+  rows.forEach((r, i) => {
+    const d = dong();
+    d[0] = i + 1; d[1] = r.khoa; d[2] = r.ctdt;
+    khoaHoc.forEach((kh, j) => {
+      const c = r.o[kh];
+      if (!c) return;    /* tổ hợp không tồn tại → để trống hẳn, không ghi số 0 */
+      const base = SO_CO_DINH + j * 5;
+      d[base] = c.qm;
+      /* Mức bằng 0 để TRỐNG chứ không ghi "0": bản giấy chỉ điền ô có số, ghi 0 dày đặc sẽ che mất
+         những ô thực sự có sinh viên. */
+      c.muc.forEach((v, k) => d[base + 1 + k] = v || '');
+    });
+    d[cTongQM] = r.qm; d[cTongCB] = r.cb;
+    aoa.push(d);
+  });
+
+  const tong = dong();
+  tong[0] = 'TỔNG CỘNG';  merges.push({ s:{r:aoa.length,c:0}, e:{r:aoa.length,c:2} });
+  tong[cTongQM] = tQM; tong[cTongCB] = tCB;
+  aoa.push(tong);
+
+  /* Khối ký NGƯỜI LẬP ở chân trang, đặt lệch phải như bản giấy. Tên lấy từ trường Người lập của
+     đợt — hệ thống tự ghi khi bấm Lưu, không nhập tay ở đây. */
+  aoa.push(dong());
+  const ky = dong(); ky[SO_COT - 3] = 'NGƯỜI LẬP';
+  merges.push({ s:{r:aoa.length,c:SO_COT-3}, e:{r:aoa.length,c:SO_COT-1} });
+  aoa.push(ky);
+  const ten = dong(); ten[SO_COT - 3] = BATCH.nguoiLap || '';
+  merges.push({ s:{r:aoa.length,c:SO_COT-3}, e:{r:aoa.length,c:SO_COT-1} });
+  aoa.push(ten);
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!merges'] = merges;
+  ws['!cols'] = [{wch:5}, {wch:26}, {wch:28},
+    ...khoaHoc.flatMap(() => [{wch:9}, {wch:8}, {wch:11}, {wch:11}, {wch:12}]),
+    {wch:12}, {wch:16}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tổng hợp số lượng');
+  const ten_file = `tong-hop-so-luong-sv-canh-bao-${(BATCH.maDot || 'dot-xet').toLowerCase()}.xlsx`;
+  XLSX.writeFile(wb, ten_file);
+  showToast(`Đã xuất "${ten_file}" — ${rows.length} dòng, ${tCB} sinh viên`, 'ok');
 }
 /* Đã bỏ nút "Tính lại" ở toolbar bảng — trùng chức năng với "Rà soát" ở khối thông tin đợt
    (cả hai đều sinh lại toàn bộ danh sách theo tiêu chí hiện tại). Giữ 1 nút duy nhất, đặt ở cấp ĐỢT

@@ -51,6 +51,13 @@
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
 
   #tvh-tbody td{text-align:center}
+
+  /* Khối "Thông tin sinh viên" trong popup Chi tiết — 3 class này CHỈ được định nghĩa cục bộ ở
+     mh-admin-24, không có trong _styles.css. Thiếu chúng thì lưới rớt về text xếp dọc, nhãn to
+     bằng giá trị: popup nhìn khác hẳn bên đợt dù markup đã giống hệt. Chép nguyên số đo. */
+  .info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 24px}
+  .info-item-label{font-size:12px;color:var(--text-3);margin-bottom:4px}
+  .info-item-value{font-size:14px;color:var(--text-1);font-weight:500}
 </style>
 </head>
 <body>
@@ -221,6 +228,9 @@
 </div>
 
 <!-- ═══ MODAL: Xem chi tiết cảnh báo của 1 dòng SV — LẤY Y NGUYÊN nội dung/logic từ mh-admin-24 ═══ -->
+<!-- ═══ MODAL: Chi tiết cảnh báo — dựng theo đúng popup cùng tên ở mh-admin-24 ═══
+     Tiêu đề để trống tên sinh viên: tên/mã đã nằm ngay trong khối "Thông tin sinh viên" bên dưới,
+     nhồi thêm vào tiêu đề là lặp. -->
 <div class="overlay hidden" id="modal-chitiet">
   <div class="modal-box w800">
     <div class="modal-hd">
@@ -228,14 +238,50 @@
       <button class="modal-close" data-close="modal-chitiet">✕</button>
     </div>
     <div class="modal-bd">
+      <!-- Thông tin sinh viên đặt TRÊN bảng thông số: popup mở ra từ một dòng trong bảng rất rộng,
+           cán bộ thường đã cuộn ngang đi xa nên không còn nhớ đang xem em nào, lớp nào. Chỉ để phần
+           hồ sơ — số liệu điểm/tín chỉ KHÔNG lặp lại ở đây vì đã có ở cột "Giá trị của SV" ngay dưới. -->
+      <!-- Banner chỉ hiện khi có thông số thiếu dữ liệu — nói thẳng lý do ngay đầu popup để cán bộ
+           không đi tìm nguyên nhân trong bảng ngưỡng. -->
+      <div class="hidden" id="ct-banner" style="background:#fff7e6;border:1px solid #ffd591;color:#000;padding:10px 14px;border-radius:6px;font-size:13px;line-height:1.7;margin-bottom:16px"></div>
+      <h4 style="margin:0 0 8px;font-size:14px">Thông tin sinh viên</h4>
+      <div class="info-grid mb-16" style="grid-template-columns:repeat(3,1fr)">
+        <div><div class="info-item-label">Mã sinh viên</div><div class="info-item-value" id="ct-mssv">—</div></div>
+        <div><div class="info-item-label">Họ và tên</div><div class="info-item-value" id="ct-hoten">—</div></div>
+        <div><div class="info-item-label">Ngày sinh</div><div class="info-item-value" id="ct-ngaysinh">—</div></div>
+        <div><div class="info-item-label">Lớp hành chính</div><div class="info-item-value" id="ct-lop">—</div></div>
+        <div><div class="info-item-label">Chương trình đào tạo</div><div class="info-item-value" id="ct-ctdt">—</div></div>
+        <div><div class="info-item-label">Khoa quản lý</div><div class="info-item-value" id="ct-khoa">—</div></div>
+        <div><div class="info-item-label">Niên khoá</div><div class="info-item-value" id="ct-nienkhoa">—</div></div>
+        <div><div class="info-item-label">Trình độ năm học</div><div class="info-item-value" id="ct-trinhdo">—</div></div>
+        <!-- 2 trạng thái CỐ Ý để cạnh nhau, giống mh-admin-24: trạng thái TẠI KỲ là căn cứ xét, còn
+             trạng thái hiện tại chỉ để tham khảo và có thể đã đổi sau khi đợt công bố. -->
+        <div><div class="info-item-label">Học kỳ xét</div><div class="info-item-value" id="ct-hocky">—</div></div>
+        <div><div class="info-item-label">Trạng thái tại kỳ</div><div class="info-item-value" id="ct-tt-ky">—</div></div>
+        <div><div class="info-item-label">Trạng thái hiện tại</div><div class="info-item-value" id="ct-tt-nay">—</div></div>
+        <div><div class="info-item-label">Quyết định nghỉ trong kỳ</div><div class="info-item-value" id="ct-qdnghi">—</div></div>
+      </div>
+
+      <!-- Bảng thông số 5 cột giống mh-admin-24. Cột "Áp dụng" nói rõ thông số đó dành cho nhóm nào,
+           cột "Kết quả" kết luận từng dòng — trước đây chỉ có 3 cột và tô đỏ mỗi con số, người xem
+           phải tự suy ra dòng nào là dòng làm em ấy bị cảnh báo.
+           Thông số KHÔNG áp dụng cho sinh viên này thì không hiện dòng. -->
+      <div id="ct-thongso-wrap">
       <h4 style="margin:0 0 8px;font-size:14px">Thông số xét của đợt</h4>
       <table class="desc-tbl mb-16" style="width:100%">
-        <thead><tr><th style="width:45%">Tiêu chí</th><th style="width:25%">Ngưỡng cảnh báo</th><th>Giá trị của SV</th></tr></thead>
+        <thead><tr>
+          <th style="width:38%">Tiêu chí</th>
+          <th style="width:14%">Ngưỡng</th>
+          <th style="width:18%">Áp dụng</th>
+          <th style="width:14%">Giá trị của SV</th>
+          <th>Kết quả</th>
+        </tr></thead>
         <tbody id="ct-thongso"></tbody>
       </table>
+      </div>
       <h4 style="margin:0 0 8px;font-size:14px">Nội dung</h4>
       <ul id="ct-noidung" style="margin:0 0 16px;padding-left:20px;font-size:13.5px;line-height:1.8"></ul>
-      <div><b>Tình trạng:</b> <span id="ct-tinhtrang"></span></div>
+      <div><b>Kết quả cuối:</b> <span id="ct-tinhtrang"></span></div>
     </div>
     <div class="modal-ft">
       <button class="btn btn-default" data-close="modal-chitiet">Đóng</button>
@@ -347,32 +393,32 @@ const BATCH_INFO = {
   'SOS-HK1-2526-1': { hocKy:'HK1', namHoc:'2025-2026', batDau:'20/08/2025' },
 };
 const STUDENTS = [
-  { dot:'SOS-HK2-2526-1', mssv:'22103456', hoTen:'Vũ Thị Hồng Nhung', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD3.22105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.55, diemTbTichLuy:1.48, tcDangKy:17, tcTichLuy:14, tcTichLuyLuyKe:100, tinChiNoKy:3, tinChiNoDong:15, namDangDaoTao:4, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'23104521', hoTen:'Đặng Minh Khang', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT2.23107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'baoluu', diemTbKy:1.10, diemTbTichLuy:1.30, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:45, tinChiNoKy:4, tinChiNoDong:11, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'24105604', hoTen:'Phạm Khánh Linh', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'FTS1.24109.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:0.90, diemTbTichLuy:1.15, tcDangKy:15, tcTichLuy:9, tcTichLuyLuyKe:9, tinChiNoKy:3, tinChiNoDong:3, namDangDaoTao:1, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK3-2526-1', mssv:'21102233', hoTen:'Lê Văn Đạt', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.21102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'buocthoihoc', diemTbKy:1.20, diemTbTichLuy:1.35, tcDangKy:14, tcTichLuy:8, tcTichLuyLuyKe:130, tinChiNoKy:6, tinChiNoDong:22, namDangDaoTao:5, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK3-2526-1', mssv:'21102240', hoTen:'Ngô Thanh Tùng', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.21102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.60, diemTbTichLuy:1.55, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:118, tinChiNoKy:4, tinChiNoDong:20, namDangDaoTao:5, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK1-2526-1', mssv:'20101122', hoTen:'Phạm Thị Bích', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'NNA1.20101.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'thoihoc', diemTbKy:1.40, diemTbTichLuy:1.55, tcDangKy:10, tcTichLuy:6, tcTichLuyLuyKe:145, tinChiNoKy:4, tinChiNoDong:19, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:25, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:2 },
-  { dot:'SOS-HK1-2526-1', mssv:'20101130', hoTen:'Trịnh Gia Huy', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:1.35, diemTbTichLuy:1.42, tcDangKy:13, tcTichLuy:9, tcTichLuyLuyKe:150, tinChiNoKy:4, tinChiNoDong:17, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'23104588', hoTen:'Nguyễn Văn Hải', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Kỹ thuật phần mềm', lopHanhChinh:'KTPM1.23107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:0.85, tcDangKy:16, tcTichLuy:9, tcTichLuyLuyKe:12, tinChiNoKy:7, tinChiNoDong:9, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'22103470', hoTen:'Trần Thị Kim Ngân', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hệ thống thông tin', lopHanhChinh:'HTTT2.22107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:1.05, diemTbTichLuy:1.38, tcDangKy:17, tcTichLuy:13, tcTichLuyLuyKe:62, tinChiNoKy:4, tinChiNoDong:13, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'21105233', hoTen:'Lâm Quốc Bảo', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD2.21105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.65, diemTbTichLuy:1.58, tcDangKy:18, tcTichLuy:15, tcTichLuyLuyKe:95, tinChiNoKy:3, tinChiNoDong:18, namDangDaoTao:4, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK2-2526-1', mssv:'20105099', hoTen:'Đỗ Thị Thanh Huyền', he:'Vừa làm vừa học', khoaDaoTao:'Đại học VLVH Khóa 16_4.5 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKDVLVH1.20105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.10, diemTbTichLuy:1.20, tcDangKy:12, tcTichLuy:8, tcTichLuyLuyKe:140, tinChiNoKy:4, tinChiNoDong:24, namDangDaoTao:5, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK3-2526-1', mssv:'22102890', hoTen:'Vũ Đình Khoa', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK2.22102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.45, diemTbTichLuy:1.36, tcDangKy:17, tcTichLuy:13, tcTichLuyLuyKe:80, tinChiNoKy:4, tinChiNoDong:16, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK3-2526-1', mssv:'23102955', hoTen:'Hoàng Thị Mỹ Duyên', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Kỹ thuật ô tô', lopHanhChinh:'OT1.23102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'baoluu', diemTbKy:0.88, diemTbTichLuy:1.05, tcDangKy:14, tcTichLuy:9, tcTichLuyLuyKe:20, tinChiNoKy:5, tinChiNoDong:7, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK3-2526-1', mssv:'19102188', hoTen:'Phan Anh Kiệt', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 15_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.19102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.30, diemTbTichLuy:1.40, tcDangKy:12, tcTichLuy:7, tcTichLuyLuyKe:135, tinChiNoKy:5, tinChiNoDong:21, namDangDaoTao:7, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK1-2526-1', mssv:'21101045', hoTen:'Ngô Thị Hồng Nhung', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4.5 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'NNA2.21101.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:1.55, diemTbTichLuy:1.47, tcDangKy:15, tcTichLuy:12, tcTichLuyLuyKe:105, tinChiNoKy:3, tinChiNoDong:14, namDangDaoTao:5, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK1-2526-1', mssv:'22101367', hoTen:'Bùi Xuân Trường', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Du lịch', lopHanhChinh:'DL2.22101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:0.95, diemTbTichLuy:1.18, tcDangKy:16, tcTichLuy:11, tcTichLuyLuyKe:38, tinChiNoKy:5, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:29, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
-  { dot:'SOS-HK1-2526-1', mssv:'20101288', hoTen:'Lý Thị Cẩm Tú', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS2.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'buocthoihoc', diemTbKy:1.25, diemTbTichLuy:1.33, tcDangKy:11, tcTichLuy:6, tcTichLuyLuyKe:148, tinChiNoKy:5, tinChiNoDong:20, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0 },
+  { dot:'SOS-HK2-2526-1', mssv:'22103456', hoTen:'Vũ Thị Hồng Nhung', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD3.22105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'buocthoihoc', diemTbKy:1.55, diemTbTichLuy:1.48, tcDangKy:17, tcTichLuy:14, tcTichLuyLuyKe:100, tinChiNoKy:3, tinChiNoDong:15, namDangDaoTao:4, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0, ngaySinh:'12/01/2004', trangThaiKy:'danghoc', slCanhBaoLT:2, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK2-2526-1', mssv:'23104521', hoTen:'Đặng Minh Khang', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT2.23107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'baoluu', diemTbKy:1.10, diemTbTichLuy:1.30, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:45, tinChiNoKy:4, tinChiNoDong:11, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'03/09/2005', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Nguyễn Thị Vân (CB00981)' },
+  { dot:'SOS-HK2-2526-1', mssv:'24105604', hoTen:'Phạm Khánh Linh', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'FTS1.24109.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:0.90, diemTbTichLuy:1.15, tcDangKy:15, tcTichLuy:9, tcTichLuyLuyKe:9, tinChiNoKy:3, tinChiNoDong:3, namDangDaoTao:1, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'01/02/2006', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Trần Thị Mai (CB00512)' },
+  { dot:'SOS-HK3-2526-1', mssv:'21102233', hoTen:'Lê Văn Đạt', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.21102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'buocthoihoc', diemTbKy:1.20, diemTbTichLuy:1.35, tcDangKy:14, tcTichLuy:8, tcTichLuyLuyKe:130, tinChiNoKy:6, tinChiNoDong:22, namDangDaoTao:5, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0, ngaySinh:'28/09/2003', trangThaiKy:'danghoc', slCanhBaoLT:2, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK3-2526-1', mssv:'21102240', hoTen:'Ngô Thanh Tùng', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.21102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.60, diemTbTichLuy:1.55, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:118, tinChiNoKy:4, tinChiNoDong:20, namDangDaoTao:5, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'12/08/2003', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK1-2526-1', mssv:'20101122', hoTen:'Phạm Thị Bích', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'NNA1.20101.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'thoihoc', diemTbKy:1.40, diemTbTichLuy:1.55, tcDangKy:10, tcTichLuy:6, tcTichLuyLuyKe:145, tinChiNoKy:4, tinChiNoDong:19, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:25, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:2, ngaySinh:'01/05/2002', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Trần Thị Mai (CB00512)' },
+  { dot:'SOS-HK1-2526-1', mssv:'20101130', hoTen:'Trịnh Gia Huy', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:1.35, diemTbTichLuy:1.42, tcDangKy:13, tcTichLuy:9, tcTichLuyLuyKe:150, tinChiNoKy:4, tinChiNoDong:17, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'06/01/2002', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
+  { dot:'SOS-HK2-2526-1', mssv:'23104588', hoTen:'Nguyễn Văn Hải', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Kỹ thuật phần mềm', lopHanhChinh:'KTPM1.23107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:0.85, tcDangKy:16, tcTichLuy:9, tcTichLuyLuyKe:12, tinChiNoKy:7, tinChiNoDong:9, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'04/05/2005', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK2-2526-1', mssv:'22103470', hoTen:'Trần Thị Kim Ngân', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hệ thống thông tin', lopHanhChinh:'HTTT2.22107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:1.05, diemTbTichLuy:1.38, tcDangKy:17, tcTichLuy:13, tcTichLuyLuyKe:62, tinChiNoKy:4, tinChiNoDong:13, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'08/12/2004', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK2-2526-1', mssv:'21105233', hoTen:'Lâm Quốc Bảo', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD2.21105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.65, diemTbTichLuy:1.58, tcDangKy:18, tcTichLuy:15, tcTichLuyLuyKe:95, tinChiNoKy:3, tinChiNoDong:18, namDangDaoTao:4, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'14/05/2003', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
+  { dot:'SOS-HK2-2526-1', mssv:'20105099', hoTen:'Đỗ Thị Thanh Huyền', he:'Vừa làm vừa học', khoaDaoTao:'Đại học VLVH Khóa 16_4.5 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKDVLVH1.20105.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.10, diemTbTichLuy:1.20, tcDangKy:12, tcTichLuy:8, tcTichLuyLuyKe:140, tinChiNoKy:4, tinChiNoDong:24, namDangDaoTao:5, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'07/04/2002', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Nguyễn Thị Vân (CB00981)' },
+  { dot:'SOS-HK3-2526-1', mssv:'22102890', hoTen:'Vũ Đình Khoa', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK2.22102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.45, diemTbTichLuy:1.36, tcDangKy:17, tcTichLuy:13, tcTichLuyLuyKe:80, tinChiNoKy:4, tinChiNoDong:16, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'22/05/2004', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
+  { dot:'SOS-HK3-2526-1', mssv:'23102955', hoTen:'Hoàng Thị Mỹ Duyên', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Kỹ thuật ô tô', lopHanhChinh:'OT1.23102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'baoluu', diemTbKy:0.88, diemTbTichLuy:1.05, tcDangKy:14, tcTichLuy:9, tcTichLuyLuyKe:20, tinChiNoKy:5, tinChiNoDong:7, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'05/02/2005', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Trần Thị Mai (CB00512)' },
+  { dot:'SOS-HK3-2526-1', mssv:'19102188', hoTen:'Phan Anh Kiệt', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 15_4 năm', ctdt:'Kỹ thuật cơ khí', lopHanhChinh:'CK1.19102.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:1.30, diemTbTichLuy:1.40, tcDangKy:12, tcTichLuy:7, tcTichLuyLuyKe:135, tinChiNoKy:5, tinChiNoDong:21, namDangDaoTao:7, namToiDa:4, tinChiChuanNam:28, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'28/06/2001', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
+  { dot:'SOS-HK1-2526-1', mssv:'21101045', hoTen:'Ngô Thị Hồng Nhung', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 17_4.5 năm', ctdt:'Ngôn ngữ Anh', lopHanhChinh:'NNA2.21101.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:1.55, diemTbTichLuy:1.47, tcDangKy:15, tcTichLuy:12, tcTichLuyLuyKe:105, tinChiNoKy:3, tinChiNoDong:14, namDangDaoTao:5, namToiDa:4.5, tinChiChuanNam:27, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'06/09/2003', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
+  { dot:'SOS-HK1-2526-1', mssv:'22101367', hoTen:'Bùi Xuân Trường', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Du lịch', lopHanhChinh:'DL2.22101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:0.95, diemTbTichLuy:1.18, tcDangKy:16, tcTichLuy:11, tcTichLuyLuyKe:38, tinChiNoKy:5, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:29, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'26/06/2004', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
+  { dot:'SOS-HK1-2526-1', mssv:'20101288', hoTen:'Lý Thị Cẩm Tú', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS2.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'buocthoihoc', diemTbKy:1.25, diemTbTichLuy:1.33, tcDangKy:11, tcTichLuy:6, tcTichLuyLuyKe:148, tinChiNoKy:5, tinChiNoDong:20, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0, ngaySinh:'14/01/2002', trangThaiKy:'danghoc', slCanhBaoLT:2, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
   /* SV mẫu DUY NHẤT có hồ sơ hỗ trợ đầy đủ ở mh-admin-22/23 (vòng brainstorm "Hỗ trợ SV cảnh báo học
      tập") — xem tuVanHtml()/TU_VAN_COUNT bên dưới, chỉ dòng này mở được link "Lịch sử tư vấn". */
-  { dot:'SOS-HK2-2526-1', mssv:'20120301', hoTen:'Hoàng Minh Đức', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CT4501', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.65, diemTbTichLuy:0.65, tcDangKy:16, tcTichLuy:10, tcTichLuyLuyKe:10, tinChiNoKy:6, tinChiNoDong:6, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0 },
+  { dot:'SOS-HK2-2526-1', mssv:'20120301', hoTen:'Hoàng Minh Đức', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CT4501', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.65, diemTbTichLuy:0.65, tcDangKy:16, tcTichLuy:10, tcTichLuyLuyKe:10, tinChiNoKy:6, tinChiNoDong:6, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, ngaySinh:'10/10/2002', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Lê Quốc Hùng (CB00347)' },
   /* SV mẫu bị cảnh báo ở 2 học kỳ KHÔNG liên tiếp (HK1 và HK3, không có ở HK2) —
      dùng để test khi bỏ lọc học kỳ, tìm MSSV này ra nhiều dòng ở các đợt cách quãng. */
-  { dot:'SOS-HK3-2526-1', mssv:'20101130', hoTen:'Trịnh Gia Huy', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:1.20, diemTbTichLuy:1.38, tcDangKy:12, tcTichLuy:8, tcTichLuyLuyKe:158, tinChiNoKy:4, tinChiNoDong:19, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:1 },
+  { dot:'SOS-HK3-2526-1', mssv:'20101130', hoTen:'Trịnh Gia Huy', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 16_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.20101.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:1.20, diemTbTichLuy:1.38, tcDangKy:12, tcTichLuy:8, tcTichLuyLuyKe:158, tinChiNoKy:4, tinChiNoDong:19, namDangDaoTao:6, namToiDa:4, tinChiChuanNam:26, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:1, ngaySinh:'04/12/2002', trangThaiKy:'danghoc', slCanhBaoLT:1, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Đỗ Văn Bình (CB00714)' },
   /* SV mẫu bị cảnh báo ở 2 học kỳ LIÊN TIẾP (HK2 rồi HK3) — dòng HK2 gốc ở trên (dòng Trần Thị
      Kim Ngân), dòng này là HK3 kế tiếp, lienTiepKyTruoc:true. */
-  { dot:'SOS-HK3-2526-1', mssv:'22103470', hoTen:'Trần Thị Kim Ngân', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hệ thống thông tin', lopHanhChinh:'HTTT2.22107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:1.15, diemTbTichLuy:1.32, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:74, tinChiNoKy:4, tinChiNoDong:15, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0 },
+  { dot:'SOS-HK3-2526-1', mssv:'22103470', hoTen:'Trần Thị Kim Ngân', he:'Chính quy', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hệ thống thông tin', lopHanhChinh:'HTTT2.22107.1', khoaQuanLy:'Khoa CNTT', trangThaiSV:'buocthoihoc', diemTbKy:1.15, diemTbTichLuy:1.32, tcDangKy:16, tcTichLuy:12, tcTichLuyLuyKe:74, tinChiNoKy:4, tinChiNoDong:15, namDangDaoTao:3, namToiDa:4, tinChiChuanNam:30, lienTiepKyTruoc:true, soKyKhongDangKyLienTiep:0, ngaySinh:'07/12/2004', trangThaiKy:'danghoc', slCanhBaoLT:2, isHocKyDau:false, xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Ngô Thị Thu (CB00203)', xacNhanKhoa:'daXacNhan', nguoiXacNhanKhoa:'Nguyễn Thị Vân (CB00981)' },
 ];
 
 /* Trạng thái người học — LẤY ĐÚNG tập giá trị đang dùng trong dự án (STUDENT_STATUS ở mh-admin-24). */
@@ -391,12 +437,76 @@ function trangThaiSVHtml(key){ return (STUDENT_STATUS[key] || {}).label || '<spa
 function trinhDoNamHoc(n, m){ const boi = Math.min(Math.floor(n / m), 5); return boi + 1; }
 function trinhDoNamHocLabel(n, m){ return `Năm ${trinhDoNamHoc(n, m)}`; }
 
-/* Tình trạng cảnh báo — copy y nguyên logic mh-admin-24 (khoản 2a/2b/2c dẫn tới dự kiến buộc thôi
-   học, ưu tiên hơn nhãn cảnh báo thường). */
+/* ═══ DANH MỤC ĐIỀU KIỆN XÉT — CHÉP ĐÚNG mh-admin-24 / mh-admin-21 ═══
+   Popup Chi tiết của 2 màn phải giống hệt nhau, nên dùng chung một cấu trúc điều kiện thay vì mỗi
+   màn chép tay một danh sách ngưỡng riêng. Trước đây màn này khai 6 dòng ngưỡng ngay trong hàm mở
+   popup, còn 3 điều kiện khoản 2 thì không có dòng nào trong bảng — chỉ hiện ở phần Nội dung, nên
+   người xem không biết em ấy đã được đối chiếu những gì.
+   nhom: 'khoan1' = ngưỡng dẫn tới Cảnh báo học tập · 'khoan2' = điều kiện dẫn tới Buộc thôi học.
+   status:'inactive' thì KHÔNG xét và KHÔNG liệt kê.
+   Khác biệt duy nhất so với mh-admin-24: c8 luôn áp dụng. Bên đó c8 chờ bước "Kiểm tra số lần cảnh
+   báo liên tiếp" của đợt đang mở; màn này đọc đợt ĐÃ CÔNG BỐ nên chuỗi đã chốt sẵn trên bản ghi. */
+const DOT_CONDITIONS = [
+  { id:'c1',  nhom:'khoan1', label:'Điểm TB học kỳ (kỳ đầu của khoá)', sosanh:'<',  giaTri:0.80, isScore:true,
+    apDungText:'Học kỳ đầu khoá', apDung: s => !!s.isHocKyDau,        get: s => s.diemTbKy, status:'active' },
+  { id:'c2',  nhom:'khoan1', label:'Điểm TB học kỳ (các kỳ tiếp theo)', sosanh:'<', giaTri:1.00, isScore:true,
+    apDungText:'Từ kỳ 2 trở đi', apDung: s => !s.isHocKyDau,          get: s => s.diemTbKy, status:'active' },
+  { id:'c3',  nhom:'khoan1', label:'Điểm TB tích luỹ', sosanh:'<', giaTri:1.20, isScore:true,
+    apDungText:'Năm 1',      apDung: s => trinhDoSV(s) === 1,          get: s => s.diemTbTichLuy, status:'active' },
+  { id:'c4',  nhom:'khoan1', label:'Điểm TB tích luỹ', sosanh:'<', giaTri:1.40, isScore:true,
+    apDungText:'Năm 2',      apDung: s => trinhDoSV(s) === 2,          get: s => s.diemTbTichLuy, status:'active' },
+  { id:'c5',  nhom:'khoan1', label:'Điểm TB tích luỹ', sosanh:'<', giaTri:1.60, isScore:true,
+    apDungText:'Năm 3',      apDung: s => trinhDoSV(s) === 3,          get: s => s.diemTbTichLuy, status:'active' },
+  { id:'c6',  nhom:'khoan1', label:'Điểm TB tích luỹ', sosanh:'<', giaTri:1.80, isScore:true,
+    apDungText:'Năm 4, 5, 6', apDung: s => trinhDoSV(s) >= 4,          get: s => s.diemTbTichLuy, status:'active' },
+  { id:'c7',  nhom:'khoan1', label:'Số tín chỉ nợ đọng từ đầu khoá', sosanh:'>', giaTri:24, isScore:false,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.tinChiNoDong, status:'active' },
+  { id:'c8',  nhom:'khoan2', label:'Số lần cảnh báo liên tiếp', sosanh:'>=', giaTri:2, isScore:false,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.slCanhBaoLT || 1, status:'active',
+    lyDo: s => `Bị cảnh báo học tập ${s.slCanhBaoLT || 1} học kỳ liên tiếp` },
+  { id:'c9',  nhom:'khoan2', label:'Số kỳ chính liên tiếp không đăng ký học tập', sosanh:'>=', giaTri:2, isScore:false,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.soKyKhongDangKyLienTiep, status:'active',
+    lyDo: s => `Không đăng ký học tập ${s.soKyKhongDangKyLienTiep} học kỳ chính liên tiếp` },
+  { id:'c10', nhom:'khoan2', label:'Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT', sosanh:'>=', giaTri:2, isScore:true,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.namToiDa ? s.namDangDaoTao / s.namToiDa : null, status:'active',
+    lyDo: s => `Thời gian đã học (năm ${s.namDangDaoTao}) vượt quá 2 lần thời gian chuẩn toàn khoá theo CTĐT (năm ${s.namToiDa})` },
+];
+const SOSANH_KY_HIEU = { '<':'<', '<=':'≤', '=':'=', '>':'>', '>=':'≥' };
+function nguongText(c){ return `${SOSANH_KY_HIEU[c.sosanh]} ${c.isScore ? Number(c.giaTri).toFixed(2) : c.giaTri}`; }
+/* Ô rỗng KHÔNG được coi là 0: SV không đăng ký kỳ nào thì ĐTB kỳ trống, mà trống không có nghĩa
+   là điểm 0 để rồi dính ngưỡng. */
+function coSo(v){ return v !== null && v !== undefined && v !== ''; }
+function soSanh(v, sosanh, nguong){
+  switch(sosanh){
+    case '<':  return v <  nguong;
+    case '<=': return v <= nguong;
+    case '=':  return v === nguong;
+    case '>':  return v >  nguong;
+    case '>=': return v >= nguong;
+    default:   return false;
+  }
+}
+function trinhDoSV(s){ return trinhDoNamHoc(s.tcTichLuyLuyKe, s.tinChiChuanNam); }
+function dieuKienActive(nhom){ return DOT_CONDITIONS.filter(c => c.status === 'active' && (!nhom || c.nhom === nhom)); }
+function xetDieuKien(c, s){
+  const apDung = c.apDung(s);
+  const giaTri = c.get(s);
+  return { ...c, nguong: nguongText(c), apDung, giaTri,
+    viPham: apDung && coSo(giaTri) && soSanh(Number(giaTri), c.sosanh, c.giaTri) };
+}
+function thongSoDaXet(s){ return dieuKienActive().map(c => xetDieuKien(c, s)); }
+/* Lý do buộc thôi học — chỉ những điều kiện khoản 2 thực sự bị chạm. */
+function dkXetList(s){
+  return dieuKienActive('khoan2').map(c => xetDieuKien(c, s)).filter(r => r.viPham).map(r => r.lyDo(s));
+}
+/* ═══ KQ CUỐI — bám đúng ketQuaXetCuoiCung() của mh-admin-24 ═══
+   Chạm bất kỳ điều kiện khoản 2 nào thì kết quả cuối là Buộc thôi học, ngược lại giữ nguyên Cảnh
+   báo học tập. Không có nhánh "Không xét" / "Không đủ dữ liệu" như mh-admin-24: màn này chỉ đọc
+   các đợt ĐÃ CÔNG BỐ, mọi dòng đều đã kết luận xong.
+   Nhãn không có tiền tố "dự kiến" và không tô đỏ — thống nhất với mh-admin-24: mức nặng nhẹ đọc
+   theo chữ, không theo màu. */
 function trangThaiCanhBao(s){
-  if (s.lienTiepKyTruoc || s.soKyKhongDangKyLienTiep >= 2 || s.namDangDaoTao >= 2 * s.namToiDa)
-    return { label:'Hình thức kỷ luật dự kiến: Buộc thôi học', cls:'tag-error' };
-  return { label:'Cảnh báo học tập', cls:'' };
+  return dkXetList(s).length ? { label:'Buộc thôi học', cls:'' } : { label:'Cảnh báo học tập', cls:'' };
 }
 
 /* ═══ Lịch sử tư vấn ═══ — thay cho link cứng sang mh-admin-23 (chỉ demo được đúng 1 SV mẫu) bằng
@@ -508,28 +618,44 @@ function openTuVanHistoryModal(mssv){
 /* ═══ Ẩn/hiện cột ═══ — MSSV/Họ và tên/Tuỳ chọn LUÔN hiện (locked:true, không có trong danh sách
    chọn), 15 cột còn lại bật/tắt được qua nút "Cột hiển thị". "def" = có hiện mặc định lúc vào trang
    hay không (theo đúng yêu cầu: mặc định ẨN Mã đợt/Năm học/Hệ/Niên khoá, còn lại hiện hết). */
+/* ═══ BỘ CỘT — BÁM ĐÚNG BẢNG CHI TIẾT ĐỢT Ở mh-admin-24 ═══
+   Cùng một danh sách sinh viên cảnh báo thì hai màn phải cho ra cùng bộ cột, cùng nhãn, cùng thứ tự.
+   Trước đây màn này dùng nhãn riêng ("Tình trạng", "STC nợ đọng", "Trình độ đào tạo"…) nên cán bộ
+   đối chiếu 2 màn phải tự dịch tên cột — nguồn sai sót không cần thiết.
+   Ba nhóm cột CHỈ CÓ Ở MÀN NÀY, giữ nguyên:
+     · Mã đợt / Năm học / Học kỳ — màn 24 khoá cứng theo 1 đợt, màn này trải nhiều đợt nên cần.
+     · Hệ — bộ lọc của màn này có, giữ để lọc xong còn thấy được giá trị.
+     · Lịch sử tư vấn — phần tư vấn giữ nguyên hoàn toàn theo yêu cầu.
+   Một khác biệt CÓ CHỦ Ý so với màn 24: màn 24 đang có 2 cột cùng nói về trạng thái tại kỳ
+   ("Trạng thái tại kỳ" ở đầu bảng và "Trạng thái SV kỳ" ở nhóm quyết định) — ở đây chỉ giữ MỘT,
+   đặt liền trước Số QĐ để vẫn đọc được cụm "trạng thái tại kỳ → quyết định nghỉ tương ứng". */
 const COLS = [
-  { key:'dot', label:'Mã đợt', width:130, def:false },
-  { key:'namhoc', label:'Năm học', width:110, def:false },
   { key:'mssv', label:'MSSV', width:100, def:true, locked:true },
   { key:'hoten', label:'Họ và tên', width:150, def:true, locked:true },
-  { key:'lop', label:'Lớp hành chính', width:120, def:true },
-  { key:'he', label:'Hệ', width:100, def:false },
-  { key:'ctdt', label:'Chương trình đào tạo', width:170, def:true },
-  { key:'khoa', label:'Khoa quản lý', width:110, def:true },
+  { key:'ngaysinh', label:'Ngày sinh', width:100, def:false },
+  { key:'lop', label:'Lớp hành chính', width:120, def:false, title:'Lớp hành chính HIỆN TẠI của sinh viên trên hồ sơ — không phải lớp tại học kỳ xét' },
+  { key:'ctdt', label:'Chương trình đào tạo', width:170, def:false, title:'Chương trình đào tạo sinh viên đang theo học HIỆN TẠI' },
+  { key:'khoa', label:'Khoa quản lý', width:110, def:true, title:'Khoa đang quản lý sinh viên HIỆN TẠI — không phải khoa tại học kỳ xét' },
   { key:'nienkhoa', label:'Niên khoá', width:150, def:false },
-  { key:'trinhdo', label:'Trình độ đào tạo', width:100, def:true, title:'Xếp theo Điều 17 khoản 4: N = số tín chỉ tích luỹ từ đầu khoá, M = số tín chỉ trung bình 1 năm học theo kế hoạch chuẩn của CTĐT' },
-  { key:'trangthaisv', label:'Trạng thái người học', width:150, def:true },
+  { key:'he', label:'Hệ', width:100, def:false },
+  { key:'trangthaisv', label:'Trạng thái hiện tại', width:150, def:false, title:'Trạng thái người học TẠI THỜI ĐIỂM XEM — chỉ để tham khảo, KHÔNG phải căn cứ xét của đợt. Có thể đã đổi so với lúc chạy đợt' },
+  /* 3 cột định danh ĐỢT, đặt ngay sau nhóm thông tin sinh viên. KHÔNG để đứng trước cặp cột ghim
+     (MSSV / Họ và tên): cột thường chen giữa mép trái và nhóm ghim sẽ đẩy nhóm ghim sang phải, làm
+     nó đè lên cột kế tiếp. Mã đợt / Năm học ẩn mặc định, bật lên thì nằm liền kề Học kỳ. */
+  { key:'dot', label:'Mã đợt', width:130, def:false },
+  { key:'namhoc', label:'Năm học', width:110, def:false },
   { key:'hocky', label:'Học kỳ', width:90, def:true },
-  { key:'diemky', label:'Điểm TB học kỳ', width:100, def:true },
-  { key:'diemtichluy', label:'Điểm TB tích luỹ', width:110, def:true },
-  { key:'stcdangky', label:'STC đăng ký (kỳ)', width:110, def:true, title:'Số tín chỉ đăng ký trong kỳ hiện tại' },
-  { key:'stctichluyky', label:'STC tích luỹ (kỳ)', width:110, def:true, title:'Số tín chỉ tích luỹ được trong kỳ hiện tại' },
-  { key:'stctichluy', label:'STC tích luỹ', width:100, def:true, title:'Số tín chỉ tích luỹ được từ đầu khoá' },
-  { key:'stcnoky', label:'STC nợ kỳ', width:100, def:true },
-  { key:'stcnodong', label:'STC nợ đọng', width:110, def:true },
-  { key:'tiendo', label:'Tiến độ đào tạo', width:100, def:true, title:'Năm đào tạo hiện tại của sinh viên / Số năm đào tạo tối đa theo CTĐT' },
-  { key:'tinhtrang', label:'Tình trạng', width:170, def:true, title:'Cảnh báo học tập theo Điều 17 khoản 1, hoặc dự kiến buộc thôi học theo khoản 2' },
+  { key:'trinhdo', label:'Trình độ năm học', width:110, def:true, title:'Xếp theo Điều 17 khoản 4: N = số tín chỉ tích luỹ từ đầu khoá, M = số tín chỉ trung bình 1 năm học theo kế hoạch chuẩn của CTĐT' },
+  { key:'kqcuoi', label:'KQ cuối', width:170, def:true, title:'Cảnh báo học tập, hoặc Buộc thôi học nếu chạm điều kiện xét theo Điều 17 khoản 2' },
+  { key:'hkdaukhoa', label:'HK đầu khoá', width:100, def:true, title:'Học kỳ được xét có phải học kỳ đầu tiên của khoá học không — quyết định ngưỡng điểm TB học kỳ (< 0.80 thay vì < 1.00)' },
+  { key:'stcdangky', label:'STC ĐK kỳ', width:100, def:true, title:'Số tín chỉ đăng ký trong học kỳ được xét' },
+  { key:'stcnoky', label:'STC nợ kỳ', width:100, def:true, title:'Số tín chỉ nợ trong học kỳ được xét' },
+  { key:'stcnodong', label:'STC nợ khoá', width:105, def:true, title:'Số tín chỉ nợ đọng luỹ kế từ đầu khoá' },
+  { key:'stctichluyky', label:'STC TL kỳ', width:100, def:true, title:'Số tín chỉ tích luỹ được trong học kỳ được xét' },
+  { key:'stctichluy', label:'STC TL khoá', width:105, def:true, title:'Số tín chỉ tích luỹ được từ đầu khoá' },
+  { key:'diemky', label:'ĐTB HK (4)', width:105, def:true, title:'Điểm trung bình học kỳ được xét, hệ 4' },
+  { key:'diemtichluy', label:'ĐTBTL (4)', width:105, def:true, title:'Điểm trung bình tích luỹ toàn khoá, hệ 4' },
+  { key:'tiendo', label:'Tiến độ đào tạo', width:115, def:true, title:'Năm đào tạo hiện tại của sinh viên / Số năm đào tạo tối đa theo CTĐT' },
   { key:'tuvan', label:'Lịch sử tư vấn', width:120, def:true },
   { key:'tuychon', label:'Thao tác', width:70, def:true, locked:true },
 ];
@@ -537,16 +663,20 @@ let visibleCols = new Set(COLS.filter(c => c.def).map(c => c.key));
 
 function visibleColList(){ return COLS.filter(c => c.locked || visibleCols.has(c.key)); }
 
-/* left offset (px) của cột "mssv"/"hoten" tính theo width các cột ĐANG hiển thị đứng trước nó —
-   không hardcode vì Mã đợt/Năm học có thể được bật, chèn thêm trước MSSV. */
+/* left offset (px) của "mssv"/"hoten" — CHỈ cộng bề rộng của các cột GHIM, không cộng cột thường
+   đứng trước.
+   Bản trước cộng mọi cột đang hiển thị đứng trước MSSV. Nhưng cột thường không ghim: nó cuộn đi và
+   chui xuống dưới nhóm ghim, trong khi MSSV/Họ tên lại bị đẩy sang phải đúng bằng bề rộng của nó —
+   kết quả là "Họ và tên" đè lên cột ngay sau nó (Ngày sinh). Bật thêm Mã đợt / Năm học thì lệch
+   càng nặng. Nhóm ghim luôn bắt đầu từ mép trái: checkbox 30px → MSSV → Họ và tên. */
+const STICKY_KEYS = ['mssv', 'hoten'];
 function stickyOffsets(cols){
   let cum = 30; // width checkbox
   const off = {};
   for (const c of cols){
-    if (c.key === 'mssv') off.mssv = cum;
-    if (c.key === 'hoten') off.hoten = cum;
+    if (!STICKY_KEYS.includes(c.key)) continue;
+    off[c.key] = cum;
     cum += c.width;
-    if (c.key === 'hoten') break;
   }
   return off;
 }
@@ -688,6 +818,9 @@ let currentPage = 1;
 
 /* Nội dung từng ô theo key cột — 1 nguồn duy nhất dùng chung cho renderTable(), khỏi lặp code mỗi
    khi thêm/bớt cột hay đổi hiển thị mặc định. */
+/* Ô rỗng hiển thị "—" chứ không để trắng: bảng rộng, ô trắng giữa một hàng số dễ bị đọc nhầm là
+   giá trị 0. Riêng số 0 thật vẫn in ra "0". */
+function oTrong(v){ return (v === null || v === undefined || v === '') ? '<span class="text-muted">—</span>' : v; }
 function cellHtml(s, key){
   switch(key){
     case 'dot': return `<td class="sv-code">${s.dot}</td>`;
@@ -695,6 +828,7 @@ function cellHtml(s, key){
     case 'hocky': return `<td>${(BATCH_INFO[s.dot]||{}).hocKy || '—'}</td>`;
     case 'mssv': return `<td class="sv-code">${s.mssv}</td>`;
     case 'hoten': return `<td>${s.hoTen}</td>`;
+    case 'ngaysinh': return `<td>${oTrong(s.ngaySinh)}</td>`;
     case 'lop': return `<td>${s.lopHanhChinh}</td>`;
     case 'he': return `<td>${s.he}</td>`;
     case 'ctdt': return `<td>${s.ctdt}</td>`;
@@ -702,15 +836,16 @@ function cellHtml(s, key){
     case 'nienkhoa': return `<td>${s.khoaDaoTao}</td>`;
     case 'trinhdo': return `<td>${trinhDoNamHocLabel(s.tcTichLuyLuyKe, s.tinChiChuanNam)}</td>`;
     case 'trangthaisv': return `<td>${trangThaiSVHtml(s.trangThaiSV)}</td>`;
+    case 'kqcuoi': return `<td>${(() => { const t = trangThaiCanhBao(s); return t.cls ? `<b style="color:var(--error)">${t.label}</b>` : t.label; })()}</td>`;
+    case 'hkdaukhoa': return `<td>${s.isHocKyDau ? 'Có' : 'Không'}</td>`;
+    case 'stcdangky': return `<td>${oTrong(s.tcDangKy)}</td>`;
+    case 'stctichluyky': return `<td>${oTrong(s.tcTichLuy)}</td>`;
+    case 'stctichluy': return `<td>${oTrong(s.tcTichLuyLuyKe)}</td>`;
+    case 'stcnoky': return `<td>${oTrong(s.tinChiNoKy)}</td>`;
+    case 'stcnodong': return `<td>${oTrong(s.tinChiNoDong)}</td>`;
     case 'diemky': return `<td>${s.diemTbKy.toFixed(2)}</td>`;
     case 'diemtichluy': return `<td>${s.diemTbTichLuy.toFixed(2)}</td>`;
-    case 'stcdangky': return `<td>${s.tcDangKy}</td>`;
-    case 'stctichluyky': return `<td>${s.tcTichLuy}</td>`;
-    case 'stctichluy': return `<td>${s.tcTichLuyLuyKe}</td>`;
-    case 'stcnoky': return `<td>${s.tinChiNoKy}</td>`;
-    case 'stcnodong': return `<td>${s.tinChiNoDong}</td>`;
     case 'tiendo': return `<td>${s.namDangDaoTao}/${s.namToiDa}</td>`;
-    case 'tinhtrang': return `<td>${(() => { const t = trangThaiCanhBao(s); return t.cls ? `<b style="color:var(--error)">${t.label}</b>` : t.label; })()}</td>`;
     case 'tuvan': return `<td style="text-align:center">${tuVanHtml(s.mssv)}</td>`;
     case 'tuychon': return `<td><div class="tbl-actions">${iconBtn('Xem chi tiết', '', ICO_VIEW, `openChiTietModal('${s.mssv}', '${s.dot}')`)}${iconBtn('Tư vấn', '', ICO_TUVAN, `openTuVanFormModal('${s.mssv}')`)}</div></td>`;
     default: return '<td></td>';
@@ -766,32 +901,55 @@ function toggleAll(checked){
    ở đây không có SV song bằng trùng mssv trong mock. */
 function openChiTietModal(mssv, dot){
   const s = STUDENTS.find(x => x.mssv === mssv && x.dot === dot);
-  document.getElementById('ct-title').textContent = `Chi tiết cảnh báo — ${s.hoTen} (${s.mssv})`;
-  const t = trangThaiCanhBao(s);
-  document.getElementById('ct-tinhtrang').innerHTML = t.cls ? `<b style="color:var(--error)">${t.label}</b>` : `<b>${t.label}</b>`;
+  const b = BATCH_INFO[s.dot] || {};
 
-  const trinhDo = trinhDoNamHoc(s.tcTichLuyLuyKe, s.tinChiChuanNam);
-  const rows = [
-    { label:'Điểm TB học kỳ (các kỳ tiếp theo)', nguong:'< 1.00', apDung: true, giaTri: s.diemTbKy, viPham: s.diemTbKy < 1.00, isScore:true },
-    { label:'Điểm TB tích luỹ (năm 1)', nguong:'< 1.20', apDung: trinhDo === 1, giaTri: s.diemTbTichLuy, viPham: trinhDo === 1 && s.diemTbTichLuy < 1.20, isScore:true },
-    { label:'Điểm TB tích luỹ (năm 2)', nguong:'< 1.40', apDung: trinhDo === 2, giaTri: s.diemTbTichLuy, viPham: trinhDo === 2 && s.diemTbTichLuy < 1.40, isScore:true },
-    { label:'Điểm TB tích luỹ (năm 3)', nguong:'< 1.60', apDung: trinhDo === 3, giaTri: s.diemTbTichLuy, viPham: trinhDo === 3 && s.diemTbTichLuy < 1.60, isScore:true },
-    { label:'Điểm TB tích luỹ (năm sau)', nguong:'< 1.80', apDung: trinhDo >= 4, giaTri: s.diemTbTichLuy, viPham: trinhDo >= 4 && s.diemTbTichLuy < 1.80, isScore:true },
-    { label:'Tín chỉ nợ đọng từ đầu khoá', nguong:'> 24', apDung: true, giaTri: s.tinChiNoDong, viPham: s.tinChiNoDong > 24, isScore:false },
-  ];
-  const fmtGiaTri = r => r.isScore ? r.giaTri.toFixed(2) : r.giaTri;
+  /* Khối thông tin sinh viên — điền theo id, không dựng chuỗi HTML, để markup và dữ liệu tách bạch. */
+  const set = (id, v) => document.getElementById(id).innerHTML = coSo(v) ? v : '<span class="text-muted">—</span>';
+  set('ct-mssv', `<span class="sv-code">${s.mssv}</span>`);
+  set('ct-hoten', s.hoTen);
+  set('ct-ngaysinh', s.ngaySinh);
+  set('ct-lop', s.lopHanhChinh);
+  set('ct-ctdt', s.ctdt);
+  set('ct-khoa', s.khoaQuanLy);
+  set('ct-nienkhoa', s.khoaDaoTao);
+  set('ct-trinhdo', trinhDoNamHocLabel(s.tcTichLuyLuyKe, s.tinChiChuanNam));
+  set('ct-hocky', b.hocKy && b.namHoc ? `${b.hocKy}. Năm học ${b.namHoc}` : '');
+  set('ct-tt-ky', trangThaiSVHtml(s.trangThaiKy || s.trangThaiSV));
+  set('ct-tt-nay', trangThaiSVHtml(s.trangThaiSV));
+  set('ct-qdnghi', s.qdNghi ? `<span class="sv-code">${s.qdNghi.maQD}</span> · từ ${s.qdNghi.tuKy} đến hết ${s.qdNghi.denKy}` : '');
+
+  const t = trangThaiCanhBao(s);
+  document.getElementById('ct-tinhtrang').innerHTML = `<b>${t.label}</b>`;
+
+  /* Bảng thông số: liệt kê MỌI điều kiện đang active của đợt (cả khoản 1 lẫn khoản 2), bỏ những
+     điều kiện không áp dụng cho sinh viên này — giống hệt mh-admin-24. */
+  const rows = thongSoDaXet(s);
+  const fmtGiaTri = r => !coSo(r.giaTri) ? '' : (r.isScore ? Number(r.giaTri).toFixed(2) : r.giaTri);
+  /* Ô rỗng KHÔNG được đọc thành "không vi phạm": thiếu số thì chưa kết luận được dòng đó. */
+  const ketQuaCell = r => !coSo(r.giaTri) ? '<span class="text-muted">Thiếu dữ liệu</span>'
+    : r.viPham ? '<b style="color:var(--error)">Vi phạm</b>' : 'Không vi phạm';
   document.getElementById('ct-thongso').innerHTML = rows.filter(r => r.apDung).map(r => `
-    <tr><th>${r.label}</th><td>${r.nguong}</td>
+    <tr>
+      <th>${r.label}</th>
+      <td>${r.nguong}</td>
+      <td>${r.apDungText}</td>
       <td>${r.viPham ? `<b style="color:var(--error)">${fmtGiaTri(r)}</b>` : fmtGiaTri(r)}</td>
+      <td>${ketQuaCell(r)}</td>
     </tr>`).join('');
 
+  /* Banner: thông số nào áp dụng mà thiếu số thì bản ghi của đợt chưa đủ căn cứ ở dòng đó — nói rõ
+     ra đầu popup, không để người đọc tưởng ô trống là "không vi phạm". */
+  const thieu = rows.filter(r => r.apDung && !coSo(r.giaTri));
+  const banner = document.getElementById('ct-banner');
+  banner.classList.toggle('hidden', !thieu.length);
+  if (thieu.length) banner.innerHTML = `<b>THIẾU DỮ LIỆU Ở ${thieu.length} THÔNG SỐ</b><br>`
+    + `${thieu.map(r => r.label).join(', ')} — bản ghi của đợt không có số cho các thông số này.`;
+
   const items = [];
-  rows.filter(r => r.viPham).forEach(r => items.push(`Cảnh cáo do <b>${r.label}</b> = <b>${fmtGiaTri(r)}</b> (ngưỡng ${r.nguong})`));
-  if (t.cls){
-    if (s.lienTiepKyTruoc) items.push('Kỷ luật dự kiến buộc thôi học do bị cảnh báo học tập <b>2 học kỳ liên tiếp</b>');
-    if (s.soKyKhongDangKyLienTiep >= 2) items.push(`Kỷ luật dự kiến buộc thôi học do không đăng ký học tập <b>${s.soKyKhongDangKyLienTiep} học kỳ chính liên tiếp</b>`);
-    if (s.namDangDaoTao >= 2 * s.namToiDa) items.push(`Kỷ luật dự kiến buộc thôi học do thời gian đã học (năm ${s.namDangDaoTao}) vượt quá <b>2 lần</b> thời gian chuẩn toàn khoá theo CTĐT (năm ${s.namToiDa})`);
-  }
+  rows.filter(r => r.viPham && r.nhom === 'khoan1').forEach(r => {
+    items.push(`Cảnh báo học tập do <b>${r.label}</b> = <b>${fmtGiaTri(r)}</b> (ngưỡng ${r.nguong})`);
+  });
+  dkXetList(s).forEach(ly => items.push(`Kỷ luật buộc thôi học do <b>${ly.charAt(0).toLowerCase()}${ly.slice(1)}</b>`));
   document.getElementById('ct-noidung').innerHTML = items.length
     ? items.map(i => `<li>${i}</li>`).join('')
     : '<li class="text-muted">SV được thêm thủ công vào danh sách (ngoại lệ), không vi phạm tiêu chí nào ở bảng trên</li>';

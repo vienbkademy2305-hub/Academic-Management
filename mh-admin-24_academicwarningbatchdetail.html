@@ -1398,7 +1398,7 @@ function openChiTietModal(mssv, ctdt){
 
   const items = [];
   rows.filter(r => r.viPham).forEach(r => {
-    items.push(`Cảnh cáo do <b>${r.label}</b> = <b>${fmtGiaTri(r)}</b> (ngưỡng ${r.nguong})`);
+    items.push(`Cảnh báo học tập do <b>${r.label}</b> = <b>${fmtGiaTri(r)}</b> (ngưỡng ${r.nguong})`);
   });
   if (dkXetList(s).length){
     dkXetList(s).forEach(ly => items.push(`Kỷ luật buộc thôi học do <b>${ly.charAt(0).toLowerCase()}${ly.slice(1)}</b>`));

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cấu hình trường biểu mẫu (Demo) | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: DEMO cấu hình trường "Chọn một/nhiều (dropdown)" cho Form Builder
+     (màn hình demo độc lập, không gắn với module nghiệp vụ nào — chỉ minh hoạ 1 tính năng:
+     nguồn danh sách tuỳ chọn = Tự nhập hoặc Lấy từ hệ thống) ========== */
+  .hidden{display:none}
+
+  /* Khung 3 cột: Cấu trúc field | Xem trước | Cấu hình field */
+  .fb-wrap{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+  .fb-col{overflow-y:auto;max-height:calc(100vh - 240px)}
+  .fb-left{width:260px;border-right:1px solid var(--border);padding:16px;flex-shrink:0}
+  .fb-mid{flex:1;padding:24px;background:#fafafa;min-width:0}
+  .fb-right{width:380px;border-left:1px solid var(--border);padding:16px;flex-shrink:0}
+  .fb-col-title{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.02em;margin-bottom:12px}
+
+  /* Danh sách field bên trái */
+  .fb-field-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);border:1px solid transparent;margin-bottom:2px}
+  .fb-field-item:hover{background:#fafafa}
+  .fb-field-item.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary);font-weight:500}
+  .fb-field-type-ico{width:34px;height:20px;border-radius:4px;background:#f0f0f0;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-2);flex-shrink:0;letter-spacing:.02em}
+  .fb-field-item.active .fb-field-type-ico{background:#fff;color:var(--primary)}
+  .fb-field-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+
+  /* Nút + Thêm field và menu chọn loại */
+  .add-field-wrap{position:relative;margin-top:10px}
+  .add-field-menu{display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;padding:4px;max-height:320px;overflow-y:auto}
+  .add-field-menu.open{display:block}
+  .add-field-menu-group{padding:6px 10px 2px;font-size:11px;color:var(--text-3);font-weight:600;text-transform:uppercase}
+  .add-field-menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1)}
+  .add-field-menu-item:hover{background:var(--primary-light);color:var(--primary)}
+
+  /* Xem trước biểu mẫu (giữa) */
+  .fb-preview-field{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+  .fb-preview-field:hover{border-color:#ffd591}
+  .fb-preview-field.active{border-color:var(--primary);box-shadow:0 0 0 2px rgba(250,140,22,.15)}
+  .fb-preview-label{font-size:13.5px;margin-bottom:8px;color:var(--text-1)}
+  .fb-preview-hint{font-size:12px;color:var(--text-3);margin-top:6px}
+
+  /* Panel cấu hình field (phải) */
+  .fb-panel-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .fb-panel-title{font-size:14px;font-weight:600}
+  .fb-panel-empty{padding:40px 12px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* Toggle nguồn dữ liệu: Tự nhập / Lấy từ hệ thống */
+  .src-toggle{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:100%}
+  .src-toggle-btn{flex:1;padding:7px 10px;font-size:13px;border:none;background:#fff;color:var(--text-2);cursor:pointer;font-family:inherit;transition:all .15s}
+  .src-toggle-btn+.src-toggle-btn{border-left:1px solid var(--border)}
+  .src-toggle-btn.active{background:var(--primary);color:#fff;font-weight:500}
+  .src-toggle-btn:hover:not(.active){background:var(--primary-light);color:var(--primary)}
+
+  /* Công tắc bật/tắt (switch) */
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13.5px;cursor:pointer}
+  .switch{position:relative;display:inline-block;width:36px;height:20px;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .switch-track{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s;cursor:pointer;display:block}
+  .switch-track::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch input:checked+.switch-track{background:var(--primary)}
+  .switch input:checked+.switch-track::before{transform:translateX(16px)}
+
+  /* Danh sách tuỳ chọn (tự nhập) */
+  .opt-row{border:1px solid var(--border);border-radius:8px;padding:10px 10px 6px;margin-bottom:10px;position:relative}
+  .opt-row .fi{margin-bottom:8px}
+  .opt-row .fi label{font-size:12px;margin-bottom:3px;color:var(--text-2)}
+  .opt-row-del{position:absolute;top:8px;right:8px}
+
+  /* Khối chọn & tuỳ biến tên hiển thị cho từng giá trị lấy từ hệ thống */
+  .src-preview-box{border:1px solid var(--border);border-radius:8px;margin-top:6px}
+  .src-preview-hd{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border);background:#fafafa}
+  .src-preview-hd .fc{flex:1;padding:5px 10px}
+  /* Thanh "chọn tất cả" — 1 checkbox tổng (hỗ trợ trạng thái indeterminate khi chọn 1 phần) thay cho 2 link rời rạc */
+  .src-select-all-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);background:#fff}
+  .src-select-all{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-1);user-select:none}
+  .src-select-all input{cursor:pointer;width:15px;height:15px}
+  .src-select-all-count{font-size:12px;color:var(--text-3)}
+  .src-col-hd{display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.02em}
+  .src-preview-list{max-height:280px;overflow-y:auto;padding:4px}
+  .src-pick-row{display:flex;align-items:center;gap:6px;padding:6px}
+  .src-pick-row:hover{background:#fafafa}
+  .src-pick-row input[type=checkbox]{flex-shrink:0;width:15px;height:15px}
+  .src-pick-row .fc{padding:4px 8px;font-size:12.5px}
+  .src-pick-code{width:88px;flex:0 0 88px;text-align:left}
+  .src-pick-vi{flex:1;min-width:0}
+  .src-preview-empty{padding:18px;text-align:center;color:var(--text-3);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="../index.html">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">🧪&nbsp; Demo / Thử nghiệm &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li class="active"><a href="#">Cấu hình trường biểu mẫu</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Demo / Thử nghiệm / <b style="color:var(--text-1)">Cấu hình trường biểu mẫu</b></div>
+      <div class="h-right">
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="card-hd" style="margin-bottom:16px">
+        <div>
+          <h1 class="card-title" style="font-size:16px">Demo: Nguồn danh sách tuỳ chọn cho trường Chọn một / Chọn nhiều</h1>
+          <div class="text-muted text-sm" style="margin-top:4px">
+            Màn hình demo độc lập, minh hoạ 1 tính năng của trình xây biểu mẫu: khi field là
+            <b>Chọn một (dropdown)</b> hoặc <b>Chọn nhiều (dropdown)</b>, danh sách tuỳ chọn có thể
+            <b>Tự nhập</b> thủ công hoặc <b>Lấy từ hệ thống</b> (chọn 1 trường dữ liệu có sẵn, tự động đổ ra các
+            giá trị — kể cả khi dữ liệu rất nhiều hoặc có mã kỹ thuật riêng).
+          </div>
+        </div>
+      </div>
+
+      <div class="fb-wrap">
+        <!-- ═══ CỘT TRÁI: cấu trúc field ═══ -->
+        <div class="fb-col fb-left">
+          <div class="fb-col-title">Cấu trúc biểu mẫu</div>
+          <div id="fb-field-list"></div>
+          <div class="add-field-wrap" id="add-field-wrap">
+            <div class="add-field-menu" id="add-field-menu">
+              <div class="add-field-menu-group">Nhập liệu</div>
+              <div class="add-field-menu-item" onclick="addField('text')">Văn bản ngắn</div>
+              <div class="add-field-menu-item" onclick="addField('textarea')">Văn bản dài</div>
+              <div class="add-field-menu-item" onclick="addField('number')">Số</div>
+              <div class="add-field-menu-item" onclick="addField('date')">Ngày tháng</div>
+              <div class="add-field-menu-group">Lựa chọn</div>
+              <div class="add-field-menu-item" onclick="addField('select1')">Chọn một (dropdown)</div>
+              <div class="add-field-menu-item" onclick="addField('selectMulti')">Chọn nhiều (dropdown)</div>
+            </div>
+            <button type="button" class="btn btn-default btn-block" onclick="toggleAddFieldMenu(event)">+ Thêm field</button>
+          </div>
+        </div>
+
+        <!-- ═══ CỘT GIỮA: xem trước biểu mẫu ═══ -->
+        <div class="fb-col fb-mid">
+          <div class="fb-col-title">Mặt biểu mẫu — xem trước như sinh viên sẽ thấy</div>
+          <div id="fb-preview-list"></div>
+        </div>
+
+        <!-- ═══ CỘT PHẢI: cấu hình field đang chọn ═══ -->
+        <div class="fb-col fb-right" id="fb-panel"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+/* ================= DỮ LIỆU MẪU ================= */
+
+// Danh mục "Lớp sinh hoạt" cố tình sinh nhiều dòng để minh hoạ trường hợp dữ liệu hệ thống rất lớn
+const LOP_OPTIONS = Array.from({length: 24}, (_, i) => {
+  const n = String(i + 1).padStart(2, '0');
+  return {code: `D21CNTT${n}`, vi: `D21-CNTT-${n} (Khoá 2021, hệ chính quy)`};
+});
+
+// Các trường dữ liệu hệ thống có thể chọn làm nguồn tuỳ chọn — mô phỏng danh mục thật của hệ thống
+const SYSTEM_SOURCES = {
+  khoa: {label: 'Khoa', fieldCode: 'dropkhoa', options: [
+    {code:'CNTT', vi:'Công nghệ thông tin'}, {code:'KTPM', vi:'Kỹ thuật phần mềm'},
+    {code:'ATTT', vi:'An toàn thông tin'}, {code:'KHMT', vi:'Khoa học máy tính'},
+    {code:'DTVT', vi:'Điện tử viễn thông'}, {code:'KTDL', vi:'Kỹ thuật dữ liệu'},
+    {code:'QTKD', vi:'Quản trị kinh doanh'}, {code:'NNA', vi:'Ngôn ngữ Anh'},
+  ]},
+  nganh: {label: 'Ngành đào tạo', fieldCode: 'dropnganh', options: [
+    {code:'7480201', vi:'Công nghệ thông tin'}, {code:'7480103', vi:'Kỹ thuật phần mềm'},
+    {code:'7480202', vi:'An toàn thông tin'}, {code:'7480101', vi:'Khoa học máy tính'},
+    {code:'7480301', vi:'Kỹ thuật dữ liệu'}, {code:'7520207', vi:'Kỹ thuật điện tử viễn thông'},
+    {code:'7340101', vi:'Quản trị kinh doanh'}, {code:'7220201', vi:'Ngôn ngữ Anh'},
+    {code:'7480106', vi:'Mạng máy tính và truyền thông dữ liệu'}, {code:'7480104', vi:'Hệ thống thông tin'},
+  ]},
+  lop: {label: 'Lớp sinh hoạt', fieldCode: 'droplop', options: LOP_OPTIONS},
+  ctdt: {label: 'Chương trình đào tạo', fieldCode: 'dropctdt', options: [
+    {code:'CHUAN', vi:'Chương trình chuẩn'}, {code:'CLC', vi:'Chương trình chất lượng cao'},
+    {code:'TT', vi:'Chương trình tiên tiến'}, {code:'LKQT', vi:'Chương trình liên kết quốc tế'},
+  ]},
+  loaiqd: {label: 'Loại quyết định', fieldCode: 'droploaiqd', options: [
+    {code:'QD01', vi:'Nghỉ học tạm thời'}, {code:'QD02', vi:'Thôi học'},
+    {code:'QD03', vi:'Chuyển ngành'}, {code:'QD04', vi:'Chuyển hệ đào tạo'},
+    {code:'QD05', vi:'Khen thưởng'}, {code:'QD06', vi:'Kỷ luật'}, {code:'QD07', vi:'Công nhận tốt nghiệp'},
+  ]},
+  lydokt: {label: 'Lý do khen thưởng', fieldCode: 'droplydokt', options: [
+    {code:'KT01', vi:'Sinh viên 5 tốt'}, {code:'KT02', vi:'Thành tích nghiên cứu khoa học'},
+    {code:'KT03', vi:'Thủ khoa đầu vào'}, {code:'KT04', vi:'Đạt giải Olympic sinh viên'},
+    {code:'KT05', vi:'Thành tích hoạt động Đoàn - Hội'}, {code:'KT06', vi:'Gương người tốt việc tốt'},
+  ]},
+  lydokl: {label: 'Lý do kỷ luật', fieldCode: 'droplydokl', options: [
+    {code:'KL01', vi:'Vi phạm quy chế thi'}, {code:'KL02', vi:'Nghỉ học không phép quá quy định'},
+    {code:'KL03', vi:'Gian lận trong học vụ'}, {code:'KL04', vi:'Vi phạm nội quy ký túc xá'},
+    {code:'KL05', vi:'Sử dụng chất cấm'}, {code:'KL06', vi:'Gây rối trật tự'},
+  ]},
+  canbo: {label: 'Cán bộ phụ trách', fieldCode: 'dropcanbo', options: [
+    {code:'CB001', vi:'ThS. Nguyễn Văn A'}, {code:'CB002', vi:'TS. Trần Thị B'},
+    {code:'CB003', vi:'ThS. Lê Văn C'}, {code:'CB004', vi:'PGS.TS. Phạm Thị D'},
+    {code:'CB005', vi:'ThS. Hoàng Văn E'}, {code:'CB006', vi:'TS. Vũ Thị F'},
+    {code:'CB007', vi:'ThS. Đặng Văn G'}, {code:'CB008', vi:'TS. Bùi Thị H'},
+  ]},
+};
+
+const TYPE_META = {
+  text:        {label: 'Văn bản ngắn',        ico: 'Aa'},
+  textarea:    {label: 'Văn bản dài',          ico: '¶'},
+  number:      {label: 'Số',                   ico: '#'},
+  date:        {label: 'Ngày tháng',           ico: 'Lịch'},
+  select1:     {label: 'Chọn một (dropdown)',  ico: '▾1'},
+  selectMulti: {label: 'Chọn nhiều (dropdown)',ico: '▾N'},
+};
+
+/* ================= STATE ================= */
+
+// Sinh sẵn cấu hình mặc định cho 1 nguồn hệ thống: mọi giá trị được chọn (included=true),
+// mã (code) khởi tạo = <mã trường hệ thống> + số thứ tự 1..n, VD trường "dropkhoa" -> dropkhoa1,
+// dropkhoa2,... (không dùng mã kỹ thuật gốc như CNTT làm mặc định), admin sửa lại được nếu muốn.
+// Tên hiển thị (VI) khởi tạo = tên gốc trong danh mục.
+function defaultSourceCode(src, idx){
+  return `${src.fieldCode || 'field'}${idx + 1}`;
+}
+function buildDefaultOverrides(sourceKey){
+  const src = SYSTEM_SOURCES[sourceKey];
+  if (!src) return {};
+  const overrides = {};
+  src.options.forEach((o, idx) => { overrides[o.code] = {included: true, code: defaultSourceCode(src, idx), vi: o.vi}; });
+  return overrides;
+}
+
+let uid = 2;
+let fields = [
+  {id: 1, type: 'select1', label: 'Khoa mong muốn chuyển đến', labelEn: '', placeholderVi: 'Chọn khoa muốn chuyển đến', placeholderEn: '',
+   required: true, mode: 'system', sourceKey: 'khoa', manualOptions: [{value:'option_1', vi:'', en:''}],
+   sourceOverrides: buildDefaultOverrides('khoa')},
+  {id: 2, type: 'selectMulti', label: 'Lý do đề nghị', labelEn: '', placeholderVi: '', placeholderEn: '',
+   required: false, mode: 'manual', sourceKey: '', manualOptions: [
+     {value:'option_1', vi:'Điều kiện hoàn cảnh gia đình', en:''},
+     {value:'option_2', vi:'Lý do sức khoẻ', en:''},
+     {value:'option_3', vi:'Lý do khác', en:''},
+   ], sourceOverrides: {}},
+];
+let selectedId = 1;
+let panelTab = 'content';
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function currentField(){ return fields.find(f => f.id === selectedId); }
+function isSelectType(t){ return t === 'select1' || t === 'selectMulti'; }
+
+/* ================= RENDER ================= */
+
+function renderAll(){
+  renderFieldList();
+  renderPreview();
+  renderPanel();
+}
+
+function renderFieldList(){
+  const box = document.getElementById('fb-field-list');
+  box.innerHTML = fields.map(f => `
+    <div class="fb-field-item ${f.id===selectedId?'active':''}" onclick="selectField(${f.id})">
+      <span class="fb-field-type-ico">${esc(TYPE_META[f.type].ico)}</span>
+      <span class="fb-field-label">${esc(f.label) || '(Chưa đặt nhãn)'}</span>
+    </div>`).join('');
+}
+
+function getEffectiveOptions(f){
+  if (f.mode === 'system' && f.sourceKey && SYSTEM_SOURCES[f.sourceKey]) {
+    const overrides = f.sourceOverrides || {};
+    return SYSTEM_SOURCES[f.sourceKey].options
+      .filter(o => overrides[o.code] && overrides[o.code].included)
+      .map(o => {
+        const ov = overrides[o.code];
+        const label = (ov.vi || '').trim() || o.vi;
+        const value = (ov.code || '').trim() || o.code;
+        return {value, label};
+      });
+  }
+  return (f.manualOptions || []).filter(o => o.vi).map(o => ({value: o.value || o.vi, label: o.vi}));
+}
+
+function renderPreview(){
+  const box = document.getElementById('fb-preview-list');
+  box.innerHTML = fields.map(f => {
+    const active = f.id === selectedId;
+    let control;
+    if (isSelectType(f.type)) {
+      const opts = getEffectiveOptions(f);
+      const optHtml = opts.length
+        ? opts.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('')
+        : '';
+      if (f.type === 'select1') {
+        control = `<select class="fc"><option value="">${esc(f.placeholderVi) || '-- Chọn --'}</option>${optHtml}</select>`;
+      } else {
+        control = opts.length
+          ? `<select class="fc" multiple style="height:120px">${optHtml}</select>`
+          : `<div class="text-muted text-sm">(Chưa có tuỳ chọn nào)</div>`;
+      }
+    } else if (f.type === 'textarea') {
+      control = `<textarea class="fc" placeholder="${esc(f.placeholderVi)}" disabled></textarea>`;
+    } else if (f.type === 'number') {
+      control = `<input class="fc" type="number" placeholder="${esc(f.placeholderVi)}" disabled>`;
+    } else if (f.type === 'date') {
+      control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi) || 'dd/mm/yyyy'}" disabled>`;
+    } else {
+      control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi)}" disabled>`;
+    }
+    return `<div class="fb-preview-field ${active?'active':''}" onclick="selectField(${f.id})">
+      <div class="fb-preview-label">${esc(f.label) || '(Chưa đặt nhãn)'}${f.required?'<span class="req"> *</span>':''}</div>
+      ${control}
+    </div>`;
+  }).join('');
+}
+
+function renderPanel(){
+  const box = document.getElementById('fb-panel');
+  const f = currentField();
+  if (!f) { box.innerHTML = `<div class="fb-panel-empty">Chọn 1 field bên trái để cấu hình.</div>`; return; }
+
+  box.innerHTML = `
+    <div class="fb-panel-hd">
+      <div class="fb-panel-title">${esc(TYPE_META[f.type].label)}</div>
+      <button type="button" class="icon-btn danger" title="Xoá field" onclick="deleteField(${f.id})">✕</button>
+    </div>
+    <div class="tabs-nav">
+      <button type="button" class="tab-btn ${panelTab==='content'?'active':''}" onclick="switchPanelTab('content')">Nội dung</button>
+      <button type="button" class="tab-btn ${panelTab==='display'?'active':''}" onclick="switchPanelTab('display')">Hiển thị</button>
+      <button type="button" class="tab-btn ${panelTab==='advanced'?'active':''}" onclick="switchPanelTab('advanced')">Nâng cao</button>
+    </div>
+    <div id="fb-panel-body">${panelTab==='content' ? renderContentTab(f) : `<div class="fb-panel-empty">Demo tập trung vào tab Nội dung, tab này chưa triển khai.</div>`}</div>
+  `;
+  syncSelectAllCheckbox();
+}
+
+// Checkbox HTML không có thuộc tính "indeterminate" — phải set qua DOM property sau khi render,
+// để thể hiện đúng trạng thái "đã chọn một phần" thay vì trông như chưa chọn gì.
+function syncSelectAllCheckbox(){
+  const cb = document.getElementById('src-select-all-cb');
+  if (!cb) return;
+  const f = currentField();
+  if (!f || !f.sourceKey || !SYSTEM_SOURCES[f.sourceKey]) return;
+  const src = SYSTEM_SOURCES[f.sourceKey];
+  const overrides = f.sourceOverrides || {};
+  const includedCount = src.options.filter(o => overrides[o.code] && overrides[o.code].included).length;
+  cb.indeterminate = includedCount > 0 && includedCount < src.options.length;
+}
+
+function renderContentTab(f){
+  let html = `
+    <div class="fi">
+      <label>Nhãn hiển thị (Tiếng Việt) <span class="req">*</span></label>
+      <input class="fc" value="${esc(f.label)}" oninput="updateField('label', this.value)">
+    </div>
+    <div class="fi">
+      <label>Placeholder (Tiếng Việt)</label>
+      <input class="fc" value="${esc(f.placeholderVi)}" oninput="updateField('placeholderVi', this.value)">
+    </div>
+    <div class="fi">
+      <label>Nhãn hiển thị (tiếng Anh)</label>
+      <input class="fc" value="${esc(f.labelEn)}" oninput="updateField('labelEn', this.value)">
+    </div>
+    <div class="fi">
+      <label>Placeholder (English)</label>
+      <input class="fc" value="${esc(f.placeholderEn)}" oninput="updateField('placeholderEn', this.value)">
+    </div>`;
+
+  if (isSelectType(f.type)) {
+    html += `
+    <div class="divider"></div>
+    <div class="fi">
+      <label>Nguồn danh sách tuỳ chọn</label>
+      <div class="src-toggle">
+        <button type="button" class="src-toggle-btn ${f.mode==='manual'?'active':''}" onclick="setFieldMode('manual')">Tự nhập</button>
+        <button type="button" class="src-toggle-btn ${f.mode==='system'?'active':''}" onclick="setFieldMode('system')">Lấy từ hệ thống</button>
+      </div>
+    </div>`;
+
+    html += f.mode === 'manual' ? renderManualOptionsUI(f) : renderSystemSourceUI(f);
+
+    html += `
+    <div class="divider"></div>
+    <div class="fi">
+      <label class="switch-row">
+        <span>Bắt buộc nhập</span>
+        <span class="switch"><input type="checkbox" ${f.required?'checked':''} onchange="updateField('required', this.checked)"><span class="switch-track"></span></span>
+      </label>
+    </div>`;
+  } else {
+    html += `
+    <div class="divider"></div>
+    <div class="fi">
+      <label class="switch-row">
+        <span>Bắt buộc nhập</span>
+        <span class="switch"><input type="checkbox" ${f.required?'checked':''} onchange="updateField('required', this.checked)"><span class="switch-track"></span></span>
+      </label>
+    </div>`;
+  }
+  return html;
+}
+
+function renderManualOptionsUI(f){
+  const rows = (f.manualOptions || []).map((o, idx) => `
+    <div class="opt-row">
+      <button type="button" class="icon-btn danger opt-row-del" title="Xoá tuỳ chọn" onclick="removeOption(${idx})">✕</button>
+      <div class="fi">
+        <label>Giá trị lưu trữ</label>
+        <input class="fc" value="${esc(o.value)}" oninput="updateOption(${idx}, 'value', this.value)">
+      </div>
+      <div class="fi">
+        <label>Nhãn (Tiếng Việt) <span class="req">*</span></label>
+        <input class="fc" value="${esc(o.vi)}" oninput="updateOption(${idx}, 'vi', this.value)">
+      </div>
+      <div class="fi" style="margin-bottom:0">
+        <label>Nhãn (tiếng Anh)</label>
+        <input class="fc" value="${esc(o.en)}" oninput="updateOption(${idx}, 'en', this.value)">
+      </div>
+    </div>`).join('');
+  return `
+    <div class="fi">
+      <label>Danh sách tuỳ chọn</label>
+      ${rows || '<div class="text-muted text-sm mb-8">Chưa có tuỳ chọn nào.</div>'}
+      <button type="button" class="btn btn-default btn-block" onclick="addOption()">+ Thêm tuỳ chọn</button>
+    </div>`;
+}
+
+function renderSystemSourceUI(f){
+  const src = f.sourceKey ? SYSTEM_SOURCES[f.sourceKey] : null;
+  let html = `
+    <div class="fi">
+      <label>Trường dữ liệu hệ thống <span class="req">*</span></label>
+      <select class="fc" onchange="setFieldSource(this.value)">
+        <option value="">-- Chọn trường dữ liệu --</option>
+        ${Object.keys(SYSTEM_SOURCES).map(k => `<option value="${k}" ${f.sourceKey===k?'selected':''}>${esc(SYSTEM_SOURCES[k].label)}</option>`).join('')}
+      </select>
+      <div class="f-hint">Danh sách gốc lấy từ danh mục hệ thống. Bạn chọn giá trị nào sẽ hiển thị trong biểu mẫu, và có thể đổi lại tên hiển thị (Tiếng Việt / tiếng Anh) riêng cho từng giá trị bên dưới.</div>
+    </div>`;
+
+  if (src) {
+    const overrides = f.sourceOverrides || {};
+    const total = src.options.length;
+    const includedCount = src.options.filter(o => overrides[o.code] && overrides[o.code].included).length;
+    const allChecked = includedCount === total;
+    html += `
+    <div class="fi" style="margin-bottom:0">
+      <label>Chọn & đặt tên hiển thị cho từng giá trị</label>
+      <div class="src-preview-box">
+        <div class="src-preview-hd">
+          <input class="fc" placeholder="Tìm trong ${total} giá trị..." oninput="filterSourcePreview(this.value)">
+        </div>
+        <div class="src-select-all-bar">
+          <label class="src-select-all">
+            <input type="checkbox" id="src-select-all-cb" ${allChecked?'checked':''} onchange="selectAllSourceOptions(this.checked)">
+            <span>Chọn tất cả</span>
+          </label>
+          <span class="src-select-all-count">Đã chọn ${includedCount}/${total}</span>
+        </div>
+        <div class="src-col-hd"><span style="width:15px;flex:0 0 15px"></span><span class="src-pick-code">Mã kỹ thuật</span><span class="src-pick-vi">Tên hiển thị</span></div>
+        <div class="src-preview-list" id="src-preview-list">
+          ${src.options.map((o, idx) => {
+            const ov = overrides[o.code] || {included:false, code:String(idx+1), vi:o.vi};
+            return `<div class="src-pick-row" data-search="${esc((o.code+' '+o.vi).toLowerCase())}">
+              <input type="checkbox" ${ov.included?'checked':''} onchange="toggleSourceOption('${o.code}', this.checked)">
+              <input class="fc src-pick-code" value="${esc(ov.code)}" oninput="updateSourceOverride('${o.code}','code',this.value)" ${ov.included?'':'disabled'} title="Mã gốc trong hệ thống: ${esc(o.code)}">
+              <input class="fc src-pick-vi" placeholder="${esc(o.vi)}" value="${esc(ov.vi)}" oninput="updateSourceOverride('${o.code}','vi',this.value)" ${ov.included?'':'disabled'}>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+/* ================= ACTIONS ================= */
+
+function selectField(id){
+  selectedId = id;
+  panelTab = 'content';
+  renderAll();
+}
+
+function switchPanelTab(tab){
+  panelTab = tab;
+  renderPanel();
+}
+
+function toggleAddFieldMenu(e){
+  e.stopPropagation();
+  document.getElementById('add-field-menu').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#add-field-wrap')) document.getElementById('add-field-menu').classList.remove('open');
+});
+
+function defaultField(type){
+  const id = ++uid;
+  const base = {id, type, label: TYPE_META[type].label, labelEn: '', placeholderVi: '', placeholderEn: '', required: false};
+  if (isSelectType(type)) {
+    return {...base, mode: 'manual', sourceKey: '', manualOptions: [{value:'option_1', vi:'', en:''}], sourceOverrides: {}};
+  }
+  return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}};
+}
+
+function addField(type){
+  const f = defaultField(type);
+  fields.push(f);
+  selectedId = f.id;
+  panelTab = 'content';
+  document.getElementById('add-field-menu').classList.remove('open');
+  renderAll();
+}
+
+function deleteField(id){
+  if (fields.length <= 1) { showToast('Biểu mẫu demo cần giữ lại ít nhất 1 field.', 'warn'); return; }
+  showConfirm('Xoá field này khỏi biểu mẫu?', () => {
+    fields = fields.filter(f => f.id !== id);
+    if (selectedId === id) selectedId = fields[0].id;
+    renderAll();
+  }, 'Xoá', 'btn-danger');
+}
+
+function updateField(key, value){
+  const f = currentField();
+  if (!f) return;
+  f[key] = value;
+  // Cosmetic-only fields: không render lại panel để không mất focus/con trỏ đang gõ
+  renderFieldList();
+  renderPreview();
+}
+
+function setFieldMode(mode){
+  const f = currentField();
+  if (!f || f.mode === mode) return;
+  f.mode = mode;
+  if (mode === 'manual' && (!f.manualOptions || f.manualOptions.length === 0)) {
+    f.manualOptions = [{value:'option_1', vi:'', en:''}];
+  }
+  renderPanel();
+  renderPreview();
+}
+
+function setFieldSource(key){
+  const f = currentField();
+  if (!f) return;
+  f.sourceKey = key;
+  f.sourceOverrides = key ? buildDefaultOverrides(key) : {};
+  renderPanel();
+  renderPreview();
+}
+
+function toggleSourceOption(code, checked){
+  const f = currentField();
+  if (!f) return;
+  if (!f.sourceOverrides[code]) f.sourceOverrides[code] = {included: false, code: code, vi: ''};
+  f.sourceOverrides[code].included = checked;
+  renderPanel();
+  renderPreview();
+}
+
+function updateSourceOverride(code, key, value){
+  const f = currentField();
+  if (!f) return;
+  if (!f.sourceOverrides[code]) f.sourceOverrides[code] = {included: true, code: code, vi: ''};
+  f.sourceOverrides[code][key] = value;
+  // Chỉ cập nhật bản xem trước, không render lại panel để giữ focus khi đang gõ mã/tên
+  renderPreview();
+}
+
+function selectAllSourceOptions(checkedAll){
+  const f = currentField();
+  if (!f || !f.sourceKey) return;
+  const src = SYSTEM_SOURCES[f.sourceKey];
+  src.options.forEach((o, idx) => {
+    if (!f.sourceOverrides[o.code]) f.sourceOverrides[o.code] = {included: false, code: defaultSourceCode(src, idx), vi: o.vi};
+    f.sourceOverrides[o.code].included = checkedAll;
+  });
+  renderPanel();
+  renderPreview();
+}
+
+function addOption(){
+  const f = currentField();
+  if (!f) return;
+  const n = (f.manualOptions || []).length + 1;
+  f.manualOptions = f.manualOptions || [];
+  f.manualOptions.push({value: `option_${n}`, vi: '', en: ''});
+  renderPanel();
+  renderPreview();
+}
+
+function removeOption(idx){
+  const f = currentField();
+  if (!f) return;
+  f.manualOptions.splice(idx, 1);
+  renderPanel();
+  renderPreview();
+}
+
+function updateOption(idx, key, value){
+  const f = currentField();
+  if (!f) return;
+  f.manualOptions[idx][key] = value;
+  // Chỉ cập nhật bản xem trước, không render lại panel để giữ focus khi đang gõ
+  renderPreview();
+  renderFieldList();
+}
+
+function filterSourcePreview(q){
+  const query = q.trim().toLowerCase();
+  document.querySelectorAll('#src-preview-list .src-pick-row').forEach(el => {
+    el.style.display = el.getAttribute('data-search').includes(query) ? '' : 'none';
+  });
+}
+
+renderAll();
+</script>
+</body>
+</html>

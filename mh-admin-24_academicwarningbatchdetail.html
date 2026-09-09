@@ -1068,9 +1068,9 @@ const DOT_CONDITIONS = [
   { id:'c9',  nhom:'khoan2', label:'Số kỳ chính liên tiếp không đăng ký học tập', sosanh:'>=', giaTri:2, isScore:false,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.soKyKhongDangKyLienTiep, status:'active',
     lyDo: s => `Không đăng ký học tập ${s.soKyKhongDangKyLienTiep} học kỳ chính liên tiếp` },
-  { id:'c10', nhom:'khoan2', label:'Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT', sosanh:'>=', giaTri:2, isScore:true,
+  { id:'c10', nhom:'khoan2', label:'Năm đang đào tạo / Số năm đào tạo theo CTĐT', sosanh:'>=', giaTri:2, isScore:true,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.namToiDa ? namDaoTaoTinh(s) / s.namToiDa : null, status:'active',
-    lyDo: s => `Thời gian đã học (năm ${namDaoTaoTinh(s)}) vượt quá 2 lần thời gian chuẩn toàn khoá theo CTĐT (năm ${s.namToiDa})` },
+    lyDo: s => `Thời gian đã học (năm ${namDaoTaoTinh(s)}) vượt quá 2 lần số năm đào tạo theo CTĐT (năm ${s.namToiDa})` },
 ];
 const SOSANH_KY_HIEU = { '<':'<', '<=':'≤', '=':'=', '>':'>', '>=':'≥' };
 function trinhDoSV(s){ return trinhDoNamHoc(s.tcTichLuyLuyKe, s.tinChiChuanNam); }

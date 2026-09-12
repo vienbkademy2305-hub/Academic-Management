@@ -47,6 +47,16 @@
     .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
     .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
 
+    /* Bộ lọc "Template áp dụng" — combobox 1 lựa chọn kiểu nút bấm (form-combo-trigger),
+       copy pattern từ mh-admin-08 (bộ lọc Học kỳ), dùng chung khung .unit-combo-menu ở trên. */
+    .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
+    .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
+    /* Ô tìm kiếm bên trong menu đứng NGOÀI phần cuộn của danh sách bên dưới (sticky ở trên).
+       Chỉ áp display:flex khi menu đang mở (.open) — nếu áp thẳng lên ID sẽ đè mất display:none
+       mặc định của .unit-combo-menu (ID có độ ưu tiên cao hơn class). */
+    #template-menu.open{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:visible;padding:6px}
+    #template-menu-list{overflow-y:auto;max-height:260px}
+
 
     /* Workflow builder — hiển thị trong modal to, mọi thứ sửa inline bên trong */
     .wf-canvas{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
@@ -286,18 +296,38 @@
           </button>
         </div>
 
-        <!-- Bộ lọc: Đơn vị (search combobox) + Chức năng/Phân hệ + Tìm tên quy trình -->
+        <!-- Bộ lọc: Chức năng/Phân hệ + Trạng thái + Tìm tên quy trình.
+             Ô tìm/chuyển đơn vị (Cấp 1/2/3) ẩn khỏi filter bar theo yêu cầu — màn
+             danh sách luôn hiển thị đúng đơn vị của người dùng (mặc định Đại học,
+             selectedUnitId), không cho đổi đơn vị xem từ đây nữa. Vẫn giữ nguyên
+             DOM + logic bên dưới (effectiveOwnerUnit/pickUnit...) vì tính năng
+             "Sao chép quy trình" xuống đơn vị con vẫn dùng chung dữ liệu này. -->
         <div class="filter-bar">
-          <div class="unit-combo" id="unit-combo">
+          <div class="unit-combo" id="unit-combo" style="display:none">
             <input class="fc" id="unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="width:280px">
             <div class="unit-combo-menu" id="unit-combo-menu"></div>
           </div>
+          <div class="unit-combo" id="template-combo" style="width:260px">
+            <button type="button" class="fc form-combo-trigger" id="template-trigger" onclick="event.stopPropagation();toggleTemplateMenu()">
+              <span id="template-label">Tất cả template</span><span class="form-combo-arrow">▾</span>
+            </button>
+            <div class="unit-combo-menu" id="template-menu">
+              <input class="fc" id="template-search" type="text" placeholder="🔍 Tìm template…" autocomplete="off" onclick="event.stopPropagation()" oninput="renderTemplateMenuList()">
+              <div id="template-menu-list"></div>
+            </div>
+          </div>
           <select class="fc" id="func-select" style="width:220px">
-            <option value="all">Tất cả chức năng</option>
+            <option value="all">Nhóm quy trình: Tất cả</option>
             <option value="qdsv">Quyết định sinh viên</option>
             <option value="khenthuong">Khen thưởng</option>
             <option value="kyluat">Kỷ luật sinh viên</option>
             <option value="bieumau">Biểu mẫu</option>
+          </select>
+          <select class="fc" id="version-status-select" style="width:200px" onchange="currentPage=1;renderProcGrid()">
+            <option value="all">Trạng thái: Tất cả</option>
+            <option value="nhap">Nháp</option>
+            <option value="dang_dung">Đang dùng</option>
+            <option value="ngung_su_dung">Ngừng sử dụng</option>
           </select>
           <input class="fc" id="proc-name-search" type="text" placeholder="🔍 Tìm tên quy trình…" autocomplete="off" style="width:260px">
         </div>
@@ -315,12 +345,12 @@
             <thead>
               <tr>
                 <th style="width:48px">STT</th>
-                <th style="width:70px">ID</th>
+                <th style="width:100px">Mã quy trình</th>
                 <th>Tên quy trình</th>
-                <th>Chức năng</th>
-                <th>Các bước</th>
-                <th>Trạng thái</th>
-                <th>Cập nhật</th>
+                <th style="width:220px">Template áp dụng</th>
+                <th>Nhóm quy trình</th>
+                <th style="width:140px">Trạng thái</th>
+                <th style="width:150px">Phiên bản mới nhất</th>
                 <th style="width:80px">Thao tác</th>
               </tr>
             </thead>
@@ -398,7 +428,7 @@
     <div class="modal-bd">
       <div class="fi">
         <label>Chức năng<span class="req">*</span></label>
-        <select class="fc" id="new-proc-func">
+        <select class="fc" id="new-proc-func" onchange="onNewProcFuncChange()">
           <option value="" selected disabled>— Chọn chức năng —</option>
           <option value="qdsv">Quyết định sinh viên</option>
           <option value="khenthuong">Khen thưởng</option>
@@ -407,12 +437,20 @@
         </select>
       </div>
       <div class="fi">
-        <label>Tên quy trình<span class="req">*</span></label>
-        <input class="fc" id="new-proc-name" placeholder="VD: Quy trình xét kỷ luật mức cảnh cáo">
+        <label>Sự kiện kích hoạt (Trigger)<span class="req">*</span></label>
+        <select class="fc" id="new-proc-trigger" onchange="onNewProcTriggerChange()" disabled>
+          <option value="" selected disabled>— Chọn chức năng trước —</option>
+        </select>
       </div>
       <div class="fi">
-        <label>Trạng thái</label>
-        <select class="fc" id="new-proc-status"><option value="inactive">Inactive</option><option value="active">Active</option></select>
+        <label>Mẫu áp dụng (Template)<span class="req">*</span></label>
+        <select class="fc" id="new-proc-template" disabled>
+          <option value="" selected disabled>— Chọn trigger trước —</option>
+        </select>
+      </div>
+      <div class="fi">
+        <label>Tên quy trình<span class="req">*</span></label>
+        <input class="fc" id="new-proc-name" placeholder="VD: Quy trình xét kỷ luật mức cảnh cáo">
       </div>
     </div>
     <div class="modal-ft">
@@ -650,21 +688,138 @@ let selectedUnitId = 'u-dh';
    originId = null → quy trình gốc. originId = 'pX' → bản sao,
    giữ tham chiếu tới quy trình gốc đã sao chép (không tự đồng bộ).
    ============================================================ */
+// versionStatus: 'nhap' (chưa từng Xuất bản) | 'dang_dung' (đang chạy cho đơn mới) |
+// 'ngung_su_dung' (từng Đang dùng, nay bị dừng chủ động, không có bản thay thế).
+// Cột "Trạng thái" ở bảng danh sách LUÔN suy ra từ đúng 2 trường này, không phải
+// cờ nhập tay riêng — xem renderProcGrid().
 const PROCESSES = [
   // Quy trình gốc — sở hữu bởi Cấp 1 (Đại học)
-  { id:'p1', itemId:1, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình xét học vụ (cảnh báo học vụ)', status:'active', stepCount:5, updated:'02/07/2026', originId:null },
-  { id:'p2', itemId:2, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình công nhận tốt nghiệp', status:'active', stepCount:4, updated:'28/06/2026', originId:null },
-  { id:'p3', itemId:3, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình bảo lưu kết quả học tập', status:'inactive', stepCount:3, updated:'10/07/2026', originId:null },
-  { id:'p4', itemId:4, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng học kỳ (Sinh viên 5 tốt)', status:'active', stepCount:4, updated:'20/06/2026', originId:null },
-  { id:'p5', itemId:5, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng đột xuất (NCKH, cuộc thi)', status:'active', stepCount:3, updated:'05/07/2026', originId:null },
-  { id:'p6', itemId:6, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên', status:'active', stepCount:4, updated:'12/07/2026', originId:null, featured:true },
-  { id:'p7', itemId:7, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xử lý vi phạm thi cử', status:'inactive', stepCount:4, updated:'01/07/2026', originId:null },
+  { id:'p1', itemId:1, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình xét học vụ (cảnh báo học vụ)', versionStatus:'dang_dung', versionLabel:'v2', stepCount:5, updated:'02/07/2026', originId:null, templateName:'Mẫu Quyết định cảnh báo học vụ' },
+  { id:'p2', itemId:2, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình công nhận tốt nghiệp', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'28/06/2026', originId:null, templateName:'Mẫu Quyết định công nhận tốt nghiệp' },
+  { id:'p3', itemId:3, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình bảo lưu kết quả học tập', versionStatus:'ngung_su_dung', versionLabel:'v1', stepCount:3, updated:'10/07/2026', originId:null, templateName:'Đơn xin bảo lưu kết quả học tập (BM1)' },
+  { id:'p4', itemId:4, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng học kỳ (Sinh viên 5 tốt)', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'20/06/2026', originId:null, templateName:'Mẫu Quyết định khen thưởng "Sinh viên 5 tốt"' },
+  { id:'p5', itemId:5, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng đột xuất (NCKH, cuộc thi)', versionStatus:'dang_dung', versionLabel:'v3', stepCount:3, updated:'05/07/2026', originId:null, templateName:'Mẫu Quyết định khen thưởng đột xuất' },
+  { id:'p6', itemId:6, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'12/07/2026', originId:null, featured:true, templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo' },
+  { id:'p7', itemId:7, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xử lý vi phạm thi cử', versionStatus:'nhap', versionLabel:'v1', stepCount:4, updated:'01/07/2026', originId:null, templateName:'Mẫu Quyết định xử lý vi phạm thi cử' },
 
   // Bản sao — Khoa CNTT (Cấp 2) đã sao chép từ Đại học rồi tùy chỉnh riêng
-  { id:'p6-cntt', itemId:8, ownerUnit:'u-cntt', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên (Khoa CNTT)', status:'active', stepCount:4, updated:'12/07/2026', originId:'p6' },
+  { id:'p6-cntt', itemId:8, ownerUnit:'u-cntt', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên (Khoa CNTT)', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'12/07/2026', originId:'p6', templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo' },
 ];
 
 const FUNC_LABEL = { qdsv:'Quyết định sinh viên', khenthuong:'Khen thưởng', kyluat:'Kỷ luật sinh viên', bieumau:'Biểu mẫu' };
+
+/* ============================================================
+   DATA — Trigger (sự kiện kích hoạt) theo từng nhóm quy trình.
+   Mỗi trigger gắn với 1+ template (mẫu biểu mẫu/quyết định) —
+   khi tạo quy trình mới, chọn Chức năng → Trigger → Template
+   theo thứ tự phụ thuộc (xem onNewProcFuncChange/onNewProcTriggerChange).
+   ============================================================ */
+const TRIGGERS = {
+  qdsv: [
+    { id:'tr-canhbaohocvu', name:'Sinh viên bị cảnh báo học vụ',
+      templates:[ { id:'tpl-cbhv', name:'Mẫu Quyết định cảnh báo học vụ' } ] },
+    { id:'tr-totnghiep', name:'Sinh viên đủ điều kiện xét tốt nghiệp',
+      templates:[ { id:'tpl-tn', name:'Mẫu Quyết định công nhận tốt nghiệp' } ] },
+    { id:'tr-baoluu', name:'Sinh viên nộp đơn xin bảo lưu kết quả học tập',
+      templates:[ { id:'tpl-bl-bm1', name:'Đơn xin bảo lưu kết quả học tập (BM1)' } ] },
+    { id:'tr-thoihoc', name:'Sinh viên thuộc diện buộc thôi học',
+      templates:[ { id:'tpl-th', name:'Mẫu Quyết định thôi học' } ] },
+  ],
+  khenthuong: [
+    { id:'tr-kt-hocky', name:'Kết thúc học kỳ — xét khen thưởng định kỳ',
+      templates:[ { id:'tpl-kt-5tot', name:'Mẫu Quyết định khen thưởng "Sinh viên 5 tốt"' } ] },
+    { id:'tr-kt-dotxuat', name:'Khoa/Đơn vị đề xuất khen thưởng đột xuất',
+      templates:[ { id:'tpl-kt-dx', name:'Mẫu Quyết định khen thưởng đột xuất' } ] },
+  ],
+  kyluat: [
+    { id:'tr-kl-viphamthi', name:'Sinh viên bị lập biên bản vi phạm thi cử',
+      templates:[ { id:'tpl-kl-thi', name:'Mẫu Quyết định xử lý vi phạm thi cử' } ] },
+    { id:'tr-kl-viphamkhac', name:'Khoa đề xuất xét kỷ luật sinh viên',
+      templates:[
+        { id:'tpl-kl-canhcao', name:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo' },
+        { id:'tpl-kl-dinhchi', name:'Mẫu Quyết định kỷ luật mức đình chỉ học tập' },
+      ] },
+  ],
+  bieumau: [
+    { id:'tr-bm-nopdon', name:'Sinh viên nộp đơn tại Cổng thông tin',
+      templates:[
+        { id:'tpl-bm1', name:'Đơn xin bảo lưu kết quả học tập' },
+        { id:'tpl-bm2', name:'Đơn xin chuyển ngành' },
+        { id:'tpl-bm6', name:'Đơn xin trợ cấp khó khăn' },
+        { id:'tpl-bm7', name:'Đơn đăng ký ở ký túc xá' },
+        { id:'tpl-bm8', name:'Đơn xin xác nhận sinh viên' },
+      ] },
+  ],
+};
+
+/* == Bộ lọc "Template áp dụng" — combobox 1 lựa chọn kiểu nút bấm, copy pattern
+   từ mh-admin-08 (bộ lọc Học kỳ: form-combo-trigger + renderSingleComboList).
+   Gom toàn bộ template có thể gán (từ danh mục TRIGGERS), khử trùng theo tên,
+   để lọc được cả template chưa quy trình nào đang dùng tới. == */
+let selectedTemplateFilter = '';
+
+function allTemplateFilterNames(){
+  const names = new Set();
+  Object.values(TRIGGERS).forEach(triggers => {
+    triggers.forEach(t => t.templates.forEach(tpl => names.add(tpl.name)));
+  });
+  return Array.from(names).sort();
+}
+
+/* Renderer dùng chung cho mọi combobox 1-lựa-chọn dạng nút bấm (form-combo-trigger)
+   trong màn này — hiện tại chỉ có bộ lọc Template, giữ tổng quát để dễ tái dùng. */
+function renderSingleComboList(menuId, options, selectedValue, pickFnName, allLabel, searchTerm, labelFn){
+  const q = (searchTerm || '').trim().toLowerCase();
+  const toLabel = labelFn || (opt => opt);
+  const filtered = q ? options.filter(opt => toLabel(opt).toLowerCase().includes(q)) : options;
+  const allItem = `<div class="unit-combo-item ${!selectedValue?'hl':''}" onclick="${pickFnName}('')">${allLabel}</div>`;
+  const items = filtered.map(opt =>
+    `<div class="unit-combo-item ${opt===selectedValue?'hl':''}" onclick="${pickFnName}(${JSON.stringify(opt)})">${toLabel(opt)}</div>`
+  ).join('');
+  document.getElementById(menuId).innerHTML = allItem + (items || (q ? `<div class="unit-combo-empty">Không tìm thấy</div>` : ''));
+}
+
+function pickTemplateFilter(value){
+  selectedTemplateFilter = value;
+  document.getElementById('template-label').textContent = selectedTemplateFilter || 'Tất cả template';
+  closeTemplateMenu();
+  currentPage = 1;
+  renderProcGrid();
+}
+function renderTemplateMenuList(){ renderSingleComboList('template-menu-list', allTemplateFilterNames(), selectedTemplateFilter, 'pickTemplateFilter', 'Tất cả template', document.getElementById('template-search').value); }
+function openTemplateMenu(){ document.getElementById('template-search').value = ''; renderTemplateMenuList(); document.getElementById('template-menu').classList.add('open'); document.getElementById('template-search').focus(); }
+function closeTemplateMenu(){ document.getElementById('template-menu').classList.remove('open'); }
+function toggleTemplateMenu(){ document.getElementById('template-menu').classList.contains('open') ? closeTemplateMenu() : openTemplateMenu(); }
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('template-combo').contains(e.target)) closeTemplateMenu();
+});
+
+function onNewProcFuncChange(){
+  const func = document.getElementById('new-proc-func').value;
+  const triggerSelect = document.getElementById('new-proc-trigger');
+  const templateSelect = document.getElementById('new-proc-template');
+
+  const triggers = TRIGGERS[func] || [];
+  triggerSelect.innerHTML = '<option value="" selected disabled>— Chọn sự kiện kích hoạt —</option>'
+    + triggers.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  triggerSelect.disabled = false;
+
+  templateSelect.innerHTML = '<option value="" selected disabled>— Chọn trigger trước —</option>';
+  templateSelect.disabled = true;
+}
+
+function onNewProcTriggerChange(){
+  const func = document.getElementById('new-proc-func').value;
+  const triggerId = document.getElementById('new-proc-trigger').value;
+  const templateSelect = document.getElementById('new-proc-template');
+
+  const trigger = (TRIGGERS[func] || []).find(t => t.id === triggerId);
+  const templates = trigger ? trigger.templates : [];
+  templateSelect.innerHTML = '<option value="" selected disabled>— Chọn mẫu áp dụng —</option>'
+    + templates.map(tpl => `<option value="${tpl.id}">${tpl.name}</option>`).join('');
+  templateSelect.disabled = false;
+}
 
 /* Sinh steps[] placeholder cho các quy trình chưa có dữ liệu builder chi tiết.
    Giữ đúng shape mà renderTrack()/doAddStep() kỳ vọng (submitters/approvers,
@@ -879,8 +1034,12 @@ function renderProcGrid(){
   const filter = currentFuncFilter();
   const nameQuery = currentNameSearch();
 
+  const versionStatusFilter = document.getElementById('version-status-select').value;
+
   let list = PROCESSES.filter(p => p.ownerUnit === ownerUnit);
   if (filter !== 'all') list = list.filter(p => p.func === filter);
+  if (versionStatusFilter !== 'all') list = list.filter(p => p.versionStatus === versionStatusFilter);
+  if (selectedTemplateFilter) list = list.filter(p => p.templateName === selectedTemplateFilter);
   if (nameQuery) list = list.filter(p => p.name.toLowerCase().includes(nameQuery));
 
   const totalPages = Math.max(1, Math.ceil(list.length / PROC_PAGE_SIZE));
@@ -888,28 +1047,19 @@ function renderProcGrid(){
   const pageList = list.slice((currentPage-1)*PROC_PAGE_SIZE, currentPage*PROC_PAGE_SIZE);
 
   tbody.innerHTML = pageList.map((p, idx) => {
-    const chips = p.steps.map(s => s.title);
     return `
-    <tr class="proc-row" onclick="openBuilder('${p.id}')">
+    <tr class="proc-row" onclick="openApprovalBuilder('${p.id}')">
       <td class="text-muted">${(currentPage-1)*PROC_PAGE_SIZE + idx + 1}</td>
-      <td><span class="proc-id">${p.itemId}</span></td>
+      <td><span class="proc-id">QT${p.itemId}</span></td>
       <td><span class="proc-name-cell">${p.name}</span></td>
-      <td>${FUNC_LABEL[p.func]}</td>
-      <td>
-        <ol class="proc-steps-list">
-          ${chips.slice(0, 2).map(c => `<li>${c}</li>`).join('')}
-          ${chips.length > 2 ? '<li class="proc-steps-more">…</li>' : ''}
-        </ol>
-      </td>
-      <td><span class="tag ${p.status==='active'?'tag-success':'tag-default'}">${p.status==='active'?'Active':'Inactive'}</span></td>
-      <td class="text-muted">${p.updated}</td>
+      <td class="text-muted">${p.templateName || '—'}</td>
+      <td class="text-muted">${FUNC_LABEL[p.func] || ''}</td>
+      <td>${versionStatusTag(p)}</td>
+      <td class="text-muted">${p.versionLabel}</td>
       <td onclick="event.stopPropagation()">
         <div class="tbl-actions">
-          <button class="icon-btn" title="Cấu hình quy trình" onclick="openBuilder('${p.id}')">
+          <button class="icon-btn" title="Cấu hình quy trình" onclick="openApprovalBuilder('${p.id}')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-          </button>
-          <button class="icon-btn danger" title="Xoá quy trình" onclick="confirmDeleteProcess('${p.id}')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
         </div>
       </td>
@@ -943,17 +1093,15 @@ function goToPage(p){
   renderProcGrid();
 }
 
-function procById(id){ return PROCESSES.find(p => p.id === id); }
-
-function confirmDeleteProcess(id){
-  const p = procById(id);
-  showConfirm(`Xoá quy trình "${p.name}"? Hành động này không thể hoàn tác.`, () => {
-    const i = PROCESSES.findIndex(x => x.id === id);
-    if (i > -1) PROCESSES.splice(i, 1);
-    showToast('Đã xoá quy trình', 'ok');
-    renderProcGrid();
-  }, 'Xoá', 'btn-danger');
+// Nhãn cột "Trạng thái" — suy hoàn toàn từ versionStatus, không phải cờ nhập tay riêng.
+// Số phiên bản hiển thị riêng ở cột "Phiên bản mới nhất" nên không lặp lại ở đây.
+function versionStatusTag(p){
+  if (p.versionStatus === 'dang_dung') return `<span class="tag tag-success">Đang dùng</span>`;
+  if (p.versionStatus === 'ngung_su_dung') return `<span class="tag tag-default">Ngừng sử dụng</span>`;
+  return `<span class="tag tag-warning">Nháp</span>`;
 }
+
+function procById(id){ return PROCESSES.find(p => p.id === id); }
 
 document.getElementById('func-select').addEventListener('change', () => {
   currentPage = 1;
@@ -1050,7 +1198,10 @@ function doCopyProcess(){
       ownerUnit: targetUnit,
       func: source.func,
       name: source.name,
-      status: source.status,
+      // Bản sao ở đơn vị mới luôn bắt đầu là Nháp (v1) — cần đơn vị đó tự
+      // rà soát/xuất bản riêng, không tự động thừa hưởng trạng thái Đang
+      // dùng/Ngừng sử dụng của quy trình nguồn.
+      versionStatus: 'nhap', versionLabel: 'v1',
       stepCount: source.steps.length,
       updated,
       originId: sourceId,
@@ -1163,28 +1314,40 @@ let expandedRows = new Set();
    mới luôn xuất hiện ở dòng đầu tiên khi đóng builder. */
 function doCreateProcess(){
   const func = document.getElementById('new-proc-func').value;
+  const triggerId = document.getElementById('new-proc-trigger').value;
+  const templateId = document.getElementById('new-proc-template').value;
   const name = document.getElementById('new-proc-name').value.trim();
-  const status = document.getElementById('new-proc-status').value;
 
-  if (!func || !name){
-    showToast('Vui lòng nhập đủ Chức năng và Tên quy trình', 'warn');
+  if (!func || !triggerId || !templateId || !name){
+    showToast('Vui lòng nhập đủ Chức năng, Trigger, Template và Tên quy trình', 'warn');
     return;
   }
+
+  const trigger = TRIGGERS[func].find(t => t.id === triggerId);
+  const template = trigger.templates.find(tpl => tpl.id === templateId);
 
   const newId = 'p-new-' + Date.now();
   const maxItemId = PROCESSES.reduce((max, p) => Math.max(max, p.itemId), 0);
   const today = new Date();
   const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
 
+  // Trạng thái không còn chọn tay — quy trình mới luôn bắt đầu ở Nháp (v1),
+  // suy ra từ việc chưa từng Xuất bản lần nào (xem renderProcGrid()).
   const newProcess = {
-    id: newId, itemId: maxItemId + 1, ownerUnit: 'u-dh', func, name, status,
+    id: newId, itemId: maxItemId + 1, ownerUnit: 'u-dh', func, name,
+    triggerId: trigger.id, triggerName: trigger.name,
+    templateId: template.id, templateName: template.name,
+    versionStatus: 'nhap', versionLabel: 'v1',
     stepCount: 0, updated, originId: null, steps: [],
   };
   PROCESSES.unshift(newProcess);
 
   document.getElementById('new-proc-func').value = '';
   document.getElementById('new-proc-name').value = '';
-  document.getElementById('new-proc-status').value = 'inactive';
+  document.getElementById('new-proc-trigger').innerHTML = '<option value="" selected disabled>— Chọn chức năng trước —</option>';
+  document.getElementById('new-proc-trigger').disabled = true;
+  document.getElementById('new-proc-template').innerHTML = '<option value="" selected disabled>— Chọn trigger trước —</option>';
+  document.getElementById('new-proc-template').disabled = true;
 
   /* Reset bộ lọc chức năng/tên đang áp dụng — tránh chúng vô tình che mất dòng
      vừa tạo khi quay lại danh sách (VD: đang lọc chức năng khác/đang gõ tìm tên cũ). */
@@ -1192,8 +1355,18 @@ function doCreateProcess(){
   document.getElementById('proc-name-search').value = '';
   currentPage = 1;
 
+  // Bấm Lưu ở popup tạo mới: lưu quy trình + mở luôn Cấu hình quy trình để
+  // cấu hình bước tiếp. Đóng cấu hình quy trình (nút ✕/backToList()) mới thực
+  // sự quay về màn Danh sách quy trình duyệt.
   closeModal('modal-new-process');
   openBuilder(newId);
+}
+
+/* Bấm icon "Cấu hình quy trình" (hoặc cả dòng) ở bảng danh sách — chuyển sang
+   màn xây dựng quy trình duyệt dạng canvas riêng (MH-ADMIN-26), thay cho popup
+   builder cũ trong trang này. */
+function openApprovalBuilder(procId){
+  location.href = 'mh-admin-26_approvalworkflowbuilder.html?id=' + encodeURIComponent(procId);
 }
 
 function openBuilder(procId){

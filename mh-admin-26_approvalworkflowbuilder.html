@@ -460,7 +460,7 @@ function content(){ return editBuffer || getVersion(currentVersionId); }
 function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function nowStr(){ return new Date().toLocaleDateString('vi-VN'); }
 function readonly(v){ return v.status === 'luu_tru'; }
-function statusLabel(s){ return s==='dang_dung' ? 'Đang dùng' : s==='nhap' ? 'Nháp' : 'Lưu trữ'; }
+function statusLabel(s){ return s==='dang_dung' ? 'Đang dùng' : s==='nhap' ? 'Nháp' : 'Ngừng sử dụng'; }
 function tagClassFor(s){ return s==='dang_dung' ? 'tag-success' : s==='nhap' ? 'tag-warning' : 'tag-default'; }
 function versionNum(v){ return parseInt(v.label.replace('v','')) || 0; }
 
@@ -609,7 +609,7 @@ function publishVersion(id){
   }
   const old = VERSIONS.find(x => x.status === 'dang_dung');
   const desc = old
-    ? `${old.label} sẽ chuyển sang Lưu trữ. ${old.runningInstances ? old.runningInstances+' đơn đang chạy theo '+old.label+' sẽ tiếp tục hoàn tất theo đúng phiên bản đó, không bị ảnh hưởng.' : 'Phiên bản này hiện không còn đơn nào đang chạy.'}`
+    ? `${old.label} sẽ chuyển sang Ngừng sử dụng. ${old.runningInstances ? old.runningInstances+' đơn đang chạy theo '+old.label+' sẽ tiếp tục hoàn tất theo đúng phiên bản đó, không bị ảnh hưởng.' : 'Phiên bản này hiện không còn đơn nào đang chạy.'}`
     : 'Đây sẽ là phiên bản Đang dùng đầu tiên của quy trình.';
   showConfirm(`Xuất bản phiên bản ${v.label}?`, () => {
     if(old){ old.status = 'luu_tru'; old.archivedAt = nowStr(); }
@@ -653,6 +653,24 @@ function duplicateVersion(id){
     renderAll();
     showToast(`Đã tạo bản nháp ${draft.label} từ ${src.label}`, 'ok');
   });
+}
+
+// Ngừng sử dụng: chuyển thẳng phiên bản Đang dùng -> Lưu trữ, KHÔNG cần
+// phiên bản nào khác thay thế (khác việc bị hạ xuống Lưu trữ do có 1 bản mới
+// hơn được Xuất bản — xem publishVersion()). Đơn đang chạy dở theo phiên bản
+// này vẫn tiếp tục xử lý bình thường tới khi xong. Muốn dùng lại: bấm
+// "Tạo bản sao" ở chính dòng này rồi Xuất bản lại (UC-ADMIN26-009).
+function stopVersion(id){
+  const v = getVersion(id);
+  if(!v || v.status !== 'dang_dung') return;
+  const desc = `Quy trình sẽ không nhận đơn mới nữa.${v.runningInstances ? ' ' + v.runningInstances + ' đơn đang chạy theo ' + v.label + ' vẫn tiếp tục xử lý bình thường, không bị ảnh hưởng.' : ''}`;
+  showConfirm(`Ngừng sử dụng phiên bản ${v.label}?`, () => {
+    v.status = 'luu_tru';
+    v.archivedAt = nowStr();
+    renderHistoryTable();
+    renderAll();
+    showToast(`Đã ngừng sử dụng ${v.label}`, 'ok');
+  }, 'Ngừng sử dụng', 'btn-danger', desc);
 }
 
 function restoreVersion(id){
@@ -981,7 +999,7 @@ function renderVerBar(v){
   if(v.status === 'luu_tru'){
     banner.className = 'ver-card warn';
     banner.innerHTML = `<span class="vc-ico">🔒</span>
-      <span>Bản lưu trữ, chỉ đọc — ngừng dùng từ ${v.archivedAt}${v.runningInstances ? ', còn ' + v.runningInstances + ' đơn đang chạy theo bản này' : ''}.<button class="vc-action" onclick="restoreVersion('${v.id}')">Tạo bản sao</button></span>`;
+      <span>Bản ngừng sử dụng, chỉ đọc — ngừng dùng từ ${v.archivedAt}${v.runningInstances ? ', còn ' + v.runningInstances + ' đơn đang chạy theo bản này' : ''}.<button class="vc-action" onclick="restoreVersion('${v.id}')">Tạo bản sao</button></span>`;
   } else if(v.status === 'nhap'){
     // Bỏ đoạn mô tả dài — chỉ giữ lại thao tác "Xoá bản nháp" dạng link nhỏ,
     // gọn như "Xem lịch sử phiên bản" ở trên.
@@ -1008,7 +1026,8 @@ function renderHistoryTable(){
                  <button class="btn btn-sm btn-warning" onclick="restoreVersion('${v.id}')">Tạo bản sao</button>`;
     } else {
       actions = `<button class="btn btn-sm btn-default" onclick="selectVersion('${v.id}');closeModal('modal-history')">Xem</button>
-                 <button class="btn btn-sm btn-warning" onclick="duplicateVersion('${v.id}')">Tạo bản sao</button>`;
+                 <button class="btn btn-sm btn-warning" onclick="duplicateVersion('${v.id}')">Tạo bản sao</button>
+                 <button class="btn btn-sm btn-danger" onclick="stopVersion('${v.id}')">Ngừng sử dụng</button>`;
     }
     return `<tr>
       <td><b>${v.label}</b></td>

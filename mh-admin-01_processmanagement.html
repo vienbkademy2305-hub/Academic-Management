@@ -290,23 +290,11 @@
             <h2 style="margin:0 0 4px;font-size:18px">Quản lý Quy trình</h2>
           </div>
           <button class="btn btn-primary" id="btn-new-process" onclick="openModal('modal-new-process')">＋ Tạo mới</button>
-          <button class="btn btn-primary" id="btn-copy-process" style="display:none" onclick="openCopyModal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            Sao chép
-          </button>
         </div>
 
-        <!-- Bộ lọc: Chức năng/Phân hệ + Trạng thái + Tìm tên quy trình.
-             Ô tìm/chuyển đơn vị (Cấp 1/2/3) ẩn khỏi filter bar theo yêu cầu — màn
-             danh sách luôn hiển thị đúng đơn vị của người dùng (mặc định Đại học,
-             selectedUnitId), không cho đổi đơn vị xem từ đây nữa. Vẫn giữ nguyên
-             DOM + logic bên dưới (effectiveOwnerUnit/pickUnit...) vì tính năng
-             "Sao chép quy trình" xuống đơn vị con vẫn dùng chung dữ liệu này. -->
+        <!-- Bộ lọc: Template áp dụng + Nhóm quy trình/Phân hệ + Trạng thái + Tìm tên quy trình.
+             1 danh sách quy trình chung toàn hệ thống — không còn phân theo đơn vị sở hữu. -->
         <div class="filter-bar">
-          <div class="unit-combo" id="unit-combo" style="display:none">
-            <input class="fc" id="unit-search" type="text" placeholder="🔍 Tìm đơn vị…" autocomplete="off" style="width:280px">
-            <div class="unit-combo-menu" id="unit-combo-menu"></div>
-          </div>
           <div class="unit-combo" id="template-combo" style="width:260px">
             <button type="button" class="fc form-combo-trigger" id="template-trigger" onclick="event.stopPropagation();toggleTemplateMenu()">
               <span id="template-label">Tất cả template</span><span class="form-combo-arrow">▾</span>
@@ -332,14 +320,6 @@
           <input class="fc" id="proc-name-search" type="text" placeholder="🔍 Tìm tên quy trình…" autocomplete="off" style="width:260px">
         </div>
 
-        <div class="alert alert-info" id="unit-copy-alert" style="display:none">
-          <span class="alert-ico">📋</span>
-          <div class="alert-body">
-            <div class="alert-title" id="unit-copy-title"></div>
-            <div class="alert-desc" id="unit-copy-desc"></div>
-          </div>
-        </div>
-
         <div class="tbl-wrap">
           <table class="tbl">
             <thead>
@@ -350,7 +330,7 @@
                 <th style="width:220px">Template áp dụng</th>
                 <th>Nhóm quy trình</th>
                 <th style="width:140px">Trạng thái</th>
-                <th style="width:150px">Phiên bản mới nhất</th>
+                <th style="width:190px">Phiên bản</th>
                 <th style="width:80px">Thao tác</th>
               </tr>
             </thead>
@@ -456,38 +436,6 @@
     <div class="modal-ft">
       <button class="btn btn-default" data-close="modal-new-process">Huỷ</button>
       <button class="btn btn-primary" onclick="doCreateProcess()">Tạo</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL: Sao chép quy trình về đơn vị ═══ -->
-<div class="overlay hidden" id="modal-copy-process">
-  <div class="modal-box w640">
-    <div class="modal-hd">
-      <h3 class="modal-title">Sao chép quy trình về đơn vị</h3>
-      <button class="modal-close" data-close="modal-copy-process">✕</button>
-    </div>
-    <div class="modal-bd">
-      <div class="fi">
-        <label>Sao chép về đơn vị<span class="req">*</span></label>
-        <select class="fc" id="copy-target-unit"></select>
-      </div>
-      <div class="fi">
-        <div class="flex justify-between items-center" style="margin-bottom:6px">
-          <label style="margin:0">Chọn quy trình nguồn (Cấp 1)<span class="req">*</span></label>
-          <label class="text-sm" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-            <input type="checkbox" id="copy-select-all" onchange="toggleAllCopySources(this.checked)"> Chọn tất cả
-          </label>
-        </div>
-        <input class="fc" id="copy-source-search" type="text" placeholder="🔍 Tìm quy trình…" autocomplete="off" style="margin-bottom:6px">
-        <div class="copy-source-list" id="copy-source-list"></div>
-      </div>
-      <div class="f-hint">Bản sao giữ nguyên toàn bộ bước, người phê duyệt và trường thông tin — bạn chỉnh sửa lại sau khi sao chép xong.</div>
-    </div>
-    <div class="modal-ft">
-      <span class="text-sm text-muted" id="copy-count-label" style="margin-right:auto"></span>
-      <button class="btn btn-default" data-close="modal-copy-process">Huỷ</button>
-      <button class="btn btn-primary" onclick="doCopyProcess()">Xác nhận</button>
     </div>
   </div>
 </div>
@@ -646,65 +594,67 @@
 <script src="_utils.js"></script>
 <script>
 /* ============================================================
-   DATA — cây đơn vị 3 cấp
-   Cấp 1: đơn vị quản lý toàn trường (sở hữu quy trình gốc)
-   Cấp 2: Trường con / Khoa — được PHÉP sao chép quy trình từ Cấp 1
-   Cấp 3: Khoa con / Bộ môn — KHÔNG có quy trình riêng, luôn dùng
-          chung quy trình hiệu lực của Cấp 2 quản lý nó
+   DATA — danh sách đơn vị (phẳng, không phân cấp) — dùng cho gợi ý
+   "Đơn vị duyệt" ở bảng bước (builder) và nhóm người duyệt theo đơn
+   vị ở popup Chọn người duyệt. Không còn khái niệm đơn vị sở hữu quy
+   trình/sao chép quy trình — mọi quy trình dùng chung 1 danh sách.
    ============================================================ */
 const UNITS = [
-  { id:'u-dh', level:1, parent:null, name:'Đại học' },
-  { id:'u-ctsv', level:1, parent:null, name:'Ban Công tác Sinh viên' },
-  { id:'u-daotao', level:1, parent:null, name:'Ban Đào tạo' },
-  { id:'u-sdh', level:1, parent:null, name:'Phòng Sau đại học' },
-  { id:'u-khcn', level:1, parent:null, name:'Phòng Khoa học Công nghệ' },
-  { id:'u-thanhtra', level:1, parent:null, name:'Ban Thanh tra Pháp chế' },
+  { id:'u-dh', name:'Đại học' },
+  { id:'u-ctsv', name:'Ban Công tác Sinh viên' },
+  { id:'u-daotao', name:'Ban Đào tạo' },
+  { id:'u-sdh', name:'Phòng Sau đại học' },
+  { id:'u-khcn', name:'Phòng Khoa học Công nghệ' },
+  { id:'u-thanhtra', name:'Ban Thanh tra Pháp chế' },
 
-  { id:'u-cntt', level:2, parent:'u-dh', name:'Khoa CNTT' },
-  { id:'u-kt', level:2, parent:'u-dh', name:'Khoa Kinh tế' },
-  { id:'u-truongxd', level:2, parent:'u-dh', name:'Trường Xây dựng' },
-  { id:'u-ngoaingu', level:2, parent:'u-dh', name:'Khoa Ngoại ngữ' },
-  { id:'u-yduoc', level:2, parent:'u-dh', name:'Trường Y Dược' },
-  { id:'u-cokhi', level:2, parent:'u-dh', name:'Khoa Cơ khí' },
-  { id:'u-dienlanh', level:2, parent:'u-dh', name:'Khoa Điện – Điện lạnh' },
-
-  { id:'u-cntt-httt', level:3, parent:'u-cntt', name:'Bộ môn Hệ thống Thông tin' },
-  { id:'u-cntt-kthm', level:3, parent:'u-cntt', name:'Bộ môn Khoa học Máy tính' },
-  { id:'u-cntt-mangmt', level:3, parent:'u-cntt', name:'Bộ môn Mạng máy tính' },
-  { id:'u-kt-qtkd', level:3, parent:'u-kt', name:'Khoa con Quản trị Kinh doanh' },
-  { id:'u-kt-ketoan', level:3, parent:'u-kt', name:'Bộ môn Kế toán' },
-  { id:'u-xd-cauduongtb', level:3, parent:'u-truongxd', name:'Khoa con Cầu đường' },
+  { id:'u-cntt', name:'Khoa CNTT' },
+  { id:'u-kt', name:'Khoa Kinh tế' },
+  { id:'u-truongxd', name:'Trường Xây dựng' },
+  { id:'u-ngoaingu', name:'Khoa Ngoại ngữ' },
+  { id:'u-yduoc', name:'Trường Y Dược' },
+  { id:'u-cokhi', name:'Khoa Cơ khí' },
+  { id:'u-dienlanh', name:'Khoa Điện – Điện lạnh' },
 ];
-
-function unitById(id){ return UNITS.find(u => u.id === id); }
-const LEVEL_LABEL = { 1:'Cấp 1', 2:'Cấp 2', 3:'Cấp 3' };
-
-/* Đơn vị đang chọn qua combobox tìm kiếm — mặc định Đại học (Cấp 1) */
-let selectedUnitId = 'u-dh';
 
 /* ============================================================
-   DATA — mô phỏng danh sách quy trình theo chức năng
-   Mỗi quy trình gắn với 1 đơn vị SỞ HỮU (ownerUnit).
-   originId = null → quy trình gốc. originId = 'pX' → bản sao,
-   giữ tham chiếu tới quy trình gốc đã sao chép (không tự đồng bộ).
+   DATA — mô phỏng danh sách quy trình theo chức năng.
+   1 danh sách quy trình chung toàn hệ thống, không gắn đơn vị sở hữu.
    ============================================================ */
-// versionStatus: 'nhap' (chưa từng Xuất bản) | 'dang_dung' (đang chạy cho đơn mới) |
-// 'ngung_su_dung' (từng Đang dùng, nay bị dừng chủ động, không có bản thay thế).
-// Cột "Trạng thái" ở bảng danh sách LUÔN suy ra từ đúng 2 trường này, không phải
-// cờ nhập tay riêng — xem renderProcGrid().
+// Mỗi quy trình có nhiều phiên bản (versions[]), sắp xếp tăng dần theo số phiên
+// bản. status mỗi phiên bản: 'nhap' (chưa từng Xuất bản) | 'dang_dung' (đang chạy
+// cho đơn mới, tối đa 1 bản/quy trình) | 'ngung_su_dung' (từng Đang dùng, bị 1 bản
+// khác thay thế hoặc chủ động dừng). "Phiên bản đang áp dụng" = bản có status
+// dang_dung (nếu có); "Phiên bản mới nhất" = phần tử cuối mảng — 2 khái niệm có
+// thể khác nhau khi đã có bản Nháp mới hơn bản đang chạy thật (xem p1, latestVersion()/
+// activeVersion() và cột "Phiên bản" ở renderProcGrid()).
 const PROCESSES = [
-  // Quy trình gốc — sở hữu bởi Cấp 1 (Đại học)
-  { id:'p1', itemId:1, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình xét học vụ (cảnh báo học vụ)', versionStatus:'dang_dung', versionLabel:'v2', stepCount:5, updated:'02/07/2026', originId:null, templateName:'Mẫu Quyết định cảnh báo học vụ' },
-  { id:'p2', itemId:2, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình công nhận tốt nghiệp', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'28/06/2026', originId:null, templateName:'Mẫu Quyết định công nhận tốt nghiệp' },
-  { id:'p3', itemId:3, ownerUnit:'u-dh', func:'qdsv', name:'Quy trình bảo lưu kết quả học tập', versionStatus:'ngung_su_dung', versionLabel:'v1', stepCount:3, updated:'10/07/2026', originId:null, templateName:'Đơn xin bảo lưu kết quả học tập (BM1)' },
-  { id:'p4', itemId:4, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng học kỳ (Sinh viên 5 tốt)', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'20/06/2026', originId:null, templateName:'Mẫu Quyết định khen thưởng "Sinh viên 5 tốt"' },
-  { id:'p5', itemId:5, ownerUnit:'u-dh', func:'khenthuong', name:'Quy trình khen thưởng đột xuất (NCKH, cuộc thi)', versionStatus:'dang_dung', versionLabel:'v3', stepCount:3, updated:'05/07/2026', originId:null, templateName:'Mẫu Quyết định khen thưởng đột xuất' },
-  { id:'p6', itemId:6, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'12/07/2026', originId:null, featured:true, templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo' },
-  { id:'p7', itemId:7, ownerUnit:'u-dh', func:'kyluat', name:'Quy trình xử lý vi phạm thi cử', versionStatus:'nhap', versionLabel:'v1', stepCount:4, updated:'01/07/2026', originId:null, templateName:'Mẫu Quyết định xử lý vi phạm thi cử' },
-
-  // Bản sao — Khoa CNTT (Cấp 2) đã sao chép từ Đại học rồi tùy chỉnh riêng
-  { id:'p6-cntt', itemId:8, ownerUnit:'u-cntt', func:'kyluat', name:'Quy trình xét kỷ luật sinh viên (Khoa CNTT)', versionStatus:'dang_dung', versionLabel:'v1', stepCount:4, updated:'12/07/2026', originId:'p6', templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo' },
+  { id:'p1', itemId:1, func:'qdsv', name:'Quy trình xét học vụ (cảnh báo học vụ)', stepCount:5, templateName:'Mẫu Quyết định cảnh báo học vụ',
+    versions:[ { label:'v2', status:'dang_dung', updated:'02/07/2026' }, { label:'v3', status:'nhap', updated:'11/07/2026' } ] },
+  { id:'p2', itemId:2, func:'qdsv', name:'Quy trình công nhận tốt nghiệp', stepCount:4, templateName:'Mẫu Quyết định công nhận tốt nghiệp',
+    versions:[ { label:'v1', status:'dang_dung', updated:'28/06/2026' } ] },
+  { id:'p3', itemId:3, func:'qdsv', name:'Quy trình bảo lưu kết quả học tập', stepCount:3, templateName:'Đơn xin bảo lưu kết quả học tập (BM1)',
+    versions:[ { label:'v1', status:'ngung_su_dung', updated:'10/07/2026' } ] },
+  { id:'p4', itemId:4, func:'khenthuong', name:'Quy trình khen thưởng học kỳ (Sinh viên 5 tốt)', stepCount:4, templateName:'Mẫu Quyết định khen thưởng "Sinh viên 5 tốt"',
+    versions:[ { label:'v1', status:'dang_dung', updated:'20/06/2026' } ] },
+  { id:'p5', itemId:5, func:'khenthuong', name:'Quy trình khen thưởng đột xuất (NCKH, cuộc thi)', stepCount:3, templateName:'Mẫu Quyết định khen thưởng đột xuất',
+    versions:[ { label:'v3', status:'dang_dung', updated:'05/07/2026' } ] },
+  { id:'p6', itemId:6, func:'kyluat', name:'Quy trình xét kỷ luật sinh viên', stepCount:4, featured:true, templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo',
+    versions:[ { label:'v1', status:'dang_dung', updated:'12/07/2026' } ] },
+  { id:'p7', itemId:7, func:'kyluat', name:'Quy trình xử lý vi phạm thi cử', stepCount:4, templateName:'Mẫu Quyết định xử lý vi phạm thi cử',
+    versions:[ { label:'v1', status:'nhap', updated:'01/07/2026' } ] },
+  { id:'p6-cntt', itemId:8, func:'kyluat', name:'Quy trình xét kỷ luật sinh viên (Khoa CNTT)', stepCount:4, templateName:'Mẫu Quyết định kỷ luật mức khiển trách/cảnh cáo',
+    versions:[ { label:'v1', status:'dang_dung', updated:'12/07/2026' } ] },
 ];
+
+/* Phiên bản mới nhất = phần tử cuối mảng (versions[] luôn duy trì tăng dần). */
+function latestVersion(p){ return p.versions[p.versions.length - 1]; }
+/* Phiên bản đang áp dụng = bản duy nhất có status dang_dung, hoặc null nếu quy
+   trình chưa từng được Xuất bản lần nào. */
+function activeVersion(p){ return p.versions.find(v => v.status === 'dang_dung') || null; }
+/* Phiên bản ưu tiên hiển thị mặc định — ưu tiên phiên bản ĐANG DÙNG nếu có; chỉ
+   khi quy trình chưa từng Xuất bản (không có bản Đang dùng) mới lấy phiên bản
+   mới nhất. Dùng cho cả cột Trạng thái/Phiên bản mặc định VÀ bộ lọc Trạng thái. */
+function defaultDisplayedVersion(p){ return activeVersion(p) || latestVersion(p); }
 
 const FUNC_LABEL = { qdsv:'Quyết định sinh viên', khenthuong:'Khen thưởng', kyluat:'Kỷ luật sinh viên', bieumau:'Biểu mẫu' };
 
@@ -850,17 +800,7 @@ function defaultSteps(n){
    đang mở). Sửa tên bước trong builder sẽ phản ánh ngay ra danh sách. */
 PROCESSES.forEach(p => { p.steps = defaultSteps(p.stepCount); });
 
-/* Đơn vị "hiệu lực" đang xem — Cấp 3 luôn quy về Cấp 2 cha (không có bản riêng) */
-function effectiveOwnerUnit(){
-  const u = unitById(selectedUnitId);
-  return u.level === 3 ? u.parent : u.id;
-}
-
-/* == Unit search combobox == */
-const unitSearchInput = document.getElementById('unit-search');
-const unitComboMenu = document.getElementById('unit-combo-menu');
-let unitHlIndex = -1;
-
+/* highlightMatch dùng chung cho mini-combo (Đơn vị/Vai trò/Người duyệt trong bảng bước) */
 function highlightMatch(text, q){
   if (!q) return text;
   const i = text.toLowerCase().indexOf(q.toLowerCase());
@@ -868,88 +808,9 @@ function highlightMatch(text, q){
   return text.slice(0,i) + '<mark>' + text.slice(i,i+q.length) + '</mark>' + text.slice(i+q.length);
 }
 
-function unitDisplayName(u){
-  return u.level === 1 ? u.name : (u.name + ' (' + unitById(u.parent).name + ')');
-}
-
-function renderUnitMenu(query){
-  const q = (query || '').trim();
-  const matches = q
-    ? UNITS.filter(u => u.name.toLowerCase().includes(q.toLowerCase()))
-    : UNITS;
-
-  if (!matches.length){
-    unitComboMenu.innerHTML = '<div class="unit-combo-empty">Khong tim thay don vi nao khop &quot;' + q + '&quot;</div>';
-    unitHlIndex = -1;
-    return;
-  }
-
-  const groups = { 1:[], 2:[], 3:[] };
-  matches.forEach(u => groups[u.level].push(u));
-
-  let html = '';
-  let flatIndex = 0;
-  [1,2,3].forEach(lvl => {
-    if (!groups[lvl].length) return;
-    html += '<div class="unit-combo-group">' + LEVEL_LABEL[lvl] + '</div>';
-    groups[lvl].forEach(u => {
-      const parentTag = u.level > 1 ? ('<span class="text-muted"> - ' + unitById(u.parent).name + '</span>') : '';
-      html += '<div class="unit-combo-item" data-idx="' + flatIndex + '" data-id="' + u.id + '" onclick="pickUnit(&#39;' + u.id + '&#39;)">'
-        + '<span>' + highlightMatch(u.name, q) + parentTag + '</span>'
-        + '<span class="lvl-badge">' + LEVEL_LABEL[lvl] + '</span></div>';
-      flatIndex++;
-    });
-  });
-  unitComboMenu.innerHTML = html;
-  unitHlIndex = -1;
-}
-
-function openUnitMenu(){
-  renderUnitMenu(unitSearchInput.value);
-  unitComboMenu.classList.add('open');
-}
-function closeUnitMenu(){
-  unitComboMenu.classList.remove('open');
-  unitHlIndex = -1;
-}
-
 function currentFuncFilter(){
   return document.getElementById('func-select').value;
 }
-
-function pickUnit(id){
-  selectedUnitId = id;
-  unitSearchInput.value = unitDisplayName(unitById(id));
-  closeUnitMenu();
-  renderCopyAlert();
-  currentPage = 1;
-  renderProcGrid();
-}
-
-function setUnitHighlight(newIdx){
-  const items = unitComboMenu.querySelectorAll('.unit-combo-item');
-  items.forEach(el => el.classList.remove('hl'));
-  if (newIdx >= 0 && newIdx < items.length){
-    items[newIdx].classList.add('hl');
-    items[newIdx].scrollIntoView({ block:'nearest' });
-  }
-  unitHlIndex = newIdx;
-}
-
-unitSearchInput.addEventListener('focus', () => { unitSearchInput.select(); openUnitMenu(); });
-unitSearchInput.addEventListener('input', () => openUnitMenu());
-unitSearchInput.addEventListener('keydown', e => {
-  const items = unitComboMenu.querySelectorAll('.unit-combo-item');
-  if (e.key === 'ArrowDown'){ e.preventDefault(); setUnitHighlight(Math.min(unitHlIndex+1, items.length-1)); }
-  else if (e.key === 'ArrowUp'){ e.preventDefault(); setUnitHighlight(Math.max(unitHlIndex-1, 0)); }
-  else if (e.key === 'Enter'){
-    e.preventDefault();
-    if (unitHlIndex >= 0 && items[unitHlIndex]) pickUnit(items[unitHlIndex].dataset.id);
-  } else if (e.key === 'Escape'){ closeUnitMenu(); unitSearchInput.blur(); }
-});
-document.addEventListener('click', e => {
-  if (!document.getElementById('unit-combo').contains(e.target)) closeUnitMenu();
-});
 
 /* == Dropdown thông báo (chuông trên header) — demo data tĩnh, minh hoạ luồng bấm xem == */
 const NOTIFICATIONS = [
@@ -998,31 +859,18 @@ document.addEventListener('click', e => {
 
 updateNotifBadge();
 
-function renderUnitSelect(){
-  unitSearchInput.value = unitDisplayName(unitById(selectedUnitId));
-  renderCopyAlert();
-}
-
-function renderCopyAlert(){
-  const alertEl = document.getElementById('unit-copy-alert');
-  const u = unitById(selectedUnitId);
-
-  updateActionButtons(u);
-
-  /* Alert "dùng chung quy trình" (Cấp 3) / "chưa có quy trình riêng" (Cấp 2)
-     đã bị ẩn theo yêu cầu — giữ lại logic bên dưới để dễ khôi phục sau này. */
-  alertEl.style.display = 'none';
-}
-
-/* Cấp 1: được tạo quy trình mới. Cấp 2/3: chỉ được sao chép về từ Cấp 1. */
-function updateActionButtons(u){
-  const isLevel1 = u.level === 1;
-  document.getElementById('btn-new-process').style.display = isLevel1 ? '' : 'none';
-  document.getElementById('btn-copy-process').style.display = isLevel1 ? 'none' : '';
-}
-
 const PROC_PAGE_SIZE = 20;
 let currentPage = 1;
+
+/* Chế độ xem phiên bản đang chọn theo từng quy trình (id → 'latest'|'active').
+   Mặc định 'latest' — chỉ có ý nghĩa (hiện dropdown chọn) khi phiên bản đang áp
+   dụng khác phiên bản mới nhất, xem renderProcGrid(). */
+let versionViewMode = new Map();
+
+function pickVersionMode(id, mode){
+  versionViewMode.set(id, mode);
+  renderProcGrid();
+}
 
 function currentNameSearch(){
   return document.getElementById('proc-name-search').value.trim().toLowerCase();
@@ -1030,15 +878,16 @@ function currentNameSearch(){
 
 function renderProcGrid(){
   const tbody = document.getElementById('proc-tbody');
-  const ownerUnit = effectiveOwnerUnit();
   const filter = currentFuncFilter();
   const nameQuery = currentNameSearch();
 
   const versionStatusFilter = document.getElementById('version-status-select').value;
 
-  let list = PROCESSES.filter(p => p.ownerUnit === ownerUnit);
+  let list = PROCESSES.slice();
   if (filter !== 'all') list = list.filter(p => p.func === filter);
-  if (versionStatusFilter !== 'all') list = list.filter(p => p.versionStatus === versionStatusFilter);
+  // Lọc theo trạng thái của phiên bản ĐANG ĐƯỢC ƯU TIÊN HIỂN THỊ MẶC ĐỊNH (đang
+  // dùng nếu có, ngược lại mới nhất) — không phải "có bất kỳ phiên bản nào khớp".
+  if (versionStatusFilter !== 'all') list = list.filter(p => defaultDisplayedVersion(p).status === versionStatusFilter);
   if (selectedTemplateFilter) list = list.filter(p => p.templateName === selectedTemplateFilter);
   if (nameQuery) list = list.filter(p => p.name.toLowerCase().includes(nameQuery));
 
@@ -1047,6 +896,26 @@ function renderProcGrid(){
   const pageList = list.slice((currentPage-1)*PROC_PAGE_SIZE, currentPage*PROC_PAGE_SIZE);
 
   tbody.innerHTML = pageList.map((p, idx) => {
+    const latest = latestVersion(p);
+    const active = activeVersion(p);
+    // Chỉ cho chọn khi có 2 phiên bản khác nhau đáng để phân biệt (đã Xuất bản
+    // 1 bản, nhưng đã có bản mới hơn đang soạn/thay thế) — nếu không, khỏi hiện
+    // dropdown thừa, chỉ hiện thẳng phiên bản mới nhất.
+    // Ưu tiên hiển thị phiên bản ĐANG DÙNG nếu quy trình đã từng Xuất bản; chỉ
+    // khi chưa từng Xuất bản (không có bản Đang dùng nào) mới ưu tiên phiên bản
+    // mới nhất. Trạng thái ở cột bên cạnh luôn đi theo đúng phiên bản đang hiển thị.
+    const hasChoice = active && active.label !== latest.label;
+    const defaultMode = active ? 'active' : 'latest';
+    const mode = versionViewMode.get(p.id) || defaultMode;
+    const shown = (mode === 'active' && active) ? active : latest;
+
+    const versionCell = hasChoice
+      ? `<select class="fc" style="width:180px;height:28px;font-size:12.5px;padding:2px 6px" onclick="event.stopPropagation()" onchange="pickVersionMode('${p.id}', this.value)">
+          <option value="active" ${mode==='active'?'selected':''}>Đang áp dụng: ${active.label}</option>
+          <option value="latest" ${mode==='latest'?'selected':''}>Mới nhất: ${latest.label}</option>
+        </select>`
+      : shown.label;
+
     return `
     <tr class="proc-row" onclick="openApprovalBuilder('${p.id}')">
       <td class="text-muted">${(currentPage-1)*PROC_PAGE_SIZE + idx + 1}</td>
@@ -1054,8 +923,8 @@ function renderProcGrid(){
       <td><span class="proc-name-cell">${p.name}</span></td>
       <td class="text-muted">${p.templateName || '—'}</td>
       <td class="text-muted">${FUNC_LABEL[p.func] || ''}</td>
-      <td>${versionStatusTag(p)}</td>
-      <td class="text-muted">${p.versionLabel}</td>
+      <td>${versionStatusTag(shown.status)}</td>
+      <td class="text-muted">${versionCell}</td>
       <td onclick="event.stopPropagation()">
         <div class="tbl-actions">
           <button class="icon-btn" title="Cấu hình quy trình" onclick="openApprovalBuilder('${p.id}')">
@@ -1064,7 +933,7 @@ function renderProcGrid(){
         </div>
       </td>
     </tr>`;
-  }).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có quy trình nào cho chức năng này ở đơn vị đang chọn</div></td></tr>`;
+  }).join('') || `<tr><td colspan="8"><div class="tbl-empty">Chưa có quy trình nào khớp bộ lọc đang chọn</div></td></tr>`;
 
   renderPagination(list.length, totalPages);
 }
@@ -1093,11 +962,12 @@ function goToPage(p){
   renderProcGrid();
 }
 
-// Nhãn cột "Trạng thái" — suy hoàn toàn từ versionStatus, không phải cờ nhập tay riêng.
-// Số phiên bản hiển thị riêng ở cột "Phiên bản mới nhất" nên không lặp lại ở đây.
-function versionStatusTag(p){
-  if (p.versionStatus === 'dang_dung') return `<span class="tag tag-success">Đang dùng</span>`;
-  if (p.versionStatus === 'ngung_su_dung') return `<span class="tag tag-default">Ngừng sử dụng</span>`;
+// Nhãn cột "Trạng thái" — nhận thẳng status của phiên bản ĐANG ĐƯỢC CHỌN hiển thị
+// ở dòng đó (mới nhất hoặc đang áp dụng, xem renderProcGrid()), không phải cờ
+// nhập tay riêng của quy trình.
+function versionStatusTag(status){
+  if (status === 'dang_dung') return `<span class="tag tag-success">Đang dùng</span>`;
+  if (status === 'ngung_su_dung') return `<span class="tag tag-default">Ngừng sử dụng</span>`;
   return `<span class="tag tag-warning">Nháp</span>`;
 }
 
@@ -1113,120 +983,7 @@ document.getElementById('proc-name-search').addEventListener('input', () => {
   renderProcGrid();
 });
 
-renderUnitSelect();
 renderProcGrid();
-
-/* ── Modal Sao chép quy trình ── */
-function openCopyModal(){
-  const targetSel = document.getElementById('copy-target-unit');
-  const listEl = document.getElementById('copy-source-list');
-  const lvl2Units = UNITS.filter(u => u.level === 2);
-  targetSel.innerHTML = lvl2Units.map(u => `<option value="${u.id}" ${u.id===selectedUnitId?'selected':''}>${u.name}</option>`).join('');
-
-  const rootProcesses = PROCESSES.filter(p => p.ownerUnit === 'u-dh');
-  listEl.innerHTML = rootProcesses.map(p => `
-    <label class="copy-source-item" data-name="${p.name.toLowerCase()}">
-      <input type="checkbox" class="copy-source-check" value="${p.id}" onchange="updateCopyCount()">
-      <span class="csi-name">${p.name}</span>
-      <span class="csi-id">#${p.itemId}</span>
-    </label>`).join('');
-
-  document.getElementById('copy-select-all').checked = false;
-  document.getElementById('copy-source-search').value = '';
-  updateCopyCount();
-  openModal('modal-copy-process');
-}
-
-document.getElementById('copy-source-search').addEventListener('input', e => {
-  filterCopySourceList(e.target.value);
-});
-
-function filterCopySourceList(query){
-  const q = query.trim().toLowerCase();
-  document.querySelectorAll('.copy-source-item').forEach(item => {
-    item.style.display = item.dataset.name.includes(q) ? '' : 'none';
-  });
-}
-
-function toggleAllCopySources(checked){
-  document.querySelectorAll('.copy-source-item').forEach(item => {
-    if (item.style.display !== 'none') item.querySelector('.copy-source-check').checked = checked;
-  });
-  updateCopyCount();
-}
-
-function updateCopyCount(){
-  const checks = document.querySelectorAll('.copy-source-check');
-  const checked = document.querySelectorAll('.copy-source-check:checked');
-  document.getElementById('copy-count-label').textContent = checked.length
-    ? `Đã chọn ${checked.length}/${checks.length} quy trình`
-    : '';
-  document.getElementById('copy-select-all').checked = checks.length > 0 && checked.length === checks.length;
-}
-
-/* Sao chép quy trình nguồn (Cấp 1) về đơn vị đích (Cấp 2): tạo bản ghi PROCESSES
-   mới thật sự cho mỗi quy trình được chọn — deep-clone steps[] để chỉnh sửa sau
-   này ở bản sao không ảnh hưởng bản gốc. Nếu đơn vị đích đã có bản sao của cùng
-   quy trình nguồn (originId trùng) rồi thì bỏ qua, không tạo trùng lặp. */
-function doCopyProcess(){
-  const targetUnit = document.getElementById('copy-target-unit').value;
-  const checkedIds = Array.from(document.querySelectorAll('.copy-source-check:checked')).map(cb => cb.value);
-
-  if (!checkedIds.length){
-    showToast('Chọn ít nhất 1 quy trình để sao chép', 'warn');
-    return;
-  }
-
-  const maxItemId = () => PROCESSES.reduce((max, p) => Math.max(max, p.itemId), 0);
-  const today = new Date();
-  const updated = String(today.getDate()).padStart(2,'0') + '/' + String(today.getMonth()+1).padStart(2,'0') + '/' + today.getFullYear();
-
-  const copiedNames = [];
-  const skippedNames = [];
-
-  checkedIds.forEach(sourceId => {
-    const source = procById(sourceId);
-    const alreadyCopied = PROCESSES.some(p => p.ownerUnit === targetUnit && p.originId === sourceId);
-    if (alreadyCopied){
-      skippedNames.push(source.name);
-      return;
-    }
-
-    const copy = {
-      id: 'p-copy-' + sourceId + '-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-      itemId: maxItemId() + 1,
-      ownerUnit: targetUnit,
-      func: source.func,
-      name: source.name,
-      // Bản sao ở đơn vị mới luôn bắt đầu là Nháp (v1) — cần đơn vị đó tự
-      // rà soát/xuất bản riêng, không tự động thừa hưởng trạng thái Đang
-      // dùng/Ngừng sử dụng của quy trình nguồn.
-      versionStatus: 'nhap', versionLabel: 'v1',
-      stepCount: source.steps.length,
-      updated,
-      originId: sourceId,
-      steps: JSON.parse(JSON.stringify(source.steps)),
-    };
-    PROCESSES.unshift(copy);
-    copiedNames.push(source.name);
-  });
-
-  closeModal('modal-copy-process');
-
-  if (copiedNames.length){
-    showToast(`Đã sao chép ${copiedNames.length} quy trình (${copiedNames.join(', ')}) về ${unitById(targetUnit).name}`, 'ok');
-  }
-  if (skippedNames.length){
-    showToast(`Bỏ qua ${skippedNames.length} quy trình đã có bản sao ở đơn vị này (${skippedNames.join(', ')})`, 'warn');
-  }
-
-  selectedUnitId = targetUnit;
-  renderUnitSelect();
-  document.getElementById('func-select').value = 'all';
-  document.getElementById('proc-name-search').value = '';
-  currentPage = 1;
-  renderProcGrid();
-}
 
 /* ============================================================
    DATA — cấu trúc quy trình chi tiết (demo: Quy trình xét kỷ luật)
@@ -1334,11 +1091,11 @@ function doCreateProcess(){
   // Trạng thái không còn chọn tay — quy trình mới luôn bắt đầu ở Nháp (v1),
   // suy ra từ việc chưa từng Xuất bản lần nào (xem renderProcGrid()).
   const newProcess = {
-    id: newId, itemId: maxItemId + 1, ownerUnit: 'u-dh', func, name,
+    id: newId, itemId: maxItemId + 1, func, name,
     triggerId: trigger.id, triggerName: trigger.name,
     templateId: template.id, templateName: template.name,
-    versionStatus: 'nhap', versionLabel: 'v1',
-    stepCount: 0, updated, originId: null, steps: [],
+    stepCount: 0, steps: [],
+    versions: [ { label: 'v1', status: 'nhap', updated } ],
   };
   PROCESSES.unshift(newProcess);
 
@@ -1371,10 +1128,11 @@ function openApprovalBuilder(procId){
 
 function openBuilder(procId){
   const p = procId === 'new' ? null : procById(procId);
-  currentWorkflow = p || { name:'Quy trình mới', func:'', steps:[], updated:'' };
+  currentWorkflow = p || { name:'Quy trình mới', func:'', steps:[] };
+  const lastUpdated = p ? latestVersion(p).updated : '';
 
   document.getElementById('builder-title').textContent = currentWorkflow.name;
-  document.getElementById('builder-sub').textContent = (FUNC_LABEL[currentWorkflow.func] || '') + ' · ' + currentWorkflow.steps.length + ' bước · Cập nhật ' + (currentWorkflow.updated || '');
+  document.getElementById('builder-sub').textContent = (FUNC_LABEL[currentWorkflow.func] || '') + ' · ' + currentWorkflow.steps.length + ' bước · Cập nhật ' + lastUpdated;
   expandedRows.clear();
   renderTrack();
   openModal('modal-builder');
@@ -1796,7 +1554,7 @@ const COL_TITLE = { dept:'Đơn vị', role:'Vai trò', person:'Người' };
 
 /* Nguồn option gộp {value,label} cho Đơn vị/Vai trò — dùng bởi mini-combo tìm kiếm (Người duyệt dùng modal riêng, xem PERSON_OPTIONS) */
 function optionsForType(type){
-  if (type==='dept') return UNITS.filter(u=>u.level<=2).map(u => ({ value:'dept:'+u.name, label:u.name }));
+  if (type==='dept') return UNITS.map(u => ({ value:'dept:'+u.name, label:u.name }));
   return ROLE_OPTIONS.map(r => ({ value:'role:'+r, label:r }));
 }
 
@@ -2342,7 +2100,7 @@ function doAddStep(){
   showToast('Đã thêm bước mới vào quy trình', 'ok');
 }
 
-/* Mặc định hiển thị danh sách quy trình (không tự mở builder), đúng ngữ cảnh đơn vị đang chọn */
+/* Mặc định hiển thị danh sách quy trình (không tự mở builder) */
 backToList();
 </script>
 </body>

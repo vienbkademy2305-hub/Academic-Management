@@ -87,6 +87,30 @@
   .src-pick-code{width:88px;flex:0 0 88px;text-align:left}
   .src-pick-vi{flex:1;min-width:0}
   .src-preview-empty{padding:18px;text-align:center;color:var(--text-3);font-size:12.5px}
+
+  /* Field "Bảng" — mỗi cột là 1 thẻ thu gọn/mở rộng, kéo-thả để sắp xếp lại thứ tự cột */
+  .add-field-menu-item .badge-new{margin-left:auto;font-size:10px;font-weight:700;color:#fff;background:var(--primary);border-radius:10px;padding:1px 7px;letter-spacing:.02em}
+  .tbl-col-card{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff;overflow:hidden}
+  .tbl-col-hd{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer}
+  .tbl-col-hd:hover{background:#fafafa}
+  .tbl-col-drag{cursor:grab;color:var(--text-3);flex-shrink:0;font-size:13px;line-height:1;user-select:none;letter-spacing:-1px}
+  .tbl-col-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--text-1)}
+  .tbl-col-tag{font-size:11px;color:var(--text-2);background:#f0f0f0;border-radius:10px;padding:2px 9px;white-space:nowrap;flex-shrink:0}
+  .tbl-col-body{padding:12px;border-top:1px solid var(--border);background:#fafafa}
+  .tbl-col-body .fi:last-child{margin-bottom:0}
+  .tbl-preview-note{text-align:center;color:var(--text-3);font-style:italic;padding:22px 12px}
+
+  /* Combobox có tìm kiếm cho "Danh mục hệ thống"/"Trường tham chiếu" — phòng trường hợp danh sách
+     dài, gõ để lọc thay vì cuộn 1 dropdown dài (copy pattern .unit-combo từ mh-admin-06). Panel bên
+     phải (.fb-right) có overflow-y:auto nên menu absolute thường bị khung đó cắt mất — dùng
+     position:fixed, JS tự tính left/top/width theo ô input mỗi lần mở/lọc để menu luôn nổi lên trên. */
+  .unit-combo{position:relative}
+  .unit-combo-menu{display:none;position:fixed;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);max-height:240px;overflow-y:auto;z-index:500;padding:4px}
+  .unit-combo-menu.open{display:block}
+  .unit-combo-item{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-1);white-space:nowrap}
+  .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
+  .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
+  .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
 </style>
 </head>
 <body>
@@ -136,12 +160,14 @@
 
       <div class="card-hd" style="margin-bottom:16px">
         <div>
-          <h1 class="card-title" style="font-size:16px">Demo: Nguồn danh sách tuỳ chọn cho trường Chọn một / Chọn nhiều</h1>
+          <h1 class="card-title" style="font-size:16px">Demo: Cấu hình trường biểu mẫu</h1>
           <div class="text-muted text-sm" style="margin-top:4px">
-            Màn hình demo độc lập, minh hoạ 1 tính năng của trình xây biểu mẫu: khi field là
+            Màn hình demo độc lập, minh hoạ 2 tính năng của trình xây biểu mẫu: (1) khi field là
             <b>Chọn một (dropdown)</b> hoặc <b>Chọn nhiều (dropdown)</b>, danh sách tuỳ chọn có thể
             <b>Tự nhập</b> thủ công hoặc <b>Lấy từ hệ thống</b> (chọn 1 trường dữ liệu có sẵn, tự động đổ ra các
-            giá trị — kể cả khi dữ liệu rất nhiều hoặc có mã kỹ thuật riêng).
+            giá trị — kể cả khi dữ liệu rất nhiều hoặc có mã kỹ thuật riêng); (2) field <b>Bảng</b> — chọn xong
+            mặc định chỉ có cột STT, admin tự thêm các cột khác, mỗi cột tự cấu hình Nguồn giá trị (Tham chiếu /
+            Hệ thống / Tự nhập) và mã kỹ thuật riêng để xuất Word.
           </div>
         </div>
       </div>
@@ -161,6 +187,8 @@
               <div class="add-field-menu-group">Lựa chọn</div>
               <div class="add-field-menu-item" onclick="addField('select1')">Chọn một (dropdown)</div>
               <div class="add-field-menu-item" onclick="addField('selectMulti')">Chọn nhiều (dropdown)</div>
+              <div class="add-field-menu-group">Khác</div>
+              <div class="add-field-menu-item" onclick="addField('table')"><span>Bảng</span><span class="badge-new">Mới</span></div>
             </div>
             <button type="button" class="btn btn-default btn-block" onclick="toggleAddFieldMenu(event)">+ Thêm field</button>
           </div>
@@ -215,6 +243,11 @@ const SYSTEM_SOURCES = {
     {code:'QD03', vi:'Chuyển ngành'}, {code:'QD04', vi:'Chuyển hệ đào tạo'},
     {code:'QD05', vi:'Khen thưởng'}, {code:'QD06', vi:'Kỷ luật'}, {code:'QD07', vi:'Công nhận tốt nghiệp'},
   ]},
+  lydoqd: {label: 'Lý do quyết định', fieldCode: 'droplydoqd', options: [
+    {code:'LD01', vi:'Điều kiện hoàn cảnh gia đình'}, {code:'LD02', vi:'Lý do sức khoẻ'},
+    {code:'LD03', vi:'Kết quả học tập không đạt yêu cầu'}, {code:'LD04', vi:'Vi phạm quy chế đào tạo'},
+    {code:'LD05', vi:'Theo nguyện vọng cá nhân'}, {code:'LD06', vi:'Lý do khác'},
+  ]},
   lydokt: {label: 'Lý do khen thưởng', fieldCode: 'droplydokt', options: [
     {code:'KT01', vi:'Sinh viên 5 tốt'}, {code:'KT02', vi:'Thành tích nghiên cứu khoa học'},
     {code:'KT03', vi:'Thủ khoa đầu vào'}, {code:'KT04', vi:'Đạt giải Olympic sinh viên'},
@@ -240,7 +273,61 @@ const TYPE_META = {
   date:        {label: 'Ngày tháng',           ico: 'Lịch'},
   select1:     {label: 'Chọn một (dropdown)',  ico: '▾1'},
   selectMulti: {label: 'Chọn nhiều (dropdown)',ico: '▾N'},
+  table:       {label: 'Bảng',                 ico: '▦'},
 };
+
+// Các trường hồ sơ có sẵn có thể chọn làm "Nguồn giá trị: Tham chiếu" cho 1 cột của field Bảng —
+// khi chọn, cột sẽ tự động lấy đúng giá trị theo hồ sơ của từng dòng, không cần nhập tay. Đặt tên
+// chung là REFERENCE_FIELDS (không cố định "sinh viên") vì Bảng có thể áp dụng cho đối tượng khác
+// tuỳ loại quyết định (giảng viên, nhân sự...); trong demo này tạm dùng bộ trường hồ sơ sinh viên.
+const REFERENCE_FIELDS = [
+  {key:'mssv',   label:'Mã sinh viên',        type:'text'},
+  {key:'hoten',  label:'Họ và tên',           type:'text'},
+  {key:'ngaysinh', label:'Ngày sinh',         type:'date'},
+  {key:'lop',    label:'Lớp hành chính',      type:'text'},
+  {key:'khoa',   label:'Khoa/Trường quản lý', type:'text'},
+  {key:'nganh',  label:'Ngành học',           type:'text'},
+];
+function referenceFieldType(key){
+  const rf = REFERENCE_FIELDS.find(r => r.key === key);
+  return rf ? rf.type : 'text';
+}
+
+// Kiểu dữ liệu cho cột "Tự nhập" (nguồn giá trị không lấy từ Tham chiếu/Hệ thống) — chọn Ngày tháng
+// thì cột có Định dạng hiển thị dạng ngày tháng bên dưới; chọn "Chọn một (dropdown)" thì cột có
+// thêm danh sách tuỳ chọn tự khai báo (y hệt UI "Tự nhập" của field Chọn một/nhiều ở trên).
+const COLUMN_DATA_TYPE_OPTIONS = [
+  {value:'text',   label:'Văn bản'},
+  {value:'number', label:'Số'},
+  {value:'date',   label:'Ngày tháng'},
+  {value:'select', label:'Chọn một (dropdown)'},
+];
+
+// Định dạng hiển thị riêng cho cột có kiểu Ngày tháng (lấy từ Tham chiếu có type 'date', hoặc cột
+// Nhập tay tự chọn Kiểu dữ liệu = Ngày tháng) — chỉ hiện khi cột thực sự là dạng ngày tháng. Cột
+// nguồn Hệ thống (danh mục) KHÔNG có định dạng riêng, luôn hiển thị đúng tên trong danh mục.
+const DATE_FORMAT_OPTIONS = [
+  {value:'dmy',       label:'DD/MM/YYYY'},
+  {value:'vi_long',   label:'ngày DD tháng MM năm YYYY'},
+  {value:'d_month_y', label:'DD Month YYYY'},
+];
+
+// Cột có "Định dạng hiển thị" hay không — chỉ khi thực sự là dạng ngày tháng (nguồn Tham chiếu kiểu
+// ngày, hoặc Nhập tay tự chọn Kiểu dữ liệu = Ngày tháng). Nguồn Hệ thống không còn định dạng riêng.
+function getColumnFormatKind(c){
+  if (c.sourceType === 'ref') return (c.sourceKey && referenceFieldType(c.sourceKey) === 'date') ? 'date' : null;
+  if (c.sourceType === 'manual') return c.dataType === 'date' ? 'date' : null;
+  return null;
+}
+
+// Tự sinh mã kỹ thuật (không dấu, snake_case) từ nhãn hiển thị tiếng Việt — chỉ dùng làm gợi ý
+// ban đầu, admin có thể sửa lại tự do, sửa xong thì không tự sinh lại nữa (tránh mất thao tác gõ).
+const DIACRITIC_MARKS_RE = new RegExp('[̀-ͯ]', 'g');
+function slugify(s){
+  return (s || '').toString().normalize('NFD').replace(DIACRITIC_MARKS_RE, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
 
 /* ================= STATE ================= */
 
@@ -259,7 +346,8 @@ function buildDefaultOverrides(sourceKey){
   return overrides;
 }
 
-let uid = 2;
+let uid = 3;
+let colUid = 0;
 let fields = [
   {id: 1, type: 'select1', label: 'Khoa mong muốn chuyển đến', labelEn: '', placeholderVi: 'Chọn khoa muốn chuyển đến', placeholderEn: '',
    required: true, mode: 'system', sourceKey: 'khoa', manualOptions: [{value:'option_1', vi:'', en:''}],
@@ -270,13 +358,25 @@ let fields = [
      {value:'option_2', vi:'Lý do sức khoẻ', en:''},
      {value:'option_3', vi:'Lý do khác', en:''},
    ], sourceOverrides: {}},
+  {id: 3, type: 'table', label: 'Danh sách sinh viên', labelEn: 'Student list', placeholderVi: '', placeholderEn: '',
+   required: true, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {},
+   code: 'danh_sach_sv',
+   columns: [
+     {id: ++colUid, label: 'Mã sinh viên', code: 'ma_sv', sourceType: 'ref', sourceKey: 'mssv', format: '', required: true},
+     {id: ++colUid, label: 'Họ tên', code: 'ho_ten', sourceType: 'ref', sourceKey: 'hoten', format: '', required: true},
+     {id: ++colUid, label: 'Lớp', code: 'lop', sourceType: 'ref', sourceKey: 'lop', format: '', required: false},
+     {id: ++colUid, label: 'Lý do', code: 'ly_do', sourceType: 'catalog', sourceKey: 'lydokl', format: 'name', required: true},
+     {id: ++colUid, label: 'Ghi chú', code: 'ghi_chu', sourceType: 'manual', sourceKey: '', dataType: 'text', format: '', required: false},
+   ]},
 ];
 let selectedId = 1;
 let panelTab = 'content';
+let expandedColId = null;
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function currentField(){ return fields.find(f => f.id === selectedId); }
 function isSelectType(t){ return t === 'select1' || t === 'selectMulti'; }
+function isTableType(t){ return t === 'table'; }
 
 /* ================= RENDER ================= */
 
@@ -310,6 +410,18 @@ function getEffectiveOptions(f){
   return (f.manualOptions || []).filter(o => o.vi).map(o => ({value: o.value || o.vi, label: o.vi}));
 }
 
+function getEffectiveTableColumns(f){
+  return (f.columns || []).filter(c => (c.label || '').trim());
+}
+
+// Tag chỉ hiện tên NHÓM nguồn (Tự nhập/Hệ thống/Tham chiếu), không hiện tên danh mục/trường cụ thể
+// đã chọn — nhất quán với "Tham chiếu" vốn đã không hiện tên trường tham chiếu cụ thể.
+function columnSourceTag(c){
+  if (c.sourceType === 'ref') return 'Tham chiếu';
+  if (c.sourceType === 'catalog') return 'Hệ thống';
+  return 'Tự nhập';
+}
+
 function renderPreview(){
   const box = document.getElementById('fb-preview-list');
   box.innerHTML = fields.map(f => {
@@ -333,6 +445,13 @@ function renderPreview(){
       control = `<input class="fc" type="number" placeholder="${esc(f.placeholderVi)}" disabled>`;
     } else if (f.type === 'date') {
       control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi) || 'dd/mm/yyyy'}" disabled>`;
+    } else if (f.type === 'table') {
+      const cols = getEffectiveTableColumns(f);
+      const headerCols = ['STT', ...cols.map(c => c.label)];
+      control = `<div class="tbl-wrap"><table class="tbl"><thead><tr>${headerCols.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+          <tbody><tr><td class="tbl-preview-note" colspan="${headerCols.length}">Người soạn sẽ chọn hoặc nhập danh sách ở đây</td></tr></tbody>
+        </table></div>
+        <div class="f-hint" style="margin-top:8px">${cols.length} cột lấy theo cấu hình bên phải (chưa gồm cột STT tự động). Ô này không ghép vào mẫu Word.</div>`;
     } else {
       control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi)}" disabled>`;
     }
@@ -347,6 +466,8 @@ function renderPanel(){
   const box = document.getElementById('fb-panel');
   const f = currentField();
   if (!f) { box.innerHTML = `<div class="fb-panel-empty">Chọn 1 field bên trái để cấu hình.</div>`; return; }
+  // Field "Bảng" chưa có tab Nâng cao — nếu đang đứng ở tab đó (VD do chuyển field) thì lùi về Nội dung
+  if (isTableType(f.type) && panelTab === 'advanced') panelTab = 'content';
 
   box.innerHTML = `
     <div class="fb-panel-hd">
@@ -356,7 +477,7 @@ function renderPanel(){
     <div class="tabs-nav">
       <button type="button" class="tab-btn ${panelTab==='content'?'active':''}" onclick="switchPanelTab('content')">Nội dung</button>
       <button type="button" class="tab-btn ${panelTab==='display'?'active':''}" onclick="switchPanelTab('display')">Hiển thị</button>
-      <button type="button" class="tab-btn ${panelTab==='advanced'?'active':''}" onclick="switchPanelTab('advanced')">Nâng cao</button>
+      ${isTableType(f.type) ? '' : `<button type="button" class="tab-btn ${panelTab==='advanced'?'active':''}" onclick="switchPanelTab('advanced')">Nâng cao</button>`}
     </div>
     <div id="fb-panel-body">${panelTab==='content' ? renderContentTab(f) : `<div class="fb-panel-empty">Demo tập trung vào tab Nội dung, tab này chưa triển khai.</div>`}</div>
   `;
@@ -366,14 +487,15 @@ function renderPanel(){
 // Checkbox HTML không có thuộc tính "indeterminate" — phải set qua DOM property sau khi render,
 // để thể hiện đúng trạng thái "đã chọn một phần" thay vì trông như chưa chọn gì.
 function syncSelectAllCheckbox(){
-  const cb = document.getElementById('src-select-all-cb');
-  if (!cb) return;
   const f = currentField();
-  if (!f || !f.sourceKey || !SYSTEM_SOURCES[f.sourceKey]) return;
-  const src = SYSTEM_SOURCES[f.sourceKey];
-  const overrides = f.sourceOverrides || {};
-  const includedCount = src.options.filter(o => overrides[o.code] && overrides[o.code].included).length;
-  cb.indeterminate = includedCount > 0 && includedCount < src.options.length;
+  if (!f) return;
+  const srcCb = document.getElementById('src-select-all-cb');
+  if (srcCb && f.sourceKey && SYSTEM_SOURCES[f.sourceKey]) {
+    const src = SYSTEM_SOURCES[f.sourceKey];
+    const overrides = f.sourceOverrides || {};
+    const includedCount = src.options.filter(o => overrides[o.code] && overrides[o.code].included).length;
+    srcCb.indeterminate = includedCount > 0 && includedCount < src.options.length;
+  }
 }
 
 function renderContentTab(f){
@@ -381,19 +503,29 @@ function renderContentTab(f){
     <div class="fi">
       <label>Nhãn hiển thị (Tiếng Việt) <span class="req">*</span></label>
       <input class="fc" value="${esc(f.label)}" oninput="updateField('label', this.value)">
-    </div>
+    </div>`;
+
+  if (!isTableType(f.type)) {
+    html += `
     <div class="fi">
       <label>Placeholder (Tiếng Việt)</label>
       <input class="fc" value="${esc(f.placeholderVi)}" oninput="updateField('placeholderVi', this.value)">
-    </div>
+    </div>`;
+  }
+
+  html += `
     <div class="fi">
       <label>Nhãn hiển thị (tiếng Anh)</label>
       <input class="fc" value="${esc(f.labelEn)}" oninput="updateField('labelEn', this.value)">
-    </div>
+    </div>`;
+
+  if (!isTableType(f.type)) {
+    html += `
     <div class="fi">
       <label>Placeholder (English)</label>
       <input class="fc" value="${esc(f.placeholderEn)}" oninput="updateField('placeholderEn', this.value)">
     </div>`;
+  }
 
   if (isSelectType(f.type)) {
     html += `
@@ -416,6 +548,20 @@ function renderContentTab(f){
         <span class="switch"><input type="checkbox" ${f.required?'checked':''} onchange="updateField('required', this.checked)"><span class="switch-track"></span></span>
       </label>
     </div>`;
+  } else if (isTableType(f.type)) {
+    html += `
+    <div class="fi">
+      <label>Mã kỹ thuật <span class="req">*</span></label>
+      <input class="fc" value="${esc(f.code)}" oninput="updateField('code', this.value)" title="Mã của cả bảng, dùng làm tên vùng lặp khi xuất Word">
+    </div>
+    <div class="fi">
+      <label class="switch-row">
+        <span>Bắt buộc nhập</span>
+        <span class="switch"><input type="checkbox" ${f.required?'checked':''} onchange="updateField('required', this.checked)"><span class="switch-track"></span></span>
+      </label>
+    </div>
+    <div class="divider"></div>`;
+    html += renderTableColumnsUI(f);
   } else {
     html += `
     <div class="divider"></div>
@@ -427,6 +573,89 @@ function renderContentTab(f){
     </div>`;
   }
   return html;
+}
+
+function renderTableColumnsUI(f){
+  const cols = f.columns || [];
+  const rows = cols.map((c, idx) => renderColumnCard(c, idx)).join('');
+  return `
+    <div class="fi" style="margin-bottom:0">
+      <label>Cột của bảng</label>
+      ${rows || '<div class="text-muted text-sm mb-8">Chưa có cột nào.</div>'}
+      <button type="button" class="btn btn-default btn-block" onclick="addTableColumn()">+ Thêm cột</button>
+    </div>`;
+}
+
+function renderColumnCard(c, idx){
+  const expanded = expandedColId === c.id;
+  let body = '';
+  if (expanded) {
+    const sourceHint = c.sourceType === 'ref'
+      ? 'Cột tham chiếu, tự động lấy theo hồ sơ có sẵn của từng dòng.'
+      : c.sourceType === 'catalog'
+        ? 'Cột lấy giá trị từ danh mục hệ thống, người soạn chọn khi ban hành.'
+        : 'Người soạn tự nhập giá trị cho từng dòng.';
+    let sourcePicker = '';
+    if (c.sourceType === 'catalog') {
+      sourcePicker = renderColumnSourceCombo(c, 'Danh mục hệ thống', 'Tìm danh mục...');
+    } else if (c.sourceType === 'ref') {
+      sourcePicker = renderColumnSourceCombo(c, 'Trường tham chiếu', 'Tìm trường tham chiếu...');
+    }
+    const formatKind = getColumnFormatKind(c);
+    body = `
+    <div class="tbl-col-body">
+      <div class="fi">
+        <label>Nhãn hiển thị (Tiếng Việt) <span class="req">*</span></label>
+        <input class="fc" value="${esc(c.label)}" oninput="updateTableColumn(${c.id}, 'label', this.value)">
+      </div>
+      <div class="fi">
+        <label>Mã cột <span class="req">*</span></label>
+        <input class="fc" value="${esc(c.code)}" oninput="updateTableColumn(${c.id}, 'code', this.value)" title="Mã kỹ thuật của cột, dùng khi xuất Word">
+      </div>
+      <div class="fi">
+        <label>Nguồn giá trị <span class="req">*</span></label>
+        <div class="src-toggle">
+          <button type="button" class="src-toggle-btn ${c.sourceType==='manual'?'active':''}" onclick="setColumnSourceType(${c.id}, 'manual')">Tự nhập</button>
+          <button type="button" class="src-toggle-btn ${c.sourceType==='catalog'?'active':''}" onclick="setColumnSourceType(${c.id}, 'catalog')">Hệ thống</button>
+          <button type="button" class="src-toggle-btn ${c.sourceType==='ref'?'active':''}" onclick="setColumnSourceType(${c.id}, 'ref')">Tham chiếu</button>
+        </div>
+        <div class="f-hint">${sourceHint}</div>
+      </div>
+      ${sourcePicker}
+      ${c.sourceType === 'manual' ? `
+      <div class="fi">
+        <label>Kiểu dữ liệu</label>
+        <select class="fc" onchange="setColumnDataType(${c.id}, this.value)">
+          ${COLUMN_DATA_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${c.dataType===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+        </select>
+      </div>` : ''}
+      ${c.sourceType === 'manual' && c.dataType === 'select' ? renderColumnSelectOptionsUI(c) : ''}
+      ${formatKind ? `
+      <div class="fi">
+        <label>Định dạng hiển thị</label>
+        <select class="fc" onchange="updateTableColumn(${c.id}, 'format', this.value)">
+          ${DATE_FORMAT_OPTIONS.map(o => `<option value="${o.value}" ${c.format===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+        </select>
+        <div class="f-hint">Chỉ hiện khi cột có dạng ngày tháng. Để trống thì dùng định dạng đầu tiên.</div>
+      </div>` : ''}
+      <div class="fi" style="margin-bottom:0">
+        <label class="switch-row">
+          <span>Bắt buộc nhập</span>
+          <span class="switch"><input type="checkbox" ${c.required?'checked':''} onchange="updateTableColumn(${c.id}, 'required', this.checked)"><span class="switch-track"></span></span>
+        </label>
+      </div>
+    </div>`;
+  }
+  return `
+    <div class="tbl-col-card" draggable="true" ondragstart="onColDragStart(event, ${c.id})" ondragover="event.preventDefault()" ondrop="onColDrop(event, ${c.id})">
+      <div class="tbl-col-hd" onclick="toggleColumnExpand(${c.id})">
+        <span class="tbl-col-drag" title="Kéo để sắp xếp lại" onclick="event.stopPropagation()">⋮⋮</span>
+        <span class="tbl-col-label">${esc(c.label) || '(Chưa đặt tên)'}</span>
+        <span class="tbl-col-tag">${esc(columnSourceTag(c))}</span>
+        <button type="button" class="icon-btn danger" title="Xoá cột" onclick="event.stopPropagation();removeTableColumn(${c.id})">✕</button>
+      </div>
+      ${body}
+    </div>`;
 }
 
 function renderManualOptionsUI(f){
@@ -451,6 +680,34 @@ function renderManualOptionsUI(f){
       <label>Danh sách tuỳ chọn</label>
       ${rows || '<div class="text-muted text-sm mb-8">Chưa có tuỳ chọn nào.</div>'}
       <button type="button" class="btn btn-default btn-block" onclick="addOption()">+ Thêm tuỳ chọn</button>
+    </div>`;
+}
+
+// Cột "Tự nhập" kiểu "Chọn một (dropdown)" — cùng UI khai báo tuỳ chọn như field Chọn một/nhiều
+// ở trên (Giá trị lưu trữ / Nhãn VI / Nhãn EN), chỉ khác là thao tác trên c.selectOptions của
+// riêng cột đó thay vì f.manualOptions của cả field.
+function renderColumnSelectOptionsUI(c){
+  const rows = (c.selectOptions || []).map((o, idx) => `
+    <div class="opt-row">
+      <button type="button" class="icon-btn danger opt-row-del" title="Xoá tuỳ chọn" onclick="removeColumnSelectOption(${c.id}, ${idx})">✕</button>
+      <div class="fi">
+        <label>Giá trị lưu trữ</label>
+        <input class="fc" value="${esc(o.value)}" oninput="updateColumnSelectOption(${c.id}, ${idx}, 'value', this.value)">
+      </div>
+      <div class="fi">
+        <label>Nhãn (Tiếng Việt) <span class="req">*</span></label>
+        <input class="fc" value="${esc(o.vi)}" oninput="updateColumnSelectOption(${c.id}, ${idx}, 'vi', this.value)">
+      </div>
+      <div class="fi" style="margin-bottom:0">
+        <label>Nhãn (tiếng Anh)</label>
+        <input class="fc" value="${esc(o.en)}" oninput="updateColumnSelectOption(${c.id}, ${idx}, 'en', this.value)">
+      </div>
+    </div>`).join('');
+  return `
+    <div class="fi">
+      <label>Danh sách tuỳ chọn</label>
+      ${rows || '<div class="text-muted text-sm mb-8">Chưa có tuỳ chọn nào.</div>'}
+      <button type="button" class="btn btn-default btn-block" onclick="addColumnSelectOption(${c.id})">+ Thêm tuỳ chọn</button>
     </div>`;
 }
 
@@ -507,6 +764,7 @@ function renderSystemSourceUI(f){
 function selectField(id){
   selectedId = id;
   panelTab = 'content';
+  expandedColId = null;
   renderAll();
 }
 
@@ -528,6 +786,11 @@ function defaultField(type){
   const base = {id, type, label: TYPE_META[type].label, labelEn: '', placeholderVi: '', placeholderEn: '', required: false};
   if (isSelectType(type)) {
     return {...base, mode: 'manual', sourceKey: '', manualOptions: [{value:'option_1', vi:'', en:''}], sourceOverrides: {}};
+  }
+  if (isTableType(type)) {
+    // Mặc định chỉ có cột STT (tự động, không nằm trong f.columns) — admin tự thêm các cột khác vào bảng.
+    return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {},
+      code: `bang_${id}`, columns: []};
   }
   return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}};
 }
@@ -634,6 +897,233 @@ function updateOption(idx, key, value){
   // Chỉ cập nhật bản xem trước, không render lại panel để giữ focus khi đang gõ
   renderPreview();
   renderFieldList();
+}
+
+function addTableColumn(){
+  const f = currentField();
+  if (!f) return;
+  f.columns = f.columns || [];
+  const id = ++colUid;
+  f.columns.push({id, label: '', code: `cot_${f.columns.length + 1}`, sourceType: 'manual', sourceKey: '', dataType: 'text', format: '', required: false});
+  expandedColId = id;
+  renderPanel();
+  renderPreview();
+}
+
+function removeTableColumn(id){
+  const f = currentField();
+  if (!f) return;
+  f.columns = f.columns.filter(c => c.id !== id);
+  if (expandedColId === id) expandedColId = null;
+  renderPanel();
+  renderPreview();
+}
+
+function toggleColumnExpand(id){
+  expandedColId = expandedColId === id ? null : id;
+  renderPanel();
+}
+
+function updateTableColumn(id, prop, value){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c[prop] = value;
+  if (prop === 'label' || prop === 'code') { renderFieldList(); renderPreview(); return; }
+  renderPanel();
+  renderPreview();
+}
+
+// Chọn "Nguồn giá trị" cho 1 cột — nếu cột chưa đặt tên/mã, gợi ý luôn theo nguồn vừa chọn
+// (VD chọn danh mục "Lý do kỷ luật" thì tự điền nhãn "Lý do kỷ luật" + mã "ly_do_ky_luat"),
+// admin vẫn sửa lại tự do sau đó.
+// Bấm tab Nguồn giá trị (Nhập tay/Hệ thống/Tham chiếu) — chỉ đổi NHÓM nguồn, chưa chọn giá trị cụ
+// thể; đổi tab thì bỏ lựa chọn cũ (sourceKey) để tránh giữ nhầm giá trị của nhóm trước.
+function setColumnSourceType(id, type){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c || c.sourceType === type) return;
+  c.sourceType = type;
+  c.sourceKey = '';
+  c.format = '';
+  if (type === 'manual' && !c.dataType) c.dataType = 'text';
+  renderPanel();
+  renderPreview();
+}
+
+// Chọn cụ thể 1 danh mục hệ thống hoặc 1 trường tham chiếu ở dropdown phụ bên dưới tab —
+// nếu cột chưa đặt tên/mã, gợi ý luôn theo lựa chọn này, admin vẫn sửa lại tự do sau đó.
+function setColumnSourceKey(id, key){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c.sourceKey = key;
+  if (c.sourceType === 'catalog') c.format = '';
+  else if (c.sourceType === 'ref') c.format = (key && referenceFieldType(key) === 'date') ? 'dmy' : '';
+  if (key && !c.label.trim()) {
+    const suggested = c.sourceType === 'ref' ? (REFERENCE_FIELDS.find(r => r.key === key) || {}).label : (SYSTEM_SOURCES[key] || {}).label;
+    if (suggested) { c.label = suggested; c.code = slugify(suggested); }
+  }
+  renderPanel();
+  renderPreview();
+}
+
+// Combobox có tìm kiếm cho "Danh mục hệ thống"/"Trường tham chiếu" (phòng khi danh sách dài, gõ để
+// lọc thay vì cuộn 1 dropdown dài) — copy pattern .unit-combo đã dùng ở mh-admin-06.
+function highlightMatch(text, q){
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0, i) + '<mark>' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
+}
+
+function columnSourceComboItems(c){
+  if (c.sourceType === 'catalog') return Object.keys(SYSTEM_SOURCES).map(k => ({key: k, label: SYSTEM_SOURCES[k].label}));
+  if (c.sourceType === 'ref') return REFERENCE_FIELDS.map(rf => ({key: rf.key, label: rf.label}));
+  return [];
+}
+
+function renderColumnSourceCombo(c, label, placeholder){
+  const items = columnSourceComboItems(c);
+  const selected = c.sourceKey ? (items.find(i => i.key === c.sourceKey) || {}).label || '' : '';
+  return `
+  <div class="fi">
+    <label>${esc(label)} <span class="req">*</span></label>
+    <div class="unit-combo" id="col-src-combo-${c.id}">
+      <input class="fc" type="text" placeholder="🔍 ${esc(placeholder)}" value="${esc(selected)}" autocomplete="off"
+        oninput="filterColumnSourceCombo(${c.id}, this.value)" onfocus="openColumnSourceCombo(${c.id})">
+      <div class="unit-combo-menu" id="col-src-menu-${c.id}"></div>
+    </div>
+  </div>`;
+}
+
+function renderColumnSourceComboMenu(colId, query){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === colId);
+  if (!c) return;
+  const menu = document.getElementById(`col-src-menu-${colId}`);
+  if (!menu) return;
+  const q = (query || '').trim();
+  const items = columnSourceComboItems(c);
+  const matches = q ? items.filter(i => i.label.toLowerCase().includes(q.toLowerCase())) : items;
+  menu.innerHTML = matches.map(i => `<div class="unit-combo-item" onclick="pickColumnSourceCombo(${colId}, '${i.key}')">${highlightMatch(esc(i.label), q)}</div>`).join('')
+    || `<div class="unit-combo-empty">Không tìm thấy kết quả phù hợp</div>`;
+}
+
+// Menu dùng position:fixed (xem CSS .unit-combo-menu) vì panel bên phải cuộn riêng (overflow-y:auto)
+// sẽ cắt mất menu nếu để position:absolute bình thường — tự tính toạ độ theo ô input mỗi lần mở/lọc.
+function positionColumnSourceMenu(colId){
+  const combo = document.getElementById(`col-src-combo-${colId}`);
+  const menu = document.getElementById(`col-src-menu-${colId}`);
+  if (!combo || !menu) return;
+  const input = combo.querySelector('input');
+  const rect = input.getBoundingClientRect();
+  menu.style.left = rect.left + 'px';
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.style.width = rect.width + 'px';
+}
+
+function openColumnSourceCombo(colId){
+  renderColumnSourceComboMenu(colId, '');
+  const menu = document.getElementById(`col-src-menu-${colId}`);
+  if (!menu) return;
+  positionColumnSourceMenu(colId);
+  menu.classList.add('open');
+}
+
+function filterColumnSourceCombo(colId, query){
+  renderColumnSourceComboMenu(colId, query);
+  const menu = document.getElementById(`col-src-menu-${colId}`);
+  if (!menu) return;
+  positionColumnSourceMenu(colId);
+  menu.classList.add('open');
+}
+
+function pickColumnSourceCombo(colId, key){
+  setColumnSourceKey(colId, key);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.unit-combo')) {
+    document.querySelectorAll('.unit-combo-menu.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+// Panel bên phải (#fb-panel) cuộn riêng — nếu người dùng cuộn trong lúc menu đang mở, toạ độ fixed
+// đã tính sẽ bị lệch khỏi ô input, nên đơn giản là đóng menu lại khi có cuộn.
+document.addEventListener('scroll', (e) => {
+  if (e.target && e.target.id === 'fb-panel') {
+    document.querySelectorAll('.unit-combo-menu.open').forEach(m => m.classList.remove('open'));
+  }
+}, true);
+
+// Đổi Kiểu dữ liệu của cột "Nhập tay" — chọn Ngày tháng thì gợi ý luôn định dạng đầu tiên,
+// đổi sang kiểu khác thì bỏ định dạng đã chọn (không còn phù hợp).
+function setColumnDataType(id, value){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c.dataType = value;
+  c.format = value === 'date' ? (DATE_FORMAT_OPTIONS[0].value) : '';
+  if (value === 'select' && (!c.selectOptions || !c.selectOptions.length)) {
+    c.selectOptions = [{value: 'option_1', vi: '', en: ''}];
+  }
+  renderPanel();
+  renderPreview();
+}
+
+function addColumnSelectOption(id){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c.selectOptions = c.selectOptions || [];
+  const n = c.selectOptions.length + 1;
+  c.selectOptions.push({value: `option_${n}`, vi: '', en: ''});
+  renderPanel();
+  renderPreview();
+}
+
+function removeColumnSelectOption(id, idx){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c.selectOptions.splice(idx, 1);
+  renderPanel();
+  renderPreview();
+}
+
+function updateColumnSelectOption(id, idx, key, value){
+  const f = currentField();
+  if (!f) return;
+  const c = f.columns.find(x => x.id === id);
+  if (!c) return;
+  c.selectOptions[idx][key] = value;
+  // Chỉ cập nhật bản xem trước, không render lại panel để giữ focus khi đang gõ
+  renderPreview();
+}
+
+let dragColId = null;
+function onColDragStart(e, id){ dragColId = id; e.dataTransfer.effectAllowed = 'move'; }
+function onColDrop(e, targetId){
+  e.preventDefault();
+  const f = currentField();
+  if (!f || dragColId == null || dragColId === targetId) return;
+  const cols = f.columns;
+  const fromIdx = cols.findIndex(c => c.id === dragColId);
+  const toIdx = cols.findIndex(c => c.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = cols.splice(fromIdx, 1);
+  cols.splice(toIdx, 0, moved);
+  dragColId = null;
+  renderPanel();
+  renderPreview();
 }
 
 function filterSourcePreview(q){

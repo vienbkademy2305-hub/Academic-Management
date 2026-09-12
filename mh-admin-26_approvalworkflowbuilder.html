@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quy trình duyệt — Trình xây dựng | Khoa CNTT</title>
+<link rel="stylesheet" href="_styles.css">
+<style>
+  /* ========== Page-specific: Trình xây dựng Quy trình duyệt + Version (MH-ADMIN-26) ========== */
+
+  /* .app chỉ có min-height:100vh (để các trang khác scroll bình thường theo nội dung) —
+     màn builder này cần khung cố định đúng 100vh để canvas/panel tự cuộn bên trong,
+     nên ép thêm height:100vh chỉ cho trang này. */
+  .app{height:100vh}
+  .content.content-flush{padding:0;display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+
+  /* Toolbar trên cùng — gộp cả tên quy trình, chọn phiên bản và Lịch sử vào
+     1 hàng duy nhất để đỡ chiếm chiều cao (trước đây có thêm 1 hàng riêng). */
+  .wf-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 24px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+  .wf-toolbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+  .wf-proc-name{font-size:15px;font-weight:700;color:var(--text-1);border:1px solid transparent;border-radius:6px;padding:4px 8px;background:transparent;font-family:inherit;min-width:160px}
+  .wf-proc-name:hover,.wf-proc-name:focus{border-color:var(--border);background:#fff;outline:none}
+  .wf-toolbar-right{display:flex;align-items:center;gap:8px}
+  .wf-unsaved{font-size:12px;color:#d46b08;font-weight:600}
+
+  /* Layout 3 cột */
+  .wf-body{flex:1;display:flex;min-height:0}
+  .wf-left{width:300px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);overflow-y:auto;padding:20px}
+  .wf-right{width:300px;flex-shrink:0;background:#fff;border-left:1px solid var(--border);overflow-y:auto;padding:20px}
+  .wf-panel-title{font-size:13px;font-weight:700;color:var(--text-1);margin:0 0 14px}
+  .wf-panel-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .wf-panel-title-row .wf-panel-title{margin:0}
+  .wf-panel-title-row .text-link{font-size:12px;flex-shrink:0}
+  .wf-subheading{font-size:12.5px;font-weight:600;margin-bottom:8px}
+  .wf-hint{font-size:11.5px;color:var(--text-3);margin-bottom:10px;line-height:1.5}
+
+  /* Mục "Phiên bản" trong panel phải — gộp chọn version + lịch sử + trạng thái
+     vào đúng vùng trước đây bỏ trống khi quy trình không có lỗi. */
+  .ver-select{position:relative;margin-bottom:8px}
+  .ver-select>button{width:100%;justify-content:space-between}
+  .ver-dd{display:none;position:absolute;top:calc(100% + 6px);left:0;width:100%;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:150;max-height:340px;overflow-y:auto;padding:6px}
+  .ver-dd.open{display:block}
+  .ver-dd-item{padding:8px 10px;border-radius:6px;cursor:pointer}
+  .ver-dd-item:hover{background:#f5f5f5}
+  .ver-dd-item.current{background:var(--primary-light)}
+  .vdi-main{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+  .vdi-sub{font-size:11.5px;color:var(--text-3)}
+
+  /* Thẻ trạng thái phiên bản + thẻ "đủ điều kiện ban hành" — dùng chung 1 kiểu thẻ */
+  #ver-banner{margin-bottom:12px}
+  .ver-card{border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+  .ver-card .vc-ico{flex-shrink:0}
+  .ver-card .vc-action{background:none;border:none;padding:0;margin-top:6px;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;color:inherit;display:block}
+  .ver-card.warn{background:#fffbe6;border:1px solid #ffe58f;color:#874d00}
+  .ver-card.info{background:#e6f4ff;border:1px solid #91caff;color:#0958d9}
+  .ver-card.success{background:#f6ffed;border:1px solid #b7eb8f;color:#237804}
+
+  /* Palette (tái dùng .mn-group/.sb-sub để accordion, đổi style cho hợp ngữ cảnh panel trắng) */
+  .palette-wrap .mn-group{padding:9px 6px;color:var(--text-1);font-weight:600;font-size:12.5px;border-top:1px solid #f0f0f0}
+  .palette-wrap .mn-group:first-child{border-top:none}
+  .palette-wrap .sb-sub{padding:2px 0 8px}
+  .palette-item{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:6px;padding:7px 8px 7px 14px;cursor:pointer;font-family:inherit}
+  .palette-item:hover{background:var(--primary-light)}
+  .palette-item .pi-name{font-size:13px;color:var(--text-1);font-weight:500}
+  .palette-item .pi-desc{font-size:11px;color:var(--text-3);margin-top:1px}
+  .palette-item:disabled{opacity:.45;cursor:not-allowed}
+  .palette-item:disabled:hover{background:transparent}
+
+  /* Canvas */
+  .wf-canvas-scroll{flex:1;overflow:auto;background:#fafafa;position:relative}
+  .wf-canvas-inner{position:relative;width:1650px;height:650px;background-image:radial-gradient(circle,#dcdcdc 1.2px,transparent 1.2px);background-size:22px 22px}
+  .wf-canvas-scroll.readonly .wf-canvas-inner{background-image:radial-gradient(circle,#e6e6e6 1.2px,transparent 1.2px)}
+
+  .wf-node{position:absolute;width:230px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--border);border-radius:8px;padding:12px 14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.05);cursor:pointer;user-select:none}
+  .wf-node:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
+  .wf-node.type-submit{border-left-color:var(--blue)}
+  .wf-node.type-end-success{border-left-color:var(--primary)}
+  .wf-node.type-end-reject{border-left-color:var(--error)}
+  .wf-node.issue{outline:2px dashed var(--error);outline-offset:3px}
+  .wf-node.readonly{cursor:default}
+  .wf-node-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:6px}
+  .wtype{font-size:11.5px;color:var(--text-3)}
+  .wtitle{font-size:14.5px;font-weight:600;color:var(--text-1);margin:2px 0 6px}
+  .wcode{font-size:11.5px;color:#c2c2c2;font-family:"SFMono-Regular",Consolas,"Courier New",monospace}
+  .pill-start{background:#0958d9;color:#fff;font-size:10.5px;padding:2px 9px;border-radius:10px;font-weight:600;flex-shrink:0}
+  .wf-node-del{border:none;background:transparent;color:var(--text-3);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;line-height:1;flex-shrink:0}
+  .wf-node-del:hover{background:#fff2f0;color:var(--error)}
+  .wf-node-issue-badge{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;background:var(--error);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+
+  .port{position:absolute;width:10px;height:10px;border-radius:50%;background:#8c8c8c;transform:translateX(-50%)}
+  .port.in{top:-6px;left:50%}
+  .port.out{bottom:-6px}
+  .port.out.unconnected{background:#fff;border:2px solid var(--error)}
+  .port-label{position:absolute;bottom:-20px;transform:translateX(-50%);font-size:10px;color:var(--text-3);white-space:nowrap}
+
+  svg.wf-edges{position:absolute;top:0;left:0;pointer-events:none}
+  .edge-path{fill:none;stroke:#b3b3b3;stroke-width:1.6}
+  .edge-label-bg{fill:#fafafa}
+  .edge-label{font-size:10.5px;fill:var(--text-2)}
+
+  /* Panel lỗi bên phải */
+  .issue-item{display:flex;gap:8px;padding:10px 8px;border-radius:6px;cursor:pointer}
+  .issue-item:hover{background:#fff2f0}
+  .issue-ico{font-size:14px;flex-shrink:0;margin-top:1px}
+  .issue-title{font-size:12.5px;color:var(--text-1);line-height:1.4}
+  .issue-sub{font-size:11.5px;color:var(--text-3);margin-top:1px}
+
+  /* Modal sửa bước */
+  #modal-node-edit .modal-bd .fi:last-child{margin-bottom:0}
+
+  /* Bảng lịch sử phiên bản */
+  #hist-tbl td{vertical-align:top}
+  .hist-actions{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">🎓</div>
+      <div><div class="sb-logo-text">HTQT Đại học</div><div class="text-muted text-sm">Khoa CNTT</div></div>
+    </div>
+    <div class="sb-user">
+      <div class="av" id="sb-avatar">AD</div>
+      <div>
+        <div style="font-size:13px;font-weight:600" id="sb-user-name">Nguyễn Văn Admin</div>
+        <div style="font-size:11px;color:var(--text-3)" id="sb-user-role">Quản trị hệ thống</div>
+      </div>
+    </div>
+    <ul class="sb-menu">
+      <li><a href="#">🏠&nbsp; Trang chủ</a></li>
+      <li>
+        <span class="mn-group">🗂️&nbsp; Bộ phận một cửa &nbsp;▾</span>
+        <ul class="sb-sub">
+          <li><a href="mh-admin-02_formcatalogmanagement.html">Danh mục Biểu mẫu</a></li>
+          <li><a href="mh-admin-03_studentapplicationmanagement.html">Quản lý Đơn từ</a></li>
+          <li><a href="mh-admin-04_studentfeedbackmanagement.html">Quản lý Feedback</a></li>
+          <li><a href="mh-admin-05_onestopstatistics.html">Thống kê</a></li>
+        </ul>
+      </li>
+      <li class="active">
+        <span class="mn-group">⚙️&nbsp; Cấu hình hệ thống &nbsp;▾</span>
+        <ul class="sb-sub open">
+          <li><a href="mh-admin-01_processmanagement.html">Quản lý Quy trình</a></li>
+          <li class="active"><a href="#">Quy trình duyệt (Builder)</a></li>
+          <li><a href="#">Phòng ban &amp; Vai trò</a></li>
+        </ul>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="main">
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header">
+      <div class="h-breadcrumb" id="breadcrumb">Cấu hình hệ thống / <b style="color:var(--text-1)">Quy trình duyệt</b></div>
+      <div class="h-right">
+        <div class="av" id="hd-avatar">AD</div>
+      </div>
+    </header>
+
+    <div class="content content-flush">
+
+      <!-- ═══ TOOLBAR ═══ -->
+      <div class="wf-toolbar">
+        <div class="wf-toolbar-left">
+          <a class="btn btn-default" href="mh-admin-01_processmanagement.html">‹ Quay lại</a>
+          <input class="wf-proc-name" id="proc-name-input" value="Nghỉ học tạm thời" oninput="PROCESS_NAME=this.value">
+        </div>
+        <div class="wf-toolbar-right">
+          <span class="wf-unsaved" id="unsaved-indicator" hidden>● Chưa lưu</span>
+          <button class="btn btn-default" id="btn-relayout" onclick="doRelayout()">Sắp xếp lại</button>
+          <button class="btn btn-default" id="btn-save" onclick="doSave()">Lưu</button>
+          <button class="btn btn-default" id="btn-dryrun" onclick="doDryRun()">Chạy thử</button>
+          <button class="btn btn-primary" id="btn-publish">Xuất bản</button>
+        </div>
+      </div>
+
+      <!-- ═══ THÂN 3 CỘT ═══ -->
+      <div class="wf-body">
+
+        <!-- Panel trái -->
+        <div class="wf-left">
+          <div class="wf-panel-title">Thông tin chung</div>
+          <div class="fi">
+            <label>Mã quy trình</label>
+            <input class="fc" value="QT-045" disabled>
+          </div>
+          <div class="fi">
+            <label>Tên quy trình<span class="req">*</span></label>
+            <input class="fc" id="proc-name-input2" value="Nghỉ học tạm thời" oninput="syncProcName(this.value)">
+          </div>
+          <div class="fi">
+            <label>Nhóm quy trình</label>
+            <input class="fc" placeholder="Nhập nhóm quy trình (không bắt buộc)" value="Chế độ chính sách">
+          </div>
+          <div class="fi">
+            <label>Mô tả</label>
+            <textarea class="fc" placeholder="Mô tả ngắn về quy trình (không bắt buộc)">Duyệt đơn xin nghỉ học tạm thời của sinh viên, qua GVCN rồi Phòng Đào tạo.</textarea>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="wf-panel-title" style="margin-bottom:4px">Loại bước</div>
+          <div class="wf-hint">Bấm vào 1 loại bước để thêm vào giữa vùng đang xem.</div>
+          <div class="palette-wrap" id="palette-wrap"></div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="wf-canvas-scroll" id="wf-canvas-scroll">
+          <div class="wf-canvas-inner" id="wf-canvas-inner">
+            <svg class="wf-edges" id="wf-edges" width="1650" height="650">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#b3b3b3"></path>
+                </marker>
+              </defs>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Panel phải: Phiên bản (chọn version + lịch sử + trạng thái) + Check lỗi/điều kiện ban hành -->
+        <div class="wf-right">
+          <div class="wf-panel-title-row">
+            <div class="wf-panel-title">Phiên bản</div>
+            <span class="text-link" onclick="openHistoryModal()">Xem lịch sử phiên bản</span>
+          </div>
+          <div class="ver-select" id="ver-select">
+            <button class="btn btn-default" onclick="toggleVerDD(event)">
+              <span><b id="ver-cur-label">v1</b> <span class="tag" id="ver-cur-tag">—</span></span>
+              <span>▾</span>
+            </button>
+            <div class="ver-dd" id="ver-dd"></div>
+          </div>
+          <div id="ver-banner"></div>
+
+          <div class="divider"></div>
+
+          <div class="wf-panel-title">Kiểm tra điều kiện ban hành</div>
+          <div id="issue-count-hd" class="wf-subheading">—</div>
+          <div id="issue-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: sửa bước ═══ -->
+<div class="overlay hidden" id="modal-node-edit">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="ne-modal-title">Sửa bước</h3>
+      <button class="modal-close" data-close="modal-node-edit">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fi">
+        <label>Tên bước<span class="req">*</span></label>
+        <input class="fc" id="ne-name">
+      </div>
+      <div class="fi" id="ne-form-wrap" style="display:none">
+        <label>Biểu mẫu áp dụng<span class="req">*</span></label>
+        <select class="fc" id="ne-form">
+          <option value="">— Chọn biểu mẫu —</option>
+          <option value="BM07">BM-07 · Đơn xin nghỉ học tạm thời</option>
+          <option value="BM15">BM-15 · Đơn xin chuyển ngành</option>
+        </select>
+      </div>
+      <div class="fi" id="ne-revise-wrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:0">
+          <input type="checkbox" id="ne-revise"> Cho phép trả lại để bổ sung (mở thêm cổng ra "Cần bổ sung")
+        </label>
+      </div>
+      <div class="f-hint" id="ne-code-hint"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-node-edit">Đóng</button>
+      <button class="btn btn-primary" id="ne-save-btn" onclick="saveNodeEdit()">Xong</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: lịch sử phiên bản ═══ -->
+<div class="overlay hidden" id="modal-history">
+  <div class="modal-box w960">
+    <div class="modal-hd">
+      <h3 class="modal-title">Lịch sử phiên bản — Nghỉ học tạm thời</h3>
+      <button class="modal-close" data-close="modal-history">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tbl-wrap">
+        <table class="tbl" id="hist-tbl">
+          <thead>
+            <tr>
+              <th>Phiên bản</th>
+              <th>Trạng thái</th>
+              <th>Dựa trên</th>
+              <th>Tạo</th>
+              <th>Xuất bản</th>
+              <th>Ngừng dùng</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="hist-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" data-close="modal-history">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script src="_utils.js"></script>
+<script>
+// =========================================================
+// DATA MODEL
+// =========================================================
+const CURRENT_USER = 'Nguyễn Văn Admin';
+let PROCESS_NAME = 'Nghỉ học tạm thời';
+
+// Danh mục loại bước — chỉ những loại có thể thêm động trong bản mockup này
+// được gắn hàm add cụ thể; số còn lại hiển thị đủ 5 nhóm/18 loại như thật
+// nhưng dùng 1 hàm addGenericNode() dùng chung.
+const PALETTE = [
+  { group: 'Bắt đầu quy trình', items: [
+    { type: 'submit', label: 'Nộp biểu mẫu', desc: 'Bắt đầu quy trình khi có đơn nộp', singleton: true },
+  ]},
+  { group: 'Người xử lý', items: [
+    { type: 'approval', label: 'Chờ người duyệt', desc: 'Dừng quy trình lại và giao việc cho người duyệt' },
+    { type: 'revision', label: 'Chờ người nộp bổ sung', desc: 'Trả đơn về cho người nộp sửa rồi gửi lại' },
+  ]},
+  { group: 'Hành động', items: [
+    { type: 'action_api', label: 'Gọi API nội bộ', desc: 'Gọi một API nội bộ đã được quản trị hệ thống' },
+    { type: 'notify', label: 'Gửi thông báo', desc: 'Gửi email / thông báo trong hệ thống' },
+    { type: 'action_resource', label: 'Cập nhật trạng thái tài nguyên', desc: 'Cập nhật trạng thái 1 tài nguyên nghiệp vụ' },
+    { type: 'action_record', label: 'Cập nhật bản ghi nghiệp vụ', desc: 'Cập nhật 1 bản ghi nghiệp vụ liên quan' },
+    { type: 'action_student', label: 'Cập nhật trạng thái sinh viên', desc: 'Cập nhật trạng thái của sinh viên nộp đơn' },
+  ]},
+  { group: 'Tiện ích', items: [
+    { type: 'util_wait', label: 'Chờ và nhắc lại', desc: 'Tạm dừng và nhắc lại sau khoảng thời gian' },
+    { type: 'util_expr', label: 'Biểu thức (nâng cao)', desc: 'Tính toán bằng biểu thức expr-lang' },
+    { type: 'util_http', label: 'Gọi HTTP', desc: 'Gọi 1 API bên ngoài hệ thống' },
+  ]},
+  { group: 'Luận lý', items: [
+    { type: 'condition', label: 'Điều kiện', desc: 'Rẽ nhánh theo điều kiện trên dữ liệu' },
+    { type: 'end', label: 'Kết thúc', desc: 'Kết thúc 1 nhánh của quy trình', endKind: 'success' },
+    { type: 'logic_join', label: 'Hợp lưu', desc: 'Gộp nhiều nhánh về lại 1 điểm' },
+    { type: 'logic_loop', label: 'Lặp trên danh sách', desc: 'Lặp lại 1 nhóm bước trên 1 danh sách' },
+    { type: 'logic_parallel', label: 'Chia nhánh song song', desc: 'Chạy song song nhiều nhánh cùng lúc' },
+    { type: 'logic_switch', label: 'Rẽ nhánh theo giá trị', desc: 'So khớp 1 giá trị với danh sách case' },
+    { type: 'logic_wait_until', label: 'Chờ tới thời điểm', desc: 'Tạm dừng tới 1 mốc thời gian cụ thể' },
+  ]},
+];
+
+let versionSeq = 4;
+let currentVersionId = 'v3';
+let editingNodeId = null;
+
+// Vùng nháp tạm khi đang sửa (thêm/xoá/đổi bước) nhưng CHƯA bấm "Lưu".
+// Canvas luôn hiển thị editBuffer nếu có, thay vì dữ liệu gốc của version —
+// nhờ vậy sửa nhiều lần trước khi Lưu không sinh version lung tung; bản
+// Đang dùng/Lưu trữ vẫn nguyên vẹn cho tới khi người dùng chủ động bấm Lưu.
+let editBuffer = null;
+
+// ---- Seed 4 phiên bản của quy trình "Nghỉ học tạm thời" ----
+let VERSIONS = [
+  {
+    id:'v1', label:'v1', status:'luu_tru', basedOn:null,
+    createdBy:'Trần Thị BA', createdAt:'02/06/2026',
+    publishedBy:'Trần Thị BA', publishedAt:'05/06/2026',
+    archivedAt:'20/07/2026', runningInstances:0,
+    nodes:[
+      {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:200, data:{formId:'BM07'}},
+      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:200, data:{allowRevise:false}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:680, y:80, data:{}},
+      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:680, y:340, data:{}},
+    ],
+    edges:[
+      {from:'n1', fromPort:'default', to:'n2'},
+      {from:'n2', fromPort:'approve', to:'n3'},
+      {from:'n2', fromPort:'reject', to:'n4'},
+    ],
+  },
+  {
+    id:'v2', label:'v2', status:'luu_tru', basedOn:'v1',
+    createdBy:'Trần Thị BA', createdAt:'18/07/2026',
+    publishedBy:'Trần Thị BA', publishedAt:'20/07/2026',
+    archivedAt:'25/08/2026', runningInstances:2,
+    nodes:[
+      {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:200, data:{formId:'BM07'}},
+      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:200, data:{allowRevise:false}},
+      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:680, y:80, data:{}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1000, y:80, data:{}},
+      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:680, y:340, data:{}},
+    ],
+    edges:[
+      {from:'n1', fromPort:'default', to:'n2'},
+      {from:'n2', fromPort:'approve', to:'n5'},
+      {from:'n5', fromPort:'default', to:'n3'},
+      {from:'n2', fromPort:'reject', to:'n4'},
+    ],
+  },
+  {
+    id:'v3', label:'v3', status:'dang_dung', basedOn:'v2',
+    createdBy:'Nguyễn Văn Admin', createdAt:'20/08/2026',
+    publishedBy:'Nguyễn Văn Admin', publishedAt:'25/08/2026',
+    archivedAt:null, runningInstances:12,
+    nodes:[
+      {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:220, data:{formId:'BM07'}},
+      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:220, data:{allowRevise:false}},
+      {id:'n2b', type:'approval', typeLabel:'Chờ người duyệt', title:'Phòng Đào tạo duyệt', code:'pdt', x:680, y:220, data:{allowRevise:false}},
+      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1000, y:80, data:{}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1320, y:80, data:{}},
+      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:1000, y:400, data:{}},
+    ],
+    edges:[
+      {from:'n1', fromPort:'default', to:'n2'},
+      {from:'n2', fromPort:'approve', to:'n2b'},
+      {from:'n2', fromPort:'reject', to:'n4'},
+      {from:'n2b', fromPort:'approve', to:'n5'},
+      {from:'n2b', fromPort:'reject', to:'n4'},
+      {from:'n5', fromPort:'default', to:'n3'},
+    ],
+  },
+  {
+    id:'v4', label:'v4', status:'nhap', basedOn:'v3',
+    createdBy:'Nguyễn Văn Admin', createdAt:'10/09/2026',
+    publishedBy:null, publishedAt:null,
+    archivedAt:null, runningInstances:0,
+    nodes:[
+      {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:220, data:{formId:'BM07'}},
+      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:220, data:{allowRevise:false}},
+      {id:'n2b', type:'approval', typeLabel:'Chờ người duyệt', title:'Phòng Đào tạo duyệt', code:'pdt', x:680, y:220, data:{allowRevise:true}},
+      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1000, y:80, data:{}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1320, y:80, data:{}},
+      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:1000, y:400, data:{}},
+      {id:'n6', type:'revision', typeLabel:'Chờ người nộp bổ sung', title:'SV bổ sung hồ sơ', code:'revision1', x:680, y:480, data:{}},
+    ],
+    edges:[
+      {from:'n1', fromPort:'default', to:'n2'},
+      {from:'n2', fromPort:'approve', to:'n2b'},
+      {from:'n2', fromPort:'reject', to:'n4'},
+      {from:'n2b', fromPort:'approve', to:'n5'},
+      {from:'n2b', fromPort:'reject', to:'n4'},
+      {from:'n2b', fromPort:'revise', to:'n6'},
+      {from:'n5', fromPort:'default', to:'n3'},
+    ],
+  },
+];
+
+// =========================================================
+// HELPERS
+// =========================================================
+function getVersion(id){ return VERSIONS.find(v => v.id === id); }
+// Nội dung đang hiển thị trên canvas: bản nháp tạm (nếu đang sửa dở) hoặc
+// đúng dữ liệu đã lưu của phiên bản đang xem.
+function content(){ return editBuffer || getVersion(currentVersionId); }
+function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function nowStr(){ return new Date().toLocaleDateString('vi-VN'); }
+function readonly(v){ return v.status === 'luu_tru'; }
+function statusLabel(s){ return s==='dang_dung' ? 'Đang dùng' : s==='nhap' ? 'Nháp' : 'Lưu trữ'; }
+function tagClassFor(s){ return s==='dang_dung' ? 'tag-success' : s==='nhap' ? 'tag-warning' : 'tag-default'; }
+function versionNum(v){ return parseInt(v.label.replace('v','')) || 0; }
+
+function getOutputs(n){
+  if(n.type === 'submit') {
+    return [{key:'default', label:'main'}];
+  }
+  if(n.type === 'end-success' || n.type === 'end-reject') return [];
+  if(n.type === 'approval'){
+    const outs = [{key:'approve', label:'Đồng ý'}, {key:'reject', label:'Từ chối'}];
+    if(n.data && n.data.allowRevise) outs.push({key:'revise', label:'Cần bổ sung'});
+    return outs;
+  }
+  if(n.type === 'condition' || n.type === 'logic_switch'){
+    return [{key:'branch1', label:'Nhánh 1'}, {key:'branch2', label:'Nhánh 2'}];
+  }
+  return [{key:'default', label:'main'}];
+}
+
+function portXs(count){
+  const w = 230;
+  if(count <= 1) return [w/2];
+  const margin = 34;
+  const step = (w - 2*margin) / (count - 1);
+  return Array.from({length:count}, (_,i) => margin + i*step);
+}
+
+// =========================================================
+// VALIDATE — tính danh sách "chỗ phải sửa" của 1 phiên bản
+// =========================================================
+function validate(v){
+  const issues = [];
+  const start = v.nodes.find(n => n.type === 'submit');
+  if(!start) return issues;
+
+  if(!start.data || !start.data.formId){
+    issues.push({kind:'required', nodeId:start.id, title:'Thiếu thông tin bắt buộc: Biểu mẫu', subtitle:start.title});
+  }
+
+  const reach = new Set([start.id]);
+  const queue = [start.id];
+  while(queue.length){
+    const id = queue.shift();
+    v.edges.filter(e => e.from === id).forEach(e => {
+      if(e.to && !reach.has(e.to)){ reach.add(e.to); queue.push(e.to); }
+    });
+  }
+  v.nodes.forEach(n => {
+    if(n.id !== start.id && !reach.has(n.id)){
+      issues.push({kind:'unreachable', nodeId:n.id, title:'Bước này chưa nối vào luồng — không bao giờ chạy tới', subtitle:n.title});
+    }
+  });
+
+  v.nodes.forEach(n => {
+    getOutputs(n).forEach(o => {
+      const has = v.edges.some(e => e.from === n.id && e.fromPort === o.key);
+      if(!has){
+        issues.push({kind:'dangling', nodeId:n.id, portKey:o.key, title:`Nhánh "${o.label}" chưa nối tới bước nào`, subtitle:n.title});
+      }
+    });
+  });
+
+  return issues;
+}
+
+// =========================================================
+// "CHỐT VERSION" — logic sửa/lưu/publish/rollback
+// =========================================================
+
+// Mọi thao tác sửa nội dung canvas (thêm/xoá/đổi bước) đi qua đây — chỉ
+// áp lên editBuffer (bộ nhớ tạm), CHƯA đụng tới version đã lưu. Version
+// chỉ thực sự thay đổi khi người dùng bấm nút "Lưu" (xem doSave()).
+function mutateCurrentVersion(mutatorFn){
+  const v = getVersion(currentVersionId);
+  if(readonly(v)) return; // Lưu trữ: chặn từ UI, phòng hờ chặn cả ở đây
+  if(!editBuffer){
+    editBuffer = {
+      nodes: JSON.parse(JSON.stringify(v.nodes)),
+      edges: JSON.parse(JSON.stringify(v.edges)),
+    };
+  }
+  mutatorFn(editBuffer);
+  renderAll();
+}
+
+function cloneAsDraft(src){
+  versionSeq++;
+  return {
+    id: 'v'+versionSeq, label: 'v'+versionSeq, status: 'nhap', basedOn: src.label,
+    createdBy: CURRENT_USER, createdAt: nowStr(),
+    publishedBy: null, publishedAt: null, archivedAt: null, runningInstances: 0,
+    nodes: JSON.parse(JSON.stringify(src.nodes)),
+    edges: JSON.parse(JSON.stringify(src.edges)),
+  };
+}
+
+// Bấm "Lưu" ở toolbar:
+// - Đang xem 1 bản Nháp → ghi thẳng editBuffer vào bản nháp đó, KHÔNG sinh
+//   thêm version số mới dù bấm Lưu nhiều lần.
+// - Đang xem bản Đang dùng (bất biến) → Lưu sẽ tạo 1 bản Nháp MỚI mang
+//   đúng nội dung vừa sửa; bản Đang dùng gốc không đổi, đơn đang chạy theo
+//   nó không bị ảnh hưởng.
+function doSave(){
+  if(!editBuffer) return;
+  const v = getVersion(currentVersionId);
+  if(v.status === 'nhap'){
+    v.nodes = editBuffer.nodes;
+    v.edges = editBuffer.edges;
+    editBuffer = null;
+    renderAll();
+    showToast(`Đã lưu thay đổi vào ${v.label}`, 'ok');
+  } else if(v.status === 'dang_dung'){
+    versionSeq++;
+    const draft = {
+      id: 'v'+versionSeq, label: 'v'+versionSeq, status: 'nhap', basedOn: v.label,
+      createdBy: CURRENT_USER, createdAt: nowStr(),
+      publishedBy: null, publishedAt: null, archivedAt: null, runningInstances: 0,
+      nodes: editBuffer.nodes, edges: editBuffer.edges,
+    };
+    VERSIONS.push(draft);
+    currentVersionId = draft.id;
+    editBuffer = null;
+    renderAll();
+    showToast(`Đã lưu thành bản nháp ${draft.label} (dựa trên ${draft.basedOn})`, 'ok');
+  }
+}
+
+// Nút "Xuất bản" ở toolbar luôn thao tác trên phiên bản đang xem: nếu còn
+// thay đổi chưa Lưu thì tự Lưu trước (sinh bản Nháp nếu cần) rồi xuất bản luôn.
+function publishCurrent(){
+  if(editBuffer) doSave();
+  publishVersion(currentVersionId);
+}
+
+// Xuất bản 1 bản Nháp: bản Nháp -> Đang dùng; bản Đang dùng cũ (nếu có)
+// -> Lưu trữ. Đơn đang chạy theo bản cũ KHÔNG bị chuyển version — chúng
+// giữ nguyên tham chiếu version đã pin lúc khởi tạo và chạy tới khi xong.
+// Chỉ đơn khởi tạo MỚI sau thời điểm này mới theo bản vừa xuất bản.
+function publishVersion(id){
+  const v = getVersion(id);
+  if(!v || v.status !== 'nhap') return;
+  const issues = validate(v);
+  if(issues.length){
+    showToast(`Còn ${issues.length} vấn đề cần xử lý trước khi xuất bản`, 'err');
+    return;
+  }
+  const old = VERSIONS.find(x => x.status === 'dang_dung');
+  const desc = old
+    ? `${old.label} sẽ chuyển sang Lưu trữ. ${old.runningInstances ? old.runningInstances+' đơn đang chạy theo '+old.label+' sẽ tiếp tục hoàn tất theo đúng phiên bản đó, không bị ảnh hưởng.' : 'Phiên bản này hiện không còn đơn nào đang chạy.'}`
+    : 'Đây sẽ là phiên bản Đang dùng đầu tiên của quy trình.';
+  showConfirm(`Xuất bản phiên bản ${v.label}?`, () => {
+    if(old){ old.status = 'luu_tru'; old.archivedAt = nowStr(); }
+    v.status = 'dang_dung';
+    v.publishedBy = CURRENT_USER;
+    v.publishedAt = nowStr();
+    currentVersionId = v.id;
+    closeModal('modal-history');
+    renderAll();
+    showToast(`Đã xuất bản ${v.label}`, 'ok');
+  }, 'Xuất bản', 'btn-primary', desc);
+}
+
+// Nếu đang có thay đổi chưa Lưu, hỏi xác nhận trước khi rời khỏi phiên bản
+// đang xem (chuyển version khác / khôi phục bản khác) — tránh mất sửa dở
+// một cách âm thầm.
+function withDiscardConfirm(action){
+  if(editBuffer){
+    showConfirm('Bạn có thay đổi chưa lưu ở phiên bản đang xem. Tiếp tục sẽ bỏ các thay đổi này?', () => {
+      editBuffer = null;
+      action();
+    }, 'Bỏ thay đổi & tiếp tục', 'btn-danger');
+  } else {
+    action();
+  }
+}
+
+// Khôi phục 1 bản Lưu trữ: KHÔNG hồi sinh lại đúng version số cũ (số
+// version là lịch sử bất biến) — mà tạo 1 bản Nháp MỚI có nội dung y hệt,
+// để người dùng chỉnh sửa/xuất bản như bình thường.
+// Dùng chung cho "Khôi phục" (từ Lưu trữ) và "Tạo bản sao" (từ Đang dùng):
+// tạo 1 bản Nháp MỚI copy y nội dung nguồn, không đụng gì tới bản gốc.
+function duplicateVersion(id){
+  const src = getVersion(id);
+  if(!src) return;
+  withDiscardConfirm(() => {
+    const draft = cloneAsDraft(src);
+    VERSIONS.push(draft);
+    currentVersionId = draft.id;
+    closeModal('modal-history');
+    renderAll();
+    showToast(`Đã tạo bản nháp ${draft.label} từ ${src.label}`, 'ok');
+  });
+}
+
+function restoreVersion(id){
+  const src = getVersion(id);
+  if(!src || src.status !== 'luu_tru') return;
+  duplicateVersion(id);
+}
+
+function deleteDraft(id){
+  const v = getVersion(id);
+  if(!v || v.status !== 'nhap') return;
+  showConfirm(`Xoá bản nháp ${v.label}?`, () => {
+    VERSIONS = VERSIONS.filter(x => x.id !== id);
+    if(currentVersionId === id){
+      editBuffer = null;
+      const pub = VERSIONS.find(x => x.status === 'dang_dung');
+      currentVersionId = pub ? pub.id : VERSIONS[0].id;
+    }
+    closeModal('modal-history');
+    renderAll();
+  }, 'Xoá bản nháp', 'btn-danger');
+}
+
+function selectVersion(id){
+  if(id === currentVersionId){ document.getElementById('ver-dd').classList.remove('open'); return; }
+  withDiscardConfirm(() => {
+    currentVersionId = id;
+    document.getElementById('ver-dd').classList.remove('open');
+    renderAll();
+  });
+}
+
+// Sắp xếp lại chỉ đổi toạ độ hiển thị (không đổi logic quy trình) nên áp
+// thẳng lên nội dung đang xem (kể cả đang sửa dở chưa lưu) — không cần
+// bấm Lưu mới có tác dụng, và không tính là "thay đổi cần lưu".
+function doRelayout(){
+  const v = getVersion(currentVersionId);
+  if(readonly(v)) return;
+  const target = content();
+  const start = target.nodes.find(n => n.type === 'submit');
+  if(!start) return;
+  const depth = {}; depth[start.id] = 0;
+  const queue = [start.id];
+  while(queue.length){
+    const id = queue.shift();
+    target.edges.filter(e => e.from === id).forEach(e => {
+      if(e.to && (!(e.to in depth) || depth[e.to] > depth[id]+1)){ depth[e.to] = depth[id]+1; queue.push(e.to); }
+    });
+  }
+  const colCount = {};
+  target.nodes.forEach(n => {
+    const d = (n.id in depth) ? depth[n.id] : 99;
+    colCount[d] = colCount[d] || 0;
+    n.x = 40 + d*320;
+    n.y = 40 + colCount[d]*180;
+    colCount[d]++;
+  });
+  renderAll();
+  showToast('Đã sắp xếp lại sơ đồ', 'ok');
+}
+
+function doDryRun(){
+  const issues = validate(content());
+  if(issues.length) showToast(`Chạy thử thất bại — còn ${issues.length} vấn đề cần xử lý`, 'err');
+  else showToast('Chạy thử thành công (giả lập) — luồng chạy hết từ Nộp đơn tới Kết thúc', 'ok');
+}
+
+// =========================================================
+// NODE EDIT
+// =========================================================
+function openNodeEdit(nodeId){
+  const v = getVersion(currentVersionId);
+  const n = content().nodes.find(x => x.id === nodeId);
+  if(!n) return;
+  editingNodeId = nodeId;
+  document.getElementById('ne-modal-title').textContent = readonly(v) ? `Xem bước (chỉ đọc) — ${n.typeLabel}` : `Sửa bước — ${n.typeLabel}`;
+  document.getElementById('ne-name').value = n.title;
+  document.getElementById('ne-name').disabled = readonly(v);
+  document.getElementById('ne-code-hint').textContent = `Mã bước: state.${n.code}`;
+
+  const formWrap = document.getElementById('ne-form-wrap');
+  const reviseWrap = document.getElementById('ne-revise-wrap');
+  formWrap.style.display = n.type === 'submit' ? '' : 'none';
+  if(n.type === 'submit'){
+    document.getElementById('ne-form').value = (n.data && n.data.formId) || '';
+    document.getElementById('ne-form').disabled = readonly(v);
+  }
+  reviseWrap.style.display = n.type === 'approval' ? '' : 'none';
+  if(n.type === 'approval'){
+    document.getElementById('ne-revise').checked = !!(n.data && n.data.allowRevise);
+    document.getElementById('ne-revise').disabled = readonly(v);
+  }
+  document.getElementById('ne-save-btn').style.display = readonly(v) ? 'none' : '';
+  openModal('modal-node-edit');
+}
+
+function saveNodeEdit(){
+  const v = getVersion(currentVersionId);
+  if(readonly(v)) { closeModal('modal-node-edit'); return; }
+  const name = document.getElementById('ne-name').value.trim();
+  if(!name){ showToast('Tên bước không được để trống', 'err'); return; }
+  const formVal = document.getElementById('ne-form').value;
+  const reviseVal = document.getElementById('ne-revise').checked;
+  const nodeId = editingNodeId;
+
+  mutateCurrentVersion(vv => {
+    const n = vv.nodes.find(x => x.id === nodeId);
+    if(!n) return;
+    n.title = name;
+    if(n.type === 'submit'){ n.data = n.data || {}; n.data.formId = formVal; }
+    if(n.type === 'approval'){ n.data = n.data || {}; n.data.allowRevise = reviseVal; }
+  });
+  closeModal('modal-node-edit');
+}
+
+function deleteNode(nodeId){
+  const v = getVersion(currentVersionId);
+  if(readonly(v)) return;
+  const n = content().nodes.find(x => x.id === nodeId);
+  if(!n || n.type === 'submit') return;
+  showConfirm(`Xoá bước "${n.title}"?`, () => {
+    mutateCurrentVersion(vv => {
+      vv.nodes = vv.nodes.filter(x => x.id !== nodeId);
+      vv.edges = vv.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+    });
+  }, 'Xoá bước', 'btn-danger');
+}
+
+function addGenericNode(type, label){
+  const v = getVersion(currentVersionId);
+  if(readonly(v)) return;
+  if(type === 'submit' && content().nodes.some(n => n.type === 'submit')) return;
+
+  let newId;
+  mutateCurrentVersion(vv => {
+    const seq = vv.nodes.length + 1;
+    newId = 'n' + Date.now();
+    const maxY = vv.nodes.reduce((m,n) => Math.max(m, n.y), 0);
+    const isEnd = type === 'end';
+    vv.nodes.push({
+      id:newId,
+      type: isEnd ? 'end-success' : type,
+      typeLabel: label,
+      title: label,
+      code: 'step_' + seq,
+      x: 40,
+      y: maxY + 180,
+      data: {},
+    });
+  });
+  openNodeEdit(newId);
+}
+
+// =========================================================
+// RENDER
+// =========================================================
+let paletteCollapsed = new Set(); // nhóm bị người dùng thu gọn thủ công, giữ nguyên qua các lần render lại
+
+function renderPalette(){
+  const v = getVersion(currentVersionId);
+  const ro = readonly(v);
+  const hasSubmit = content().nodes.some(n => n.type === 'submit');
+  const wrap = document.getElementById('palette-wrap');
+  wrap.innerHTML = PALETTE.map(g => `
+    <div class="mn-group" data-group="${esc(g.group)}">${esc(g.group)} ▾</div>
+    <ul class="sb-sub${paletteCollapsed.has(g.group) ? '' : ' open'}">
+      ${g.items.map(it => {
+        const disabled = ro || (it.singleton && hasSubmit);
+        return `<li>
+          <button class="palette-item" ${disabled ? 'disabled' : ''} onclick="addGenericNode('${it.type}', '${esc(it.label)}')">
+            <div class="pi-name">${esc(it.label)}${it.singleton && hasSubmit ? ' <span class="text-muted" style="font-weight:400">(đã có)</span>' : ''}</div>
+            <div class="pi-desc">${esc(it.desc)}</div>
+          </button>
+        </li>`;
+      }).join('')}
+    </ul>
+  `).join('');
+}
+
+function portCenter(originEl, portEl){
+  const o = originEl.getBoundingClientRect();
+  const p = portEl.getBoundingClientRect();
+  return { x: p.left - o.left + p.width/2, y: p.top - o.top + p.height/2 };
+}
+
+function renderCanvas(v, buf, issues){
+  const inner = document.getElementById('wf-canvas-inner');
+  const scrollWrap = document.getElementById('wf-canvas-scroll');
+  scrollWrap.classList.toggle('readonly', readonly(v));
+
+  inner.querySelectorAll('.wf-node').forEach(n => n.remove());
+
+  const unreachableIds = new Set(issues.filter(i => i.kind === 'unreachable').map(i => i.nodeId));
+  const danglingKeys = new Set(issues.filter(i => i.kind === 'dangling').map(i => i.nodeId + ':' + i.portKey));
+  const requiredIds = new Set(issues.filter(i => i.kind === 'required').map(i => i.nodeId));
+  const ro = readonly(v);
+
+  buf.nodes.forEach(n => {
+    const el = document.createElement('div');
+    const hasIssue = unreachableIds.has(n.id) || requiredIds.has(n.id);
+    el.className = 'wf-node type-' + n.type + (hasIssue ? ' issue' : '') + (ro ? ' readonly' : '');
+    el.style.left = n.x + 'px';
+    el.style.top = n.y + 'px';
+    el.dataset.id = n.id;
+
+    const outs = getOutputs(n);
+    const xs = portXs(outs.length);
+
+    el.innerHTML = `
+      ${hasIssue ? '<div class="wf-node-issue-badge">!</div>' : ''}
+      ${n.type !== 'submit' ? '<div class="port in"></div>' : ''}
+      <div class="wf-node-hd">
+        <div class="wtype">${esc(n.typeLabel)}</div>
+        ${n.type === 'submit' ? '<span class="pill-start">Bắt đầu</span>' : (!ro ? `<button class="wf-node-del" title="Xoá bước" data-id="${n.id}">✕</button>` : '')}
+      </div>
+      <div class="wtitle">${esc(n.title)}</div>
+      <div class="wcode">state.${esc(n.code)}</div>
+      ${outs.map((o,i) => {
+        const unconnected = danglingKeys.has(n.id + ':' + o.key);
+        return `<div class="port out${unconnected?' unconnected':''}" data-port="${o.key}" style="left:${xs[i]}px"></div>` +
+               (o.label !== 'main' ? `<div class="port-label" style="left:${xs[i]}px">${esc(o.label)}</div>` : '');
+      }).join('')}
+    `;
+    el.addEventListener('click', e => {
+      if(e.target.closest('.wf-node-del')) return;
+      openNodeEdit(n.id);
+    });
+    inner.appendChild(el);
+  });
+
+  inner.querySelectorAll('.wf-node-del').forEach(b => {
+    b.addEventListener('click', e => { e.stopPropagation(); deleteNode(b.dataset.id); });
+  });
+
+  drawEdges(buf);
+}
+
+function drawEdges(buf){
+  const svg = document.getElementById('wf-edges');
+  const inner = document.getElementById('wf-canvas-inner');
+  svg.querySelectorAll('.edge-path,.edge-label,.edge-label-bg').forEach(el => el.remove());
+
+  buf.edges.forEach(e => {
+    const fromNodeEl = inner.querySelector(`.wf-node[data-id="${e.from}"]`);
+    const toNodeEl = inner.querySelector(`.wf-node[data-id="${e.to}"]`);
+    if(!fromNodeEl || !toNodeEl) return;
+    const outPortEl = fromNodeEl.querySelector(`.port.out[data-port="${e.fromPort}"]`);
+    const inPortEl = toNodeEl.querySelector('.port.in');
+    if(!outPortEl || !inPortEl) return;
+
+    const p1 = portCenter(inner, outPortEl);
+    const p2 = portCenter(inner, inPortEl);
+    const midY = (p1.y + p2.y) / 2;
+    const d = `M ${p1.x} ${p1.y} C ${p1.x} ${midY}, ${p2.x} ${midY}, ${p2.x} ${p2.y}`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', 'edge-path');
+    path.setAttribute('marker-end', 'url(#arrow)');
+    svg.appendChild(path);
+  });
+}
+
+function renderIssuePanel(issues){
+  const hd = document.getElementById('issue-count-hd');
+  const wrap = document.getElementById('issue-list');
+  if(issues.length === 0){
+    hd.textContent = '';
+    hd.style.color = '';
+    wrap.innerHTML = `<div class="ver-card success"><span class="vc-ico">✅</span><span>Quy trình đã đủ điều kiện ban hành.</span></div>`;
+  } else {
+    hd.textContent = `Còn ${issues.length} chỗ phải sửa trước khi ban hành`;
+    hd.style.color = 'var(--error)';
+    wrap.innerHTML = issues.map(i => `
+      <div class="issue-item" onclick="openNodeEdit('${i.nodeId}')">
+        <span class="issue-ico">⚠️</span>
+        <div><div class="issue-title">${esc(i.title)}</div><div class="issue-sub">${esc(i.subtitle)}</div></div>
+      </div>
+    `).join('');
+  }
+}
+
+function updateToolbarButtons(v, issues){
+  const publishBtn = document.getElementById('btn-publish');
+  const relayoutBtn = document.getElementById('btn-relayout');
+  const saveBtn = document.getElementById('btn-save');
+  relayoutBtn.disabled = readonly(v);
+  saveBtn.disabled = readonly(v) || !editBuffer;
+
+  if(v.status === 'luu_tru'){
+    publishBtn.style.display = 'none';
+  } else if(v.status === 'dang_dung' && !editBuffer){
+    publishBtn.style.display = '';
+    publishBtn.textContent = 'Đã xuất bản';
+    publishBtn.className = 'btn btn-default';
+    publishBtn.disabled = true;
+  } else {
+    // Nháp, hoặc bản Đang dùng đang có sửa chưa lưu (bấm Xuất bản sẽ tự Lưu rồi xuất bản)
+    publishBtn.style.display = '';
+    publishBtn.textContent = 'Xuất bản';
+    publishBtn.className = 'btn btn-primary';
+    publishBtn.disabled = issues.length > 0;
+  }
+  publishBtn.onclick = () => publishCurrent();
+}
+
+function updateUnsavedIndicator(){
+  document.getElementById('unsaved-indicator').hidden = !editBuffer;
+}
+
+function renderVerBar(v){
+  document.getElementById('ver-cur-label').textContent = v.label;
+  const tag = document.getElementById('ver-cur-tag');
+  tag.textContent = statusLabel(v.status);
+  tag.className = 'tag ' + tagClassFor(v.status);
+
+  const sorted = [...VERSIONS].sort((a,b) => versionNum(b) - versionNum(a));
+  document.getElementById('ver-dd').innerHTML = sorted.map(x => `
+    <div class="ver-dd-item ${x.id === currentVersionId ? 'current' : ''}" onclick="selectVersion('${x.id}')">
+      <div class="vdi-main"><b>${x.label}</b><span class="tag ${tagClassFor(x.status)}">${statusLabel(x.status)}</span></div>
+      <div class="vdi-sub">${x.status === 'dang_dung' ? 'Xuất bản ' + x.publishedAt : x.status === 'luu_tru' ? 'Ngừng dùng ' + x.archivedAt : 'Tạo ' + x.createdAt}${x.runningInstances ? ' · ' + x.runningInstances + ' đơn đang chạy' : ''}</div>
+    </div>
+  `).join('');
+
+  const banner = document.getElementById('ver-banner');
+  if(v.status === 'luu_tru'){
+    banner.className = 'ver-card warn';
+    banner.innerHTML = `<span class="vc-ico">🔒</span>
+      <span>Bản lưu trữ, chỉ đọc — ngừng dùng từ ${v.archivedAt}${v.runningInstances ? ', còn ' + v.runningInstances + ' đơn đang chạy theo bản này' : ''}.<button class="vc-action" onclick="restoreVersion('${v.id}')">Tạo bản sao</button></span>`;
+  } else if(v.status === 'nhap'){
+    // Bỏ đoạn mô tả dài — chỉ giữ lại thao tác "Xoá bản nháp" dạng link nhỏ,
+    // gọn như "Xem lịch sử phiên bản" ở trên.
+    banner.className = '';
+    banner.innerHTML = `<span class="text-link" onclick="deleteDraft('${v.id}')">Xoá bản nháp</span>`;
+  } else {
+    // Đang dùng: không cần thẻ trạng thái riêng — tag "Đang dùng" ở dropdown
+    // phía trên đã đủ rõ, tránh trùng với thẻ "✅ Quy trình đã đủ điều kiện
+    // ban hành" ở khối check lỗi bên dưới.
+    banner.className = '';
+    banner.innerHTML = '';
+  }
+}
+
+function renderHistoryTable(){
+  const sorted = [...VERSIONS].sort((a,b) => versionNum(b) - versionNum(a));
+  document.getElementById('hist-tbody').innerHTML = sorted.map(v => {
+    let actions = '';
+    if(v.status === 'nhap'){
+      actions = `<button class="btn btn-sm btn-default" onclick="selectVersion('${v.id}');closeModal('modal-history')">Xem</button>
+                 <button class="btn btn-sm btn-danger" onclick="deleteDraft('${v.id}')">Xoá</button>`;
+    } else if(v.status === 'luu_tru'){
+      actions = `<button class="btn btn-sm btn-default" onclick="selectVersion('${v.id}');closeModal('modal-history')">Xem</button>
+                 <button class="btn btn-sm btn-warning" onclick="restoreVersion('${v.id}')">Tạo bản sao</button>`;
+    } else {
+      actions = `<button class="btn btn-sm btn-default" onclick="selectVersion('${v.id}');closeModal('modal-history')">Xem</button>
+                 <button class="btn btn-sm btn-warning" onclick="duplicateVersion('${v.id}')">Tạo bản sao</button>`;
+    }
+    return `<tr>
+      <td><b>${v.label}</b></td>
+      <td><span class="tag ${tagClassFor(v.status)}">${statusLabel(v.status)}</span></td>
+      <td>${v.basedOn || '—'}</td>
+      <td>${v.createdBy}<br><span class="text-muted text-sm">${v.createdAt}</span></td>
+      <td>${v.publishedAt ? v.publishedBy + '<br><span class="text-muted text-sm">' + v.publishedAt + '</span>' : '<span class="text-muted">—</span>'}</td>
+      <td>${v.archivedAt || '<span class="text-muted">—</span>'}</td>
+      <td><div class="hist-actions">${actions}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openHistoryModal(){
+  renderHistoryTable();
+  openModal('modal-history');
+}
+
+function toggleVerDD(e){
+  e.stopPropagation();
+  document.getElementById('ver-dd').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if(!e.target.closest('#ver-select')) document.getElementById('ver-dd').classList.remove('open');
+});
+
+// Delegation trên container tĩnh #palette-wrap: gắn 1 lần duy nhất, vẫn hoạt động
+// đúng dù nội dung bên trong bị renderPalette() vẽ lại liên tục sau mỗi thao tác.
+document.getElementById('palette-wrap').addEventListener('click', e => {
+  const g = e.target.closest('.mn-group');
+  if(!g) return;
+  const groupName = g.dataset.group;
+  if(paletteCollapsed.has(groupName)) paletteCollapsed.delete(groupName);
+  else paletteCollapsed.add(groupName);
+  renderPalette();
+});
+
+function syncProcName(val){
+  PROCESS_NAME = val;
+  document.getElementById('proc-name-input').value = val;
+}
+
+function renderAll(){
+  const v = getVersion(currentVersionId);
+  const buf = content();
+  const issues = validate(buf);
+  renderPalette();
+  renderVerBar(v);
+  renderCanvas(v, buf, issues);
+  renderIssuePanel(issues);
+  updateToolbarButtons(v, issues);
+  updateUnsavedIndicator();
+}
+
+document.addEventListener('DOMContentLoaded', renderAll);
+</script>
+</body>
+</html>

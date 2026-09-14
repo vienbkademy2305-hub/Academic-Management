@@ -443,7 +443,8 @@ function renderScopeBody(){
     </div>`;
 
   if (scopeAudience !== 'sinhvien') {
-    html += `<div class="text-muted text-sm">Bản demo này chưa có bộ điều kiện riêng cho Cán bộ.</div>`;
+    html += `<div class="text-muted text-sm mb-8">Bản demo này chưa có bộ điều kiện riêng cho Cán bộ.</div>`;
+    html += renderScopeMienNghiepVu();
     return html;
   }
 
@@ -493,15 +494,22 @@ function renderScopeBody(){
           </label>`).join('')}
       </div>
       <div class="f-hint">Để trống = mọi trạng thái</div>
-    </div>
+    </div>`;
+  html += renderScopeMienNghiepVu();
+  return html;
+}
+
+// "Miễn nghiệp vụ" áp dụng chung cho cả Cán bộ lẫn Sinh viên — không phụ thuộc lựa chọn
+// Đối tượng áp dụng, nên tách riêng và luôn hiện ở cuối khối Phạm vi áp dụng.
+function renderScopeMienNghiepVu(){
+  return `
     <div class="fi" style="margin-bottom:0">
-      <label>Miễn nghiệp vụ</label>
+      <label>Miền nghiệp vụ <span class="req">*</span></label>
       <select class="fc" onchange="updateScopeValue('mienNghiepVu', this.value)">
         <option value="">— Không áp dụng —</option>
         ${SCOPE_MIENNGHIEPVU_OPTIONS.map(o => `<option value="${o}" ${scopeValues.mienNghiepVu===o?'selected':''}>${esc(o)}</option>`).join('')}
       </select>
     </div>`;
-  return html;
 }
 
 function renderFieldList(){

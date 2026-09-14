@@ -111,6 +111,16 @@
   .unit-combo-item:hover,.unit-combo-item.hl{background:var(--primary-light);color:var(--primary)}
   .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
   .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
+
+  /* Khối "Phạm vi áp dụng" — accordion đơn giản ở đầu cột trái, độc lập với danh sách field:
+     chọn Đối tượng áp dụng là Cán bộ hay Sinh viên; chọn Sinh viên mới hiện bộ điều kiện lọc. */
+  .scope-card{margin-bottom:16px}
+  .scope-card-hd{display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px;font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.02em}
+  .scope-card-chevron{display:inline-block;transition:transform .15s;font-size:10px;color:var(--text-3)}
+  .scope-card-chevron.open{transform:rotate(180deg)}
+  .scope-status-group{display:flex;flex-wrap:wrap;gap:6px}
+  .scope-status-chip{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:400;color:var(--text-1);cursor:pointer;border:1px solid var(--border);border-radius:14px;padding:4px 10px}
+  .scope-status-chip input{cursor:pointer}
 </style>
 </head>
 <body>
@@ -175,6 +185,7 @@
       <div class="fb-wrap">
         <!-- ═══ CỘT TRÁI: cấu trúc field ═══ -->
         <div class="fb-col fb-left">
+          <div id="fb-scope"></div>
           <div class="fb-col-title">Cấu trúc biểu mẫu</div>
           <div id="fb-field-list"></div>
           <div class="add-field-wrap" id="add-field-wrap">
@@ -265,6 +276,20 @@ const SYSTEM_SOURCES = {
     {code:'CB007', vi:'ThS. Đặng Văn G'}, {code:'CB008', vi:'TS. Bùi Thị H'},
   ]},
 };
+
+// Dữ liệu mẫu cho khối "Phạm vi áp dụng" ở đầu cột trái — các mục chỉ hiện khi Đối tượng áp dụng
+// là Sinh viên (chọn Cán bộ thì demo này chưa có bộ trường riêng, ẩn hết).
+const SCOPE_TRUONGVIEN_OPTIONS = [
+  {code:'TCN', vi:'Trường Công nghệ'}, {code:'TKT', vi:'Trường Kinh tế'}, {code:'VDTQT', vi:'Viện Đào tạo Quốc tế'},
+];
+const SCOPE_HEDAOTAO_OPTIONS = ['Chính quy', 'Vừa làm vừa học', 'Văn bằng 2', 'Liên thông'];
+const SCOPE_NIENKHOA_OPTIONS = ['Khoá 2021', 'Khoá 2022', 'Khoá 2023', 'Khoá 2024'];
+const SCOPE_TRANGTHAISV_OPTIONS = [
+  {value:'danghoc', label:'Đang học'}, {value:'thoihoc', label:'Thôi học'}, {value:'buocthoihoc', label:'Buộc thôi học'},
+  {value:'chuyentruongdi', label:'Chuyển trường đi'}, {value:'baoluu', label:'Bảo lưu'},
+  {value:'dinhchi', label:'Bị đình chỉ'}, {value:'totnghiep', label:'Đã tốt nghiệp'},
+];
+const SCOPE_MIENNGHIEPVU_OPTIONS = ['Quản lý sinh viên', 'Quản lý đào tạo', 'Quản lý khảo thí'];
 
 const TYPE_META = {
   text:        {label: 'Văn bản ngắn',        ico: 'Aa'},
@@ -373,6 +398,11 @@ let selectedId = 1;
 let panelTab = 'content';
 let expandedColId = null;
 
+// State khối "Phạm vi áp dụng" — độc lập với từng field, áp dụng cho cả biểu mẫu.
+let scopeExpanded = true;
+let scopeAudience = 'sinhvien'; // 'canbo' | 'sinhvien'
+let scopeValues = {truongVien: '', khoaPhongBan: '', heDaoTao: '', nienKhoa: '', ctdt: '', trangThaiSV: [], mienNghiepVu: ''};
+
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function currentField(){ return fields.find(f => f.id === selectedId); }
 function isSelectType(t){ return t === 'select1' || t === 'selectMulti'; }
@@ -381,9 +411,97 @@ function isTableType(t){ return t === 'table'; }
 /* ================= RENDER ================= */
 
 function renderAll(){
+  renderScope();
   renderFieldList();
   renderPreview();
   renderPanel();
+}
+
+function renderScope(){
+  const box = document.getElementById('fb-scope');
+  if (!box) return;
+  box.innerHTML = `
+    <div class="scope-card">
+      <div class="scope-card-hd" onclick="toggleScopePanel()">
+        <span class="scope-card-chevron ${scopeExpanded?'open':''}">▾</span>
+        <span>Phạm vi áp dụng</span>
+      </div>
+      ${scopeExpanded ? renderScopeBody() : ''}
+    </div>
+    <div class="divider"></div>`;
+}
+
+function renderScopeBody(){
+  let html = `
+    <div class="f-hint" style="margin-bottom:10px">Để trống một mục nghĩa là áp dụng cho TẤT CẢ giá trị của mục đó. Phải khớp ĐỦ mọi mục đã khai (điều kiện VÀ) mới thấy được biểu mẫu này.</div>
+    <div class="fi">
+      <label>Đối tượng áp dụng</label>
+      <div class="src-toggle">
+        <button type="button" class="src-toggle-btn ${scopeAudience==='canbo'?'active':''}" onclick="setScopeAudience('canbo')">Cán bộ</button>
+        <button type="button" class="src-toggle-btn ${scopeAudience==='sinhvien'?'active':''}" onclick="setScopeAudience('sinhvien')">Sinh viên</button>
+      </div>
+    </div>`;
+
+  if (scopeAudience !== 'sinhvien') {
+    html += `<div class="text-muted text-sm">Bản demo này chưa có bộ điều kiện riêng cho Cán bộ.</div>`;
+    return html;
+  }
+
+  html += `
+    <div class="fi">
+      <label>Trường/Viện</label>
+      <select class="fc" onchange="updateScopeValue('truongVien', this.value)">
+        <option value="">— Để trống nếu áp dụng mọi Trường/Viện —</option>
+        ${SCOPE_TRUONGVIEN_OPTIONS.map(o => `<option value="${o.code}" ${scopeValues.truongVien===o.code?'selected':''}>${esc(o.vi)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fi">
+      <label>Khoa/Phòng ban</label>
+      <select class="fc" onchange="updateScopeValue('khoaPhongBan', this.value)">
+        <option value="">— Để trống nếu áp dụng mọi Khoa/Phòng ban —</option>
+        ${SYSTEM_SOURCES.khoa.options.map(o => `<option value="${o.code}" ${scopeValues.khoaPhongBan===o.code?'selected':''}>${esc(o.vi)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fi">
+      <label>Hệ đào tạo</label>
+      <select class="fc" onchange="updateScopeValue('heDaoTao', this.value)">
+        <option value="">— Để trống nếu áp dụng mọi hệ đào tạo —</option>
+        ${SCOPE_HEDAOTAO_OPTIONS.map(o => `<option value="${o}" ${scopeValues.heDaoTao===o?'selected':''}>${esc(o)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fi">
+      <label>Niên khoá</label>
+      <select class="fc" onchange="updateScopeValue('nienKhoa', this.value)">
+        <option value="">— Để trống nếu áp dụng mọi niên khoá —</option>
+        ${SCOPE_NIENKHOA_OPTIONS.map(o => `<option value="${o}" ${scopeValues.nienKhoa===o?'selected':''}>${esc(o)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fi">
+      <label>Chương trình đào tạo</label>
+      <select class="fc" onchange="updateScopeValue('ctdt', this.value)">
+        <option value="">— Để trống nếu áp dụng mọi chương trình —</option>
+        ${SYSTEM_SOURCES.ctdt.options.map(o => `<option value="${o.code}" ${scopeValues.ctdt===o.code?'selected':''}>${esc(o.vi)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fi">
+      <label>Trạng thái sinh viên</label>
+      <div class="scope-status-group">
+        ${SCOPE_TRANGTHAISV_OPTIONS.map(o => `
+          <label class="scope-status-chip">
+            <input type="checkbox" value="${o.value}" ${scopeValues.trangThaiSV.includes(o.value)?'checked':''} onchange="toggleScopeStatus('${o.value}', this.checked)">
+            ${esc(o.label)}
+          </label>`).join('')}
+      </div>
+      <div class="f-hint">Để trống = mọi trạng thái</div>
+    </div>
+    <div class="fi" style="margin-bottom:0">
+      <label>Miễn nghiệp vụ</label>
+      <select class="fc" onchange="updateScopeValue('mienNghiepVu', this.value)">
+        <option value="">— Không áp dụng —</option>
+        ${SCOPE_MIENNGHIEPVU_OPTIONS.map(o => `<option value="${o}" ${scopeValues.mienNghiepVu===o?'selected':''}>${esc(o)}</option>`).join('')}
+      </select>
+    </div>`;
+  return html;
 }
 
 function renderFieldList(){
@@ -760,6 +878,28 @@ function renderSystemSourceUI(f){
 }
 
 /* ================= ACTIONS ================= */
+
+function toggleScopePanel(){
+  scopeExpanded = !scopeExpanded;
+  renderScope();
+}
+
+function setScopeAudience(audience){
+  if (scopeAudience === audience) return;
+  scopeAudience = audience;
+  renderScope();
+}
+
+function updateScopeValue(key, value){
+  scopeValues[key] = value;
+}
+
+function toggleScopeStatus(value, checked){
+  const list = scopeValues.trangThaiSV;
+  const idx = list.indexOf(value);
+  if (checked && idx === -1) list.push(value);
+  else if (!checked && idx !== -1) list.splice(idx, 1);
+}
 
 function selectField(id){
   selectedId = id;

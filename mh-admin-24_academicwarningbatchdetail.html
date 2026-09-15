@@ -1936,10 +1936,11 @@ function saveBatch(thenRun){
    đợt — cho phép xem thử/chạy lại thoải mái ở cả Nháp lẫn Chờ khoa xác nhận. Muốn chuyển trạng thái
    sang Chờ xác nhận phải bấm "Gửi xác nhận" riêng (xem sendToKhoa()). Chặn hẳn khi Đã công bố (nút
    không hiện ra ở trạng thái đó — xem renderBatchActions).
-   Nếu đang tick chọn sẵn vài SV trong bảng bên dưới: rà soát RIÊNG các SV đó — không qua popup xác
-   nhận (chỉ toast), vẫn ghi 1 dòng vào lịch sử (ghi rõ "rà soát riêng N SV" để phân biệt với lần rà
-   soát toàn bộ) và cập nhật "Lần rà soát gần nhất". Không chọn gì mới rà soát toàn bộ + qua popup
-   xác nhận như bình thường. */
+   Nếu đang tick chọn sẵn vài SV trong bảng bên dưới: rà soát RIÊNG các SV đó — bỏ qua popup xác
+   nhận (chỉ toast) TRỪ KHI trong số đó có em đang được Khoa/CTSV xác nhận (xem canhBaoResetXacNhan),
+   khi đó vẫn phải qua popup để báo trước việc xác nhận sẽ bị reset. Dù qua popup hay không, vẫn ghi
+   1 dòng vào lịch sử (ghi rõ "rà soát riêng N SV" để phân biệt với lần rà soát toàn bộ) và cập nhật
+   "Lần rà soát gần nhất". Không chọn gì mới rà soát toàn bộ + qua popup xác nhận như bình thường. */
 /* ═══ SO SÁNH DANH SÁCH TRƯỚC / SAU MỘT LẦN RÀ SOÁT ═══
    Lấy khoá của danh sách cảnh báo TRƯỚC khi chạy, chạy xong lấy lại, ai biến mất thì báo. Cần báo vì
    sinh viên rơi khỏi danh sách là chuyện IM LẶNG: cán bộ đang theo dõi em đó, chạy lại phát thì mất
@@ -2012,39 +2013,75 @@ function baoRoiKhoiDs(ds, sauKhiDong){
     </tr>`).join('');
   openModal('modal-roikhoi');
 }
+/* ═══ RESET XÁC NHẬN KHI RÀ SOÁT LẠI ═══
+   Rà soát lại có thể đổi điểm/tín chỉ/kết luận của SV — giữ nguyên xác nhận cũ nghĩa là Khoa/CTSV
+   đang đứng tên xác nhận cho một kết quả KHÔNG CÒN ĐÚNG. Nên mọi SV nằm trong phạm vi tính lại (toàn
+   bộ hoặc riêng SV đã chọn) mà đang có xác nhận (Đã xác nhận / Cần xem xét lại) đều bị đưa về
+   "Chưa xác nhận" — không phân biệt kết quả của em đó có thực sự đổi hay không, vì bản thân việc
+   "vừa được tính lại" đã đủ để coi xác nhận cũ là lỗi thời. Áp dụng cho CẢ 2 bên (Khoa, CTSV) độc
+   lập nhau, đúng theo cách 2 bên vốn đã tách biệt (XN_FIELD). */
+function svSeBiResetXacNhan(scope){
+  return scope.filter(s => Object.values(XN_FIELD).some(f => s[f.st] === 'daXacNhan' || s[f.st] === 'canXemXetLai'));
+}
+function resetXacNhanSV(s){
+  Object.values(XN_FIELD).forEach(f => { s[f.st] = 'chuaXacNhan'; s[f.ng] = ''; s[f.tg] = ''; s[f.gc] = ''; });
+}
+/* Cảnh báo hiện TRONG popup xác nhận chạy — actor phải biết trước khi bấm chạy, không phải biết sau
+   khi xác nhận đã mất. */
+function canhBaoResetXacNhan(scope){
+  const n = svSeBiResetXacNhan(scope).length;
+  return n ? `⚠ ${n} sinh viên đã được Khoa hoặc Ban CTSV xác nhận — rà soát lại sẽ đưa các dòng này về "Chưa xác nhận", phải xác nhận lại từ đầu.` : '';
+}
 function runBatch(){
   const selectedKeys = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.dataset.key);
   if (selectedKeys.length){
-    const truoc = new Set(dsCanhBao().map(khoaSV));
-    BATCH.daChayLuc = nowVN();
-    apDungDemoDoiDuLieu();   /* mockup-only, xem ghi chú ở DEMO_DOI_DU_LIEU */
-    runHistory.push({ time: BATCH.daChayLuc, detail: `Rà soát riêng ${selectedKeys.length} sinh viên đã chọn` });
-    renderBatchInfo();
-    /* Chỉ soát trong đúng nhóm đã tick: rà soát cục bộ thì chỉ những em đó mới có thể đổi kết quả,
-       quét cả danh sách sẽ báo nhầm sang em khác nếu dữ liệu nơi khác thay đổi song song. */
-    const roi = soSanhSauRaSoat(truoc).filter(s => selectedKeys.includes(khoaSV(s)));
-    const veLaiBang = () => renderTableWithLoading(
-      () => showToast(`Đã rà soát lại dữ liệu của ${selectedKeys.length} sinh viên đã chọn`));
-    /* Có em rơi khỏi danh sách: BÁO TRƯỚC, giữ nguyên bảng để người dùng còn nhìn thấy em đó trong khi
-       đọc popup. Bấm "Đã hiểu" mới vẽ lại — lúc ấy dòng biến mất ngay trước mắt, hiểu được vì sao.
-       Không dùng spinner ở nhánh này: spinner làm trắng bảng, mất luôn cái cần nhìn thấy. */
-    if (roi.length) baoRoiKhoiDs(roi, veLaiBang); else veLaiBang();
+    const scopeRieng = STUDENTS.filter(s => selectedKeys.includes(khoaSV(s)));
+    const doChayRieng = () => {
+      const truoc = new Set(dsCanhBao().map(khoaSV));
+      BATCH.daChayLuc = nowVN();
+      apDungDemoDoiDuLieu();   /* mockup-only, xem ghi chú ở DEMO_DOI_DU_LIEU */
+      scopeRieng.forEach(resetXacNhanSV);
+      runHistory.push({ time: BATCH.daChayLuc, detail: `Rà soát riêng ${selectedKeys.length} sinh viên đã chọn` });
+      renderBatchInfo();
+      /* Chỉ soát trong đúng nhóm đã tick: rà soát cục bộ thì chỉ những em đó mới có thể đổi kết quả,
+         quét cả danh sách sẽ báo nhầm sang em khác nếu dữ liệu nơi khác thay đổi song song. */
+      const roi = soSanhSauRaSoat(truoc).filter(s => selectedKeys.includes(khoaSV(s)));
+      const veLaiBang = () => renderTableWithLoading(
+        () => showToast(`Đã rà soát lại dữ liệu của ${selectedKeys.length} sinh viên đã chọn`));
+      /* Có em rơi khỏi danh sách: BÁO TRƯỚC, giữ nguyên bảng để người dùng còn nhìn thấy em đó trong khi
+         đọc popup. Bấm "Đã hiểu" mới vẽ lại — lúc ấy dòng biến mất ngay trước mắt, hiểu được vì sao.
+         Không dùng spinner ở nhánh này: spinner làm trắng bảng, mất luôn cái cần nhìn thấy. */
+      if (roi.length) baoRoiKhoiDs(roi, veLaiBang); else veLaiBang();
+    };
+    /* Nhánh "riêng SV đã chọn" vốn chạy thẳng không qua popup (thao tác nhanh, ít rủi ro) — CHỈ chèn
+       thêm bước xác nhận khi có ít nhất 1 em trong số đã chọn sắp bị mất xác nhận, để không làm chậm
+       thao tác cho trường hợp phổ biến (chưa ai xác nhận gì). */
+    const canhBaoRieng = canhBaoResetXacNhan(scopeRieng);
+    if (canhBaoRieng){
+      showConfirm(`Rà soát lại ${selectedKeys.length} sinh viên đã chọn?`, doChayRieng, 'Rà soát', 'btn-success', canhBaoRieng);
+      document.getElementById('conf-desc').classList.add('warn');
+    } else {
+      doChayRieng();
+    }
     return;
   }
   const again = !!BATCH.daChayLuc;
   const truocToanDot = new Set(dsCanhBao().map(khoaSV));
+  const scopeToanBo = dsCanhBao();
+  const canhBaoGop = [canhBaoLopChuaKhoaDiem(), again ? canhBaoResetXacNhan(scopeToanBo) : ''].filter(Boolean).join(' ');
   showConfirm(
     again
-      ? `Rà soát lại đợt "${BATCH.tenDot}"? Chỉ tính lại điểm và tín chỉ theo dữ liệu hiện tại; trạng thái xác nhận của CTSV và Khoa được giữ nguyên.`
+      ? `Rà soát lại đợt "${BATCH.tenDot}"? Hệ thống tính lại điểm và tín chỉ theo dữ liệu hiện tại.`
       : `Chạy rà soát đợt "${BATCH.tenDot}"? Kết quả được tính theo danh mục Mức cảnh báo đang cấu hình hiện tại — bạn có thể chạy lại nhiều lần trước khi gửi cho Khoa quản lý.`,
     () => {
-      /* ═══ PHẠM VI CỦA "RÀ SOÁT": CHỈ TÍNH LẠI ĐIỂM / TÍN CHỈ VÀ KẾT LUẬN ═══
-         Tuyệt đối KHÔNG đụng tới:
-         - s.xacNhanCTSV / s.xacNhanKhoa và người + thời gian + ghi chú xác nhận kèm theo;
-         - BATCH.daRaSoatTrangThai (kết quả bước rà soát trạng thái của Ban CTSV).
-         Xác nhận là chữ ký nghiệp vụ của cán bộ, xoá đi nghĩa là bắt cả trường ký lại từ đầu chỉ vì
-         một lần chạy lại số liệu. Ai muốn rút xác nhận thì tự bấm vào badge để đổi, không xoá ngầm. */
+      /* ═══ PHẠM VI CỦA "RÀ SOÁT": CHỈ TÍNH LẠI ĐIỂM / TÍN CHỈ / KẾT LUẬN — VÀ RESET XÁC NHẬN CŨ ═══
+         Không đụng tới BATCH.daRaSoatTrangThai (kết quả bước rà soát trạng thái của Ban CTSV) — đó là
+         dữ liệu tra cứu, không phải chữ ký. Nhưng s.xacNhanCTSV / s.xacNhanKhoa (và người/thời
+         gian/ghi chú kèm theo) của MỌI SV đang trong danh sách TRƯỚC lần chạy này thì bị đưa về
+         "Chưa xác nhận" — xem canhBaoResetXacNhan() và lý do ở đó. Cảnh báo đã hiện SẴN trong popup
+         xác nhận phía trên (canhBaoGop), actor bấm nút chạy tức là đã đồng ý với việc này. */
       BATCH.daChayLuc = nowVN();
+      if (again) scopeToanBo.forEach(resetXacNhanSV);
       /* ĐÂY là chỗ áp dụng điều kiện không xét: sinh viên có quyết định nghỉ trùm lên kỳ xét mới
          chuyển thành "Không xét" và rơi khỏi danh sách ở lần chạy này. Bước rà soát trạng thái
          trước đó chỉ điền dữ liệu để cán bộ soát, không tự gạt ai ra. */
@@ -2057,8 +2094,8 @@ function runBatch(){
         /* Chỉ so sánh khi RÀ SOÁT LẠI. Lần chạy đầu thì danh sách trước vốn rỗng, không có gì để so. */
         if (again) baoRoiKhoiDs(soSanhSauRaSoat(truocToanDot));
       });
-    }, again ? 'Rà soát' : 'Chạy rà soát', 'btn-success', canhBaoLopChuaKhoaDiem());
-  document.getElementById('conf-desc').classList.toggle('warn', !!canhBaoLopChuaKhoaDiem());
+    }, again ? 'Rà soát' : 'Chạy rà soát', 'btn-success', canhBaoGop);
+  document.getElementById('conf-desc').classList.toggle('warn', !!canhBaoGop);
 }
 /* ═══ BƯỚC 2 — RÀ SOÁT TRẠNG THÁI SINH VIÊN (Ban CTSV) ═══
    Chạy SAU khi đã gen danh sách. Lấy học kỳ đang xét, tra kho quyết định tìm quyết định nghỉ học

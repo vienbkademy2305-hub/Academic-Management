@@ -322,6 +322,9 @@
           <!-- Nêu thẳng điều kiện đang áp dụng ở khối xem, để cán bộ biết vì sao có sinh viên mang
                kết quả "Không xét" mà không phải mở form sửa ra dò. -->
           <div><div class="info-item-label">Không xét trạng thái sinh viên của kỳ</div><div class="info-item-value" id="if-dieukienkhongxet">—</div></div>
+          <!-- Thông số xét áp dụng cho ĐỢT NÀY — mặc định lấy hết thông số đang active ở mh-admin-21,
+               cán bộ bỏ bớt nếu đợt này không cần đối chiếu một vài thông số. -->
+          <div><div class="info-item-label">Thông số xét</div><div class="info-item-value" id="if-thongsoxet">—</div></div>
         </div>
       </div>
 
@@ -418,6 +421,21 @@
               <button type="button" class="fc msel-trigger" onclick="mselToggle('lop')"><span class="msel-label"></span><span class="car">▾</span></button>
               <div class="msel-panel hidden">
                 <div class="msel-selectall"><a onclick="mselSelectAll('lop',true)">Chọn tất cả</a><a onclick="mselSelectAll('lop',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Thông số xét của đợt — mặc định chọn hết thông số đang active ở mh-admin-21 (khoản 1 +
+               khoản 2), cán bộ bỏ bớt nếu đợt này không cần đối chiếu một vài thông số. Đây là NGUỒN
+               DUY NHẤT cho bảng ngưỡng, popup Xem chi tiết và điều kiện khoản 2 của đợt — bỏ chọn ở
+               đây thì thông số đó biến mất khỏi mọi nơi trên, không riêng gì droplist này. -->
+          <div class="fi span2">
+            <label>Thông số xét<span class="req">*</span></label>
+            <div class="msel" data-msel="thongso">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('thongso')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('thongso',true)">Chọn tất cả</a><a onclick="mselSelectAll('thongso',false)">Bỏ chọn tất cả</a></div>
                 <div class="msel-divider"></div>
                 <div class="msel-items"></div>
               </div>
@@ -1085,7 +1103,12 @@ function soSanh(v, sosanh, moc){
   }
   return false;
 }
-function dieuKienActive(nhom){ return DOT_CONDITIONS.filter(c => c.status === 'active' && (!nhom || c.nhom === nhom)); }
+/* BATCH.thongSoXet là danh sách thông số cán bộ CHỌN cho riêng đợt này (mặc định = mọi thông số
+   đang active, xem BATCH bên dưới) — lọc thêm điều kiện này để bỏ chọn ở form thì thông số biến mất
+   khỏi TẤT CẢ nơi đọc qua dieuKienActive(), không chỉ khỏi droplist. */
+function dieuKienActive(nhom){
+  return DOT_CONDITIONS.filter(c => c.status === 'active' && (!nhom || c.nhom === nhom) && BATCH.thongSoXet.includes(c.id));
+}
 /* Đối chiếu 1 điều kiện với 1 sinh viên. viPham chỉ đúng khi điều kiện CÓ áp dụng và giá trị CÓ thật
    — giá trị rỗng KHÔNG bao giờ là vi phạm: JS ép null thành 0 nên "null < 1.00" ra true, không chặn
    thì sinh viên nghỉ cả kỳ (mọi số liệu đều rỗng) sẽ chạm sạch ngưỡng điểm. */
@@ -1536,6 +1559,11 @@ const MSEL_OPTIONS = {
     { value:'qtkd1', label:'QTKD1.24108.1' }, { value:'cntt2', label:'CNTT2.23107.1' },
   ],
   trangthaisv: Object.entries(STUDENT_STATUS).map(([value, v]) => ({ value, label: v.label })),
+  /* Toàn bộ thông số ĐANG ACTIVE ở mh-admin-21 (khoản 1 lẫn khoản 2) — thông số inactive không đưa
+     vào đây, giống hệt cách dieuKienActive() không bao giờ trả về chúng. Kèm apDungText để phân biệt
+     4 dòng cùng nhãn "Điểm TB tích luỹ" (khác nhau ở Năm 1/2/3/4,5,6). */
+  thongso: DOT_CONDITIONS.filter(c => c.status === 'active')
+    .map(c => ({ value: c.id, label: c.apDungText ? `${c.label} — ${c.apDungText}` : c.label })),
 };
 const MSEL_PLACEHOLDER = {
   truongvien: '— Để trống nếu áp dụng mọi Trường/Viện —',
@@ -1545,9 +1573,10 @@ const MSEL_PLACEHOLDER = {
   ctdt: '— Để trống nếu áp dụng mọi chương trình —',
   lop: '— Để trống nếu áp dụng mọi lớp hành chính —',
   trangthaisv: '— Bắt buộc chọn ít nhất 1 trạng thái —',
+  thongso: '— Bắt buộc chọn ít nhất 1 thông số —',
 };
-const MSEL_DEFAULT = { trangthaisv:['danghoc'] };
-let mselState = { truongvien:[], khoaquanly:[], nienkhoa:[], hedaotao:[], ctdt:[], lop:[], trangthaisv:['danghoc'], dieukienkhongxet:['baoluu','dinhchi'] };
+const MSEL_DEFAULT = { trangthaisv:['danghoc'], thongso: MSEL_OPTIONS.thongso.map(o => o.value) };
+let mselState = { truongvien:[], khoaquanly:[], nienkhoa:[], hedaotao:[], ctdt:[], lop:[], trangthaisv:['danghoc'], dieukienkhongxet:['baoluu','dinhchi'], thongso:[...MSEL_DEFAULT.thongso] };
 
 function mselLabelsOf(key, vals){
   return (vals || []).map(v => (MSEL_OPTIONS[key].find(o => o.value === v) || {}).label || v);
@@ -1678,6 +1707,10 @@ const BATCH = {
   /* Điều kiện không xét — cấu hình theo TỪNG ĐỢT, lưu mảng mã điều kiện. Mặc định chọn cả 2 mục,
      giống cách Trạng thái người học mặc định chọn "Đang học". */
   dieuKienKhongXet: (qs.get('dieuKienKhongXet') || 'baoluu,dinhchi').split(',').filter(Boolean),
+  /* Thông số xét CỦA RIÊNG ĐỢT NÀY — mảng mã thông số (id ở DOT_CONDITIONS). Không truyền qua query
+     string (đợt cũ mở lại) thì mặc định lấy HẾT thông số đang active, gán ngay dưới BATCH vì
+     MSEL_OPTIONS.thongso lúc này đã có sẵn (khai báo trước BATCH trong file). */
+  thongSoXet: (qs.get('thongSoXet') || '').split(',').filter(Boolean),
   /* Mốc Ban CTSV rà soát trạng thái sinh viên của kỳ — BƯỚC 2, chạy SAU khi đã gen danh sách.
      Rỗng = chưa rà, khi đó hệ thống CHƯA tra quyết định nghỉ nên chưa loại trừ ai. Tách khỏi
      daChayLuc vì hai việc khác nhau: bước 1 tính theo điểm/tín chỉ, bước 2 đối chiếu quyết định. */
@@ -1697,6 +1730,7 @@ const BATCH = {
      "ai khai sinh ra nó". Chỉ lưu TÊN, không kèm mã cán bộ. */
   nguoiLap: qs.get('nguoiLap') || '',
 };
+if (!BATCH.thongSoXet.length) BATCH.thongSoXet = MSEL_DEFAULT.thongso.slice();
 /* Người dùng đang đăng nhập — cùng quy ước CURRENT_USER đã dùng ở mh-admin-03/20. Hệ thống thật lấy
    từ phiên đăng nhập. */
 const CURRENT_USER = 'Nguyễn Văn Admin';
@@ -1738,6 +1772,10 @@ function renderBatchInfo(){
   document.getElementById('if-ketthuc').textContent = BATCH.ketThuc || '—';
   document.getElementById('if-dieukienkhongxet').innerHTML =
     tagListHtml(mselLabelsOf('dieukienkhongxet', BATCH.dieuKienKhongXet).join(', '));
+  document.getElementById('if-thongsoxet').innerHTML =
+    BATCH.thongSoXet.length === MSEL_OPTIONS.thongso.length
+      ? '<span class="text-muted">Tất cả thông số đang active</span>'
+      : tagListHtml(mselLabelsOf('thongso', BATCH.thongSoXet).join(', '));
   document.getElementById('if-nguoilap').innerHTML =
     BATCH.nguoiLap || '<span class="text-muted">Chưa lưu</span>';
   const dachayEl = document.getElementById('if-dachayluc');
@@ -1857,6 +1895,7 @@ function fillBatchForm(){
   setMsel('lop', labelsToValues('lop', BATCH.lop));
   setMsel('trangthaisv', BATCH.trangThaiSV ? labelsToValues('trangthaisv', BATCH.trangThaiSV) : ['danghoc']);
   setMsel('dieukienkhongxet', BATCH.dieuKienKhongXet);
+  setMsel('thongso', BATCH.thongSoXet);
   setMsel('truongvien', []);
   setMsel('hedaotao', []);
 }
@@ -1865,6 +1904,7 @@ function saveBatch(thenRun){
   const tenDot = document.getElementById('bf-ten').value.trim();
   if (!tenDot){ showToast('Vui lòng nhập Tên đợt', 'err'); return; }
   if (!mselState.trangthaisv.length){ showToast('Vui lòng chọn ít nhất 1 Trạng thái người học', 'err'); return; }
+  if (!mselState.thongso.length){ showToast('Vui lòng chọn ít nhất 1 Thông số xét', 'err'); return; }
 
   BATCH.tenDot = tenDot;
   BATCH.hocKy = document.getElementById('bf-hocky').value;
@@ -1878,6 +1918,7 @@ function saveBatch(thenRun){
   BATCH.lop = mselLabelsOf('lop', mselState.lop).join(', ');
   BATCH.trangThaiSV = mselLabelsOf('trangthaisv', mselState.trangthaisv).join(', ');
   BATCH.dieuKienKhongXet = [...mselState.dieukienkhongxet];
+  BATCH.thongSoXet = [...mselState.thongso];
   if (!BATCH.maDot) BATCH.maDot = `SOS-${BATCH.hocKy}-${BATCH.namHoc.split('-').map(y=>y.slice(-2)).join('')}-1`;
   /* Ghi người lập ở ĐÂY, không phải lúc tạo: mọi lần Lưu và cập nhật đều ghi đè, kể cả khi sửa đợt
      do người khác lập trước đó. */

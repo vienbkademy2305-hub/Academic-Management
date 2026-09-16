@@ -68,7 +68,7 @@
 
   /* Canvas */
   .wf-canvas-scroll{flex:1;overflow:auto;background:#fafafa;position:relative}
-  .wf-canvas-inner{position:relative;width:1650px;height:650px;background-image:radial-gradient(circle,#dcdcdc 1.2px,transparent 1.2px);background-size:22px 22px}
+  .wf-canvas-inner{position:relative;width:1900px;height:650px;background-image:radial-gradient(circle,#dcdcdc 1.2px,transparent 1.2px);background-size:22px 22px}
   .wf-canvas-scroll.readonly .wf-canvas-inner{background-image:radial-gradient(circle,#e6e6e6 1.2px,transparent 1.2px)}
 
   .wf-node{position:absolute;width:230px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--border);border-radius:8px;padding:12px 14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.05);cursor:pointer;user-select:none}
@@ -76,6 +76,7 @@
   .wf-node.type-submit{border-left-color:var(--blue)}
   .wf-node.type-end-success{border-left-color:var(--primary)}
   .wf-node.type-end-reject{border-left-color:var(--error)}
+  .wf-node.type-decision_entry{border-left-color:#13c2c2}
   .wf-node.issue{outline:2px dashed var(--error);outline-offset:3px}
   .wf-node.readonly{cursor:default}
   .wf-node-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:6px}
@@ -105,8 +106,35 @@
   .issue-title{font-size:12.5px;color:var(--text-1);line-height:1.4}
   .issue-sub{font-size:11.5px;color:var(--text-3);margin-top:1px}
 
-  /* Modal sửa bước */
-  #modal-node-edit .modal-bd .fi:last-child{margin-bottom:0}
+  /* Modal sửa bước — panel nhiều tab, giống đúng panel thật của "Chờ người duyệt" */
+  #modal-node-edit .modal-box{width:1080px;max-width:96vw}
+  #modal-node-edit .modal-bd{padding:0}
+  .ne-top{padding:16px 24px;border-bottom:1px solid var(--border)}
+  .ne-top-fields{display:flex;gap:16px}
+  .ne-top-fields .fi{flex:1;margin-bottom:0}
+  .ne-body{display:flex;min-height:420px}
+  .ne-info-col{width:210px;flex-shrink:0;padding:16px}
+  .ne-info-box{background:#e6f4ff;border:1px solid #91caff;color:#0958d9;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;display:flex;gap:8px}
+  .ne-tabs-col{width:190px;flex-shrink:0;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:10px 0}
+  .ne-tab-item{display:flex;align-items:center;justify-content:space-between;padding:9px 18px;font-size:13px;color:var(--text-2);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:inherit}
+  .ne-tab-item:hover{background:#fafafa}
+  .ne-tab-item.active{background:var(--primary-light);color:var(--text-1);font-weight:600}
+  .ne-tab-dot{width:6px;height:6px;border-radius:50%;background:var(--error);flex-shrink:0}
+  .ne-main-col{flex:1;padding:18px 24px;overflow-y:auto}
+  .ne-main-col .fi:last-child{margin-bottom:0}
+  .ne-output-col{width:250px;flex-shrink:0;border-left:1px solid var(--border);padding:16px}
+  .ne-output-title{font-size:13px;font-weight:700;margin-bottom:10px}
+  .ne-output-empty{font-size:12px;color:var(--text-3);font-style:italic;line-height:1.5}
+  .ne-output-item{font-size:12px;padding:6px 0;border-bottom:1px solid #f5f5f5;color:var(--text-2)}
+  .ne-output-item b{color:var(--text-1);font-weight:600}
+  .ne-placeholder{font-size:12.5px;color:var(--text-3);line-height:1.6}
+
+  /* Droplist chọn nhiều (multi-select dạng tag) — dùng cho "Trường cần nhập" */
+  .multi-select{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:6px 8px;min-height:38px}
+  .ms-tag{display:inline-flex;align-items:center;gap:6px;background:#f0f0f0;border-radius:14px;padding:3px 6px 3px 10px;font-size:12.5px;color:var(--text-1)}
+  .ms-tag-del{border:none;background:transparent;cursor:pointer;color:var(--text-3);font-size:12px;line-height:1;padding:2px;font-family:inherit}
+  .ms-tag-del:hover{color:var(--error)}
+  .ms-add{border:none;background:transparent;font-size:12.5px;color:var(--text-3);flex:1;min-width:120px;outline:none;font-family:inherit;padding:4px}
 
   /* Bảng lịch sử phiên bản */
   #hist-tbl td{vertical-align:top}
@@ -210,7 +238,7 @@
         <!-- Canvas -->
         <div class="wf-canvas-scroll" id="wf-canvas-scroll">
           <div class="wf-canvas-inner" id="wf-canvas-inner">
-            <svg class="wf-edges" id="wf-edges" width="1650" height="650">
+            <svg class="wf-edges" id="wf-edges" width="1900" height="650">
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                   <path d="M0,0 L10,5 L0,10 z" fill="#b3b3b3"></path>
@@ -247,19 +275,31 @@
   </div>
 </div>
 
-<!-- ═══ MODAL: sửa bước ═══ -->
+<!-- ═══ MODAL: sửa bước (panel nhiều tab, giống đúng panel thật) ═══ -->
 <div class="overlay hidden" id="modal-node-edit">
   <div class="modal-box">
     <div class="modal-hd">
       <h3 class="modal-title" id="ne-modal-title">Sửa bước</h3>
+      <div class="ne-hd-right" style="display:flex;align-items:center;gap:14px;font-size:12.5px;margin-right:10px">
+        <span style="color:var(--text-3)" id="ne-autosave">Đã dừng tự lưu</span>
+        <span style="color:var(--error);cursor:pointer" id="ne-del-link" onclick="deleteNodeFromPanel()">🗑 Xoá bước</span>
+      </div>
       <button class="modal-close" data-close="modal-node-edit">✕</button>
     </div>
-    <div class="modal-bd">
-      <div class="fi">
-        <label>Tên bước<span class="req">*</span></label>
-        <input class="fc" id="ne-name">
+
+    <div class="ne-top">
+      <div class="ne-top-fields">
+        <div class="fi">
+          <label>Tên bước<span class="req">*</span></label>
+          <input class="fc" id="ne-name">
+        </div>
+        <div class="fi">
+          <label>Mã bước</label>
+          <input class="fc" id="ne-code-input" disabled>
+        </div>
       </div>
-      <div class="fi" id="ne-form-wrap" style="display:none">
+      <div class="f-hint">Dùng để bước sau lấy dữ liệu bước này qua cú pháp state.&lt;mã bước&gt;.&lt;đường dẫn&gt;</div>
+      <div class="fi" id="ne-form-wrap" style="display:none;margin-top:12px">
         <label>Biểu mẫu áp dụng<span class="req">*</span></label>
         <select class="fc" id="ne-form">
           <option value="">— Chọn biểu mẫu —</option>
@@ -267,13 +307,15 @@
           <option value="BM15">BM-15 · Đơn xin chuyển ngành</option>
         </select>
       </div>
-      <div class="fi" id="ne-revise-wrap" style="display:none">
-        <label style="display:flex;align-items:center;gap:8px;margin-bottom:0">
-          <input type="checkbox" id="ne-revise"> Cho phép trả lại để bổ sung (mở thêm cổng ra "Cần bổ sung")
-        </label>
-      </div>
-      <div class="f-hint" id="ne-code-hint"></div>
     </div>
+
+    <div class="ne-body">
+      <div class="ne-info-col" id="ne-info-col"></div>
+      <div class="ne-tabs-col" id="ne-tabs-col"></div>
+      <div class="ne-main-col" id="ne-main-col"></div>
+      <div class="ne-output-col" id="ne-output-col"></div>
+    </div>
+
     <div class="modal-ft">
       <button class="btn btn-default" data-close="modal-node-edit">Đóng</button>
       <button class="btn btn-primary" id="ne-save-btn" onclick="saveNodeEdit()">Xong</button>
@@ -330,6 +372,7 @@ const PALETTE = [
   { group: 'Người xử lý', items: [
     { type: 'approval', label: 'Chờ người duyệt', desc: 'Dừng quy trình lại và giao việc cho người duyệt' },
     { type: 'revision', label: 'Chờ người nộp bổ sung', desc: 'Trả đơn về cho người nộp sửa rồi gửi lại' },
+    { type: 'decision_entry', label: 'Nhập QĐ', desc: 'Điền Số quyết định/Ngày quyết định vào bản ghi Quyết định đã có sẵn — không tạo bản ghi mới, người nhập có thể khác người vừa duyệt' },
   ]},
   { group: 'Hành động', items: [
     { type: 'action_api', label: 'Gọi API nội bộ', desc: 'Gọi một API nội bộ đã được quản trị hệ thống' },
@@ -433,8 +476,9 @@ let VERSIONS = [
       {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:220, data:{formId:'BM07'}},
       {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:220, data:{allowRevise:false}},
       {id:'n2b', type:'approval', typeLabel:'Chờ người duyệt', title:'Phòng Đào tạo duyệt', code:'pdt', x:680, y:220, data:{allowRevise:true}},
-      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1000, y:80, data:{}},
-      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1320, y:80, data:{}},
+      {id:'n7', type:'decision_entry', typeLabel:'Nhập QĐ', title:'Văn thư nhập Quyết định', code:'decision_entry1', x:1000, y:220, data:{assigneeType:'staff', staff:'Văn thư — Lê Thị Cẩm', fields:['soQuyetDinh','ngayQuyetDinh']}},
+      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1320, y:80, data:{}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1640, y:80, data:{}},
       {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:1000, y:400, data:{}},
       {id:'n6', type:'revision', typeLabel:'Chờ người nộp bổ sung', title:'SV bổ sung hồ sơ', code:'revision1', x:680, y:480, data:{}},
     ],
@@ -442,7 +486,8 @@ let VERSIONS = [
       {from:'n1', fromPort:'default', to:'n2'},
       {from:'n2', fromPort:'approve', to:'n2b'},
       {from:'n2', fromPort:'reject', to:'n4'},
-      {from:'n2b', fromPort:'approve', to:'n5'},
+      {from:'n2b', fromPort:'approve', to:'n7'},
+      {from:'n7', fromPort:'main', to:'n5'},
       {from:'n2b', fromPort:'reject', to:'n4'},
       {from:'n2b', fromPort:'revise', to:'n6'},
       {from:'n5', fromPort:'default', to:'n3'},
@@ -473,6 +518,9 @@ function getOutputs(n){
     const outs = [{key:'approve', label:'Đồng ý'}, {key:'reject', label:'Từ chối'}];
     if(n.data && n.data.allowRevise) outs.push({key:'revise', label:'Cần bổ sung'});
     return outs;
+  }
+  if(n.type === 'decision_entry'){
+    return [{key:'main', label:'Lưu quyết định'}];
   }
   if(n.type === 'condition' || n.type === 'logic_switch'){
     return [{key:'branch1', label:'Nhánh 1'}, {key:'branch2', label:'Nhánh 2'}];
@@ -741,30 +789,218 @@ function doDryRun(){
 // =========================================================
 // NODE EDIT
 // =========================================================
+// Danh mục trường quyết định dùng cho "Trường cần nhập" của Nhập QĐ — xem
+// order-be-decision-entry-node.md mục "Danh mục trường quyết định". Chọn
+// (droplist nhiều lựa chọn, dạng tag) chứ không gõ tự do.
+const DECISION_FIELD_CATALOG = [
+  { key: 'soQuyetDinh', label: 'Số quyết định' },
+  { key: 'ngayQuyetDinh', label: 'Ngày quyết định' },
+];
+
+// Tab của panel sửa bước theo từng loại node — node không có trong danh
+// sách (notify, action_*, logic_*...) chỉ hiện Tên bước/Mã bước, giữ đúng
+// mức chi tiết hiện có của mockup, không thêm tab rỗng vô nghĩa.
+const NODE_TABS = {
+  approval: [
+    { key: 'ai_duyet', label: 'Ai duyệt' },
+    { key: 'cach_quyet_dinh', label: 'Cách quyết định' },
+    { key: 'han_nhac', label: 'Hạn và nhắc lại' },
+    { key: 'truong_bat_buoc', label: 'Trường bắt buộc' },
+    { key: 'di_tiep_dau', label: 'Đi tiếp đâu' },
+    { key: 'nang_cao', label: 'Nâng cao' },
+  ],
+  decision_entry: [
+    { key: 'ai_nhap', label: 'Ai nhập' },
+    { key: 'truong_can_nhap', label: 'Trường cần nhập' },
+    { key: 'han_nhac', label: 'Hạn và nhắc lại' },
+    { key: 'di_tiep_dau', label: 'Đi tiếp đâu' },
+    { key: 'nang_cao', label: 'Nâng cao' },
+  ],
+};
+
+// Cột phải "Dữ liệu bước này xuất ra" — rút gọn tên field từ output_schema thật.
+const NODE_OUTPUT_SCHEMA = {
+  approval: ['Kết quả duyệt', 'Người quyết định', 'Thời điểm quyết định', 'Các lượt duyệt', 'Dữ liệu người duyệt nhập'],
+  decision_entry: ['Người nhập quyết định', 'Thời điểm nhập', 'Dữ liệu người nhập'],
+};
+
+let neActiveTab = null;   // tab đang chọn trong panel sửa bước
+let neWorkingData = {};   // bản nháp data đang sửa — giữ giá trị mọi tab dù chưa Lưu, tránh mất khi chuyển tab
+
 function openNodeEdit(nodeId){
   const v = getVersion(currentVersionId);
   const n = content().nodes.find(x => x.id === nodeId);
   if(!n) return;
   editingNodeId = nodeId;
-  document.getElementById('ne-modal-title').textContent = readonly(v) ? `Xem bước (chỉ đọc) — ${n.typeLabel}` : `Sửa bước — ${n.typeLabel}`;
-  document.getElementById('ne-name').value = n.title;
-  document.getElementById('ne-name').disabled = readonly(v);
-  document.getElementById('ne-code-hint').textContent = `Mã bước: state.${n.code}`;
+  const ro = readonly(v);
 
-  const formWrap = document.getElementById('ne-form-wrap');
-  const reviseWrap = document.getElementById('ne-revise-wrap');
-  formWrap.style.display = n.type === 'submit' ? '' : 'none';
+  document.getElementById('ne-modal-title').textContent = ro ? `Xem bước (chỉ đọc) — ${n.typeLabel}` : `Sửa bước — ${n.typeLabel}`;
+  document.getElementById('ne-name').value = n.title;
+  document.getElementById('ne-name').disabled = ro;
+  document.getElementById('ne-code-input').value = n.code;
+
+  neWorkingData = JSON.parse(JSON.stringify(n.data || {}));
+  if(n.type === 'decision_entry'){
+    if(!neWorkingData.fields) neWorkingData.fields = ['soQuyetDinh', 'ngayQuyetDinh'];
+    if(!neWorkingData.assigneeType) neWorkingData.assigneeType = 'unit';
+  }
+
+  document.getElementById('ne-form-wrap').style.display = n.type === 'submit' ? '' : 'none';
   if(n.type === 'submit'){
-    document.getElementById('ne-form').value = (n.data && n.data.formId) || '';
-    document.getElementById('ne-form').disabled = readonly(v);
+    document.getElementById('ne-form').value = neWorkingData.formId || '';
+    document.getElementById('ne-form').disabled = ro;
+    document.getElementById('ne-form').onchange = function(){ neWorkingData.formId = this.value; };
   }
-  reviseWrap.style.display = n.type === 'approval' ? '' : 'none';
-  if(n.type === 'approval'){
-    document.getElementById('ne-revise').checked = !!(n.data && n.data.allowRevise);
-    document.getElementById('ne-revise').disabled = readonly(v);
-  }
-  document.getElementById('ne-save-btn').style.display = readonly(v) ? 'none' : '';
+
+  const tabs = NODE_TABS[n.type];
+  neActiveTab = tabs ? tabs[0].key : null;
+  renderNeInfoCol(n);
+  renderNeTabsCol(n, ro);
+  renderNeMainCol(n, ro);
+  renderNeOutputCol(n);
+
+  document.getElementById('ne-save-btn').style.display = ro ? 'none' : '';
   openModal('modal-node-edit');
+}
+
+function renderNeInfoCol(n){
+  const hasIncoming = content().edges.some(e => e.to === n.id);
+  document.getElementById('ne-info-col').innerHTML = hasIncoming ? '' :
+    `<div class="ne-info-box"><span>ℹ️</span><span>Bước này chưa có bước nào đứng trước để lấy dữ liệu.</span></div>`;
+}
+
+function renderNeTabsCol(n, ro){
+  const tabs = NODE_TABS[n.type];
+  const tabsCol = document.getElementById('ne-tabs-col');
+  const hasTabs = !!tabs;
+  document.getElementById('ne-info-col').style.display = hasTabs ? '' : 'none';
+  tabsCol.style.display = hasTabs ? '' : 'none';
+  document.getElementById('ne-output-col').style.display = hasTabs ? '' : 'none';
+  if(!hasTabs) return;
+  tabsCol.innerHTML = tabs.map(t => `
+    <button type="button" class="ne-tab-item${t.key === neActiveTab ? ' active' : ''}" onclick="switchNeTab('${t.key}')">${esc(t.label)}</button>
+  `).join('');
+}
+
+function switchNeTab(tabKey){
+  neActiveTab = tabKey;
+  const v = getVersion(currentVersionId);
+  const n = content().nodes.find(x => x.id === editingNodeId);
+  renderNeTabsCol(n, readonly(v));
+  renderNeMainCol(n, readonly(v));
+}
+
+function renderNeMainCol(n, ro){
+  const col = document.getElementById('ne-main-col');
+  if(!NODE_TABS[n.type]){
+    col.innerHTML = `<div class="ne-placeholder">Bước này chưa có tuỳ chọn cấu hình riêng trong bản mockup.</div>`;
+    return;
+  }
+
+  if(n.type === 'approval'){
+    if(neActiveTab === 'ai_duyet'){
+      col.innerHTML = `
+        <div class="ne-placeholder" style="margin-bottom:14px">Bản mockup rút gọn — hệ thống thật có đủ 3 cách "Một cán bộ cụ thể / Một đơn vị / Phân giải động theo tổ chức" (xem panel thật để đối chiếu).</div>
+        <div class="fi"><label>Giao cho</label><input class="fc" disabled value="Một đơn vị, ai nhận trước thì làm"></div>`;
+    } else if(neActiveTab === 'cach_quyet_dinh'){
+      col.innerHTML = `<label style="display:flex;align-items:center;gap:8px;margin-bottom:0;font-weight:400">
+        <input type="checkbox" ${neWorkingData.allowRevise ? 'checked' : ''} ${ro ? 'disabled' : ''} onchange="neWorkingData.allowRevise=this.checked">
+        Cho phép trả lại để bổ sung (mở thêm cổng ra "Cần bổ sung")
+      </label>`;
+    } else if(neActiveTab === 'han_nhac'){
+      col.innerHTML = `<div class="fi"><label>Hạn xử lý (giờ)</label><input class="fc" type="number" disabled placeholder="Không đặt hạn"></div>
+        <div class="ne-placeholder">Chưa mô phỏng trong bản mockup này.</div>`;
+    } else if(neActiveTab === 'truong_bat_buoc'){
+      col.innerHTML = `<div class="ne-placeholder">Chưa khai trường bắt buộc nào (mockup chưa mô phỏng "Thêm trường bắt buộc").</div>`;
+    } else if(neActiveTab === 'di_tiep_dau'){
+      col.innerHTML = `<div class="ne-placeholder">Kéo dây nối trên canvas từ cổng "Đồng ý"/"Từ chối" tới bước kế tiếp — không cấu hình ở đây.</div>`;
+    } else if(neActiveTab === 'nang_cao'){
+      col.innerHTML = `<div class="ne-placeholder">Chưa có tuỳ chọn nâng cao cho bước này.</div>`;
+    }
+    return;
+  }
+
+  if(n.type === 'decision_entry'){
+    if(neActiveTab === 'ai_nhap'){
+      const isStaff = neWorkingData.assigneeType === 'staff';
+      col.innerHTML = `
+        <div class="fi">
+          <label>Giao cho<span class="req">*</span></label>
+          <select class="fc" ${ro ? 'disabled' : ''} onchange="neWorkingData.assigneeType=this.value; switchNeTab('ai_nhap')">
+            <option value="unit" ${!isStaff ? 'selected' : ''}>Một đơn vị, ai nhận trước thì làm</option>
+            <option value="staff" ${isStaff ? 'selected' : ''}>Một cán bộ cụ thể</option>
+          </select>
+        </div>
+        ${isStaff ? `
+        <div class="fi">
+          <label>Cán bộ xử lý<span class="req">*</span></label>
+          <input class="fc" value="${esc(neWorkingData.staff||'')}" placeholder="VD: Văn thư — Lê Thị Cẩm" ${ro?'disabled':''} oninput="neWorkingData.staff=this.value">
+        </div>` : `
+        <div class="fi">
+          <label>Đơn vị xử lý<span class="req">*</span></label>
+          <input class="fc" value="${esc(neWorkingData.unit||'')}" placeholder="VD: Phòng Đào tạo" ${ro?'disabled':''} oninput="neWorkingData.unit=this.value">
+        </div>`}`;
+    } else if(neActiveTab === 'truong_can_nhap'){
+      col.innerHTML = `
+        <div class="fi">
+          <label>Trường cần nhập<span class="req">*</span></label>
+          <div class="multi-select" id="ne-dq-fields-ms"></div>
+          <div class="f-hint">Chọn 1 hoặc nhiều trường trong danh mục trường quyết định đã đăng ký sẵn — không gõ tự do.</div>
+        </div>`;
+      renderDqFieldsMulti(ro);
+    } else if(neActiveTab === 'han_nhac'){
+      col.innerHTML = `<div class="fi"><label>Hạn xử lý (giờ)</label><input class="fc" type="number" disabled placeholder="Không đặt hạn"></div>
+        <div class="ne-placeholder">Chưa mô phỏng trong bản mockup này.</div>`;
+    } else if(neActiveTab === 'di_tiep_dau'){
+      col.innerHTML = `<div class="ne-placeholder">Kéo dây nối trên canvas từ cổng "Lưu quyết định" tới bước kế tiếp — không cấu hình ở đây.</div>`;
+    } else if(neActiveTab === 'nang_cao'){
+      col.innerHTML = `<div class="ne-placeholder">Chưa có tuỳ chọn nâng cao cho bước này.</div>`;
+    }
+  }
+}
+
+// Droplist chọn nhiều dạng tag cho "Trường cần nhập" — giống hệt kiểu
+// "Phạm vi quan hệ cán bộ–đơn vị" của panel thật (chọn từ danh mục, xoá
+// bằng nút ✕ trên tag, không gõ tự do).
+function renderDqFieldsMulti(ro){
+  const wrap = document.getElementById('ne-dq-fields-ms');
+  if(!wrap) return;
+  const selected = neWorkingData.fields || [];
+  const remaining = DECISION_FIELD_CATALOG.filter(f => !selected.includes(f.key));
+  wrap.innerHTML = selected.map(key => {
+    const f = DECISION_FIELD_CATALOG.find(x => x.key === key);
+    return `<span class="ms-tag">${esc(f ? f.label : key)}${ro ? '' : `<button type="button" class="ms-tag-del" onclick="removeDqField('${key}')">✕</button>`}</span>`;
+  }).join('') + (ro ? '' : `
+    <select class="ms-add" onchange="addDqField(this.value)">
+      <option value="">${remaining.length ? '+ Chọn...' : 'Đã chọn hết'}</option>
+      ${remaining.map(f => `<option value="${f.key}">${esc(f.label)}</option>`).join('')}
+    </select>`);
+}
+
+function addDqField(key){
+  if(!key) return;
+  neWorkingData.fields = neWorkingData.fields || [];
+  if(!neWorkingData.fields.includes(key)) neWorkingData.fields.push(key);
+  renderDqFieldsMulti(false);
+}
+
+function removeDqField(key){
+  neWorkingData.fields = (neWorkingData.fields || []).filter(k => k !== key);
+  renderDqFieldsMulti(false);
+}
+
+function renderNeOutputCol(n){
+  const items = NODE_OUTPUT_SCHEMA[n.type];
+  document.getElementById('ne-output-col').innerHTML = `<div class="ne-output-title">Dữ liệu bước này xuất ra</div>` +
+    (items ? items.map(x => `<div class="ne-output-item"><b>${esc(x)}</b></div>`).join('')
+           : `<div class="ne-output-empty">Bước này không xuất ra dữ liệu nào cho bước sau.</div>`);
+}
+
+function deleteNodeFromPanel(){
+  if(!editingNodeId) return;
+  const id = editingNodeId;
+  closeModal('modal-node-edit');
+  deleteNode(id);
 }
 
 function saveNodeEdit(){
@@ -772,16 +1008,20 @@ function saveNodeEdit(){
   if(readonly(v)) { closeModal('modal-node-edit'); return; }
   const name = document.getElementById('ne-name').value.trim();
   if(!name){ showToast('Tên bước không được để trống', 'err'); return; }
-  const formVal = document.getElementById('ne-form').value;
-  const reviseVal = document.getElementById('ne-revise').checked;
   const nodeId = editingNodeId;
+  const n0 = content().nodes.find(x => x.id === nodeId);
+
+  if(n0 && n0.type === 'decision_entry'){
+    if(neWorkingData.assigneeType === 'unit' && !(neWorkingData.unit||'').trim()){ showToast('Chưa chọn Đơn vị xử lý', 'err'); return; }
+    if(neWorkingData.assigneeType === 'staff' && !(neWorkingData.staff||'').trim()){ showToast('Chưa chọn Cán bộ xử lý', 'err'); return; }
+    if(!neWorkingData.fields || neWorkingData.fields.length === 0){ showToast('Phải chọn ít nhất 1 trường cần nhập', 'err'); return; }
+  }
 
   mutateCurrentVersion(vv => {
     const n = vv.nodes.find(x => x.id === nodeId);
     if(!n) return;
     n.title = name;
-    if(n.type === 'submit'){ n.data = n.data || {}; n.data.formId = formVal; }
-    if(n.type === 'approval'){ n.data = n.data || {}; n.data.allowRevise = reviseVal; }
+    n.data = neWorkingData;
   });
   closeModal('modal-node-edit');
 }

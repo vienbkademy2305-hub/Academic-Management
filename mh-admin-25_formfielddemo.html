@@ -112,6 +112,23 @@
   .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
   .unit-combo mark{background:#fff1b8;color:inherit;border-radius:2px}
 
+  /* Field "hệ thống" (Số quyết định, Ngày quyết định...) — field cố định đã gắn sẵn với 1 cột dữ liệu
+     thật trong hồ sơ quyết định (Dev khai báo trước); cán bộ chỉ ĐƯỢC THÊM từ danh sách có sẵn (không
+     tự tạo field hệ thống mới), Kiểu dữ liệu và Nguồn giá trị bị khoá để đảm bảo dữ liệu cán bộ nhập
+     lưu đúng vào cột cố định đó — không lưu vào kho trường mở rộng như field tự do khác, và KHÔNG được
+     hệ thống tự động điền sẵn (khác hẳn field "Tự động lấy theo hồ sơ sinh viên"). */
+  .sys-lock-ico{flex-shrink:0;font-size:12px;line-height:1}
+  .sys-tag{font-size:10px;font-weight:600;color:var(--text-2);background:#f0f0f0;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+
+  /* "Bảng mã kỹ thuật" — liệt kê mã của mọi field hiện có, CHỈ ĐỌC, để xem tổng quan/đối chiếu nhanh ở
+     sidebar trái khi dán mã vào file mẫu Word/Excel — mã vẫn sửa được ở nguồn duy nhất là ô "Mã trường"
+     trong panel từng field (cuối tab Nội dung, ngay trên "Bắt buộc nhập"), bảng này chỉ phản chiếu lại. */
+  .code-table{width:100%;border-collapse:collapse;font-size:12px}
+  .code-table th{text-align:left;color:var(--text-3);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--border);font-size:10.5px;text-transform:uppercase;letter-spacing:.02em}
+  .code-table td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text-1);word-break:break-word}
+  .code-table td:last-child{color:var(--text-2);font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+  .code-table tr:last-child td{border-bottom:none}
+
   /* Khối "Phạm vi áp dụng" — accordion đơn giản ở đầu cột trái, độc lập với danh sách field:
      chọn Đối tượng áp dụng là Cán bộ hay Sinh viên; chọn Sinh viên mới hiện bộ điều kiện lọc. */
   .scope-card{margin-bottom:16px}
@@ -172,12 +189,15 @@
         <div>
           <h1 class="card-title" style="font-size:16px">Demo: Cấu hình trường biểu mẫu</h1>
           <div class="text-muted text-sm" style="margin-top:4px">
-            Màn hình demo độc lập, minh hoạ 2 tính năng của trình xây biểu mẫu: (1) khi field là
+            Màn hình demo độc lập, minh hoạ 3 tính năng của trình xây biểu mẫu: (1) khi field là
             <b>Chọn một (dropdown)</b> hoặc <b>Chọn nhiều (dropdown)</b>, danh sách tuỳ chọn có thể
             <b>Tự nhập</b> thủ công hoặc <b>Lấy từ hệ thống</b> (chọn 1 trường dữ liệu có sẵn, tự động đổ ra các
             giá trị — kể cả khi dữ liệu rất nhiều hoặc có mã kỹ thuật riêng); (2) field <b>Bảng</b> — chọn xong
             mặc định chỉ có cột STT, admin tự thêm các cột khác, mỗi cột tự cấu hình Nguồn giá trị (Tham chiếu /
-            Hệ thống / Tự nhập) và mã kỹ thuật riêng để xuất Word.
+            Hệ thống / Tự nhập) và mã kỹ thuật riêng để xuất Word; (3) nhóm <b>Trường hệ thống</b> trong menu
+            + Thêm field (VD: Số quyết định, Ngày quyết định) — field cố định đã gắn sẵn 1 cột dữ liệu thật
+            trong hồ sơ quyết định, cán bộ chỉ thêm từ danh sách có sẵn, Kiểu dữ liệu/Nguồn giá trị bị khoá,
+            luôn là <b>Nhập tay thủ công</b> (không tự động điền) để đảm bảo dữ liệu lưu đúng vào cột đó.
           </div>
         </div>
       </div>
@@ -198,11 +218,17 @@
               <div class="add-field-menu-group">Lựa chọn</div>
               <div class="add-field-menu-item" onclick="addField('select1')">Chọn một (dropdown)</div>
               <div class="add-field-menu-item" onclick="addField('selectMulti')">Chọn nhiều (dropdown)</div>
+              <div id="add-field-menu-system"></div>
               <div class="add-field-menu-group">Khác</div>
               <div class="add-field-menu-item" onclick="addField('table')"><span>Bảng</span><span class="badge-new">Mới</span></div>
             </div>
             <button type="button" class="btn btn-default btn-block" onclick="toggleAddFieldMenu(event)">+ Thêm field</button>
           </div>
+
+          <div class="divider"></div>
+          <div class="fb-col-title">Bảng mã kỹ thuật</div>
+          <div class="text-muted text-sm mb-8">Mã tự sinh theo loại field khi thêm mới, dùng làm placeholder xuất Word / mã cột import-export Excel. Không sửa được ở đây.</div>
+          <div id="fb-code-table"></div>
         </div>
 
         <!-- ═══ CỘT GIỮA: xem trước biểu mẫu ═══ -->
@@ -291,6 +317,15 @@ const SCOPE_TRANGTHAISV_OPTIONS = [
 ];
 const SCOPE_MIENNGHIEPVU_OPTIONS = ['Quản lý sinh viên', 'Quản lý đào tạo', 'Quản lý khảo thí'];
 
+// Danh mục "Trường hệ thống" — hữu hạn, do Dev khai báo trước vì mỗi trường đã gắn sẵn với 1 cột dữ
+// liệu thật trong hồ sơ quyết định (không phải kho trường mở rộng như field tự do). Cán bộ chỉ được
+// THÊM 1 trường có sẵn ở đây vào biểu mẫu (không tự đặt Kiểu dữ liệu/Nguồn giá trị), và mỗi trường chỉ
+// dùng được 1 lần trong 1 biểu mẫu — thêm rồi thì biến mất khỏi menu, gỡ ra thì lại xuất hiện lại.
+const SYSTEM_BOUND_FIELDS = {
+  soQuyetDinh:   {label: 'Số quyết định',   labelEn: 'Decision number', type: 'text', placeholderVi: 'VD: 123/QĐ-ĐHXYZ'},
+  ngayQuyetDinh: {label: 'Ngày quyết định', labelEn: 'Decision date',   type: 'date', placeholderVi: 'dd/mm/yyyy'},
+};
+
 const TYPE_META = {
   text:        {label: 'Văn bản ngắn',        ico: 'Aa'},
   textarea:    {label: 'Văn bản dài',          ico: '¶'},
@@ -331,11 +366,25 @@ const COLUMN_DATA_TYPE_OPTIONS = [
 // Định dạng hiển thị riêng cho cột có kiểu Ngày tháng (lấy từ Tham chiếu có type 'date', hoặc cột
 // Nhập tay tự chọn Kiểu dữ liệu = Ngày tháng) — chỉ hiện khi cột thực sự là dạng ngày tháng. Cột
 // nguồn Hệ thống (danh mục) KHÔNG có định dạng riêng, luôn hiển thị đúng tên trong danh mục.
+// Áp dụng cho CẢ 2 nơi: (a) cột kiểu Ngày tháng trong field Bảng (đã có sẵn), (b) field Ngày tháng
+// đứng độc lập ngoài Bảng — kể cả field hệ thống như "Ngày quyết định" (khác "Số quyết định" kiểu Text
+// vốn không cần chọn định dạng). Cùng 1 danh mục định dạng dùng chung, không tách riêng theo nơi dùng.
 const DATE_FORMAT_OPTIONS = [
   {value:'dmy',       label:'DD/MM/YYYY'},
   {value:'vi_long',   label:'ngày DD tháng MM năm YYYY'},
   {value:'d_month_y', label:'DD Month YYYY'},
 ];
+
+// Giá trị mẫu cố định (không phải "hôm nay") để ví dụ hiển thị không đổi qua các lần mở lại demo,
+// dễ so sánh giữa các định dạng.
+function formatSampleDate(fmt){
+  const map = {
+    dmy: '11/02/2026',
+    vi_long: 'ngày 11 tháng 02 năm 2026',
+    d_month_y: '11 February 2026',
+  };
+  return map[fmt] || map.dmy;
+}
 
 // Cột có "Định dạng hiển thị" hay không — chỉ khi thực sự là dạng ngày tháng (nguồn Tham chiếu kiểu
 // ngày, hoặc Nhập tay tự chọn Kiểu dữ liệu = Ngày tháng). Nguồn Hệ thống không còn định dạng riêng.
@@ -371,13 +420,17 @@ function buildDefaultOverrides(sourceKey){
   return overrides;
 }
 
-let uid = 3;
+let uid = 4;
 let colUid = 0;
 let fields = [
+  {id: 4, type: 'text', label: 'Số quyết định', labelEn: 'Decision number', placeholderVi: 'VD: 123/QĐ-ĐHXYZ', placeholderEn: '',
+   required: true, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}, systemBound: 'soQuyetDinh', code: 'soQuyetDinh'},
   {id: 1, type: 'select1', label: 'Khoa mong muốn chuyển đến', labelEn: '', placeholderVi: 'Chọn khoa muốn chuyển đến', placeholderEn: '',
+   code: 'khoa_mong_muon_chuyen_den',
    required: true, mode: 'system', sourceKey: 'khoa', manualOptions: [{value:'option_1', vi:'', en:''}],
    sourceOverrides: buildDefaultOverrides('khoa')},
   {id: 2, type: 'selectMulti', label: 'Lý do đề nghị', labelEn: '', placeholderVi: '', placeholderEn: '',
+   code: 'ly_do_de_nghi',
    required: false, mode: 'manual', sourceKey: '', manualOptions: [
      {value:'option_1', vi:'Điều kiện hoàn cảnh gia đình', en:''},
      {value:'option_2', vi:'Lý do sức khoẻ', en:''},
@@ -415,6 +468,35 @@ function renderAll(){
   renderFieldList();
   renderPreview();
   renderPanel();
+  renderAddFieldMenuSystem();
+  renderCodeTable();
+}
+
+// Bảng tra cứu mã kỹ thuật — CHỈ ĐỌC, gộp mã của mọi field đang có trong biểu mẫu vào 1 chỗ (khớp màn
+// gốc: panel cấu hình từng field không còn ô Mã trường).
+function renderCodeTable(){
+  const box = document.getElementById('fb-code-table');
+  if (!box) return;
+  box.innerHTML = `
+    <table class="code-table">
+      <thead><tr><th>Field</th><th>Mã</th></tr></thead>
+      <tbody>
+        ${fields.map(f => `<tr><td>${esc(f.label) || '(Chưa đặt nhãn)'}</td><td>${esc(f.code || '')}</td></tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// Nhóm "Trường hệ thống" trong menu + Thêm field — chỉ liệt kê những trường CHƯA dùng trong biểu mẫu
+// hiện tại (mỗi trường hệ thống chỉ gán được 1 lần); ẩn cả nhóm nếu đã dùng hết.
+function renderAddFieldMenuSystem(){
+  const box = document.getElementById('add-field-menu-system');
+  if (!box) return;
+  const usedKeys = new Set(fields.map(f => f.systemBound).filter(Boolean));
+  const available = Object.keys(SYSTEM_BOUND_FIELDS).filter(k => !usedKeys.has(k));
+  box.innerHTML = available.length ? `
+    <div class="add-field-menu-group">Trường hệ thống</div>
+    ${available.map(k => `<div class="add-field-menu-item" onclick="addSystemField('${k}')"><span class="sys-lock-ico">🔒</span>&nbsp;${esc(SYSTEM_BOUND_FIELDS[k].label)}</div>`).join('')}
+  ` : '';
 }
 
 function renderScope(){
@@ -517,6 +599,7 @@ function renderFieldList(){
   box.innerHTML = fields.map(f => `
     <div class="fb-field-item ${f.id===selectedId?'active':''}" onclick="selectField(${f.id})">
       <span class="fb-field-type-ico">${esc(TYPE_META[f.type].ico)}</span>
+      ${f.systemBound ? '<span class="sys-lock-ico" title="Trường hệ thống">🔒</span>' : ''}
       <span class="fb-field-label">${esc(f.label) || '(Chưa đặt nhãn)'}</span>
     </div>`).join('');
 }
@@ -570,7 +653,8 @@ function renderPreview(){
     } else if (f.type === 'number') {
       control = `<input class="fc" type="number" placeholder="${esc(f.placeholderVi)}" disabled>`;
     } else if (f.type === 'date') {
-      control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi) || 'dd/mm/yyyy'}" disabled>`;
+      control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi) || 'dd/mm/yyyy'}" disabled>
+        <div class="f-hint">VD hiển thị theo định dạng đã chọn: ${esc(formatSampleDate(f.format || 'dmy'))}</div>`;
     } else if (f.type === 'table') {
       const cols = getEffectiveTableColumns(f);
       const headerCols = ['STT', ...cols.map(c => c.label)];
@@ -582,7 +666,7 @@ function renderPreview(){
       control = `<input class="fc" type="text" placeholder="${esc(f.placeholderVi)}" disabled>`;
     }
     return `<div class="fb-preview-field ${active?'active':''}" onclick="selectField(${f.id})">
-      <div class="fb-preview-label">${esc(f.label) || '(Chưa đặt nhãn)'}${f.required?'<span class="req"> *</span>':''}</div>
+      <div class="fb-preview-label">${esc(f.label) || '(Chưa đặt nhãn)'}${f.required?'<span class="req"> *</span>':''}${f.systemBound?'<span class="sys-tag">Hệ thống</span>':''}</div>
       ${control}
     </div>`;
   }).join('');
@@ -625,7 +709,8 @@ function syncSelectAllCheckbox(){
 }
 
 function renderContentTab(f){
-  let html = `
+  let html = '';
+  html += `
     <div class="fi">
       <label>Nhãn hiển thị (Tiếng Việt) <span class="req">*</span></label>
       <input class="fc" value="${esc(f.label)}" oninput="updateField('label', this.value)">
@@ -666,8 +751,9 @@ function renderContentTab(f){
 
     html += f.mode === 'manual' ? renderManualOptionsUI(f) : renderSystemSourceUI(f);
 
+    html += `<div class="divider"></div>`;
+    html += renderCodeFi(f);
     html += `
-    <div class="divider"></div>
     <div class="fi">
       <label class="switch-row">
         <span>Bắt buộc nhập</span>
@@ -675,11 +761,9 @@ function renderContentTab(f){
       </label>
     </div>`;
   } else if (isTableType(f.type)) {
+    html += `<div class="divider"></div>`;
+    html += renderCodeFi(f);
     html += `
-    <div class="fi">
-      <label>Mã kỹ thuật <span class="req">*</span></label>
-      <input class="fc" value="${esc(f.code)}" oninput="updateField('code', this.value)" title="Mã của cả bảng, dùng làm tên vùng lặp khi xuất Word">
-    </div>
     <div class="fi">
       <label class="switch-row">
         <span>Bắt buộc nhập</span>
@@ -689,8 +773,19 @@ function renderContentTab(f){
     <div class="divider"></div>`;
     html += renderTableColumnsUI(f);
   } else {
+    html += `<div class="divider"></div>`;
+    if (f.type === 'date') {
+      html += `
+      <div class="fi">
+        <label>Định dạng hiển thị</label>
+        <select class="fc" onchange="setFieldFormat(this.value)">
+          ${DATE_FORMAT_OPTIONS.map(o => `<option value="${o.value}" ${(f.format||'dmy')===o.value?'selected':''}>${esc(o.label)}</option>`).join('')}
+        </select>
+        <div class="f-hint">VD: ${esc(formatSampleDate(f.format||'dmy'))}</div>
+      </div>`;
+    }
+    html += renderCodeFi(f);
     html += `
-    <div class="divider"></div>
     <div class="fi">
       <label class="switch-row">
         <span>Bắt buộc nhập</span>
@@ -699,6 +794,15 @@ function renderContentTab(f){
     </div>`;
   }
   return html;
+}
+
+function renderCodeFi(f){
+  return `
+    <div class="fi">
+      <label>Mã trường <span class="req">*</span></label>
+      <input class="fc" value="${esc(f.code)}" oninput="updateField('code', this.value)"
+        title="Mã kỹ thuật duy nhất trong danh mục — dùng làm ${isTableType(f.type) ? 'tên vùng lặp' : 'placeholder (#' + esc(f.code) + ')'} khi xuất Word, và mã cột khi import/export Excel">
+    </div>`;
 }
 
 function renderTableColumnsUI(f){
@@ -929,18 +1033,41 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('#add-field-wrap')) document.getElementById('add-field-menu').classList.remove('open');
 });
 
+// Mã trường mặc định chỉ để có giá trị hợp lệ ban đầu (không trùng, không dấu) — admin luôn phải tự
+// đặt lại tên có nghĩa, vì mã này dùng làm placeholder xuất Word / mã cột import-export.
+// Tiền tố mã theo loại field — dropdown 1-chọn và nhiều-chọn dùng chung 1 tiền tố "select" (không
+// tách "chọn 1"/"chọn nhiều" vì với người đọc mã Word/Excel thì đều là 1 dropdown như nhau).
+const CODE_PREFIX = {text:'text', textarea:'textarea', number:'number', date:'date', select1:'select', selectMulti:'select', table:'bang'};
+
+// Mã kỹ thuật LUÔN tự sinh, không cho gõ tay trong panel field (khớp màn gốc) — chỉ hiện ở "Bảng mã kỹ
+// thuật" bên sidebar để tra cứu. Sinh theo số thứ tự nhỏ nhất chưa dùng trong phạm vi cùng tiền tố.
+function nextFieldCode(type){
+  const prefix = CODE_PREFIX[type] || 'truong';
+  const used = new Set(fields.map(f => f.code));
+  let n = 1;
+  while (used.has(`${prefix}_${n}`)) n++;
+  return `${prefix}_${n}`;
+}
+
 function defaultField(type){
   const id = ++uid;
-  const base = {id, type, label: TYPE_META[type].label, labelEn: '', placeholderVi: '', placeholderEn: '', required: false};
+  const base = {id, type, label: TYPE_META[type].label, labelEn: '', placeholderVi: '', placeholderEn: '', required: false, code: nextFieldCode(type)};
   if (isSelectType(type)) {
     return {...base, mode: 'manual', sourceKey: '', manualOptions: [{value:'option_1', vi:'', en:''}], sourceOverrides: {}};
   }
   if (isTableType(type)) {
     // Mặc định chỉ có cột STT (tự động, không nằm trong f.columns) — admin tự thêm các cột khác vào bảng.
-    return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {},
-      code: `bang_${id}`, columns: []};
+    return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}, columns: []};
   }
-  return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}};
+  return {...base, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}, format: type === 'date' ? 'dmy' : ''};
+}
+
+function setFieldFormat(value){
+  const f = currentField();
+  if (!f) return;
+  f.format = value;
+  renderPanel();
+  renderPreview();
 }
 
 function addField(type){
@@ -952,13 +1079,34 @@ function addField(type){
   renderAll();
 }
 
+// Thêm 1 field từ danh mục "Trường hệ thống" — Kiểu dữ liệu, placeholder, mã ánh xạ (systemBound) lấy
+// nguyên theo khai báo có sẵn, cán bộ không tự chọn được (khác hẳn addField() ở trên).
+function addSystemField(key){
+  const meta = SYSTEM_BOUND_FIELDS[key];
+  if (!meta || fields.some(f => f.systemBound === key)) return;
+  const id = ++uid;
+  const f = {id, type: meta.type, label: meta.label, labelEn: meta.labelEn || '', placeholderVi: meta.placeholderVi || '',
+    placeholderEn: '', required: true, mode: '', sourceKey: '', manualOptions: [], sourceOverrides: {}, systemBound: key,
+    code: key, format: meta.type === 'date' ? 'dmy' : ''};
+  fields.push(f);
+  selectedId = f.id;
+  panelTab = 'content';
+  document.getElementById('add-field-menu').classList.remove('open');
+  renderAll();
+}
+
 function deleteField(id){
   if (fields.length <= 1) { showToast('Biểu mẫu demo cần giữ lại ít nhất 1 field.', 'warn'); return; }
-  showConfirm('Xoá field này khỏi biểu mẫu?', () => {
+  const f = fields.find(x => x.id === id);
+  const isSys = f && f.systemBound;
+  const msg = isSys
+    ? 'Gỡ trường hệ thống này khỏi biểu mẫu? Cột dữ liệu gốc trong hồ sơ quyết định vẫn được giữ nguyên, chỉ ẩn khỏi biểu mẫu này — có thể thêm lại bất cứ lúc nào.'
+    : 'Xoá field này khỏi biểu mẫu?';
+  showConfirm(msg, () => {
     fields = fields.filter(f => f.id !== id);
     if (selectedId === id) selectedId = fields[0].id;
     renderAll();
-  }, 'Xoá', 'btn-danger');
+  }, isSys ? 'Gỡ' : 'Xoá', 'btn-danger');
 }
 
 function updateField(key, value){
@@ -968,6 +1116,7 @@ function updateField(key, value){
   // Cosmetic-only fields: không render lại panel để không mất focus/con trỏ đang gõ
   renderFieldList();
   renderPreview();
+  if (key === 'label' || key === 'code') renderCodeTable();
 }
 
 function setFieldMode(mode){

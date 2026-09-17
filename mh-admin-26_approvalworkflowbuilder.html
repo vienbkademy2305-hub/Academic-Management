@@ -380,6 +380,9 @@ const PALETTE = [
     { type: 'action_resource', label: 'Cập nhật trạng thái tài nguyên', desc: 'Cập nhật trạng thái 1 tài nguyên nghiệp vụ' },
     { type: 'action_record', label: 'Cập nhật bản ghi nghiệp vụ', desc: 'Cập nhật 1 bản ghi nghiệp vụ liên quan' },
     { type: 'action_student', label: 'Cập nhật trạng thái sinh viên', desc: 'Cập nhật trạng thái của sinh viên nộp đơn' },
+    { type: 'action_academic_year', label: 'Cập nhật Niên khoá', desc: 'Tự lấy Niên khoá mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV — không cấu hình' },
+    { type: 'action_training_program', label: 'Cập nhật CTĐT', desc: 'Tự lấy CTĐT mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV + tự đổi Khoa quản lý — không cấu hình' },
+    { type: 'action_admin_class', label: 'Cập nhật Lớp hành chính', desc: 'Tự lấy Lớp hành chính mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV + tự đổi Khoa quản lý — không cấu hình' },
   ]},
   { group: 'Tiện ích', items: [
     { type: 'util_wait', label: 'Chờ và nhắc lại', desc: 'Tạm dừng và nhắc lại sau khoảng thời gian' },
@@ -822,6 +825,27 @@ const NODE_TABS = {
 const NODE_OUTPUT_SCHEMA = {
   approval: ['Kết quả duyệt', 'Người quyết định', 'Thời điểm quyết định', 'Các lượt duyệt', 'Dữ liệu người duyệt nhập'],
   decision_entry: ['Người nhập quyết định', 'Thời điểm nhập', 'Dữ liệu người nhập'],
+  action_academic_year: ['Danh sách sinh viên đã cập nhật (Mã SV, Niên khoá trước, Niên khoá sau)'],
+  action_training_program: ['Danh sách sinh viên đã cập nhật (Mã SV, CTĐT trước, CTĐT sau, Khoa quản lý trước, Khoa quản lý sau)'],
+  action_admin_class: ['Danh sách sinh viên đã cập nhật (Mã SV, Lớp hành chính trước, Lớp hành chính sau, Khoa quản lý trước, Khoa quản lý sau)'],
+};
+
+// Node hệ thống tự cập nhật (zero-config) — không có tab, chỉ 1 info box
+// giải thích hành vi tự động + cột phải liệt kê dữ liệu xuất ra. Xem
+// order-be-student-sync-action-nodes.md.
+const ZERO_CONFIG_NOTE = {
+  action_academic_year: 'Giá trị lấy tự động từ field nienKhoaMoi trong dữ liệu quyết định — không cấu hình tay. Ghi vào hồ sơ học vụ của từng sinh viên trong quyết định.',
+  action_training_program: 'Giá trị lấy tự động từ field ctdtMoi trong dữ liệu quyết định — không cấu hình tay. Ghi vào hồ sơ học vụ của từng sinh viên trong quyết định, đồng thời tự cập nhật lại Khoa quản lý theo đúng Khoa quản lý của CTĐT mới.',
+  action_admin_class: 'Giá trị lấy tự động từ field lopHanhChinhMoi trong dữ liệu quyết định — không cấu hình tay. Ghi vào hồ sơ học vụ của từng sinh viên trong quyết định, đồng thời tự cập nhật lại Khoa quản lý theo đúng Khoa quản lý của Lớp hành chính mới.',
+};
+
+// Nhãn field hiển thị trên panel — giống đúng layout thật của
+// "Cập nhật trạng thái sinh viên" (label + dropdown + hint), chỉ khác
+// dropdown không cho actor chọn tay vì giá trị đã tự fill từ quyết định.
+const ZERO_CONFIG_FIELD_LABEL = {
+  action_academic_year: 'Niên khoá mới',
+  action_training_program: 'CTĐT mới',
+  action_admin_class: 'Lớp hành chính mới',
 };
 
 let neActiveTab = null;   // tab đang chọn trong panel sửa bước
@@ -873,9 +897,10 @@ function renderNeTabsCol(n, ro){
   const tabs = NODE_TABS[n.type];
   const tabsCol = document.getElementById('ne-tabs-col');
   const hasTabs = !!tabs;
-  document.getElementById('ne-info-col').style.display = hasTabs ? '' : 'none';
+  const hasSidePanels = hasTabs || !!NODE_OUTPUT_SCHEMA[n.type] || n.type === 'action_student'; // node zero-config / có field thật nhưng không tab vẫn có cột info/output
+  document.getElementById('ne-info-col').style.display = hasSidePanels ? '' : 'none';
   tabsCol.style.display = hasTabs ? '' : 'none';
-  document.getElementById('ne-output-col').style.display = hasTabs ? '' : 'none';
+  document.getElementById('ne-output-col').style.display = hasSidePanels ? '' : 'none';
   if(!hasTabs) return;
   tabsCol.innerHTML = tabs.map(t => `
     <button type="button" class="ne-tab-item${t.key === neActiveTab ? ' active' : ''}" onclick="switchNeTab('${t.key}')">${esc(t.label)}</button>
@@ -892,6 +917,49 @@ function switchNeTab(tabKey){
 
 function renderNeMainCol(n, ro){
   const col = document.getElementById('ne-main-col');
+
+  if(ZERO_CONFIG_FIELD_LABEL[n.type]){
+    col.innerHTML = `
+      <div class="fi">
+        <label>${esc(ZERO_CONFIG_FIELD_LABEL[n.type])}</label>
+        <select class="fc">
+          <option selected>Tự động lấy theo giá trị đã kê khai trên form quyết định</option>
+        </select>
+        <div class="f-hint">${esc(ZERO_CONFIG_NOTE[n.type])}</div>
+      </div>`;
+    return;
+  }
+
+  if(n.type === 'action_student'){
+    const statusOptions = [
+      { value: 'active', label: 'Đang học' },
+      { value: 'on_leave', label: 'Bảo lưu' },
+      { value: 'withdrawn', label: 'Thôi học' },
+      { value: 'expelled', label: 'Buộc thôi học' },
+      { value: 'warning', label: 'Cảnh báo học vụ' },
+      { value: 'transferred_out', label: 'Chuyển trường đi' },
+      { value: 'graduated', label: 'Đã tốt nghiệp' },
+      { value: 'inactive', label: 'Ngừng hoạt động' },
+      { value: 'removed', label: 'Đã xoá tên' },
+      { value: 'suspension', label: 'Bị đình chỉ' },
+    ];
+    col.innerHTML = `
+      <div class="fi">
+        <label>Trạng thái học tập<span class="req">*</span></label>
+        <select class="fc" ${ro ? 'disabled' : ''} onchange="neWorkingData.studentStatus=this.value">
+          <option value="">Chọn...</option>
+          ${statusOptions.map(o => `<option value="${o.value}" ${neWorkingData.studentStatus === o.value ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}
+        </select>
+        <div class="f-hint">Trạng thái sẽ ghi vào hồ sơ học vụ hiện hành của sinh viên.</div>
+      </div>
+      <div class="fi">
+        <label>Mã hồ sơ sinh viên cần đổi trạng thái</label>
+        <textarea class="fc" rows="2" ${ro ? 'disabled' : ''} oninput="neWorkingData.studentIdExpr=this.value">${esc(neWorkingData.studentIdExpr || '')}</textarea>
+        <div class="f-hint">Bỏ trống để áp cho chính người nộp đơn. Chỉ khai khi đơn do người khác nộp thay — PHẢI là một placeholder trỏ một trường DO HỆ THỐNG SINH RA, KHÔNG được trỏ một trường người nộp tự gõ trong biểu mẫu. Kiểm chặn lúc publish (E_RECORD_ID_UNTRUSTED_SOURCE).</div>
+      </div>`;
+    return;
+  }
+
   if(!NODE_TABS[n.type]){
     col.innerHTML = `<div class="ne-placeholder">Bước này chưa có tuỳ chọn cấu hình riêng trong bản mockup.</div>`;
     return;
@@ -991,7 +1059,9 @@ function removeDqField(key){
 
 function renderNeOutputCol(n){
   const items = NODE_OUTPUT_SCHEMA[n.type];
-  document.getElementById('ne-output-col').innerHTML = `<div class="ne-output-title">Dữ liệu bước này xuất ra</div>` +
+  document.getElementById('ne-output-col').innerHTML =
+    `<div class="ne-output-title">Dữ liệu bước này xuất ra</div>` +
+    `<button class="btn btn-default" style="width:100%;margin-bottom:12px" disabled>Chạy thử tới bước này</button>` +
     (items ? items.map(x => `<div class="ne-output-item"><b>${esc(x)}</b></div>`).join('')
            : `<div class="ne-output-empty">Bước này không xuất ra dữ liệu nào cho bước sau.</div>`);
 }

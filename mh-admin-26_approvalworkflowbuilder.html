@@ -68,7 +68,7 @@
 
   /* Canvas */
   .wf-canvas-scroll{flex:1;overflow:auto;background:#fafafa;position:relative}
-  .wf-canvas-inner{position:relative;width:1900px;height:650px;background-image:radial-gradient(circle,#dcdcdc 1.2px,transparent 1.2px);background-size:22px 22px}
+  .wf-canvas-inner{position:relative;width:2600px;height:650px;background-image:radial-gradient(circle,#dcdcdc 1.2px,transparent 1.2px);background-size:22px 22px}
   .wf-canvas-scroll.readonly .wf-canvas-inner{background-image:radial-gradient(circle,#e6e6e6 1.2px,transparent 1.2px)}
 
   .wf-node{position:absolute;width:230px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--border);border-radius:8px;padding:12px 14px 16px;box-shadow:0 2px 6px rgba(0,0,0,.05);cursor:pointer;user-select:none}
@@ -113,7 +113,7 @@
   .ne-top-fields{display:flex;gap:16px}
   .ne-top-fields .fi{flex:1;margin-bottom:0}
   .ne-body{display:flex;min-height:420px}
-  .ne-info-col{width:210px;flex-shrink:0;padding:16px}
+  .ne-info-col{width:240px;flex-shrink:0;padding:16px}
   .ne-info-box{background:#e6f4ff;border:1px solid #91caff;color:#0958d9;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5;display:flex;gap:8px}
   .ne-tabs-col{width:190px;flex-shrink:0;border-left:1px solid var(--border);border-right:1px solid var(--border);padding:10px 0}
   .ne-tab-item{display:flex;align-items:center;justify-content:space-between;padding:9px 18px;font-size:13px;color:var(--text-2);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:inherit}
@@ -139,6 +139,27 @@
   /* Bảng lịch sử phiên bản */
   #hist-tbl td{vertical-align:top}
   .hist-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+  /* Cây chọn field nguồn (dùng cho "Xác định học kỳ bắt đầu/kết thúc") —
+     tự liệt kê TOÀN BỘ field thật của Biểu mẫu quyết định đang gắn với quy
+     trình, nhóm theo nguồn (form_submission/Người nộp...). Bố cục ĐÚNG như
+     panel "Ai duyệt" của hệ thống thật: cây chiếm nguyên CỘT TRÁI của modal
+     (thay ne-info-col), kéo-thả 1 field từ cây sang ô search/thả ở cột
+     giữa (ne-main-col). Field sai kiểu (không phải nguồn Học kỳ) → báo lỗi
+     ngay, không đổi field đã chọn trước đó. */
+  .field-tree{border:1px solid var(--border);border-radius:8px;max-height:460px;overflow-y:auto;padding:4px}
+  .field-tree-group{padding:7px 8px 4px;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.02em}
+  .field-tree-item{padding:6px 10px 6px 22px;font-size:13px;border-radius:6px;cursor:grab;color:var(--text-1)}
+  .field-tree-item:hover{background:#fafafa}
+  .field-tree-item.selected{background:var(--primary-light);color:var(--primary);font-weight:600}
+  .field-tree-empty{padding:10px;font-size:12.5px;color:var(--text-3);font-style:italic}
+  .field-drop-box{border:1.5px dashed var(--border);border-radius:8px;padding:9px 10px;min-height:38px;display:flex;align-items:center;gap:6px;transition:border-color .15s,background .15s}
+  .field-drop-box.drag-over{border-color:var(--primary);background:var(--primary-light)}
+  .field-drop-box input{border:none;outline:none;font:inherit;flex:1;min-width:0;background:transparent;padding:0}
+  .field-drop-box .fdb-pill{display:flex;align-items:center;gap:6px;background:var(--primary-light);color:var(--primary);border-radius:14px;padding:3px 6px 3px 10px;font-size:12.5px;font-weight:600;max-width:100%}
+  .field-drop-box .fdb-pill button{border:none;background:transparent;cursor:pointer;color:inherit;font-size:12px;padding:2px;line-height:1;font-family:inherit}
+  .field-drop-hint{font-size:11.5px;color:var(--text-3);margin-top:6px;line-height:1.5}
+  .field-tree-error{color:var(--error);font-size:12px;margin-top:8px;display:flex;align-items:center;gap:6px}
 </style>
 </head>
 <body>
@@ -238,7 +259,7 @@
         <!-- Canvas -->
         <div class="wf-canvas-scroll" id="wf-canvas-scroll">
           <div class="wf-canvas-inner" id="wf-canvas-inner">
-            <svg class="wf-edges" id="wf-edges" width="1900" height="650">
+            <svg class="wf-edges" id="wf-edges" width="2600" height="650">
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                   <path d="M0,0 L10,5 L0,10 z" fill="#b3b3b3"></path>
@@ -380,6 +401,8 @@ const PALETTE = [
     { type: 'action_resource', label: 'Cập nhật trạng thái tài nguyên', desc: 'Cập nhật trạng thái 1 tài nguyên nghiệp vụ' },
     { type: 'action_record', label: 'Cập nhật bản ghi nghiệp vụ', desc: 'Cập nhật 1 bản ghi nghiệp vụ liên quan' },
     { type: 'action_student', label: 'Cập nhật trạng thái sinh viên', desc: 'Cập nhật trạng thái của sinh viên nộp đơn' },
+    { type: 'action_semester_start', label: 'Xác định học kỳ bắt đầu', desc: 'Chọn field "Học kỳ" trong Biểu mẫu quyết định làm mốc học kỳ bắt đầu' },
+    { type: 'action_semester_end', label: 'Xác định học kỳ kết thúc', desc: 'Chọn field "Học kỳ" trong Biểu mẫu quyết định làm mốc học kỳ kết thúc' },
     { type: 'action_academic_year', label: 'Cập nhật Niên khoá', desc: 'Tự lấy Niên khoá mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV — không cấu hình' },
     { type: 'action_training_program', label: 'Cập nhật CTĐT', desc: 'Tự lấy CTĐT mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV + tự đổi Khoa quản lý — không cấu hình' },
     { type: 'action_admin_class', label: 'Cập nhật Lớp hành chính', desc: 'Tự lấy Lớp hành chính mới đã kê khai lúc tạo quyết định, ghi vào hồ sơ SV + tự đổi Khoa quản lý — không cấu hình' },
@@ -401,7 +424,7 @@ const PALETTE = [
 ];
 
 let versionSeq = 4;
-let currentVersionId = 'v3';
+let currentVersionId = 'v4';
 let editingNodeId = null;
 
 // Vùng nháp tạm khi đang sửa (thêm/xoá/đổi bước) nhưng CHƯA bấm "Lưu".
@@ -477,16 +500,20 @@ let VERSIONS = [
     archivedAt:null, runningInstances:0,
     nodes:[
       {id:'n1', type:'submit', typeLabel:'Nộp biểu mẫu', title:'Nộp đơn', code:'form_trigger', x:40, y:220, data:{formId:'BM07'}},
-      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:360, y:220, data:{allowRevise:false}},
-      {id:'n2b', type:'approval', typeLabel:'Chờ người duyệt', title:'Phòng Đào tạo duyệt', code:'pdt', x:680, y:220, data:{allowRevise:true}},
-      {id:'n7', type:'decision_entry', typeLabel:'Nhập QĐ', title:'Văn thư nhập Quyết định', code:'decision_entry1', x:1000, y:220, data:{assigneeType:'staff', staff:'Văn thư — Lê Thị Cẩm', fields:['soQuyetDinh','ngayQuyetDinh']}},
-      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1320, y:80, data:{}},
-      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:1640, y:80, data:{}},
-      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:1000, y:400, data:{}},
-      {id:'n6', type:'revision', typeLabel:'Chờ người nộp bổ sung', title:'SV bổ sung hồ sơ', code:'revision1', x:680, y:480, data:{}},
+      {id:'n8', type:'action_semester_start', typeLabel:'Xác định học kỳ bắt đầu', title:'Xác định học kỳ bắt đầu nghỉ học', code:'sem_start', x:360, y:220, data:{semesterFieldKey:'hocKyBatDau'}},
+      {id:'n9', type:'action_semester_end', typeLabel:'Xác định học kỳ kết thúc', title:'Xác định học kỳ kết thúc nghỉ học', code:'sem_end', x:680, y:220, data:{semesterFieldKey:'hocKyKetThuc'}},
+      {id:'n2', type:'approval', typeLabel:'Chờ người duyệt', title:'GVCN duyệt', code:'gvcn', x:1000, y:220, data:{allowRevise:false}},
+      {id:'n2b', type:'approval', typeLabel:'Chờ người duyệt', title:'Phòng Đào tạo duyệt', code:'pdt', x:1320, y:220, data:{allowRevise:true}},
+      {id:'n7', type:'decision_entry', typeLabel:'Nhập QĐ', title:'Văn thư nhập Quyết định', code:'decision_entry1', x:1640, y:220, data:{assigneeType:'staff', staff:'Văn thư — Lê Thị Cẩm', fields:['soQuyetDinh','ngayQuyetDinh']}},
+      {id:'n5', type:'notify', typeLabel:'Gửi thông báo', title:'Báo KQ cho SV', code:'notify1', x:1960, y:80, data:{}},
+      {id:'n3', type:'end-success', typeLabel:'Kết thúc', title:'Hoàn tất', code:'end_1', x:2280, y:80, data:{}},
+      {id:'n4', type:'end-reject', typeLabel:'Kết thúc', title:'Từ chối', code:'end_2', x:1640, y:400, data:{}},
+      {id:'n6', type:'revision', typeLabel:'Chờ người nộp bổ sung', title:'SV bổ sung hồ sơ', code:'revision1', x:1320, y:480, data:{}},
     ],
     edges:[
-      {from:'n1', fromPort:'default', to:'n2'},
+      {from:'n1', fromPort:'default', to:'n8'},
+      {from:'n8', fromPort:'default', to:'n9'},
+      {from:'n9', fromPort:'default', to:'n2'},
       {from:'n2', fromPort:'approve', to:'n2b'},
       {from:'n2', fromPort:'reject', to:'n4'},
       {from:'n2b', fromPort:'approve', to:'n7'},
@@ -800,6 +827,107 @@ const DECISION_FIELD_CATALOG = [
   { key: 'ngayQuyetDinh', label: 'Ngày quyết định' },
 ];
 
+// Toàn bộ field THẬT của từng Biểu mẫu quyết định (cấu hình ở mh-admin-25),
+// nhóm theo nguồn — đúng cấu trúc cây "chọn dữ liệu" của hệ thống thật (ảnh
+// panel "Ai duyệt": nhóm form_submission/Người nộp/Mẫu biểu mẫu...), KHÔNG
+// phải danh sách đã lọc sẵn chỉ còn field Học kỳ. Field nào có
+// sourceType:'hocky' mới hợp lệ để chọn cho "Xác định học kỳ bắt đầu/kết
+// thúc" — field khác vẫn hiện trong cây (đúng như hệ thống thật hiện toàn
+// bộ field) nhưng bấm vào sẽ báo lỗi thay vì chọn được, xem pickSemesterField().
+const FORM_FIELD_TREE = {
+  BM07: [
+    { group: 'form_submission', groupLabel: 'form_submission', fields: [
+      { key: 'maDon', label: 'Mã đơn', sourceType: 'system' },
+      { key: 'thoiDiemNop', label: 'Thời điểm nộp', sourceType: 'system' },
+      { key: 'hocKyBatDau', label: 'Học kỳ bắt đầu', sourceType: 'hocky' },
+      { key: 'hocKyKetThuc', label: 'Học kỳ kết thúc', sourceType: 'hocky' },
+      { key: 'lyDoNghiHoc', label: 'Lý do nghỉ học', sourceType: 'text' },
+    ]},
+    { group: 'nguoi_nop', groupLabel: 'Người nộp', fields: [
+      { key: 'tenSVTiengViet', label: 'Tên sinh viên tiếng Việt', sourceType: 'system' },
+      { key: 'tenSVTiengAnh', label: 'Tên sinh viên Tiếng Anh', sourceType: 'system' },
+      { key: 'maSoSV', label: 'Mã số sinh viên', sourceType: 'system' },
+    ]},
+    { group: 'mau_bieu_mau', groupLabel: 'Mẫu biểu mẫu', fields: [
+      { key: 'tenMauBieuMau', label: 'Tên mẫu biểu mẫu', sourceType: 'system' },
+    ]},
+  ],
+  BM15: [
+    { group: 'form_submission', groupLabel: 'form_submission', fields: [
+      { key: 'maDon', label: 'Mã đơn', sourceType: 'system' },
+      { key: 'nganhChuyenDen', label: 'Ngành chuyển đến', sourceType: 'text' },
+    ]},
+  ],
+};
+
+// Tìm formId đã gắn ở bước "Nộp biểu mẫu" (type=submit) của quy trình
+// đang mở — panel "Xác định học kỳ bắt đầu/kết thúc" cần biết đúng biểu
+// mẫu này để hiện đúng cây field (FORM_FIELD_TREE).
+function getBoundFormId(){
+  const start = content().nodes.find(n => n.type === 'submit');
+  return start && start.data ? start.data.formId : '';
+}
+
+// Ô search/thả (mục 3) hỗ trợ CẢ 2 cách chọn field: gõ để lọc cây bên
+// trái, hoặc kéo-thả 1 field từ cây vào ô. Reset mỗi lần mở panel sửa bước
+// khác (xem openNodeEdit()).
+let neFieldFilterText = '';
+
+function findSemesterField(key){
+  const groups = FORM_FIELD_TREE[getBoundFormId()] || [];
+  let field = null;
+  groups.forEach(g => { const f = g.fields.find(x => x.key === key); if(f) field = f; });
+  return field;
+}
+
+// Chọn 1 field (bấm trong cây, hoặc thả vào ô search) cho panel "Xác định
+// học kỳ bắt đầu/kết thúc". Field sai kiểu (không phải nguồn "Học kỳ") →
+// báo lỗi ngay, KHÔNG đổi field đã chọn trước đó.
+function pickSemesterField(key){
+  const field = findSemesterField(key);
+  if(!field) return;
+  if(field.sourceType !== 'hocky'){
+    neWorkingData.semesterFieldError = `"${field.label}" không phải field nguồn Học kỳ — chỉ được chọn field lấy nguồn dữ liệu "Học kỳ" (cấu hình ở Cấu hình trường quyết định).`;
+  } else {
+    neWorkingData.semesterFieldKey = key;
+    neWorkingData.semesterFieldError = '';
+    neFieldFilterText = '';
+  }
+  rerenderSemesterPanel();
+}
+
+function clearSemesterField(){
+  neWorkingData.semesterFieldKey = '';
+  neWorkingData.semesterFieldError = '';
+  rerenderSemesterPanel();
+}
+
+function onFieldFilterInput(text){
+  neFieldFilterText = text;
+  rerenderSemesterPanel();
+}
+
+// Cây field nằm ở ne-info-col, ô search/thả nằm ở ne-main-col — mọi thay
+// đổi (chọn field, gõ lọc, bỏ chọn) đều phải vẽ lại CẢ 2 cột cho đồng bộ.
+function rerenderSemesterPanel(){
+  const v = getVersion(currentVersionId);
+  const n = content().nodes.find(x => x.id === editingNodeId);
+  renderNeInfoCol(n, readonly(v));
+  renderNeMainCol(n, readonly(v));
+}
+
+function onFieldDragStart(ev, key){
+  ev.dataTransfer.setData('text/plain', key);
+  ev.dataTransfer.effectAllowed = 'copy';
+}
+
+function onFieldDrop(ev){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  const key = ev.dataTransfer.getData('text/plain');
+  if(key) pickSemesterField(key);
+}
+
 // Tab của panel sửa bước theo từng loại node — node không có trong danh
 // sách (notify, action_*, logic_*...) chỉ hiện Tên bước/Mã bước, giữ đúng
 // mức chi tiết hiện có của mockup, không thêm tab rỗng vô nghĩa.
@@ -828,6 +956,8 @@ const NODE_OUTPUT_SCHEMA = {
   action_academic_year: ['Danh sách sinh viên đã cập nhật (Mã SV, Niên khoá trước, Niên khoá sau)'],
   action_training_program: ['Danh sách sinh viên đã cập nhật (Mã SV, CTĐT trước, CTĐT sau, Khoa quản lý trước, Khoa quản lý sau)'],
   action_admin_class: ['Danh sách sinh viên đã cập nhật (Mã SV, Lớp hành chính trước, Lớp hành chính sau, Khoa quản lý trước, Khoa quản lý sau)'],
+  action_semester_start: ['Mã học kỳ bắt đầu', 'Tên học kỳ bắt đầu (hiển thị)', 'Thứ tự học kỳ bắt đầu (dùng để so sánh khoảng thời gian)'],
+  action_semester_end: ['Mã học kỳ kết thúc', 'Tên học kỳ kết thúc (hiển thị)', 'Thứ tự học kỳ kết thúc (dùng để so sánh khoảng thời gian)'],
 };
 
 // Node hệ thống tự cập nhật (zero-config) — không có tab, chỉ 1 info box
@@ -864,6 +994,7 @@ function openNodeEdit(nodeId){
   document.getElementById('ne-code-input').value = n.code;
 
   neWorkingData = JSON.parse(JSON.stringify(n.data || {}));
+  neFieldFilterText = '';
   if(n.type === 'decision_entry'){
     if(!neWorkingData.fields) neWorkingData.fields = ['soQuyetDinh', 'ngayQuyetDinh'];
     if(!neWorkingData.assigneeType) neWorkingData.assigneeType = 'unit';
@@ -878,7 +1009,7 @@ function openNodeEdit(nodeId){
 
   const tabs = NODE_TABS[n.type];
   neActiveTab = tabs ? tabs[0].key : null;
-  renderNeInfoCol(n);
+  renderNeInfoCol(n, ro);
   renderNeTabsCol(n, ro);
   renderNeMainCol(n, ro);
   renderNeOutputCol(n);
@@ -887,10 +1018,38 @@ function openNodeEdit(nodeId){
   openModal('modal-node-edit');
 }
 
-function renderNeInfoCol(n){
+// Node "Xác định học kỳ bắt đầu/kết thúc" dùng CỘT TRÁI (ne-info-col) làm
+// cây chọn field — đúng vị trí cây "chọn dữ liệu" của hệ thống thật (ảnh
+// panel "Ai duyệt": cây nằm hẳn 1 cột riêng, bên trái cột tab), kéo-thả 1
+// field sang ô search/thả ở ne-main-col. Các node khác giữ hành vi cũ
+// (info box "chưa có bước nào đứng trước").
+function renderNeInfoCol(n, ro){
+  if(n.type === 'action_semester_start' || n.type === 'action_semester_end'){
+    document.getElementById('ne-info-col').innerHTML = renderFieldTreeHtml(n, ro);
+    return;
+  }
   const hasIncoming = content().edges.some(e => e.to === n.id);
   document.getElementById('ne-info-col').innerHTML = hasIncoming ? '' :
     `<div class="ne-info-box"><span>ℹ️</span><span>Bước này chưa có bước nào đứng trước để lấy dữ liệu.</span></div>`;
+}
+
+function renderFieldTreeHtml(n, ro){
+  const formId = getBoundFormId();
+  const groups = FORM_FIELD_TREE[formId] || [];
+  const selectedKey = neWorkingData.semesterFieldKey || '';
+  const filter = (neFieldFilterText || '').trim().toLowerCase();
+  const visibleGroups = filter
+    ? groups.map(g => ({ ...g, fields: g.fields.filter(f => f.label.toLowerCase().includes(filter)) })).filter(g => g.fields.length)
+    : groups;
+  if(!groups.length){
+    return `<div class="ne-placeholder">Biểu mẫu (mã ${esc(formId || '—')}) chưa cấu hình field nào — quay lại Cấu hình trường quyết định để thêm.</div>`;
+  }
+  return `<div class="field-tree">
+    ${visibleGroups.length ? visibleGroups.map(g => `
+      <div class="field-tree-group">${esc(g.groupLabel)}</div>
+      ${g.fields.map(f => `<div class="field-tree-item${f.key === selectedKey ? ' selected' : ''}" draggable="${ro ? 'false' : 'true'}" ondragstart="onFieldDragStart(event,'${f.key}')" onclick="${ro ? '' : `pickSemesterField('${f.key}')`}">${esc(f.label)}${f.key === selectedKey ? ' ✓' : ''}</div>`).join('')}
+    `).join('') : `<div class="field-tree-empty">Không tìm thấy field khớp "${esc(neFieldFilterText)}"</div>`}
+  </div>`;
 }
 
 function renderNeTabsCol(n, ro){
@@ -926,6 +1085,22 @@ function renderNeMainCol(n, ro){
           <option selected>Tự động lấy theo giá trị đã kê khai trên form quyết định</option>
         </select>
         <div class="f-hint">${esc(ZERO_CONFIG_NOTE[n.type])}</div>
+      </div>`;
+    return;
+  }
+
+  if(n.type === 'action_semester_start' || n.type === 'action_semester_end'){
+    const selectedKey = neWorkingData.semesterFieldKey || '';
+    const selectedField = selectedKey ? findSemesterField(selectedKey) : null;
+    col.innerHTML = `
+      <div class="fi">
+        <label>Field học kỳ trong Biểu mẫu quyết định<span class="req">*</span></label>
+        <div class="field-drop-box" ondragover="event.preventDefault();event.currentTarget.classList.add('drag-over')" ondragleave="event.currentTarget.classList.remove('drag-over')" ondrop="onFieldDrop(event)">
+          ${selectedField
+            ? `<span class="fdb-pill">${esc(selectedField.label)}<button type="button" onclick="clearSemesterField()" title="Bỏ chọn">✕</button></span>`
+            : `<input type="text" placeholder="Tìm hoặc kéo field vào đây" value="${esc(neFieldFilterText)}" oninput="onFieldFilterInput(this.value)">`}
+        </div>
+        ${neWorkingData.semesterFieldError ? `<div class="field-tree-error">⚠️ ${esc(neWorkingData.semesterFieldError)}</div>` : ''}
       </div>`;
     return;
   }
@@ -1085,6 +1260,10 @@ function saveNodeEdit(){
     if(neWorkingData.assigneeType === 'unit' && !(neWorkingData.unit||'').trim()){ showToast('Chưa chọn Đơn vị xử lý', 'err'); return; }
     if(neWorkingData.assigneeType === 'staff' && !(neWorkingData.staff||'').trim()){ showToast('Chưa chọn Cán bộ xử lý', 'err'); return; }
     if(!neWorkingData.fields || neWorkingData.fields.length === 0){ showToast('Phải chọn ít nhất 1 trường cần nhập', 'err'); return; }
+  }
+  if(n0 && (n0.type === 'action_semester_start' || n0.type === 'action_semester_end')){
+    if(!neWorkingData.semesterFieldKey){ showToast('Chưa chọn field học kỳ trong Biểu mẫu quyết định', 'err'); return; }
+    delete neWorkingData.semesterFieldError; // chỉ dùng tạm lúc sửa, không lưu vào data của bước
   }
 
   mutateCurrentVersion(vv => {

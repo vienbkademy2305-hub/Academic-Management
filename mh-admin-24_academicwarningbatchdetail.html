@@ -836,6 +836,36 @@
   </div>
 </div>
 
+<!-- ═══ MODAL: Chặn gửi xác nhận — trùng SV với đợt khác đã công bố cùng học kỳ ═══
+     Chặn CỨNG, không có lối đi tiếp từ đây: chỉ 1 nút Đóng. Cán bộ phải tự quay lại danh sách,
+     loại các SV trùng (đổi phạm vi quét/điều kiện không xét) rồi mới Gửi xác nhận lại được. -->
+<div class="overlay hidden" id="modal-trungsv">
+  <div class="modal-box w800">
+    <div class="modal-hd">
+      <h3 class="modal-title">Không thể gửi xác nhận</h3>
+      <button class="modal-close" data-close="modal-trungsv">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="mb-16" id="ts-desc" style="background:#fff2f0;border:1px solid #ffa39e;color:#cf1322;padding:10px 14px;border-radius:6px;font-size:13px;line-height:1.7"></div>
+      <table class="tbl" style="width:100%">
+        <thead><tr>
+          <th style="width:40px">STT</th>
+          <th style="width:110px">MSSV</th>
+          <th style="width:160px">Họ và tên</th>
+          <th>CTĐT</th>
+          <th style="width:130px">Kết quả xét (đợt này)</th>
+          <th>Đợt đã công bố trước</th>
+          <th style="width:110px">Ngày công bố</th>
+        </tr></thead>
+        <tbody id="ts-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-primary" data-close="modal-trungsv">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: Kết quả rà soát trạng thái sinh viên (bước 2) ═══
      Chỉ bật khi có em thuộc diện không xét. Trước đây thông tin này nằm ở banner cắm mãi trên bảng;
      chuyển thành popup báo ngay sau khi chạy xong thì đúng nhịp làm việc hơn — đọc, nắm, đóng lại. -->
@@ -2330,6 +2360,8 @@ function baoKetQuaRaSoatTT(tong, dsLoai, vanXet){
    nhận, tách riêng khỏi mốc Ngày bắt đầu/kết thúc của đợt (đó là mốc rà soát dữ liệu SV, còn đây là
    hạn để Khoa xử lý sau khi đã có kết quả). */
 function sendToKhoa(){
+  const trung = timTrungSVDaCongBo();
+  if (trung.length){ openTrungSVModal(trung); return; }
   document.getElementById('gk-desc').innerHTML = `Gửi danh sách sinh viên xét học vụ của đợt "<b>${BATCH.tenDot}</b>" cho <b>Ban Công tác Sinh viên</b> và các <b>Khoa quản lý</b> xác nhận. Hai bên xác nhận độc lập, trên cùng một danh sách.`;
   document.getElementById('gk-batdau').value = toInputDate(BATCH.xacNhanBatDau);
   document.getElementById('gk-ketthuc').value = toInputDate(BATCH.xacNhanKetThuc);
@@ -2575,6 +2607,57 @@ function trongPhamViQuet(s){
 function dsTrongDot(){ return STUDENTS.filter(trongPhamViQuet); }
 function dsCanhBao(){
   return dsTrongDot().filter(s => ['Cảnh báo học tập', 'Buộc thôi học'].includes(ketQuaXetCuoiCung(s).label));
+}
+/* Mock: các ĐỢT KHÁC đã công bố (maDot khác đợt đang xem) — dùng để chặn Gửi xác nhận khi đợt
+   đang mở có SV trùng với 1 đợt đã công bố CÙNG học kỳ/năm học. Xảy ra khi 2 đợt có phạm vi quét
+   chồng nhau, VD 1 đợt quét toàn trường đã công bố, sau đó có người tạo thêm đợt riêng cho 1 khoa
+   cùng kỳ mà quên kiểm tra trước — SV đó sẽ bị xét cảnh báo/buộc thôi học 2 lần trong cùng 1 kỳ.
+   Chỉ khai SV có kết luận Cảnh báo học tập/Buộc thôi học ở đợt cũ — SV "Không cảnh báo" trùng phạm
+   vi quét không phải là vấn đề, không chặn. Khớp theo (mssv, ctdt), giống mọi khoá dòng SV khác
+   trong file này (SV song bằng 2 dòng độc lập). */
+const OTHER_PUBLISHED_BATCHES = [
+  {
+    maDot: 'SOS-HK2-2627-0',
+    tenDot: 'Xét cảnh báo học tập HK2 năm học 2026-2027 (toàn trường)',
+    hocKy: 'HK2', namHoc: '2026-2027',
+    ngayCongBo: '10/09/2026',
+    sv: [
+      { mssv:'25106101', ctdt:'Công nghệ thông tin' },
+      { mssv:'23104612', ctdt:'Công nghệ thông tin' },
+    ],
+  },
+];
+/* Đối chiếu danh sách cảnh báo của đợt ĐANG MỞ với các đợt KHÁC đã công bố cùng hocKy+namHoc —
+   không giới hạn theo phạm vi khoa/lớp, vì mục đích là bắt MỌI trường hợp chồng phạm vi, kể cả
+   đợt cũ quét toàn trường còn đợt mới chỉ quét 1 khoa. */
+function timTrungSVDaCongBo(){
+  const key = s => s.mssv + '::' + s.ctdt;
+  const dangXet = new Map(dsCanhBao().map(s => [key(s), s]));
+  if (!dangXet.size) return [];
+  const trung = [];
+  OTHER_PUBLISHED_BATCHES.forEach(dot => {
+    if (dot.maDot === BATCH.maDot || dot.hocKy !== BATCH.hocKy || dot.namHoc !== BATCH.namHoc) return;
+    dot.sv.forEach(sv => {
+      const s = dangXet.get(key(sv));
+      if (s) trung.push({ ...s, _maDotCu: dot.maDot, _tenDotCu: dot.tenDot, _ngayCongBoCu: dot.ngayCongBo });
+    });
+  });
+  return trung;
+}
+function openTrungSVModal(list){
+  document.getElementById('ts-desc').innerHTML =
+    `Có <b>${list.length}</b> sinh viên trong danh sách đã được <b>công bố kết quả</b> ở một đợt xét cảnh báo khác cùng <b>${BATCH.hocKy} năm học ${BATCH.namHoc}</b>. Không thể gửi xác nhận khi còn trùng — vui lòng loại các sinh viên này khỏi đợt hiện tại (đổi lại phạm vi quét hoặc điều kiện không xét) rồi thử lại.`;
+  document.getElementById('ts-tbody').innerHTML = list.map((s, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${s.mssv}</td>
+      <td>${s.hoTen}</td>
+      <td>${s.ctdt}</td>
+      <td>${ketQuaXetCuoiCung(s).label}</td>
+      <td>${s._maDotCu} — ${s._tenDotCu}</td>
+      <td>${s._ngayCongBoCu}</td>
+    </tr>`).join('');
+  openModal('modal-trungsv');
 }
 /* Nhóm BỊ LOẠI ở bước rà soát trạng thái: có quyết định nghỉ trùm kỳ xét, và loại nghỉ đó nằm trong
    cấu hình "Không xét trạng thái sinh viên của kỳ". Không gộp vào danh sách chính — xem riêng qua

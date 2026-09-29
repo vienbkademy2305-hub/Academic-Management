@@ -2389,6 +2389,13 @@ function soChuaXacNhan(who){
     && s[f.st] !== 'daXacNhan').length;
 }
 function publishBatch(){
+  /* Check lại trùng SV với đợt khác đã công bố NGAY TRƯỚC KHI KHOÁ — giữa lúc Gửi xác nhận (lần
+     check trước) và giờ Công bố, có thể đã có một đợt khác cùng học kỳ/năm học được công bố xong,
+     phát sinh trùng mà lần check trước chưa thấy. Công bố là mốc BẤT BIẾN duy nhất nên phải chặn
+     cứng ở đây — khác hẳn Gửi xác nhận (đợt "chờ xác nhận" của người khác vẫn có thể đổi, chưa chốt
+     nên không chặn ở đó, chỉ chặn khi đối phương đã THẬT SỰ công bố). */
+  const trung = timTrungSVDaCongBo();
+  if (trung.length){ openTrungSVModal(trung); return; }
   /* CẢNH BÁO chứ KHÔNG chặn: Khoa và CTSV xác nhận song song, chỉ cần một khoa quên thao tác là đợt
      kẹt vĩnh viễn. Hạn xử lý đã có sẵn ở bước Gửi xác nhận, không cần khoá thêm ở đây. */
   const cts = soChuaXacNhan('ctsv'), kho = soChuaXacNhan('khoa');
@@ -2629,7 +2636,12 @@ const OTHER_PUBLISHED_BATCHES = [
 ];
 /* Đối chiếu danh sách cảnh báo của đợt ĐANG MỞ với các đợt KHÁC đã công bố cùng hocKy+namHoc —
    không giới hạn theo phạm vi khoa/lớp, vì mục đích là bắt MỌI trường hợp chồng phạm vi, kể cả
-   đợt cũ quét toàn trường còn đợt mới chỉ quét 1 khoa. */
+   đợt cũ quét toàn trường còn đợt mới chỉ quét 1 khoa.
+   Cố ý CHỈ so với đợt đã CÔNG BỐ (bất biến), không so với đợt đang "chờ xác nhận" của người khác —
+   đợt đó còn có thể rà soát lại đổi danh sách nên chặn dựa vào nó dễ chặn nhầm. Vì vậy phải gọi lại
+   hàm này ở CẢ 2 mốc: sendToKhoa() (lúc gửi) và publishBatch() (lúc công bố) — giữa 2 mốc đó một
+   đợt khác có thể vừa được công bố xong, phát sinh trùng mà lần check ở sendToKhoa chưa thấy. Công
+   bố là mốc khoá vĩnh viễn nên bắt buộc phải chặn lại ở đây, không thể bỏ qua. */
 function timTrungSVDaCongBo(){
   const key = s => s.mssv + '::' + s.ctdt;
   const dangXet = new Map(dsCanhBao().map(s => [key(s), s]));

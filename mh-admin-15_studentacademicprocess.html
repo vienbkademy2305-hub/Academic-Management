@@ -42,8 +42,6 @@
   .unit-combo-empty{padding:14px 10px;text-align:center;color:var(--text-3);font-size:12.5px}
   .form-combo-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;cursor:pointer;color:var(--text-1);background:#fff}
   .form-combo-trigger .form-combo-arrow{color:var(--text-3);font-size:11px;flex-shrink:0}
-  tr.bd-row{cursor:pointer}
-  tr.bd-row:hover td{background:var(--primary-light)}
 </style>
 </head>
 <body>
@@ -132,6 +130,7 @@
           <div>
             <h2 style="margin:0;font-size:18px">Biến động Sinh viên</h2>
           </div>
+          <button type="button" class="btn btn-default" id="bd-export-btn" disabled onclick="exportSelectedBd()">Xuất dữ liệu</button>
         </div>
 
         <!-- Bộ lọc: Tìm tên/MSSV -->
@@ -170,7 +169,7 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th style="width:44px">STT</th>
+                <th style="width:36px"><input type="checkbox" id="bd-check-all" onchange="toggleAllBdSelection(this.checked)"></th>
                 <th style="width:110px">MSSV</th>
                 <th style="width:140px">Họ và tên</th>
                 <th>Loại quyết định</th>
@@ -204,6 +203,8 @@
 </div>
 
 <script src="_utils.js"></script>
+<!-- SheetJS (nhúng local, không gọi CDN) — dùng để xuất thật file .xlsx cho các dòng đã chọn -->
+<script src="_vendor-xlsx.min.js"></script>
 <script>
 /* ============================================================
    DATA — Trạng thái học vụ (đối chiếu NEW_STATUS_LABEL/TYPE_NEW_STATUS ở mh-admin-08 — cùng 1 tập
@@ -580,6 +581,7 @@ function buildDecisionRows(){
       const oldStatus = !toStatus ? ''
         : (prevStatus || (ENTRY_TYPE_NAMES.includes(d.typeName) ? '' : 'danghoc'));
       rows.push({
+        id:`${d.id}_${s.mssv}`,
         mssv:s.mssv, name:s.name, decisionCode:code, decisionTypeName:d.typeName, decisionDate:d.created, effectiveDate:dateStr, sortKey,
         decisionSemester: semesterOfDecisionDate(d.created),
         startSemester: d.startSemester || '', endSemester: d.endSemester || '',
@@ -728,9 +730,9 @@ function renderGrid(){
   const oldCell = v => v ? `<span class="bd-old-val">${v}</span>` : '<span class="text-muted">—</span>';
   const newCell = v => v ? `<span class="bd-new-val">${v}</span>` : '<span class="text-muted">—</span>';
 
-  tbody.innerHTML = pageList.length ? pageList.map((r, idx) => `
-    <tr class="bd-row" onclick="openDecisionInMh08('${r.decisionCode}')">
-      <td class="text-muted">${(currentPage-1)*BD_PAGE_SIZE + idx + 1}</td>
+  tbody.innerHTML = pageList.length ? pageList.map((r) => `
+    <tr>
+      <td><input type="checkbox" class="bd-row-check" data-id="${r.id}" ${selectedBdIds.has(r.id) ? 'checked' : ''} onchange="toggleBdSelection('${r.id}', this.checked)"></td>
       <td><span class="sv-code">${r.mssv}</span></td>
       <td><span class="sv-name-cell">${r.name}</span></td>
       <td>${r.decisionTypeName}</td>
@@ -751,7 +753,53 @@ function renderGrid(){
       <td>${newCell(r.newDonVi)}</td>
     </tr>`).join('') : `<tr><td colspan="19"><div class="tbl-empty">Không tìm thấy biến động nào khớp bộ lọc đang chọn</div></td></tr>`;
 
+  const pageIds = pageList.map(r => r.id);
+  const checkAll = document.getElementById('bd-check-all');
+  checkAll.checked = pageIds.length > 0 && pageIds.every(id => selectedBdIds.has(id));
+  updateBdExportBtn();
+
   renderPagination(list.length, totalPages);
+}
+
+/* Chọn dòng để Xuất dữ liệu (Excel) — checkbox thay cho cột STT, lưu theo id nên vẫn đúng khi
+   đổi trang/lọc lại (không reset lựa chọn cũ). */
+const selectedBdIds = new Set();
+
+function toggleBdSelection(id, checked){
+  if (checked) selectedBdIds.add(id); else selectedBdIds.delete(id);
+  document.getElementById('bd-check-all').checked = [...document.querySelectorAll('.bd-row-check')].every(el => el.checked);
+  updateBdExportBtn();
+}
+function toggleAllBdSelection(checked){
+  document.querySelectorAll('.bd-row-check').forEach(el => {
+    el.checked = checked;
+    if (checked) selectedBdIds.add(el.dataset.id); else selectedBdIds.delete(el.dataset.id);
+  });
+  updateBdExportBtn();
+}
+function updateBdExportBtn(){
+  const btn = document.getElementById('bd-export-btn');
+  btn.disabled = selectedBdIds.size === 0;
+  btn.textContent = selectedBdIds.size ? `Xuất dữ liệu (${selectedBdIds.size})` : 'Xuất dữ liệu';
+}
+
+/* Xuất các dòng đã chọn ra file .xlsx thật (SheetJS) — đúng các cột đang hiển thị trên bảng. */
+function exportSelectedBd(){
+  const rows = DECISION_ROWS.filter(r => selectedBdIds.has(r.id));
+  if (!rows.length) return;
+  const header = ['STT', 'MSSV', 'Họ và tên', 'Loại quyết định', 'Học kỳ quyết định', 'Số QĐ', 'Ngày QĐ', 'Học kỳ bắt đầu', 'Học kỳ kết thúc', 'Trạng thái cũ', 'Trạng thái mới', 'Niên khoá cũ', 'Niên khoá mới', 'Ngành/CTĐT cũ', 'Ngành/CTĐT mới', 'Lớp HC cũ', 'Lớp HC mới', 'Đơn vị đào tạo cũ', 'Đơn vị đào tạo mới'];
+  const dataRows = rows.map((r, idx) => [
+    idx + 1, r.mssv, r.name, r.decisionTypeName, r.decisionSemester || '', r.decisionCode, r.decisionDate || '',
+    r.startSemester || '', r.endSemester || '',
+    STATUS_LABEL[r.oldStatus] || '', STATUS_LABEL[r.newStatus] || '',
+    r.oldNienKhoa || '', r.newNienKhoa || '', r.oldCtdt || '', r.newCtdt || '', r.oldLop || '', r.newLop || '', r.oldDonVi || '', r.newDonVi || '',
+  ]);
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet, 'Biến động Sinh viên');
+  const fileName = `bien-dong-sinh-vien-${rows.length}-dong.xlsx`;
+  XLSX.writeFile(wb, fileName);
+  showToast(`Đã xuất "${fileName}"`, 'ok');
 }
 
 function renderPagination(totalItems, totalPages){
@@ -779,13 +827,6 @@ document.getElementById('sv-search').addEventListener('input', () => { currentPa
 
 setupFilters();
 renderGrid();
-
-/* Mở Chi tiết quyết định tương ứng ở mh-admin-08 — truyền mã QĐ qua query string, mh-admin-08
-   KHÔNG tự đọc query này (2 trang tĩnh độc lập, không kết nối kỹ thuật thật) nên chỉ mở đúng trang
-   danh sách quyết định, người dùng tự tìm theo mã QĐ hiển thị sẵn trên URL/thanh tìm kiếm. */
-function openDecisionInMh08(code){
-  window.open(`mh-admin-08_studentdecisionlist.html?code=${encodeURIComponent(code)}`, '_blank');
-}
 </script>
 </body>
 </html>

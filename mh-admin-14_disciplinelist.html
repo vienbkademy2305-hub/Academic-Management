@@ -219,15 +219,15 @@
    DATA — hình thức kỷ luật (đồng bộ rút gọn với mh-admin-12)
    ============================================================ */
 const DISCIPLINE_TYPES = [
-  { id:'t1', code:'KL01', name:'Khiển trách cấp Trường/Khoa đào tạo', drlPoint:10 },
-  { id:'t2', code:'KL02', name:'Cảnh cáo cấp Trường/Khoa đào tạo', drlPoint:10 },
-  { id:'t3', code:'KL03', name:'Khiển trách cấp Đại học', drlPoint:10 },
-  { id:'t4', code:'KL04', name:'Cảnh cáo cấp Đại học', drlPoint:10 },
-  { id:'t5', code:'KL05', name:'Buộc thôi học', drlPoint:10 },
-  { id:'t6', code:'KL06', name:'Đình chỉ 1 học kỳ', drlPoint:10 },
-  { id:'t7', code:'KL07', name:'Đình chỉ 2 học kỳ', drlPoint:10 },
-  { id:'t8', code:'KL08', name:'Đình chỉ 3 học kỳ', drlPoint:10 },
-  { id:'t9', code:'KL09', name:'Đình chỉ 1 năm học', drlPoint:10 },
+  { id:'t1', code:'QLSV.QD.KYLUATKHIENTRACHTRUONG', name:'Khiển trách cấp Trường/Khoa đào tạo', drlPoint:10 },
+  { id:'t2', code:'QLSV.QD.KYLUATCANHCAOTRUONG', name:'Cảnh cáo cấp Trường/Khoa đào tạo', drlPoint:10 },
+  { id:'t3', code:'QLSV.QD.KYLUATKHIENTRACHDH', name:'Khiển trách cấp Đại học', drlPoint:10 },
+  { id:'t4', code:'QLSV.QD.KYLUATCANHCAODH', name:'Cảnh cáo cấp Đại học', drlPoint:10 },
+  { id:'t5', code:'QLSV.QD.KYLUATBUOCTHOIHOC', name:'Buộc thôi học', drlPoint:10 },
+  { id:'t6', code:'QLSV.QD.KYLUATDINHCHI1KY', name:'Đình chỉ 1 học kỳ', drlPoint:10 },
+  { id:'t7', code:'QLSV.QD.KYLUATDINHCHI2KY', name:'Đình chỉ 2 học kỳ', drlPoint:10 },
+  { id:'t8', code:'QLSV.QD.KYLUATDINHCHI3KY', name:'Đình chỉ 3 học kỳ', drlPoint:10 },
+  { id:'t9', code:'QLSV.QD.KYLUATDINH1NAMHOC', name:'Đình chỉ 1 năm học', drlPoint:10 },
 ];
 function typeById(id){ return DISCIPLINE_TYPES.find(t => t.id === id); }
 

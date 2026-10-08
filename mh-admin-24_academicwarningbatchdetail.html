@@ -54,6 +54,19 @@
   .form-grid .full{grid-column:1/-1}
   .form-grid .span2{grid-column:span 2}
   .form-grid .span3{grid-column:span 3}
+  /* Ô nhập MSSV dạng tag */
+  .mtag-box{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:38px;padding:4px 8px;cursor:text}
+  .mtag-box:focus-within{border-color:var(--primary);box-shadow:0 0 0 2px rgba(250,140,22,.2)}
+  .mtag-box input{border:none;outline:none;flex:1;min-width:220px;font:inherit;padding:3px 0;background:transparent}
+  .mtag{position:relative;display:inline-flex;align-items:center;gap:2px;padding:1px 2px 1px 8px;border:1px solid var(--border);border-radius:4px;background:#fafafa;font-size:13px;line-height:22px}
+  .mtag button{border:none;background:none;cursor:pointer;color:var(--text-3,#8c8c8c);font-size:11px;padding:0 5px;line-height:22px}
+  .mtag button:hover{color:var(--text-1)}
+  .mtag-err{border-color:#ff4d4f;background:#fff1f0;color:#cf1322}
+  .mtag-err button{color:#cf1322}
+  .mtag-err[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 6px);white-space:nowrap;background:rgba(0,0,0,.85);color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;line-height:18px;z-index:30;pointer-events:none}
+  .form-grid .form-sec{grid-column:1/-1;font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.3px;padding-bottom:6px;border-bottom:1px solid var(--border);margin-top:6px}
+  .form-grid .form-sec:first-child{margin-top:0}
+  .form-grid .form-sec-hint{font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-3,#8c8c8c)}
   /* Cột hẹp lại (4 cột) nên nhãn dài của droplist phải cắt bằng "…" thay vì đẩy vỡ ô. */
   .msel-trigger .msel-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .form-grid label{display:block;font-size:13px;color:var(--text-2);margin-bottom:4px}
@@ -209,6 +222,11 @@
   .dev-note b.tag{display:inline-block;font-size:11px;letter-spacing:.4px;color:var(--text-3);margin-right:6px}
   .legend{display:flex;gap:18px;align-items:center;font-size:12.5px;color:var(--text-3);margin-top:10px;flex-wrap:wrap}
   .legend i{display:inline-block;width:14px;height:14px;border:1px solid var(--border);vertical-align:-2px;margin-right:5px}
+  /* Bảng popup "Thông số xét đang áp dụng" — kẻ viền đầy đủ từng ô. */
+  .tbl-grid{border:1px solid var(--border);border-collapse:collapse;width:100%}
+  .tbl-grid th,.tbl-grid td{border:1px solid var(--border)}
+  .tbl-grid thead th{background:#fafafa;font-weight:600}
+  .tbl-grid td:first-child,.tbl-grid th:first-child{text-align:center}
 </style>
 </head>
 <body>
@@ -295,6 +313,9 @@
         <!-- Dòng tóm tắt thay cho cả khối khi thu gọn: đủ bối cảnh để đọc bảng bên dưới cho đúng
              (đang xét kỳ nào, phạm vi nào, rà soát lần cuối lúc nào) mà chỉ chiếm 1 hàng. -->
         <div class="batch-brief hidden" id="batch-brief" onclick="toggleBatchInfo()"></div>
+        <!-- Cảnh báo bộ tham số có phiên bản mới (chốt 08/10/2026) — chỉ hiện ở đợt ĐÃ CHẠY mà CHƯA công
+             bố, khi phiên bản đợt đã chạy cũ hơn phiên bản hiện tại của bộ. -->
+        <div id="bo-version-banner" style="display:none;margin-top:12px;padding:10px 14px;border-radius:6px;background:#fff7e6;border:1px solid #ffd591;color:#874d00;font-size:13px;align-items:center;justify-content:space-between;gap:12px"></div>
       </div>
 
       <!-- Chế độ CHỈ ĐỌC — đợt đã chạy rà soát hoặc đã công bố -->
@@ -304,10 +325,13 @@
           <div><div class="info-item-label">Mã đợt</div><div class="info-item-value" id="if-madot">—</div></div>
           <div><div class="info-item-label">Học kỳ</div><div class="info-item-value" id="if-hocky">—</div></div>
           <div><div class="info-item-label">Đợt học</div><div class="info-item-value" id="if-dothoc">—</div></div>
-          <div><div class="info-item-label">Khoa quản lý</div><div class="info-item-value" id="if-khoa">—</div></div>
-          <div><div class="info-item-label">Niên khoá</div><div class="info-item-value" id="if-khoahoc">—</div></div>
-          <div><div class="info-item-label">Chương trình đào tạo</div><div class="info-item-value" id="if-ctdt">—</div></div>
-          <div><div class="info-item-label">Lớp hành chính</div><div class="info-item-value" id="if-lop">—</div></div>
+          <!-- Danh sách MSSV xét (feedback 08/10/2026): có danh sách thì 4 trường đơn vị bên dưới ẩn (không áp
+               dụng), Trạng thái người học vẫn hiện vì vẫn là điều kiện. -->
+          <div><div class="info-item-label">Danh sách mã sinh viên</div><div class="info-item-value" id="if-phamvi">—</div></div>
+          <div class="pv-boloc"><div class="info-item-label">Khoa quản lý</div><div class="info-item-value" id="if-khoa">—</div></div>
+          <div class="pv-boloc"><div class="info-item-label">Niên khoá</div><div class="info-item-value" id="if-khoahoc">—</div></div>
+          <div class="pv-boloc"><div class="info-item-label">Chương trình đào tạo</div><div class="info-item-value" id="if-ctdt">—</div></div>
+          <div class="pv-boloc"><div class="info-item-label">Lớp hành chính</div><div class="info-item-value" id="if-lop">—</div></div>
           <div><div class="info-item-label">Trạng thái người học (phạm vi quét)</div><div class="info-item-value" id="if-trangthaisv">—</div></div>
           <div><div class="info-item-label">Ngày bắt đầu</div><div class="info-item-value" id="if-batdau">—</div></div>
           <div><div class="info-item-label">Ngày kết thúc</div><div class="info-item-value" id="if-ketthuc">—</div></div>
@@ -322,15 +346,18 @@
           <!-- Nêu thẳng điều kiện đang áp dụng ở khối xem, để cán bộ biết vì sao có sinh viên mang
                kết quả "Không xét" mà không phải mở form sửa ra dò. -->
           <div><div class="info-item-label">Không xét trạng thái sinh viên của kỳ</div><div class="info-item-value" id="if-dieukienkhongxet">—</div></div>
-          <!-- Thông số xét áp dụng cho ĐỢT NÀY — mặc định lấy hết thông số đang active ở mh-admin-21,
-               cán bộ bỏ bớt nếu đợt này không cần đối chiếu một vài thông số. -->
-          <div><div class="info-item-label">Thông số xét</div><div class="info-item-value" id="if-thongsoxet">—</div></div>
+          <!-- Bộ tham số áp dụng cho ĐỢT NÀY (chốt 08/10/2026) — thay cho "Thông số xét" chọn bớt theo
+               đợt. Bộ quyết định toàn bộ ngưỡng của đợt; link mở chi tiết bộ ở mh-admin-21. -->
+          <div><div class="info-item-label">Bộ tham số áp dụng</div><div class="info-item-value" id="if-bothamso">—</div></div>
         </div>
       </div>
 
       <!-- Chế độ FORM — tạo mới (?mode=new) hoặc sửa đợt còn Nháp -->
       <div class="card mb-24 hidden" id="batch-edit">
         <div class="form-grid">
+          <!-- Bố cục (08/10/2026): 2 nhóm — Thông tin chung (kỳ xét, thời gian, bộ tham số) và Phạm vi xét
+               (trạng thái + bộ lọc đơn vị HOẶC danh sách MSSV). Mỗi hàng đủ 4 cột, không để ô trống lẻ. -->
+          <div class="form-sec">Thông tin chung</div>
           <div><label for="bf-madot">Mã đợt (tự sinh)</label><input class="fc" id="bf-madot" type="text" disabled></div>
           <div class="span3"><label for="bf-ten">Tên đợt<span class="req">*</span></label><input class="fc" id="bf-ten" type="text" placeholder="VD: Xét cảnh báo học tập HK1 2026-2027"></div>
           <div><label for="bf-namhoc">Năm học<span class="req">*</span></label>
@@ -339,6 +366,8 @@
           <div><label for="bf-hocky">Học kỳ<span class="req">*</span></label>
             <select class="fc" id="bf-hocky"><option value="HK1">Học kỳ 1</option><option value="HK2">Học kỳ 2</option><option value="HK3">Học kỳ 3</option></select>
           </div>
+          <div><label for="bf-batdau">Ngày bắt đầu</label><input class="fc" id="bf-batdau" type="datetime-local"></div>
+          <div><label for="bf-ketthuc">Ngày kết thúc</label><input class="fc" id="bf-ketthuc" type="datetime-local"></div>
           <!-- Đợt học: KHÔNG bắt buộc — để trống nghĩa là xét cả học kỳ (gộp mọi đợt), chỉ chọn khi
                trường tách học kỳ thành nhiều đợt và muốn rà soát riêng từng đợt. -->
           <div><label for="bf-dothoc">Đợt học</label>
@@ -349,7 +378,18 @@
               <option value="Đợt 3">Đợt 3</option>
             </select>
           </div>
-          <div class="fi">
+          <!-- Thông số xét của đợt — mặc định chọn hết thông số đang active ở mh-admin-21 (khoản 1 +
+               khoản 2), cán bộ bỏ bớt nếu đợt này không cần đối chiếu một vài thông số. Đây là NGUỒN
+               DUY NHẤT cho bảng ngưỡng, popup Xem chi tiết và điều kiện khoản 2 của đợt — bỏ chọn ở
+               đây thì thông số đó biến mất khỏi mọi nơi trên, không riêng gì droplist này. -->
+          <!-- Bộ tham số áp dụng (chốt 08/10/2026) — THAY cho "Thông số xét" chọn bớt theo đợt. Chỉ liệt
+               kê bộ Active có khoảng áp dụng chứa học kỳ của đợt; đổi Học kỳ/Năm học thì lọc lại. -->
+          <div class="fi span3">
+            <label for="bf-bothamso">Bộ tham số áp dụng<span class="req">*</span></label>
+            <select class="fc" id="bf-bothamso"></select>
+            <div class="text-muted text-sm" id="bf-bothamso-hint" style="margin-top:4px"></div>
+          </div>
+          <div class="fi span2">
             <label>Trạng thái người học<span class="req">*</span></label>
             <div class="msel" data-msel="trangthaisv">
               <button type="button" class="fc msel-trigger" onclick="mselToggle('trangthaisv')"><span class="msel-label"></span><span class="car">▾</span></button>
@@ -360,89 +400,6 @@
               </div>
             </div>
           </div>
-          <div class="fi">
-            <label>Trường/Viện</label>
-            <div class="msel" data-msel="truongvien">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('truongvien')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('truongvien',true)">Chọn tất cả</a><a onclick="mselSelectAll('truongvien',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div class="fi">
-            <label>Khoa quản lý</label>
-            <div class="msel" data-msel="khoaquanly">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('khoaquanly')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('khoaquanly',true)">Chọn tất cả</a><a onclick="mselSelectAll('khoaquanly',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div class="fi">
-            <label>Hệ đào tạo</label>
-            <div class="msel" data-msel="hedaotao">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('hedaotao')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('hedaotao',true)">Chọn tất cả</a><a onclick="mselSelectAll('hedaotao',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div class="fi">
-            <label>Niên khoá</label>
-            <div class="msel" data-msel="nienkhoa">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('nienkhoa')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('nienkhoa',true)">Chọn tất cả</a><a onclick="mselSelectAll('nienkhoa',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div class="fi">
-            <label>Chương trình đào tạo</label>
-            <div class="msel" data-msel="ctdt">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('ctdt')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('ctdt',true)">Chọn tất cả</a><a onclick="mselSelectAll('ctdt',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div class="fi">
-            <label>Lớp hành chính</label>
-            <div class="msel" data-msel="lop">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('lop')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('lop',true)">Chọn tất cả</a><a onclick="mselSelectAll('lop',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <!-- Thông số xét của đợt — mặc định chọn hết thông số đang active ở mh-admin-21 (khoản 1 +
-               khoản 2), cán bộ bỏ bớt nếu đợt này không cần đối chiếu một vài thông số. Đây là NGUỒN
-               DUY NHẤT cho bảng ngưỡng, popup Xem chi tiết và điều kiện khoản 2 của đợt — bỏ chọn ở
-               đây thì thông số đó biến mất khỏi mọi nơi trên, không riêng gì droplist này. -->
-          <div class="fi span2">
-            <label>Thông số xét<span class="req">*</span></label>
-            <div class="msel" data-msel="thongso">
-              <button type="button" class="fc msel-trigger" onclick="mselToggle('thongso')"><span class="msel-label"></span><span class="car">▾</span></button>
-              <div class="msel-panel hidden">
-                <div class="msel-selectall"><a onclick="mselSelectAll('thongso',true)">Chọn tất cả</a><a onclick="mselSelectAll('thongso',false)">Bỏ chọn tất cả</a></div>
-                <div class="msel-divider"></div>
-                <div class="msel-items"></div>
-              </div>
-            </div>
-          </div>
-          <div><label for="bf-batdau">Ngày bắt đầu</label><input class="fc" id="bf-batdau" type="datetime-local"></div>
-          <div><label for="bf-ketthuc">Ngày kết thúc</label><input class="fc" id="bf-ketthuc" type="datetime-local"></div>
           <!-- Không xét trạng thái sinh viên của kỳ — droplist chọn nhiều, cán bộ tự chọn, cùng kiểu với các
                trên, để cán bộ không phải học thêm một kiểu thao tác mới. Mặc định chọn sẵn cả 2 mục
                (giống Trạng thái người học mặc định "Đang học"). -->
@@ -455,6 +412,84 @@
                 <div class="msel-divider"></div>
                 <div class="msel-items"></div>
               </div>
+            </div>
+          </div>
+          <div class="fi pv-boloc">
+            <label>Trường/Viện</label>
+            <div class="msel" data-msel="truongvien">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('truongvien')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('truongvien',true)">Chọn tất cả</a><a onclick="mselSelectAll('truongvien',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fi pv-boloc">
+            <label>Khoa quản lý</label>
+            <div class="msel" data-msel="khoaquanly">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('khoaquanly')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('khoaquanly',true)">Chọn tất cả</a><a onclick="mselSelectAll('khoaquanly',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fi pv-boloc">
+            <label>Hệ đào tạo</label>
+            <div class="msel" data-msel="hedaotao">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('hedaotao')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('hedaotao',true)">Chọn tất cả</a><a onclick="mselSelectAll('hedaotao',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fi pv-boloc">
+            <label>Niên khoá</label>
+            <div class="msel" data-msel="nienkhoa">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('nienkhoa')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('nienkhoa',true)">Chọn tất cả</a><a onclick="mselSelectAll('nienkhoa',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fi span2 pv-boloc">
+            <label>Chương trình đào tạo</label>
+            <div class="msel" data-msel="ctdt">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('ctdt')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('ctdt',true)">Chọn tất cả</a><a onclick="mselSelectAll('ctdt',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <div class="fi span2 pv-boloc">
+            <label>Lớp hành chính</label>
+            <div class="msel" data-msel="lop">
+              <button type="button" class="fc msel-trigger" onclick="mselToggle('lop')"><span class="msel-label"></span><span class="car">▾</span></button>
+              <div class="msel-panel hidden">
+                <div class="msel-selectall"><a onclick="mselSelectAll('lop',true)">Chọn tất cả</a><a onclick="mselSelectAll('lop',false)">Bỏ chọn tất cả</a></div>
+                <div class="msel-divider"></div>
+                <div class="msel-items"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Danh sách MSSV xét (feedback 08/10/2026): dán MSSV vào là xét ĐÚNG các SV này, 6 bộ lọc đơn vị
+               mờ đi và không áp dụng. Để trống = xét theo bộ lọc như cũ. Trạng thái người học VẪN áp dụng:
+               mã không tồn tại / ngoài trạng thái đã chọn được báo ngay dưới ô và không được lưu. -->
+          <div class="full">
+            <label for="bf-dssv">Danh sách mã sinh viên</label>
+            <!-- Ô nhập dạng TAG: gõ/dán MSSV, dấu cách hoặc Enter tách thành tag. Tag lỗi viền đỏ, rê chuột
+                 xem lý do; mọi tag có ✕ để xoá. Backspace ở ô trống xoá tag cuối. -->
+            <div class="fc mtag-box" id="bf-dssv-box" onclick="document.getElementById('bf-dssv').focus()">
+              <span id="bf-dssv-tags" style="display:contents"></span>
+              <input id="bf-dssv" type="text" autocomplete="off" placeholder="Để trống = xét theo bộ lọc. Nhập hoặc dán MSSV, các mã ngăn cách bởi dấu cách" onkeydown="dssvKeydown(event)" onpaste="dssvPaste(event)" onblur="dssvCommit()">
             </div>
           </div>
         </div>
@@ -561,7 +596,10 @@
                    2 bước trên để thấy rõ đây là một trình tự, không phải 3 việc rời rạc. -->
               <button class="fn-item" id="btn-kt-chuoi" onclick="chonFn(kiemTraChuoi)">Kiểm tra số lần cảnh báo liên tiếp<span class="fn-sub" id="sub-kt-chuoi"></span></button>
               <div class="fn-sep"></div>
-              <button class="fn-item" onclick="chonFn(exportBM2002)" title="Xuất danh sách theo biểu mẫu BM.ĐT.20.02">Xuất danh sách sinh viên xét học vụ (BM.ĐT.20.02)</button>
+              <button class="fn-item" onclick="chonFn(exportBM2002)" title="Xuất các sinh viên đang hiện trên bảng theo bộ lọc, mẫu BM.ĐT.20.02">Xuất danh sách sinh viên cảnh báo học vụ (BM.ĐT.20.02)</button>
+              <!-- Feedback 08/10/2026: xuất MỌI SV trong phạm vi xét (cả vi phạm lẫn không vi phạm, gồm Không
+                   xét), chung mẫu 22 cột, bỏ qua bộ lọc bảng. SV ngoài phạm vi không có trong file. -->
+              <button class="fn-item" id="btn-export-all" onclick="chonFn(exportToanBo)">Xuất danh sách toàn bộ sinh viên xét học vụ<span class="fn-sub" id="sub-export-all"></span></button>
             </div>
           </div>
         </div>
@@ -1019,6 +1057,28 @@
 </div>
 
 <script src="_vendor-xlsx.min.js"></script>
+<!-- ═══ MODAL: Thông số xét của 1 phiên bản bộ tham số (chỉ đọc) ═══ -->
+<div class="overlay hidden" id="modal-pb">
+  <div class="modal-box" style="width:1080px">
+    <div class="modal-hd">
+      <h3 class="modal-title" id="modal-pb-title">Thông số xét đang áp dụng</h3>
+      <button class="modal-close" data-close="modal-pb">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="tbl-wrap">
+        <table class="tbl tbl-grid">
+          <thead><tr>
+            <th style="width:50px">STT</th><th>Tên thông số</th><th style="width:140px">Nhóm điều kiện</th>
+            <th style="width:180px">Toán tử so sánh</th><th style="width:90px">Giá trị</th><th style="width:190px">Áp dụng trình độ năm học</th>
+          </tr></thead>
+          <tbody id="pb-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-default" data-close="modal-pb">Đóng</button></div>
+  </div>
+</div>
+
 <script src="_utils.js"></script>
 <script>
 /* ============================================================
@@ -1109,6 +1169,10 @@ const DOT_CONDITIONS = [
     apDungText:'Năm 4, 5, 6', apDung: s => trinhDoSV(s) >= 4,          get: s => s.diemTbTichLuy, status:'active' },
   { id:'c7',  nhom:'khoan1', label:'Số tín chỉ nợ đọng từ đầu khoá', sosanh:'>', giaTri:24, isScore:false,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.tinChiNoDong, status:'active' },
+  /* Bổ sung 08/10/2026 — Tỷ lệ TC không đạt / TC đăng ký trong kỳ. Học phần chưa có điểm (I/X) loại
+     khỏi cả tử lẫn mẫu nên mẫu = tcCoDiem (không khai = đủ điểm, lấy tcDangKy). Mẫu = 0 → không xét. */
+  { id:'c11', nhom:'khoan1', label:'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ', sosanh:'>', giaTri:0.5, isScore:true,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => tiLeTcKhongDatKy(s), status:'active' },
   /* Chỉ đem ra xét SAU khi chạy bước 3 — chuỗi chưa kiểm tra thì không được kết luận buộc thôi học. */
   { id:'c8',  nhom:'khoan2', label:'Số lần cảnh báo liên tiếp', sosanh:'>=', giaTri:2, isScore:false,
     apDungText:'Sau khi kiểm tra chuỗi', apDung: () => !!BATCH.daKiemTraChuoi, get: s => soLanCanhBaoLienTiep(s), status:'active',
@@ -1120,6 +1184,10 @@ const DOT_CONDITIONS = [
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.namToiDa ? namDaoTaoTinh(s) / s.namToiDa : null, status:'active',
     lyDo: s => `Thời gian đã học (năm ${namDaoTaoTinh(s)}) vượt quá 2 lần số năm đào tạo theo CTĐT (năm ${s.namToiDa})` },
 ];
+function tiLeTcKhongDatKy(s){
+  const mau = s.tcCoDiem ?? s.tcDangKy;
+  return mau ? (s.tinChiNoKy || 0) / mau : null;
+}
 const SOSANH_KY_HIEU = { '<':'<', '<=':'≤', '=':'=', '>':'>', '>=':'≥' };
 function trinhDoSV(s){ return trinhDoNamHoc(s.tcTichLuyLuyKe, s.tinChiChuanNam); }
 function nguongText(c){ return `${SOSANH_KY_HIEU[c.sosanh]} ${c.isScore ? Number(c.giaTri).toFixed(2) : c.giaTri}`; }
@@ -1630,11 +1698,13 @@ function updateMselTrigger(key){
 function mselOnChange(key){
   mselState[key] = [...document.querySelectorAll(`input[data-msel-key="${key}"]:checked`)].map(el=>el.value);
   updateMselTrigger(key);
+  if (key === 'trangthaisv') kiemTraDsSVInline();
 }
 function mselSelectAll(key, select){
   mselState[key] = select ? MSEL_OPTIONS[key].map(o=>o.value) : [];
   renderMselItems(key);
   updateMselTrigger(key);
+  if (key === 'trangthaisv') kiemTraDsSVInline();
 }
 function panelOf(key){ return document.querySelector(`[data-msel="${key}"] .msel-panel`); }
 function triggerOf(key){ return document.querySelector(`[data-msel="${key}"] .msel-trigger`); }
@@ -1679,6 +1749,11 @@ function capNhatTooltipFn(){
   document.getElementById('sub-kt-chuoi').textContent = BATCH.daKiemTraChuoi
     ? `Đã kiểm tra lúc ${BATCH.daKiemTraChuoi}`
     : (kt.disabled ? '' : `Sẽ kiểm tra ${dsCanhBao().length} sinh viên đang trong danh sách`);
+  const xa = document.getElementById('btn-export-all');
+  xa.disabled = !BATCH.daChayLuc;
+  document.getElementById('sub-export-all').textContent = !BATCH.daChayLuc
+    ? 'Cần chạy rà soát học vụ trước'
+    : `${dsTrongDot().length} sinh viên trong phạm vi xét, gồm cả sinh viên không vi phạm`;
   const n = selectedKeys().length;
   ['ctsv', 'khoa'].forEach(who => {
     const b = document.getElementById(`btn-xn-${who}`);
@@ -1728,6 +1803,10 @@ const BATCH = {
   ctdt: qs.get('ctdt') || '',
   lop: qs.get('lop') || '',
   trangThaiSV: qs.get('trangThaiSV') || '',
+  /* Phạm vi xét (feedback 08/10/2026): 'boloc' = Trạng thái × 6 tiêu chí đơn vị; 'danhsach' = Trạng
+     thái × danh sách MSSV đã nhập (dsSV). Thử nhanh: ?phamVi=danhsach&dsSV=23104521,22103456 */
+  phamVi: qs.get('phamVi') === 'danhsach' ? 'danhsach' : 'boloc',
+  dsSV: (qs.get('dsSV') || '').split(',').map(s => s.trim()).filter(Boolean),
   batDau: qval('batDau', ''),
   ketThuc: qval('ketThuc', ''),
   status: qval('status', isNew ? 'nhap' : 'choxacnhan'),
@@ -1761,6 +1840,100 @@ const BATCH = {
   nguoiLap: qs.get('nguoiLap') || '',
 };
 if (!BATCH.thongSoXet.length) BATCH.thongSoXet = MSEL_DEFAULT.thongso.slice();
+/* ═══ BỘ THAM SỐ (chốt 08/10/2026) ═══ — đồng bộ Ý NGHĨA với BO_THAM_SO/DOTS ở mh-admin-21 (2 trang
+   tĩnh riêng). Đợt chọn đúng 1 bộ; bộ thay cho việc chọn bớt thông số theo đợt nên thongSoXet luôn
+   = mọi thông số (giữ biến để các hàm cũ không phải sửa). Ngưỡng thật của từng bộ chưa nối vào
+   DOT_CONDITIONS trong mockup — hệ thống thật đọc tiêu chí từ snapshot của bộ đã chọn. */
+/* Thời gian hiệu lực của bộ khai theo NGÀY ('YYYY-MM-DD'). Mốc đối chiếu = Ngày bắt đầu đợt; đợt chưa
+   nhập Ngày bắt đầu thì lấy ngày hôm nay. */
+/* phienBan: phiên bản HIỆN TẠI của bộ — tăng mỗi lần sửa tiêu chí ở mh-admin-21. */
+const BO_THAM_SO = [
+  { id:'bo1', ma:'BTS-001', ten:'Bộ tham số theo Quy chế đào tạo 2021', tuNgay:'2025-08-01', denNgay:'2026-07-31', status:'active', phienBan:1, nguoiTao:'Hệ thống' },
+  { id:'bo2', ma:'BTS-002', ten:'Bộ tham số 2026-2027 — bổ sung tỷ lệ tín chỉ không đạt', tuNgay:'2026-08-01', denNgay:'', status:'active', phienBan:2,
+    nguoiTao:'Trần Thị Mai (CB00512)', nguoiCapNhat:'Trần Thị Mai (CB00512)', ngayCapNhat:'05/10/2026 14:05' },
+  { id:'bo3', ma:'BTS-003', ten:'Bộ tham số siết ngưỡng năm 1 — Khoá K50', tuNgay:'2026-08-15', denNgay:'2027-06-30', status:'active', phienBan:1, nguoiTao:'Lê Quốc Hùng (CB00347)' },
+  { id:'bo4', ma:'BTS-004', ten:'Dự thảo bộ tham số năm học 2027-2028', tuNgay:'2027-08-01', denNgay:'', status:'inactive', phienBan:1, nguoiTao:'Ngô Thị Thu (CB00203)' },
+];
+/* Phiên bản bộ mà đợt ÁP DỤNG — chốt NGAY KHI CHỌN bộ ở form đợt (không phải lúc chạy), kể cả đợt Nháp.
+   Chạy rà soát luôn dùng đúng phiên bản này; bộ sửa lên phiên bản mới thì đợt KHÔNG tự đổi. Đợt
+   SOS-HK1-2627-1/-3 chọn BTS-002 lúc còn phiên bản 1; SOS-HK2-2627-1 chọn sau khi đã lên phiên bản 2.
+   Đồng bộ ý nghĩa với DOTS ở mh-admin-21. */
+const PHIEN_BAN_DA_CHAY = { 'SOS-HK1-2526-1':1, 'SOS-HK2-2526-1':1, 'SOS-HK2-2526-2':1, 'SOS-HK3-2526-1':1,
+  'SOS-HK1-2627-1':1, 'SOS-HK1-2627-3':1, 'SOS-HK2-2627-1':2, 'SOS-HK1-2627-2':1, 'SOS-HK2-2627-2':1 };
+const BO_THEO_DOT = { 'SOS-HK1-2526-1':'bo1', 'SOS-HK2-2526-1':'bo1', 'SOS-HK2-2526-2':'bo1', 'SOS-HK3-2526-1':'bo1',
+  'SOS-HK1-2627-1':'bo2', 'SOS-HK1-2627-3':'bo2', 'SOS-HK2-2627-1':'bo2', 'SOS-HK1-2627-2':'bo3', 'SOS-HK2-2627-2':'bo3' };
+function fmtNgayIso(s){ const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; }
+function homNayIso(){ const d = new Date(), p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function boHieuLucTai(b, ngay){ return b.tuNgay <= ngay && (!b.denNgay || ngay <= b.denNgay); }
+function boChoNgay(ngay){ return BO_THAM_SO.filter(b => b.status === 'active' && boHieuLucTai(b, ngay)); }
+BATCH.boThamSo = qs.get('boThamSo') || BO_THEO_DOT[BATCH.maDot] || '';
+BATCH.phienBanDaChay = PHIEN_BAN_DA_CHAY[BATCH.maDot]
+  || (BO_THAM_SO.find(b => b.id === BATCH.boThamSo) || {}).phienBan || null;
+/* Tiêu chí theo PHIÊN BẢN của từng bộ — đồng bộ ý nghĩa với lichSu ở mh-admin-21 (2 trang tĩnh riêng).
+   [tên thông số, nhóm, so sánh, giá trị, số nguyên?, trình độ áp dụng] */
+const TC_GOC = [
+  ['Điểm TB học kỳ (kỳ đầu của khoá)','Khoản 1','<',0.80,false,null], ['Điểm TB học kỳ (các kỳ tiếp theo)','Khoản 1','<',1.00,false,null],
+  ['Điểm TB tích luỹ','Khoản 1','<',1.20,false,[1]], ['Điểm TB tích luỹ','Khoản 1','<',1.40,false,[2]],
+  ['Điểm TB tích luỹ','Khoản 1','<',1.60,false,[3]], ['Điểm TB tích luỹ','Khoản 1','<',1.80,false,[4,5,6]],
+  ['Số tín chỉ nợ đọng từ đầu khoá','Khoản 1','>',24,true,null],
+  ['Số lần cảnh báo liên tiếp','Khoản 2','>=',2,true,null], ['Số kỳ chính liên tiếp không đăng ký học tập','Khoản 2','>=',2,true,null],
+  ['Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT','Khoản 2','>=',2,false,null],
+];
+const TC_TY_LE = ['Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ','Khoản 1','>',0.5,false,null];
+const TIEU_CHI_THEO_PHIEN_BAN = {
+  bo1: { 1: TC_GOC },
+  bo2: { 1: TC_GOC, 2: [...TC_GOC.slice(0,7), TC_TY_LE, ...TC_GOC.slice(7)] },
+  bo3: { 1: [['Điểm TB học kỳ (kỳ đầu của khoá)','Khoản 1','<',1.00,false,null], ['Điểm TB học kỳ (các kỳ tiếp theo)','Khoản 1','<',1.20,false,null],
+             ['Điểm TB tích luỹ','Khoản 1','<',1.40,false,[1]], ['Số tín chỉ nợ đọng từ đầu khoá','Khoản 1','>',18,true,null],
+             [TC_TY_LE[0],'Khoản 1','>',0.4,false,null], ...TC_GOC.slice(7)] },
+  bo4: { 1: TC_GOC },
+};
+const SOSANH_TEXT = { '<':'Nhỏ hơn (<)', '<=':'Nhỏ hơn hoặc bằng (≤)', '=':'Bằng (=)', '>':'Lớn hơn (>)', '>=':'Lớn hơn hoặc bằng (≥)' };
+function trinhDoTagHtml(nam){
+  if (!nam || !nam.length) return '<span class="tag tag-default">Mọi trình độ</span>';
+  const full = nam.map(n => `Năm ${n}`).join(', ');
+  return `<span class="tag tag-blue" title="${full}">Năm ${nam[0]}</span>` + (nam.length > 1 ? ` <span class="tag tag-default" title="${full}">+${nam.length - 1}</span>` : '');
+}
+/* Popup "Thông số xét đang áp dụng" — chỉ đọc, đúng phiên bản được bấm. */
+function openPhienBan(boId, pb){
+  const bo = BO_THAM_SO.find(b => b.id === boId);
+  const rows = (TIEU_CHI_THEO_PHIEN_BAN[boId] || {})[pb] || [];
+  document.getElementById('modal-pb-title').textContent = 'Thông số xét đang áp dụng';
+  document.getElementById('pb-tbody').innerHTML = rows.length ? rows.map(([ten, nhom, ss, gt, isInt, nam], i) => `<tr>
+      <td>${i+1}</td><td>${ten}</td><td><span class="tag tag-warning">${nhom}</span></td><td>${SOSANH_TEXT[ss]}</td>
+      <td><b>${isInt ? gt : Number(gt).toFixed(2)}</b></td><td>${trinhDoTagHtml(nam)}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px">Không có dữ liệu phiên bản này</td></tr>';
+  openModal('modal-pb');
+}
+function pbLink(boId, pb){ return `<a style="cursor:pointer;color:var(--primary)" title="Xem thông số của phiên bản này" onclick="openPhienBan('${boId}', ${pb})">phiên bản ${pb}</a>`; }
+function renderBoVersionBanner(){
+  const el = document.getElementById('bo-version-banner');
+  const bo = BO_THAM_SO.find(b => b.id === BATCH.boThamSo);
+  /* Chỉ là THÔNG BÁO (tuỳ chọn cập nhật) cho đợt chưa công bố — đợt vẫn chạy đúng phiên bản đã chọn. */
+  const coBanMoi = bo && ['nhap','choxacnhan'].includes(BATCH.status) && BATCH.phienBanDaChay && BATCH.phienBanDaChay < bo.phienBan;
+  el.style.display = coBanMoi ? 'flex' : 'none';
+  if (!coBanMoi) return;
+  el.innerHTML = `<span>Bộ tham số <b>${bo.ma}</b> đã có phiên bản mới (${pbLink(bo.id, bo.phienBan)}${bo.ngayCapNhat ? `, cập nhật ${bo.ngayCapNhat}` : ''}${bo.nguoiCapNhat ? ` bởi ${bo.nguoiCapNhat}` : ''}). `
+    + `Đợt đang áp dụng ${pbLink(bo.id, BATCH.phienBanDaChay)}. Muốn áp dụng phiên bản mới, chọn <b>Sửa thông tin đợt</b> và lưu lại bộ tham số.</span>`;
+  /* Chỉ cảnh báo, KHÔNG có nút cập nhật (chốt 08/10/2026) — cán bộ tự Sửa thông tin đợt, chọn lại bộ, Lưu. */
+}
+function renderBoThamSoOptions(keep){
+  const ngay = (document.getElementById('bf-batdau').value || '').slice(0,10) || homNayIso();
+  const el = document.getElementById('bf-bothamso');
+  const cur = keep !== undefined ? keep : el.value;
+  /* Bộ đợt ĐÃ chọn trước đó luôn được giữ trong danh sách dù sau đó bị chuyển Inactive (chốt 08/10/2026:
+     Inactive chỉ chặn đợt mới chọn, không gỡ bộ khỏi đợt đã chọn). */
+  const ds = boChoNgay(ngay);
+  const daChon = BO_THAM_SO.find(b => b.id === cur);
+  if (daChon && !ds.includes(daChon) && daChon.status !== 'active') ds.unshift(daChon);
+  el.innerHTML = '<option value="">— Chọn bộ tham số —</option>' + ds.map(b => `<option value="${b.id}">${b.ma} — ${b.ten}</option>`).join('');
+  el.value = ds.some(b => b.id === cur) ? cur : (ds.length === 1 ? ds[0].id : '');
+  const moc = document.getElementById('bf-batdau').value ? `Ngày bắt đầu đợt (${fmtNgayIso(ngay)})` : `ngày hôm nay (${fmtNgayIso(ngay)})`;
+  document.getElementById('bf-bothamso-hint').innerHTML = ds.length
+    ? ''
+    : `<span style="color:var(--danger,#cf1322)">Chưa có bộ tham số nào có hiệu lực tại ${moc}.</span> <a href="mh-admin-21_academicwarninglevels.html" target="_blank">Tạo bộ tham số</a>`;
+}
+document.getElementById('bf-batdau').addEventListener('change', () => renderBoThamSoOptions());
 /* Người dùng đang đăng nhập — cùng quy ước CURRENT_USER đã dùng ở mh-admin-03/20. Hệ thống thật lấy
    từ phiên đăng nhập. */
 const CURRENT_USER = 'Nguyễn Văn Admin';
@@ -1774,13 +1947,21 @@ const runHistory = BATCH.daChayLuc ? [{ time: BATCH.daChayLuc, detail: 'Rà soá
    hoạ cảnh báo khi Rà soát. Điểm của SV thuộc các lớp này có thể còn thay đổi (GV chưa chốt điểm),
    nên rà soát lúc này có nguy cơ ra kết quả chưa chính xác — cảnh báo để Ban Đào Tạo cân nhắc, KHÔNG
    chặn hẳn hành động (đợt vẫn có thể cần rà soát thử trước để xem tình hình). */
+/* svDangKy = MSSV đã đăng ký lớp (không tính rút/huỷ). Chỉ báo lớp THUỘC PHẠM VI RÀ SOÁT (feedback
+   08/10/2026): có ít nhất 1 SV của lần chạy đăng ký, và thuộc Đợt học của đợt nếu có chọn. Lớp DIEN
+   chỉ có SV ngoài phạm vi (MSSV không thuộc đợt) để thấy nó không bị báo. */
 const LOP_CHUA_KHOA_DIEM = [
-  { maLop:'CNTT205.02', tenMon:'Cấu trúc dữ liệu và giải thuật', hocKy:'HK1', namHoc:'2026-2027' },
-  { maLop:'KTPM301.01', tenMon:'Công nghệ phần mềm', hocKy:'HK1', namHoc:'2026-2027' },
-  { maLop:'QTKD110.03', tenMon:'Nguyên lý kế toán', hocKy:'HK1', namHoc:'2026-2027' },
+  { maLop:'CNTT205.02', tenMon:'Cấu trúc dữ liệu và giải thuật', hocKy:'HK1', namHoc:'2026-2027', dotHoc:'Đợt 1', svDangKy:['23104521','24105999','22103455'] },
+  { maLop:'KTPM301.01', tenMon:'Công nghệ phần mềm', hocKy:'HK1', namHoc:'2026-2027', dotHoc:'Đợt 2', svDangKy:['23104588','23104612'] },
+  { maLop:'QTKD110.03', tenMon:'Nguyên lý kế toán', hocKy:'HK1', namHoc:'2026-2027', dotHoc:'Đợt 1', svDangKy:['22103456','23104915','24105812'] },
+  { maLop:'DIEN402.01', tenMon:'Hệ thống điện', hocKy:'HK1', namHoc:'2026-2027', dotHoc:'Đợt 1', svDangKy:['20109999'] },
 ];
-function canhBaoLopChuaKhoaDiem(){
-  const list = LOP_CHUA_KHOA_DIEM.filter(l => l.hocKy === BATCH.hocKy && l.namHoc === BATCH.namHoc);
+/* scope = danh sách SV của lần chạy: toàn bộ phạm vi quét, hoặc riêng các SV đã tick. */
+function canhBaoLopChuaKhoaDiem(scope){
+  const mssvs = new Set((scope || dsTrongDot()).map(s => s.mssv));
+  const list = LOP_CHUA_KHOA_DIEM.filter(l => l.hocKy === BATCH.hocKy && l.namHoc === BATCH.namHoc
+    && (!BATCH.dotHoc || l.dotHoc === BATCH.dotHoc)
+    && l.svDangKy.some(m => mssvs.has(m)));
   if (!list.length) return '';
   return `⚠ Học kỳ ${BATCH.hocKy} năm học ${BATCH.namHoc} vẫn còn ${list.length} lớp học phần chưa khoá điểm (${list.map(l => l.maLop).join(', ')}) — điểm các lớp này có thể còn thay đổi, kết quả rà soát lúc này chưa chắc chính xác.`;
 }
@@ -1798,14 +1979,21 @@ function renderBatchInfo(){
   document.getElementById('if-ctdt').innerHTML = tagListHtml(BATCH.ctdt);
   document.getElementById('if-lop').innerHTML = tagListHtml(BATCH.lop);
   document.getElementById('if-trangthaisv').innerHTML = tagListHtml(BATCH.trangThaiSV);
+  const theoDs = BATCH.phamVi === 'danhsach';
+  document.getElementById('if-phamvi').innerHTML = theoDs
+    ? `${BATCH.dsSV.length} sinh viên: ${BATCH.dsSV.slice(0, 8).join(', ')}${BATCH.dsSV.length > 8 ? ` <span class="text-muted">+${BATCH.dsSV.length - 8}</span>` : ''}`
+    : '<span class="text-muted">Không dùng — xét theo bộ lọc</span>';
+  document.querySelectorAll('#batch-view .pv-boloc').forEach(el => el.classList.toggle('hidden', theoDs));
   document.getElementById('if-batdau').textContent = BATCH.batDau || '—';
   document.getElementById('if-ketthuc').textContent = BATCH.ketThuc || '—';
   document.getElementById('if-dieukienkhongxet').innerHTML =
     tagListHtml(mselLabelsOf('dieukienkhongxet', BATCH.dieuKienKhongXet).join(', '));
-  document.getElementById('if-thongsoxet').innerHTML =
-    BATCH.thongSoXet.length === MSEL_OPTIONS.thongso.length
-      ? '<span class="text-muted">Tất cả thông số đang active</span>'
-      : tagListHtml(mselLabelsOf('thongso', BATCH.thongSoXet).join(', '));
+  const bo = BO_THAM_SO.find(b => b.id === BATCH.boThamSo);
+  document.getElementById('if-bothamso').innerHTML = bo
+    /* Không hiện chữ phiên bản cạnh tên (user bỏ) — bấm tên mở popup thông số của ĐÚNG phiên bản đợt áp dụng. */
+    ? `<a style="cursor:pointer;color:var(--primary)" title="Xem thông số xét đang áp dụng" onclick="openPhienBan('${bo.id}', ${BATCH.phienBanDaChay || bo.phienBan})">${bo.ma} — ${bo.ten}</a>`
+    : '<span class="text-muted">Chưa chọn</span>';
+  renderBoVersionBanner();
   document.getElementById('if-nguoilap').innerHTML =
     BATCH.nguoiLap || '<span class="text-muted">Chưa lưu</span>';
   const dachayEl = document.getElementById('if-dachayluc');
@@ -1925,16 +2113,69 @@ function fillBatchForm(){
   setMsel('lop', labelsToValues('lop', BATCH.lop));
   setMsel('trangthaisv', BATCH.trangThaiSV ? labelsToValues('trangthaisv', BATCH.trangThaiSV) : ['danghoc']);
   setMsel('dieukienkhongxet', BATCH.dieuKienKhongXet);
-  setMsel('thongso', BATCH.thongSoXet);
+  renderBoThamSoOptions(BATCH.boThamSo);
   setMsel('truongvien', []);
   setMsel('hedaotao', []);
+  dssvTags = [...BATCH.dsSV];
+  document.getElementById('bf-dssv').value = '';
+  kiemTraDsSVInline();
+}
+
+/* ═══ DANH SÁCH MSSV XÉT (feedback 08/10/2026) — ô nhập dạng tag ═══ */
+let dssvTags = [];
+function svTheoMssv(m){ return STUDENTS.find(s => s.mssv === m); }
+function nhanTT(s){ return (STUDENT_STATUS[s.trangThaiSV] || {}).label || ''; }
+function tachMssv(str){ return [...new Set((str || '').split(/[\s,;]+/).map(s => s.trim()).filter(Boolean))]; }
+/* Lý do lỗi của 1 mã theo trạng thái HIỆN TẠI so với Trạng thái người học đang chọn; '' = hợp lệ. */
+function loiMssv(m){
+  const s = svTheoMssv(m);
+  if (!s) return 'MSSV không tồn tại';
+  if (!mselLabelsOf('trangthaisv', mselState.trangthaisv).includes(nhanTT(s)))
+    return `Không thuộc trạng thái đã chọn — trạng thái hiện tại: ${nhanTT(s)}`;
+  return '';
+}
+function phanLoaiDsSV(){
+  return { hopLe: dssvTags.filter(m => !loiMssv(m)), loi: dssvTags.filter(m => loiMssv(m)) };
+}
+function themTagDsSV(str){
+  tachMssv(str).forEach(m => { if (!dssvTags.includes(m)) dssvTags.push(m); });
+  kiemTraDsSVInline();
+}
+function dssvCommit(){
+  const inp = document.getElementById('bf-dssv');
+  if (inp.value.trim()) themTagDsSV(inp.value);
+  inp.value = '';
+}
+function dssvKeydown(e){
+  if (e.key === ' ' || e.key === 'Enter' || e.key === ','){ e.preventDefault(); dssvCommit(); return; }
+  if (e.key === 'Backspace' && !e.target.value && dssvTags.length){ dssvTags.pop(); kiemTraDsSVInline(); }
+}
+function dssvPaste(e){
+  e.preventDefault();
+  themTagDsSV((e.clipboardData || window.clipboardData).getData('text'));
+}
+function xoaTagDsSV(m){ dssvTags = dssvTags.filter(x => x !== m); kiemTraDsSVInline(); }
+/* Vẽ lại tag. Gọi cả khi đổi Trạng thái người học. */
+function kiemTraDsSVInline(){
+  document.getElementById('bf-dssv-tags').innerHTML = dssvTags.map(m => {
+    const loi = loiMssv(m);
+    return `<span class="mtag${loi ? ' mtag-err' : ''}"${loi ? ` data-tip="${loi}"` : ''}>${m}<button type="button" title="Xoá" onclick="event.stopPropagation();xoaTagDsSV('${m}')">✕</button></span>`;
+  }).join('');
 }
 
 function saveBatch(thenRun){
   const tenDot = document.getElementById('bf-ten').value.trim();
   if (!tenDot){ showToast('Vui lòng nhập Tên đợt', 'err'); return; }
   if (!mselState.trangthaisv.length){ showToast('Vui lòng chọn ít nhất 1 Trạng thái người học', 'err'); return; }
-  if (!mselState.thongso.length){ showToast('Vui lòng chọn ít nhất 1 Thông số xét', 'err'); return; }
+  if (!document.getElementById('bf-bothamso').value){ showToast('Vui lòng chọn Bộ tham số áp dụng.', 'err'); return; }
+  dssvCommit();
+  const coDs = dssvTags.length > 0;
+  const kqDs = phanLoaiDsSV();
+  if (coDs && !kqDs.hopLe.length){ showToast('Danh sách mã sinh viên không có sinh viên hợp lệ nào.', 'err'); return; }
+  /* Có danh sách → chỉ xét đúng các SV hợp lệ, xoá 6 tiêu chí đơn vị; trống → xét theo bộ lọc. */
+  BATCH.phamVi = coDs ? 'danhsach' : 'boloc';
+  BATCH.dsSV = coDs ? kqDs.hopLe : [];
+  if (coDs) ['khoaquanly','nienkhoa','ctdt','lop','truongvien','hedaotao'].forEach(k => setMsel(k, []));
 
   BATCH.tenDot = tenDot;
   BATCH.hocKy = document.getElementById('bf-hocky').value;
@@ -1948,7 +2189,13 @@ function saveBatch(thenRun){
   BATCH.lop = mselLabelsOf('lop', mselState.lop).join(', ');
   BATCH.trangThaiSV = mselLabelsOf('trangthaisv', mselState.trangthaisv).join(', ');
   BATCH.dieuKienKhongXet = [...mselState.dieukienkhongxet];
-  BATCH.thongSoXet = [...mselState.thongso];
+  /* Đợt gắn với PHIÊN BẢN của bộ tại thời điểm LƯU form: lưu form đợt = chọn lại bộ → lấy phiên bản
+     mới nhất của bộ đang chọn. Đây là cách duy nhất để đợt lên phiên bản mới (banner chỉ cảnh báo). */
+  const boMoi = document.getElementById('bf-bothamso').value;
+  const pbCu = BATCH.phienBanDaChay;
+  BATCH.phienBanDaChay = (BO_THAM_SO.find(b => b.id === boMoi) || {}).phienBan || null;
+  const doiPhienBan = BATCH.boThamSo && (boMoi !== BATCH.boThamSo || pbCu !== BATCH.phienBanDaChay);
+  BATCH.boThamSo = boMoi;
   if (!BATCH.maDot) BATCH.maDot = `SOS-${BATCH.hocKy}-${BATCH.namHoc.split('-').map(y=>y.slice(-2)).join('')}-1`;
   /* Ghi người lập ở ĐÂY, không phải lúc tạo: mọi lần Lưu và cập nhật đều ghi đè, kể cả khi sửa đợt
      do người khác lập trước đó. */
@@ -1957,7 +2204,10 @@ function saveBatch(thenRun){
   editing = false;
   renderBatchInfo();
   renderBatchMode();
-  showToast('Đã lưu thông tin đợt xét');
+  /* Đổi bộ/phiên bản ở đợt đã chạy: kết quả hiện tại vẫn theo cấu hình cũ cho tới khi Rà soát lại. */
+  showToast(doiPhienBan && BATCH.daChayLuc && !thenRun
+    ? `Đã lưu — đợt áp dụng phiên bản ${BATCH.phienBanDaChay} của bộ tham số. Bấm Rà soát để tính lại kết quả.`
+    : 'Đã lưu thông tin đợt xét');
   if (thenRun) runBatch();
 }
 
@@ -2086,7 +2336,8 @@ function runBatch(){
     /* Nhánh "riêng SV đã chọn" vốn chạy thẳng không qua popup (thao tác nhanh, ít rủi ro) — CHỈ chèn
        thêm bước xác nhận khi có ít nhất 1 em trong số đã chọn sắp bị mất xác nhận, để không làm chậm
        thao tác cho trường hợp phổ biến (chưa ai xác nhận gì). */
-    const canhBaoRieng = canhBaoResetXacNhan(scopeRieng);
+    /* Lớp chưa khoá điểm: chỉ lớp có ít nhất 1 em trong nhóm đã tick đăng ký (BR5 UC003). */
+    const canhBaoRieng = [canhBaoLopChuaKhoaDiem(scopeRieng), canhBaoResetXacNhan(scopeRieng)].filter(Boolean).join(' ');
     if (canhBaoRieng){
       showConfirm(`Rà soát lại ${selectedKeys.length} sinh viên đã chọn?`, doChayRieng, 'Rà soát', 'btn-success', canhBaoRieng);
       document.getElementById('conf-desc').classList.add('warn');
@@ -2098,7 +2349,7 @@ function runBatch(){
   const again = !!BATCH.daChayLuc;
   const truocToanDot = new Set(dsCanhBao().map(khoaSV));
   const scopeToanBo = dsCanhBao();
-  const canhBaoGop = [canhBaoLopChuaKhoaDiem(), again ? canhBaoResetXacNhan(scopeToanBo) : ''].filter(Boolean).join(' ');
+  const canhBaoGop = [canhBaoLopChuaKhoaDiem(dsTrongDot()), again ? canhBaoResetXacNhan(scopeToanBo) : ''].filter(Boolean).join(' ');
   showConfirm(
     again
       ? `Rà soát lại đợt "${BATCH.tenDot}"? Hệ thống tính lại điểm và tín chỉ theo dữ liệu hiện tại.`
@@ -2221,7 +2472,8 @@ function renderBatchInfoToggle(){
     /* Đủ bối cảnh để đọc bảng bên dưới cho đúng: đang xét kỳ nào, phạm vi nào, rà soát lần cuối
        lúc nào — gói trong 1 hàng. */
     brief.innerHTML = `<b>${BATCH.hocKy} ${BATCH.namHoc}</b>`
-      + (BATCH.khoa ? ` · ${BATCH.khoa}` : '')
+      + (BATCH.phamVi === 'danhsach' ? ` · Theo danh sách ${BATCH.dsSV.length} sinh viên`
+        : BATCH.khoa ? ` · ${BATCH.khoa}` : '')
       + (BATCH.trangThaiSV ? ` · Phạm vi: ${BATCH.trangThaiSV}` : '')
       + ` · Rà soát gần nhất: <b>${BATCH.daChayLuc}</b>`
       + ' <span class="text-muted">— bấm để xem đầy đủ</span>';
@@ -2250,6 +2502,20 @@ const BM2002_NHOM_CTSV = ['Trạng thái SV kỳ','Số QĐ nghỉ học tạm t
 function exportBM2002(){
   const rows = filteredStudents();
   if (!rows.length){ showToast('Không có sinh viên nào khớp bộ lọc hiện tại để xuất', 'warn'); return; }
+  xuatFileBM2002(rows, 'DANH SÁCH SINH VIÊN XÉT HỌC VỤ', 'danh-sach-sv-xet-hoc-vu',
+    `${rows.length} sinh viên đang hiện theo bộ lọc`);
+}
+/* Feedback 08/10/2026: MỌI SV trong phạm vi xét — cả vi phạm lẫn không vi phạm (Không cảnh báo,
+   Không xét) — chung mẫu 22 cột, KHÔNG theo bộ lọc bảng. SV ngoài phạm vi (rớt cổng 1) không có. */
+function exportToanBo(){
+  if (!BATCH.daChayLuc){ showToast('Đợt xét chưa chạy rà soát.', 'warn'); return; }
+  const rows = [...dsTrongDot()].sort((a, b) =>
+    (a.khoaQuanLy || '').localeCompare(b.khoaQuanLy || '') || (a.lopHanhChinh || '').localeCompare(b.lopHanhChinh || '') || a.mssv.localeCompare(b.mssv));
+  if (!rows.length){ showToast('Không tìm thấy dữ liệu phù hợp.', 'warn'); return; }
+  xuatFileBM2002(rows, 'DANH SÁCH TOÀN BỘ SINH VIÊN XÉT HỌC VỤ', 'danh-sach-toan-bo-sv-xet-hoc-vu',
+    `toàn bộ ${rows.length} sinh viên trong phạm vi xét`);
+}
+function xuatFileBM2002(rows, tieuDe, tenFile, moTaToast){
 
   const SO_COT = BM2002_COT_TRAI.length + BM2002_NHOM_DKXET.length + BM2002_NHOM_CTSV.length; /* 22 */
   const dong = n => Array(n).fill('');
@@ -2257,7 +2523,7 @@ function exportBM2002(){
   aoa.push(['BỘ GIÁO DỤC VÀ ĐÀO TẠO', '', '', '', '', '', '', 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM']);
   aoa.push(['TRƯỜNG ĐẠI HỌC PHENIKAA', '', '', '', '', '', '', 'Độc lập - Tự do - Hạnh phúc']);
   aoa.push([]);
-  aoa.push([`DANH SÁCH SINH VIÊN XÉT HỌC VỤ HỌC KỲ ${BATCH.hocKy} NĂM HỌC ${BATCH.namHoc}`]);
+  aoa.push([`${tieuDe} HỌC KỲ ${BATCH.hocKy} NĂM HỌC ${BATCH.namHoc}`]);
   aoa.push([]);
 
   /* Header 2 tầng: 11 cột trái gộp dọc 2 dòng; 2 nhóm bên phải gộp ngang ở tầng 1, nhãn con ở tầng 2. */
@@ -2329,9 +2595,9 @@ function exportBM2002(){
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'BM.ĐT.20.02');
-  const ten_file = `BM.DT.20.02-danh-sach-sv-xet-hoc-vu-${(BATCH.maDot || 'dot-xet').toLowerCase()}.xlsx`;
+  const ten_file = `BM.DT.20.02-${tenFile}-${(BATCH.maDot || 'dot-xet').toLowerCase()}.xlsx`;
   XLSX.writeFile(wb, ten_file);
-  showToast(`Đã xuất "${ten_file}" — ${rows.length} sinh viên đang hiện theo bộ lọc`, 'ok');
+  showToast(`Đã xuất "${ten_file}" — ${moTaToast}`, 'ok');
 }
 /* Popup báo kết quả bước 2. Chỉ mở khi CÓ em thuộc diện không xét — không có thì im lặng, đừng bắt
    đóng một popup rỗng sau mỗi lần chạy. Nói rõ việc còn phải làm: bấm Rà soát để đưa các em ra khỏi
@@ -2607,6 +2873,9 @@ const KETQUA_FILTER_LABEL = {
    hành vi đúng — không đi cảnh báo người đã nghỉ — nhưng phải BÁO cho cán bộ biết, xem baoRoiKhoiDs().
    BATCH.trangThaiSV nhận từ mh-admin-20 dưới dạng chuỗi NHÃN nối phẩy; rỗng = không giới hạn. */
 function trongPhamViQuet(s){
+  /* Theo danh sách: chỉ SV có MSSV trong danh sách đã nhập (mọi CTĐT của em đó). Trạng thái vẫn
+     kiểm tra lại ở MỖI lần chạy — em đổi trạng thái ra ngoài sau khi nhập thì rớt cổng, báo qua P4. */
+  if (BATCH.phamVi === 'danhsach' && !BATCH.dsSV.includes(s.mssv)) return false;
   const cauHinh = (BATCH.trangThaiSV || '').split(',').map(t => t.trim()).filter(Boolean);
   if (!cauHinh.length) return true;
   return cauHinh.includes((STUDENT_STATUS[s.trangThaiSV] || {}).label);

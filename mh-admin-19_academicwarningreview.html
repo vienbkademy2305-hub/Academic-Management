@@ -461,6 +461,10 @@ const DOT_CONDITIONS = [
     apDungText:'Năm 4, 5, 6', apDung: s => trinhDoSV(s) >= 4,          get: s => s.diemTbTichLuy, status:'active' },
   { id:'c7',  nhom:'khoan1', label:'Số tín chỉ nợ đọng từ đầu khoá', sosanh:'>', giaTri:24, isScore:false,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.tinChiNoDong, status:'active' },
+  /* Bổ sung 08/10/2026 — đồng bộ ý nghĩa với c11 ở mh-admin-24. Trang này chưa có tcCoDiem nên mẫu
+     lấy tcDangKy (coi như đã đủ điểm). */
+  { id:'c11', nhom:'khoan1', label:'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ', sosanh:'>', giaTri:0.5, isScore:true,
+    apDungText:'Mọi trình độ', apDung: () => true,                     get: s => tiLeTcKhongDatKy(s), status:'active' },
   { id:'c8',  nhom:'khoan2', label:'Số lần cảnh báo liên tiếp', sosanh:'>=', giaTri:2, isScore:false,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.slCanhBaoLT || 1, status:'active',
     lyDo: s => `Bị cảnh báo học tập ${s.slCanhBaoLT || 1} học kỳ liên tiếp` },
@@ -471,6 +475,10 @@ const DOT_CONDITIONS = [
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.namToiDa ? s.namDangDaoTao / s.namToiDa : null, status:'active',
     lyDo: s => `Thời gian đã học (năm ${s.namDangDaoTao}) vượt quá 2 lần số năm đào tạo theo CTĐT (năm ${s.namToiDa})` },
 ];
+function tiLeTcKhongDatKy(s){
+  const mau = s.tcCoDiem ?? s.tcDangKy;
+  return mau ? (s.tinChiNoKy || 0) / mau : null;
+}
 const SOSANH_KY_HIEU = { '<':'<', '<=':'≤', '=':'=', '>':'>', '>=':'≥' };
 function nguongText(c){ return `${SOSANH_KY_HIEU[c.sosanh]} ${c.isScore ? Number(c.giaTri).toFixed(2) : c.giaTri}`; }
 /* Ô rỗng KHÔNG được coi là 0: SV không đăng ký kỳ nào thì ĐTB kỳ trống, mà trống không có nghĩa

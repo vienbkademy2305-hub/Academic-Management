@@ -12,46 +12,30 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
 <style>
   /* Bố cục: một cột làm việc theo trình tự. Bước 1 và 2 (dữ liệu vào) đặt cạnh nhau, bước 3 (thông số) rộng hết cỡ, kết quả ở dưới. */
+  /* Giao diện sáng duy nhất: nền trắng, chữ đen để dễ đọc. */
   :root {
-    --bg: #f3f5f8;
+    color-scheme: light;
+    --bg: #ffffff;
     --surface: #ffffff;
-    --surface-2: #f7f9fb;
-    --ink: #16202a;
-    --ink-2: #4b5967;
-    --line: #d8dfe6;
-    --accent: #0d5a8c;
+    --surface-2: #f5f6f8;
+    --ink: #111111;
+    --ink-2: #3a3f45;
+    --line: #cfd5dc;
+    --accent: #0b4f80;
     --accent-ink: #ffffff;
-    --accent-soft: #e2eff8;
-    --cb-fg: #7a4d00;
-    --cb-bg: #ffecc2;
+    --accent-soft: #e6f0f8;
+    --cb-fg: #6b4300;
+    --cb-bg: #ffe9b8;
     --bth-fg: #ffffff;
     --bth-bg: #b3261e;
-    --ok-fg: #17653a;
-    --ok-bg: #dff2e6;
-    --skip-fg: #56626e;
-    --skip-bg: #e8ecf0;
-    --warn-bg: #fff4d6;
-    --warn-line: #e8c46a;
+    --ok-fg: #14532d;
+    --ok-bg: #dcf2e3;
+    --skip-fg: #3a3f45;
+    --skip-bg: #e8ebef;
+    --warn-bg: #fff6dc;
+    --warn-line: #e3c160;
     --hl: #ffd9d6;
     --font: "Be Vietnam Pro", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0e151d; --surface: #16202b; --surface-2: #1b2734; --ink: #e5ecf2; --ink-2: #a3b1bf; --line: #2b3a49;
-      --accent: #63b3e8; --accent-ink: #0a1a26; --accent-soft: #14344b;
-      --cb-fg: #f3cd78; --cb-bg: #3a2c0a; --bth-fg: #ffffff; --bth-bg: #c4392f;
-      --ok-fg: #86d6a2; --ok-bg: #12301f; --skip-fg: #a0adba; --skip-bg: #212d3a;
-      --warn-bg: #3a2f10; --warn-line: #7a6320; --hl: #4a2220;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0e151d; --surface: #16202b; --surface-2: #1b2734; --ink: #e5ecf2; --ink-2: #a3b1bf; --line: #2b3a49;
-    --accent: #63b3e8; --accent-ink: #0a1a26; --accent-soft: #14344b;
-    --cb-fg: #f3cd78; --cb-bg: #3a2c0a; --bth-fg: #ffffff; --bth-bg: #c4392f;
-    --ok-fg: #86d6a2; --ok-bg: #12301f; --skip-fg: #a0adba; --skip-bg: #212d3a;
-    --warn-bg: #3a2f10; --warn-line: #7a6320; --hl: #4a2220;
-    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body {
@@ -148,6 +132,16 @@
   .cmp-diff { background: var(--hl); border-radius: 4px; padding: 0 4px; }
   #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 13px; max-width: calc(100% - 32px); z-index: 20; }
   .busy { opacity: .6; pointer-events: none; }
+  .up3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 900px) { .up3 { grid-template-columns: minmax(0, 1fr); } }
+  .upcard { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .uphead { display: flex; align-items: center; gap: 10px; }
+  .okmark { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 99px; background: var(--ok-bg); color: var(--ok-fg); font-weight: 600; }
+  details.adv { padding: 0; }
+  details.adv > summary { padding: 14px 16px; font-size: 15px; color: var(--ink); }
+  .advbody { display: flex; flex-direction: column; gap: 16px; padding: 0 16px 16px; }
+  .sub { display: flex; flex-direction: column; gap: 12px; min-width: 0; border-top: 1px solid var(--line); padding-top: 14px; }
+  h3 { font-size: 15px; margin: 0; font-weight: 600; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -155,21 +149,27 @@
   <div class="top">
     <div>
       <h1>Soát cảnh báo học tập</h1>
-      <p class="lede">Tải danh sách xét và lịch sử cảnh báo, đặt thông số, công cụ tính kết quả cảnh báo từng sinh viên, lý do và số kỳ cảnh báo liên tiếp rồi xuất ra Excel.</p>
+      <p class="lede">Tải 3 file: danh sách xét, danh sách cảnh báo các kỳ trước và thông số xét. Công cụ tính kết quả cảnh báo từng sinh viên, lý do và số kỳ cảnh báo liên tiếp, rồi xuất Excel đúng mẫu.</p>
     </div>
     <p class="privacy">Dữ liệu chỉ được xử lý trong trình duyệt của bạn, không gửi đi đâu.</p>
   </div>
 
   <div id="sampleBar" class="sample-bar" hidden></div>
 
-  <div class="grid2">
-    <section class="panel" id="p1" aria-labelledby="h1a"></section>
-    <section class="panel" id="p2" aria-labelledby="h2a"></section>
-  </div>
-
-  <section class="panel" id="p3" aria-labelledby="h3a"></section>
+  <section class="panel" id="up" aria-label="Tải 3 file"></section>
 
   <section class="panel" id="results" aria-labelledby="h4a"></section>
+
+  <details class="panel adv" id="adv">
+    <summary>Tuỳ chỉnh nâng cao: cột nhận diện, kỳ xét, cách đếm chuỗi, sửa thông số</summary>
+    <div class="advbody">
+      <div class="grid2">
+        <section class="sub" id="p1"></section>
+        <section class="sub" id="p2"></section>
+      </div>
+      <section class="sub" id="p3"></section>
+    </div>
+  </details>
 </div>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
@@ -384,6 +384,84 @@ const Engine = (() => {
     return m ? parseFloat(m[1].replace(',', '.')) : fallback;
   }
 
+  // ---------- file thông số (định dạng như bảng "Tiêu chí cảnh báo" của EduOne) ----------
+  const TEMPLATE_HEAD = ['#', 'Thông số cảnh báo', 'Nhóm điều kiện', 'Mức xử lý', 'So sánh', 'Giá trị', 'Áp dụng trình độ năm học'];
+  const OP_TEXT = { '<': 'Nhỏ hơn (<)', '<=': 'Nhỏ hơn hoặc bằng (≤)', '>': 'Lớn hơn (>)', '>=': 'Lớn hơn hoặc bằng (≥)', '==': 'Bằng (=)' };
+  function paramKey(label) {
+    const n = nrm(label);
+    if (!n) return null;
+    if (n.includes('tyle')) return 'tiLe';
+    if (n.includes('lientiep') && n.includes('canhbao')) return 'lienTiep';
+    if (n.includes('khongdangky')) return null; // chưa hỗ trợ "số kỳ không đăng ký"
+    if (n.includes('namdangdaotao') || n.includes('thoigiandaotao') || n.includes('sonamdaotao')) return 'thoiGian';
+    if ((n.includes('diemtb') || n.includes('dtb')) && n.includes('tichluy')) return 'tbtl';
+    if ((n.includes('diemtb') || n.includes('dtb')) && (n.includes('hocky') || n.includes('hk'))) return n.includes('kydau') || n.includes('daukhoa') ? 'tbhkDau' : 'tbhkSau';
+    if (n.includes('nodong') || n.includes('tinchino') || n.includes('tcno') || n.includes('stcno')) return 'noDong';
+    if (n.includes('dangky')) return 'dangKy';
+    if (n.includes('tichluy')) return 'tichLuy';
+    return null;
+  }
+  function parseOp(v) {
+    const s = String(v == null ? '' : v);
+    if (/≥|>=/.test(s)) return '>=';
+    if (/≤|<=/.test(s)) return '<=';
+    if (/>/.test(s)) return '>';
+    if (/</.test(s)) return '<';
+    if (/=/.test(s)) return '==';
+    const n = nrm(s);
+    if (n.includes('lonhonhoacbang')) return '>=';
+    if (n.includes('nhohonhoacbang')) return '<=';
+    if (n.includes('lonhon')) return '>';
+    if (n.includes('nhohon')) return '<';
+    if (n.includes('bang')) return '==';
+    return null;
+  }
+  function parseValue(v) {
+    if (typeof v === 'number') return v;
+    const m = String(v == null ? '' : v).replace(',', '.').match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+  function parseLevels(v) {
+    const s = String(v == null ? '' : v);
+    const n = nrm(s);
+    if (!n || n.includes('moi') || n.includes('tatca')) return [];
+    const nums = (s.match(/\d/g) || []).map(Number).filter((x) => x >= 1 && x <= 6);
+    if (n.includes('trolen') || n.includes('tro len') || /≥|>=/.test(s)) { const lo = Math.min(...nums); return [1, 2, 3, 4, 5, 6].filter((x) => x >= lo); }
+    return [...new Set(nums)].sort();
+  }
+  function parseParams(aoa) {
+    let h = -1;
+    for (let i = 0; i < Math.min(aoa.length, 20); i++) if ((aoa[i] || []).some((c) => nrm(c).startsWith('thongso'))) { h = i; break; }
+    if (h < 0) return { error: 'Không thấy cột "Thông số cảnh báo" trong file thông số.' };
+    const hd = aoa[h].map((c) => nrm(c));
+    const col = (f) => hd.findIndex(f);
+    const cP = col((x) => x.startsWith('thongso')), cN = col((x) => x.startsWith('nhom') || x.startsWith('khoan')),
+      cM = col((x) => x.startsWith('mucxuly') || x.startsWith('ketqua')), cO = col((x) => x.startsWith('sosanh') || x.startsWith('phepsosanh')),
+      cV = col((x) => x.startsWith('giatri') || x.startsWith('nguong')), cL = col((x) => x.startsWith('apdung') || x.startsWith('trinhdo')),
+      cOn = col((x) => x === 'bat' || x.startsWith('trangthai'));
+    if (cO < 0 || cV < 0) return { error: 'File thông số cần có cột "So sánh" và "Giá trị".' };
+    const rows = [], skipped = [];
+    for (let i = h + 1; i < aoa.length; i++) {
+      const a = aoa[i] || [];
+      if (!str(a[cP])) continue;
+      const param = paramKey(a[cP]), op = parseOp(a[cO]), value = parseValue(a[cV]);
+      if (!param || !op || value == null) { skipped.push(`dòng ${i + 1}: ${str(a[cP])}`); continue; }
+      let muc = param === 'lienTiep' || param === 'thoiGian' ? 'BTH' : 'CB';
+      const mText = cM >= 0 ? nrm(a[cM]) : '', nText = cN >= 0 ? nrm(a[cN]) : '';
+      if (mText) muc = mText.includes('buocthoihoc') ? 'BTH' : 'CB';
+      else if (nText) muc = nText.includes('2') ? 'BTH' : 'CB';
+      if (param === 'lienTiep') muc = 'BTH';
+      const onTxt = cOn >= 0 ? nrm(a[cOn]) : '';
+      rows.push({ on: !(onTxt && /^(khong|tat|0|off|inactive)/.test(onTxt)), param, op, value, levels: param === 'lienTiep' ? [] : parseLevels(cL >= 0 ? a[cL] : ''), muc });
+    }
+    if (!rows.length) return { error: 'Không đọc được dòng thông số nào. Kiểm tra tên thông số, cột So sánh và Giá trị.', skipped };
+    return { rows, skipped };
+  }
+  function templateRows(criteria) {
+    return criteria.map((c, i) => [i + 1, PARAMS[c.param].label, c.muc === 'BTH' ? 'Khoản 2' : 'Khoản 1', c.muc === 'BTH' ? 'Buộc thôi học' : 'Cảnh báo học tập',
+      OP_TEXT[c.op], Number(c.value), c.param === 'lienTiep' || !(c.levels && c.levels.length) ? 'Mọi trình độ' : 'Năm ' + c.levels.join(', ')]);
+  }
+
   // ---------- tính kết quả ----------
   function evaluate(list, criteria, st, entries) {
     const map = list.map;
@@ -489,7 +567,7 @@ const Engine = (() => {
       let cmpTxt = null, same = null;
       if (hasOfficial) {
         same = (isW && offTxt === ket) || (!isW && !offTxt);
-        cmpTxt = same ? (isW ? 'Khớp' : 'Khớp (cả hai không có cảnh báo)') : `Lệch: công cụ = ${ket}; DS = ${offTxt || 'không có'}`;
+        cmpTxt = same ? (isW ? 'Khớp' : 'Khớp (cả hai không có kết quả cảnh báo)') : `Lệch: công cụ = ${ket}; DS = ${offTxt || 'không có'}`;
       }
       results.push({
         i: r.i, mssv, ket, viol, edge, nPrev, nTotal, chain: chain.map(semLabel), chainNote,
@@ -521,7 +599,7 @@ const Engine = (() => {
   }
 
   return { FIELDS, RESULT_COLS, PARAMS, OPS, PRESETS, nrm, toNum, fmt, findHeaderRow, mapColumns, prepareList, dataRows,
-    prepareHistory, guessKy, evaluate, criterionText, levelsText, semLabel };
+    prepareHistory, guessKy, evaluate, criterionText, levelsText, semLabel, parseParams, templateRows, TEMPLATE_HEAD };
 })();
 
 </script>
@@ -536,7 +614,7 @@ const Engine = (() => {
   const STUDY_KEYS = ['trinhDo', 'hkDau', 'dk', 'khongDat', 'noKhoa', 'tlKhoa', 'dtbHk', 'dtbTl', 'tienDo'];
 
   const S = {
-    list: null, hist: null, preset: 'eduone', criteria: [],
+    list: null, hist: null, paramFile: null, preset: 'eduone', criteria: [],
     st: { kyY: 2025, kyHk: 2, tinhHe3: true, soNam: 4, trinhDoMode: 'file', M: 35, khongXet: 'trinhdo', chainSource: 'history' },
     R: null, filter: 'all', q: '', shown: 150,
   };
@@ -637,6 +715,45 @@ const Engine = (() => {
     finally { busy(null); }
     render();
   }
+  async function onParamFile(file) {
+    busy('Đang đọc file thông số…');
+    await tick();
+    try {
+      const { wb } = await readBook(file);
+      let got = null;
+      for (const n of wb.SheetNames) {
+        const p = E.parseParams(sheetAoa(wb, n).aoa);
+        if (p && !p.error) { got = p; break; }
+        if (!got) got = p;
+      }
+      if (!got || got.error) { toast((got && got.error) || 'Không đọc được file thông số.', true); return; }
+      S.paramFile = { name: file.name, rows: got.rows, skipped: got.skipped };
+      setPreset('file');
+      save();
+      toast(`Đã đọc ${got.rows.length} tiêu chí từ ${file.name}` + (got.skipped.length ? ` (bỏ qua ${got.skipped.length} dòng)` : ''), got.skipped.length > 0);
+    } catch (e) { toast('Không đọc được file: ' + (e && e.message || e), true); }
+    finally { busy(null); }
+    render();
+  }
+  async function downloadTemplate() {
+    try {
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Thông số');
+      E.TEMPLATE_HEAD.forEach((h, j) => { const c = ws.getCell(1, j + 1); c.value = h; c.font = { bold: true }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDDEBF7' } }; });
+      E.templateRows(S.criteria.filter((c) => c.on !== false)).forEach((r, i) => r.forEach((v, j) => { ws.getCell(i + 2, j + 1).value = v; }));
+      [5, 52, 16, 18, 24, 10, 26].forEach((w, j) => { ws.getColumn(j + 1).width = w; });
+      const g = wb.addWorksheet('Hướng dẫn');
+      ['Mỗi dòng là một tiêu chí. Giữ nguyên tên cột ở dòng 1.',
+        'Thông số cảnh báo: ghi như trên EduOne, vd "Điểm TB học kỳ (các kỳ tiếp theo)", "Điểm TB tích luỹ", "Số tín chỉ nợ đọng từ đầu khoá", "Số lần cảnh báo liên tiếp", "Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ", "Số tín chỉ đăng ký trong kỳ".',
+        'Nhóm điều kiện: Khoản 1 = Cảnh báo học tập, Khoản 2 = Buộc thôi học. Cột Mức xử lý (nếu có) được ưu tiên hơn.',
+        'So sánh: Nhỏ hơn (<), Nhỏ hơn hoặc bằng (≤), Lớn hơn (>), Lớn hơn hoặc bằng (≥), Bằng (=).',
+        'Giá trị: số, vd 1.00 hoặc 0.50 (50%).',
+        'Áp dụng trình độ năm học: "Mọi trình độ" hoặc "Năm 1", "Năm 4, 5, 6".'].forEach((t, i) => { g.getCell(i + 1, 1).value = t; });
+      g.getColumn(1).width = 120;
+      const buf = await wb.xlsx.writeBuffer();
+      await saveFile('mau-thong-so-canh-bao.xlsx', new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    } catch (e) { toast('Không tạo được file mẫu: ' + (e && e.message || e), true); }
+  }
   function afterListLoad() {
     const L = S.list;
     if (!L.ok) return;
@@ -658,7 +775,7 @@ const Engine = (() => {
       const d = JSON.parse(localStorage.getItem(STORE) || 'null');
       if (d && Array.isArray(d.criteria) && d.criteria.length) {
         S.criteria = d.criteria.filter((c) => E.PARAMS[c.param]).map((c) => ({ on: c.on !== false, param: c.param, op: c.op, value: c.value, levels: c.levels || [], muc: c.muc }));
-        S.preset = d.preset || 'custom';
+        S.preset = !d.preset || d.preset === 'file' ? 'custom' : d.preset;
         if (typeof d.tinhHe3 === 'boolean') S.st.tinhHe3 = d.tinhHe3;
         if (d.soNam > 0) S.st.soNam = d.soNam;
         if (d.M > 0) S.st.M = d.M;
@@ -669,7 +786,8 @@ const Engine = (() => {
   }
   function setPreset(k) {
     S.preset = k;
-    if (k !== 'custom') S.criteria = E.PRESETS[k].rows.map((r) => ({ on: true, param: r.param, op: r.op, value: r.value, levels: r.levels.slice(), muc: r.muc }));
+    const src = k === 'file' ? (S.paramFile && S.paramFile.rows) : (E.PRESETS[k] && E.PRESETS[k].rows);
+    if (src) S.criteria = src.map((r) => ({ on: r.on !== false, param: r.param, op: r.op, value: r.value, levels: (r.levels || []).slice(), muc: r.muc }));
   }
 
   // ---------- giao diện ----------
@@ -681,7 +799,27 @@ const Engine = (() => {
     if (S.hist && S.hist.sample) parts.push('lịch sử cảnh báo');
     if (!parts.length) { bar.hidden = true; return; }
     bar.hidden = false;
-    bar.innerHTML = `<b>Dữ liệu mẫu:</b> <span>đang hiển thị ${parts.join(' và ')} giả lập (MAU001…). Tải file của bạn ở bước 1 và 2 để thay thế.</span>`;
+    bar.innerHTML = `<b>Dữ liệu mẫu:</b> <span>đang hiển thị ${parts.join(' và ')} giả lập (MAU001…). Tải 3 file của bạn ở trên để thay thế.</span>`;
+  }
+  const presetLabel = () => (S.preset === 'file' && S.paramFile ? S.paramFile.name.replace(/\.[^.]+$/, '') : S.preset === 'custom' ? 'Tuỳ chỉnh' : E.PRESETS[S.preset].name);
+  function renderUpload() {
+    const L = S.list, H = S.hist, P = S.paramFile;
+    const n = L && L.ok ? E.dataRows(L).length : 0;
+    const card = (step, kind, id, title, hint, status, extra) => `
+      <div class="upcard">
+        <div class="uphead"><span class="step">${step}</span><h2>${title}</h2></div>
+        <label class="drop" data-kind="${kind}"><input type="file" id="${id}" accept=".xlsx,.xlsm,.xls,.csv"><span class="t">Chọn file hoặc kéo thả vào đây</span><span class="s">${hint}</span></label>
+        <div class="meta">${status}</div>${extra || ''}
+      </div>`;
+    const stL = L ? `<b>${esc(L.name)}</b>${L.sample ? '<span class="tag">mẫu</span>' : '<span class="okmark">Đã tải</span>'}<span>${n} sinh viên · kỳ ${esc(kyLabel())}</span>` : 'Chưa có file';
+    const stH = H && !H.error ? `<b>${esc(H.name)}</b>${H.sample ? '<span class="tag">mẫu</span>' : '<span class="okmark">Đã tải</span>'}<span>${H.entries.length} lượt cảnh báo · ${H.nSv} sinh viên</span>` : 'Chưa có file';
+    const stP = `<b>${esc(presetLabel())}</b>${S.preset === 'file' ? '<span class="okmark">Đã tải</span>' : '<span class="tag">có sẵn</span>'}<span>${S.criteria.filter((c) => c.on !== false).length} tiêu chí</span>`;
+    $('#up').innerHTML = `<div class="up3">
+      ${card(1, 'list', 'fList', 'Danh sách xét', 'File kết quả học tập kỳ xét: MSSV, ĐTB HK, ĐTBTL, STC ĐK kỳ, STC không đạt, STC nợ khoá…', stL)}
+      ${card(2, 'hist', 'fHist', 'Danh sách cảnh báo', 'File danh sách cảnh báo học tập các kỳ (MSSV, Năm học, Học kỳ, KQ cuối) để đếm số kỳ liên tiếp', stH)}
+      ${card(3, 'param', 'fParam', 'Thông số xét', 'Bảng tiêu chí: Thông số, Nhóm điều kiện, So sánh, Giá trị, Áp dụng trình độ năm học', stP,
+        `<div class="row"><button type="button" class="btn ghost small" data-act="tpl">Tải file mẫu thông số</button>${P && P.skipped.length ? `<span class="hint">Bỏ qua: ${esc(P.skipped.join('; '))}</span>` : ''}</div>`)}
+    </div>`;
   }
   function renderP1() {
     const L = S.list, st = S.st;
@@ -695,8 +833,7 @@ const Engine = (() => {
         L.headers.map((h, i) => (h ? `<option value="${i}"${L.map[f.key] === i ? ' selected' : ''}>${esc(h)}</option>` : '')).join('')}</select></div>`).join('')
     }</div></details>` : '';
     $('#p1').innerHTML = `
-      <header><span class="step">1</span><h2 id="h1a">Danh sách xét</h2></header>
-      <label class="drop" data-kind="list" tabindex="-1"><input type="file" id="fList" accept=".xlsx,.xlsm,.xls,.csv"><span class="t">Chọn file Excel danh sách xét</span><span class="s">hoặc kéo thả vào đây. Cần cột MSSV; các cột điểm, tín chỉ nhận diện theo tên.</span></label>
+      <h3>Danh sách xét</h3>
       ${L ? `<div class="meta"><b>${esc(L.name)}</b>${L.sample ? '<span class="tag">mẫu</span>' : ''}<span>${n} sinh viên</span>${sheetSel}</div>` : ''}
       ${mapHtml}
       <div class="row">
@@ -726,13 +863,12 @@ const Engine = (() => {
     const hasCol = L && L.ok && L.map.nPrev != null;
     const info = H && !H.error ? `<div class="meta"><b>${esc(H.name)}</b>${H.sample ? '<span class="tag">mẫu</span>' : ''}<span>${H.entries.length} lượt cảnh báo · ${H.nSv} sinh viên${H.entries.length ? ' · từ ' + E.semLabel(H.min) + ' đến ' + E.semLabel(H.max) : ''}</span></div>` : '';
     $('#p2').innerHTML = `
-      <header><span class="step">2</span><h2 id="h2a">Số kỳ cảnh báo liên tiếp</h2></header>
+      <h3>Số kỳ cảnh báo liên tiếp</h3>
       <div class="radio" role="radiogroup" aria-label="Nguồn số kỳ liên tiếp">
         <label><input type="radio" name="chain" value="history"${st.chainSource === 'history' ? ' checked' : ''}>Từ file lịch sử cảnh báo</label>
         <label><input type="radio" name="chain" value="column"${st.chainSource === 'column' ? ' checked' : ''}>Từ cột "Số kỳ CB liền trước (nhập tay)" trong danh sách${hasCol ? '' : ' (chưa có cột)'}</label>
         <label><input type="radio" name="chain" value="none"${st.chainSource === 'none' ? ' checked' : ''}>Không dùng (coi là 0)</label>
       </div>
-      <label class="drop" data-kind="hist"><input type="file" id="fHist" accept=".xlsx,.xlsm,.xls,.csv"><span class="t">Chọn file lịch sử cảnh báo</span><span class="s">Cần cột MSSV, Năm học, Học kỳ, KQ cuối. Mỗi dòng "Cảnh báo học tập" hoặc "Buộc thôi học" tính là một kỳ bị cảnh báo.</span></label>
       ${info}
       <div class="radio"><label><input type="checkbox" id="he3"${st.tinhHe3 ? ' checked' : ''}>Tính học kỳ hè (HK3) vào chuỗi</label></div>
       <p class="hint">Chuỗi đếm ngược từ kỳ liền trước kỳ xét; gặp kỳ không có cảnh báo thì dừng. Dòng của kỳ xét trong file lịch sử chỉ dùng để đối chiếu.</p>`;
@@ -751,10 +887,10 @@ const Engine = (() => {
         <td><button type="button" class="btn ghost small" data-act="del" aria-label="Xoá tiêu chí ${i + 1}">Xoá</button></td>
       </tr>`).join('');
     $('#p3').innerHTML = `
-      <header><span class="step">3</span><h2 id="h3a">Thông số xét</h2></header>
+      <h3>Thông số xét (sửa trực tiếp)</h3>
       <div class="row">
         <div class="field"><label for="preset">Bộ thông số</label>
-          <select id="preset" class="w-md" style="width:260px">${Object.keys(E.PRESETS).map((k) => `<option value="${k}"${S.preset === k ? ' selected' : ''}>${esc(E.PRESETS[k].name)}</option>`).join('')}<option value="custom"${S.preset === 'custom' ? ' selected' : ''}>Tuỳ chỉnh</option></select></div>
+          <select id="preset" class="w-md" style="width:260px">${Object.keys(E.PRESETS).map((k) => `<option value="${k}"${S.preset === k ? ' selected' : ''}>${esc(E.PRESETS[k].name)}</option>`).join('')}${S.paramFile ? `<option value="file"${S.preset === 'file' ? ' selected' : ''}>Từ file: ${esc(S.paramFile.name)}</option>` : ''}<option value="custom"${S.preset === 'custom' ? ' selected' : ''}>Tuỳ chỉnh</option></select></div>
         <div class="field"><label for="soNam">Số năm đào tạo mặc định</label><input type="text" id="soNam" class="w-sm" value="${S.st.soNam}" inputmode="decimal"></div>
         <button type="button" class="btn ghost small" data-act="add">Thêm tiêu chí</button>
       </div>
@@ -809,7 +945,7 @@ const Engine = (() => {
   function renderResults() {
     const R = S.R, L = S.list;
     const el = $('#results');
-    if (!R || !L || !L.ok) { el.innerHTML = '<header><span class="step">4</span><h2 id="h4a">Kết quả</h2></header><p class="muted">Chưa có kết quả. Chọn file danh sách xét ở bước 1.</p>'; return; }
+    if (!R || !L || !L.ok) { el.innerHTML = '<header><span class="step">4</span><h2 id="h4a">Kết quả</h2></header><p class="muted">Chưa có kết quả. Tải file danh sách xét ở ô số 1.</p>'; return; }
     const c = R.counts, total = R.results.length;
     const rows = filtered();
     const show = rows.slice(0, S.shown);
@@ -836,7 +972,7 @@ const Engine = (() => {
       <div class="notes">${warn}${cmpLine}</div>
       <div class="toolbar">
         <div class="filters">${chip('all', 'Tất cả', total)}${chip('bth', 'Buộc thôi học', c['Buộc thôi học'])}${chip('cb', 'Cảnh báo', c['Cảnh báo học tập'])}${chip('ok', 'Không cảnh báo', c['Không cảnh báo'])}${chip('skip', 'Không xét', c['Không xét'])}${R.hasOfficial ? chip('diff', 'Lệch DS', R.nDiff) : ''}</div>
-        <div class="row" style="align-items:center"><input type="text" id="q" class="w-md" placeholder="Tìm MSSV hoặc tên" value="${esc(S.q)}" aria-label="Tìm sinh viên"><button type="button" class="btn" id="btnExport" data-act="export">Tải file Excel</button></div>
+        <div class="row" style="align-items:center"><input type="text" id="q" class="w-md" placeholder="Tìm MSSV hoặc tên" value="${esc(S.q)}" aria-label="Tìm sinh viên"><button type="button" class="btn" id="btnExport" data-act="export">Xuất Excel kết quả</button></div>
       </div>
       <div class="tbl-wrap"><table><thead><tr><th>MSSV</th>${hasName ? '<th>Họ và tên</th>' : ''}${hasLop ? '<th>Lớp</th>' : ''}<th>Kết quả</th><th>Dữ liệu dẫn đến cảnh báo</th><th>Lần liên tiếp</th><th>Các kỳ trong chuỗi</th>${R.hasOfficial ? '<th>So với DS lịch sử</th>' : ''}</tr></thead><tbody>${body || `<tr><td colspan="9" class="muted">Không có dòng nào khớp bộ lọc.</td></tr>`}</tbody></table></div>
       ${rows.length > show.length ? `<div class="row"><span class="hint">Đang hiện ${show.length}/${rows.length} dòng. File Excel luôn có đủ.</span><button type="button" class="btn ghost small" data-act="more">Hiện thêm</button></div>` : ''}`;
@@ -847,6 +983,23 @@ const Engine = (() => {
     if (!L || !L.ok || L.map.mssv == null) { S.R = null; return; }
     const entries = S.hist && !S.hist.error ? S.hist.entries : [];
     S.R = E.evaluate(L, S.criteria, S.st, entries);
+    if (S.R.hasOfficial && S.preset !== 'apis') {
+      const A = E.evaluate(L, E.PRESETS.apis.rows.map((r) => ({ ...r, on: true })), S.st, entries);
+      const byI = new Map(A.results.map((a) => [a.i, a]));
+      const nBth = (S.criteria.find((c) => c.on !== false && c.param === 'lienTiep') || {}).value;
+      for (const x of S.R.results) {
+        if (x.same !== false) continue;
+        const a = byI.get(x.i); if (!a) continue;
+        const ep = new Set(x.viol.filter((v) => !v.chainOnly && v.muc !== 'BTH').map((v) => v.param));
+        const ap = new Set(a.viol.filter((v) => !v.chainOnly).map((v) => v.param));
+        const why = [];
+        if (ep.has('tiLe') && !ap.has('tiLe')) why.push('bộ đang dùng có tiêu chí tỷ lệ TC không đạt (APIS không có)');
+        if (ap.has('dangKy') && !ep.has('dangKy')) why.push('APIS tính STC ĐK kỳ = 0 là cảnh báo (bộ đang dùng không có tiêu chí này)');
+        if (ap.has('tbtl') && !ep.has('tbtl')) why.push('APIS có ngưỡng ĐTBTL cho trình độ này (bộ đang dùng không có)');
+        if (x.ket === 'Buộc thôi học' && a.ket === 'Cảnh báo học tập') why.push(`ngưỡng buộc thôi học của bộ đang dùng ≥ ${nBth} kỳ liên tiếp, APIS ≥ 3 kỳ`);
+        if (why.length) x.cmp += '. Do: ' + why.join('; ');
+      }
+    }
     const part = S.R.results.filter((x) => x.ket === 'Không xét' && x.rec.dtbHk != null);
     if (part.length) S.R.warnings.push(`${part.length} dòng ra "Không xét" nhưng vẫn có ĐTB HK (vd: ${part.slice(0, 3).map((x) => x.mssv).join(', ')}). Nếu cột Trình độ năm học bị thiếu, thử "Tự tính" ở bước 1 hoặc đổi quy tắc Không xét.`);
   }
@@ -854,10 +1007,11 @@ const Engine = (() => {
     renderSampleBar();
     if (all) { renderP1(); renderP2(); renderP3(); }
     recompute();
+    renderUpload();
     renderResults();
   }
   let timer = null;
-  const refresh = () => { clearTimeout(timer); timer = setTimeout(() => { recompute(); renderResults(); }, 120); };
+  const refresh = () => { clearTimeout(timer); timer = setTimeout(() => { recompute(); renderUpload(); renderResults(); }, 120); };
 
   // ---------- thông báo ----------
   let toastT = null;
@@ -911,12 +1065,13 @@ const Engine = (() => {
       if (optional && !R.hasOfficial && L.resCols[c.key] == null) continue;
       rc[c.key] = L.resCols[c.key] != null ? L.resCols[c.key] : next++;
     }
-    const WIDTH = { kq: 18, dl: 70, nPrev: 14, nTotal: 14, chain: 52, off: 20, cmp: 46 };
+    const WIDTH = { kq: 18, dl: 70, nPrev: 14, nTotal: 14, chain: 52, off: 20, cmp: 52 };
+    const LABEL = { kq: `KQ xét (tính lại, bộ ${presetLabel()})`, off: `KQ trong DS cảnh báo (${kyLabel()})` };
     const hrow = xr(L.headerIdx);
     for (const c of E.RESULT_COLS) {
       if (rc[c.key] == null) continue;
       const cell = gc(ws, hrow, xc(rc[c.key]));
-      cell.value = c.label; cell.font = { bold: true }; cell.fill = FILL('E2EFDA');
+      cell.value = LABEL[c.key] || c.label; cell.font = { bold: true }; cell.fill = FILL('E2EFDA');
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       ws.getColumn(xc(rc[c.key])).width = WIDTH[c.key];
     }
@@ -953,37 +1108,10 @@ const Engine = (() => {
     const lastIdx = Math.max(L.headers.length - 1, ...Object.values(rc));
     ws.autoFilter = { from: { row: hrow, column: xc(0) }, to: { row: hrow, column: xc(lastIdx) } };
 
-    // sheet danh sách bị cảnh báo
     for (const n of ['SV bị cảnh báo', 'Ghi chú kiểm tra']) { const old = wb.getWorksheet(n); if (old) wb.removeWorksheet(old.id); }
-    const ls = wb.addWorksheet('SV bị cảnh báo');
-    const dataKeys = ['mssv', 'hoTen', 'lop', 'trangThai', 'trinhDo', 'dk', 'khongDat', 'noKhoa', 'dtbHk', 'dtbTl'].filter((k) => map[k] != null);
-    const heads = [...dataKeys.map(fieldLabel), 'KQ xét (tính lại)', 'Dữ liệu dẫn đến cảnh báo', 'Số lần CB liên tiếp', 'Các kỳ trong chuỗi'];
-    if (R.hasOfficial) heads.push('KQ trong DS lịch sử', 'So với DS lịch sử');
-    heads.forEach((h, j) => { const c = gc(ls, 1, j + 1); c.value = h; c.font = { bold: true }; c.fill = FILL('DDEBF7'); c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
-    const widths = [...dataKeys.map((k) => (k === 'hoTen' ? 22 : k === 'mssv' ? 12 : 11)), 18, 64, 12, 50, 20, 44];
-    widths.forEach((w, j) => { ls.getColumn(j + 1).width = w; });
-    const warnedRows = R.results.filter(isW).sort((a, b) => (a.ket === b.ket ? a.i - b.i : a.ket === 'Buộc thôi học' ? -1 : 1));
-    warnedRows.forEach((x, n) => {
-      const a = L.aoa[x.i] || [];
-      const vals = [...dataKeys.map((k) => a[map[k]]), x.ket, reasonText(x), x.nTotal, chainText(x)];
-      if (R.hasOfficial) vals.push(x.official || 'Không có trong DS', x.cmp);
-      vals.forEach((v, j) => {
-        const c = gc(ls, n + 2, j + 1); c.value = v == null ? null : v; c.alignment = { vertical: 'top', wrapText: j >= dataKeys.length + 1 };
-        const dk = dataKeys[j];
-        if (dk && ['trinhDo', 'dk', 'khongDat', 'noKhoa', 'dtbHk', 'dtbTl'].includes(dk)) {
-          const hit = x.viol.some((v2) => v2.cols.includes(dk));
-          c.fill = FILL(hit ? 'FF0000' : 'FFC7CE'); c.font = hit ? { bold: true, color: { argb: argb('FFFFFF') } } : { color: { argb: argb('9C0006') } };
-        }
-      });
-      const kc = gc(ls, n + 2, dataKeys.length + 1);
-      if (x.ket === 'Buộc thôi học') { kc.fill = FILL('C00000'); kc.font = { bold: true, color: { argb: argb('FFFFFF') } }; } else { kc.fill = FILL('FFEB9C'); kc.font = { bold: true, color: { argb: argb('9C5700') } }; }
-    });
-    ls.views = [{ state: 'frozen', xSplit: Math.min(2, dataKeys.length), ySplit: 1 }];
-    if (warnedRows.length) ls.autoFilter = { from: { row: 1, column: 1 }, to: { row: warnedRows.length + 1, column: heads.length } };
-
     // sheet ghi chú
     const ns = wb.addWorksheet('Ghi chú kiểm tra');
-    ns.getColumn(1).width = 34; ns.getColumn(2).width = 110;
+    ns.getColumn(1).width = 38; ns.getColumn(2).width = 110;
     const st = S.st, c = R.counts;
     const src = st.chainSource === 'history' ? (S.hist ? `File lịch sử: ${S.hist.name}${S.hist.sample ? ' (mẫu)' : ''}` : 'Chưa có file lịch sử') : st.chainSource === 'column' ? 'Cột "Số kỳ CB liền trước (nhập tay)" trong danh sách' : 'Không dùng (coi là 0)';
     const lines = [
@@ -995,7 +1123,7 @@ const Engine = (() => {
       ['Tính HK3 vào chuỗi', st.tinhHe3 ? 'Có' : 'Không'],
       ['Trình độ năm học', st.trinhDoMode === 'file' ? 'Lấy từ file' : `Tự tính = phần nguyên(STC TL khoá ÷ ${st.M}) + 1`],
       ['Quy tắc Không xét', { trinhdo: 'Thiếu Trình độ năm học', khongsolieuky: 'Thiếu cả ĐTB HK và STC ĐK kỳ', none: 'Không bao giờ' }[st.khongXet]],
-      ['§', 'Bộ thông số: ' + (S.preset === 'custom' ? 'Tuỳ chỉnh' : E.PRESETS[S.preset].name)],
+      ['§', 'Bộ thông số: ' + presetLabel()],
       ...S.criteria.filter((x) => x.on !== false).map((x, i) => [`Tiêu chí ${i + 1}`, E.criterionText(x)]),
       ['§', 'Kết quả'],
       ['Buộc thôi học', c['Buộc thôi học']], ['Cảnh báo học tập', c['Cảnh báo học tập']], ['Không cảnh báo', c['Không cảnh báo']], ['Không xét', c['Không xét']],
@@ -1009,17 +1137,18 @@ const Engine = (() => {
       ['Kỳ nghỉ học tạm thời', 'Chưa bỏ qua kỳ nghỉ trong chuỗi vì file không có quyết định nghỉ theo kỳ'],
       ...R.warnings.map((w) => ['Cảnh báo dữ liệu', w]));
     let r = 1;
-    gc(ns, 1, 1).value = 'Kiểm tra cảnh báo học tập'; gc(ns, 1, 1).font = { bold: true, size: 14 };
+    gc(ns, 1, 1).value = `Kiểm tra cảnh báo học tập ${kyLabel()} (bộ ${presetLabel()})`; gc(ns, 1, 1).font = { bold: true, size: 14 };
     r = 3;
     for (const [a, b] of lines) {
       if (a === '§') { gc(ns, r, 1).value = b; gc(ns, r, 1).font = { bold: true }; gc(ns, r, 1).fill = FILL('DDEBF7'); gc(ns, r, 2).fill = FILL('DDEBF7'); }
       else { gc(ns, r, 1).value = a; gc(ns, r, 2).value = b; gc(ns, r, 1).alignment = { vertical: 'top', wrapText: true }; gc(ns, r, 2).alignment = { vertical: 'top', wrapText: true, horizontal: 'left' }; }
       r++;
     }
-    // mở file ở sheet danh sách bị cảnh báo
-    const idx = wb.worksheets.indexOf(ls);
+    // mở file ở sheet dữ liệu
+    const idx = wb.worksheets.indexOf(ws);
     wb.views = [{ x: 0, y: 0, width: 20000, height: 20000, firstSheet: 0, activeTab: idx, visibility: 'visible' }];
-    wb.worksheets.forEach((s) => { const v = (s.views && s.views[0]) || {}; s.views = [{ ...v, tabSelected: s === ls }]; });
+    wb.worksheets.forEach((s) => { const v = (s.views && s.views[0]) || {}; s.views = [{ ...v, tabSelected: s === ws }]; });
+    if (!loaded) ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 1, tabSelected: true }];
     return wb;
   }
   async function saveFile(name, blob) {
@@ -1060,6 +1189,7 @@ const Engine = (() => {
     const t = e.target;
     if (t.id === 'fList' && t.files[0]) { onListFile(t.files[0]); t.value = ''; return; }
     if (t.id === 'fHist' && t.files[0]) { onHistFile(t.files[0]); t.value = ''; return; }
+    if (t.id === 'fParam' && t.files[0]) { onParamFile(t.files[0]); t.value = ''; return; }
     if (t.id === 'sheetSel') { applySheet(S.list, +t.value); afterListLoad(); render(); return; }
     if (t.dataset && t.dataset.map) { const k = t.dataset.map; if (t.value === '') delete S.list.map[k]; else S.list.map[k] = +t.value; updMapSummary(); render(false); return; }
     if (t.id === 'kyHk') { S.st.kyHk = +t.value; render(false); return; }
@@ -1095,6 +1225,7 @@ const Engine = (() => {
     if (act === 'flt') { S.filter = b.dataset.k; S.shown = 150; renderResults(); }
     else if (act === 'more') { S.shown += 300; renderResults(); }
     else if (act === 'export') exportXlsx();
+    else if (act === 'tpl') downloadTemplate();
     else if (act === 'add') { S.criteria.push({ on: true, param: 'tbhkSau', op: '<', value: 1, levels: [], muc: 'CB' }); markCustom(); renderP3(); render(false); }
     else {
       const tr = b.closest('tr.crit'); if (!tr) return;
@@ -1108,7 +1239,7 @@ const Engine = (() => {
     if (!z) return;
     e.preventDefault();
     z.classList.toggle('over', ev === 'dragover');
-    if (ev === 'drop' && e.dataTransfer && e.dataTransfer.files[0]) (z.dataset.kind === 'hist' ? onHistFile : onListFile)(e.dataTransfer.files[0]);
+    if (ev === 'drop' && e.dataTransfer && e.dataTransfer.files[0]) ({ hist: onHistFile, param: onParamFile }[z.dataset.kind] || onListFile)(e.dataTransfer.files[0]);
   }));
 
   // ---------- khởi động ----------

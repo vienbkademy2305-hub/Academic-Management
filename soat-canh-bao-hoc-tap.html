@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Soát cảnh báo học tập</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<style>
+  /* Bố cục: một cột làm việc theo trình tự. Bước 1 và 2 (dữ liệu vào) đặt cạnh nhau, bước 3 (thông số) rộng hết cỡ, kết quả ở dưới. */
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-2: #f7f9fb;
+    --ink: #16202a;
+    --ink-2: #4b5967;
+    --line: #d8dfe6;
+    --accent: #0d5a8c;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2eff8;
+    --cb-fg: #7a4d00;
+    --cb-bg: #ffecc2;
+    --bth-fg: #ffffff;
+    --bth-bg: #b3261e;
+    --ok-fg: #17653a;
+    --ok-bg: #dff2e6;
+    --skip-fg: #56626e;
+    --skip-bg: #e8ecf0;
+    --warn-bg: #fff4d6;
+    --warn-line: #e8c46a;
+    --hl: #ffd9d6;
+    --font: "Be Vietnam Pro", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e151d; --surface: #16202b; --surface-2: #1b2734; --ink: #e5ecf2; --ink-2: #a3b1bf; --line: #2b3a49;
+      --accent: #63b3e8; --accent-ink: #0a1a26; --accent-soft: #14344b;
+      --cb-fg: #f3cd78; --cb-bg: #3a2c0a; --bth-fg: #ffffff; --bth-bg: #c4392f;
+      --ok-fg: #86d6a2; --ok-bg: #12301f; --skip-fg: #a0adba; --skip-bg: #212d3a;
+      --warn-bg: #3a2f10; --warn-line: #7a6320; --hl: #4a2220;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e151d; --surface: #16202b; --surface-2: #1b2734; --ink: #e5ecf2; --ink-2: #a3b1bf; --line: #2b3a49;
+    --accent: #63b3e8; --accent-ink: #0a1a26; --accent-soft: #14344b;
+    --cb-fg: #f3cd78; --cb-bg: #3a2c0a; --bth-fg: #ffffff; --bth-bg: #c4392f;
+    --ok-fg: #86d6a2; --ok-bg: #12301f; --skip-fg: #a0adba; --skip-bg: #212d3a;
+    --warn-bg: #3a2f10; --warn-line: #7a6320; --hl: #4a2220;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5;
+    padding-block: 20px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+  h2 { font-size: 16px; margin: 0; font-weight: 600; }
+  p { margin: 0; }
+  .lede { color: var(--ink-2); max-width: 70ch; margin-top: 6px; }
+  .top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; justify-content: space-between; }
+  .privacy { color: var(--ink-2); font-size: 12.5px; }
+  .sample-bar {
+    background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 8px 12px;
+    display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 13px;
+  }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 880px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .panel > header { display: flex; align-items: center; gap: 10px; }
+  .step { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; }
+  .hint { color: var(--ink-2); font-size: 12.5px; }
+  .drop {
+    display: flex; flex-direction: column; gap: 2px; align-items: flex-start; border: 1.5px dashed var(--line); border-radius: 8px;
+    padding: 12px 14px; cursor: pointer; background: var(--surface-2); transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+  .drop { position: relative; }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .drop .t { font-weight: 600; }
+  .drop .s { color: var(--ink-2); font-size: 12.5px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; font-size: 13px; color: var(--ink-2); }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .tag { display: inline-block; font-size: 11.5px; padding: 1px 8px; border-radius: 99px; background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field > label, .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  input[type="text"], input[type="number"], select {
+    font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; max-width: 100%;
+  }
+  input[type="text"]:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible, input[type="checkbox"]:focus-visible, input[type="radio"]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .w-sm { width: 96px; }
+  .w-md { width: 150px; }
+  .radio { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .radio label { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; color: var(--ink); font-size: 13.5px; }
+  details { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+  summary { cursor: pointer; padding: 7px 10px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .mapgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 12px; padding: 4px 10px 12px; }
+  .mapgrid select { width: 100%; }
+  .btn {
+    font: inherit; font-weight: 600; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+    padding: 8px 14px; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.small { padding: 4px 10px; font-size: 12.5px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface-2); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--ink-2); white-space: nowrap; position: sticky; top: 0; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .crit td { vertical-align: middle; padding: 6px 8px; }
+  .crit select, .crit input[type="text"] { width: 100%; }
+  .chips { display: flex; gap: 3px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 12px; min-width: 28px; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .mono { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 500; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+  .pill.cb { background: var(--cb-bg); color: var(--cb-fg); }
+  .pill.bth { background: var(--bth-bg); color: var(--bth-fg); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok-fg); }
+  .pill.skip { background: var(--skip-bg); color: var(--skip-fg); font-style: italic; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 2px; border-left-width: 5px; }
+  .stat .n { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12.5px; color: var(--ink-2); }
+  .stat.bth { border-left-color: var(--bth-bg); } .stat.cb { border-left-color: var(--cb-fg); } .stat.ok { border-left-color: var(--ok-fg); } .stat.skip { border-left-color: var(--skip-fg); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filters .chip { padding: 4px 11px; font-size: 13px; }
+  .notes { display: flex; flex-direction: column; gap: 6px; }
+  .note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 7px 12px; font-size: 13px; }
+  .good { color: var(--ok-fg); font-weight: 600; }
+  .detail { min-width: 200px; max-width: 380px; }
+  .crit td.c-muc select { min-width: 160px; }
+  .crit td.c-param select { min-width: 290px; }
+  .muted { color: var(--ink-2); }
+  .cmp-diff { background: var(--hl); border-radius: 4px; padding: 0 4px; }
+  #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 13px; max-width: calc(100% - 32px); z-index: 20; }
+  .busy { opacity: .6; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Soát cảnh báo học tập</h1>
+      <p class="lede">Tải danh sách xét và lịch sử cảnh báo, đặt thông số, công cụ tính kết quả cảnh báo từng sinh viên, lý do và số kỳ cảnh báo liên tiếp rồi xuất ra Excel.</p>
+    </div>
+    <p class="privacy">Dữ liệu chỉ được xử lý trong trình duyệt của bạn, không gửi đi đâu.</p>
+  </div>
+
+  <div id="sampleBar" class="sample-bar" hidden></div>
+
+  <div class="grid2">
+    <section class="panel" id="p1" aria-labelledby="h1a"></section>
+    <section class="panel" id="p2" aria-labelledby="h2a"></section>
+  </div>
+
+  <section class="panel" id="p3" aria-labelledby="h3a"></section>
+
+  <section class="panel" id="results" aria-labelledby="h4a"></section>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script id="engine">
+const Engine = (() => {
+  'use strict';
+  const EPS = 1e-9;
+
+  // ---------- tiện ích ----------
+  const nrm = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]/g, '');
+  const toNum = (v) => {
+    if (v == null) return null;
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    const s = String(v).trim().replace(/\s/g, '').replace(',', '.');
+    return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null;
+  };
+  const str = (v) => (v == null ? '' : String(v).trim());
+  const isYes = (v) => {
+    if (v === true || v === 1) return true;
+    return ['co', '1', 'true', 'x', 'yes', 'y'].includes(nrm(v));
+  };
+
+  // ---------- cột của file danh sách ----------
+  const FIELDS = [
+    { key: 'mssv', label: 'MSSV', req: true, exact: ['mssv', 'masinhvien', 'masv'] },
+    { key: 'hoTen', label: 'Họ và tên', exact: ['hovaten', 'hoten'] },
+    { key: 'lop', label: 'Lớp hành chính', exact: ['lophanhchinh', 'lop'] },
+    { key: 'trangThai', label: 'Trạng thái hiện tại', exact: ['trangthaihientai', 'trangthai'] },
+    { key: 'nienKhoa', label: 'Niên khoá', exact: ['nienkhoa'] },
+    { key: 'namHoc', label: 'Năm học', exact: ['namhoc'] },
+    { key: 'hocKy', label: 'Học kỳ', exact: ['hocky'] },
+    { key: 'trinhDo', label: 'Trình độ năm học', exact: ['trinhdonamhoc', 'trinhdo'] },
+    { key: 'hkDau', label: 'HK đầu khoá', exact: ['hkdaukhoa', 'hockydaukhoa'] },
+    { key: 'dk', label: 'STC ĐK kỳ', exact: ['stcdkky', 'stcdangkyky'] },
+    { key: 'khongDat', label: 'STC không đạt', exact: ['stckhongdat'] },
+    { key: 'noKhoa', label: 'STC nợ khoá', exact: ['stcnokhoa'] },
+    { key: 'tlKhoa', label: 'STC TL khoá', exact: ['stctlkhoa'] },
+    { key: 'dtbHk', label: 'ĐTB HK (hệ 4)', prefix: ['dtbhk'] },
+    { key: 'dtbTl', label: 'ĐTBTL (hệ 4)', prefix: ['dtbtl'] },
+    { key: 'tienDo', label: 'Tiến độ đào tạo', exact: ['tiendodaotao'] },
+    { key: 'nPrev', label: 'Số kỳ CB liền trước (nhập tay)', exact: ['sokycanhbaolientruoc', 'sokycblientruocnhap', 'solancanhbaolientieptruoc'] },
+  ];
+  // Cột kết quả do công cụ ghi ra; nhận diện để ghi đè khi tải lại file đã xuất
+  const RESULT_COLS = [
+    { key: 'kq', label: 'KQ xét (tính lại)', test: (n) => n.startsWith('kqxet') },
+    { key: 'dl', label: 'Dữ liệu dẫn đến cảnh báo', test: (n) => n.startsWith('dulieudanden') },
+    { key: 'nPrev', label: 'Số kỳ CB liền trước (DS lịch sử)', test: (n) => n.startsWith('sokycblientruoc') },
+    { key: 'nTotal', label: 'Số lần CB liên tiếp (tính cả kỳ này)', test: (n) => n.startsWith('solancblientiep') },
+    { key: 'chain', label: 'Các kỳ trong chuỗi cảnh báo', test: (n) => n.startsWith('cackytrongchuoi') },
+    { key: 'off', label: 'KQ trong DS lịch sử (kỳ xét)', test: (n) => n.startsWith('kqtrongds') },
+    { key: 'cmp', label: 'So với DS lịch sử', test: (n) => n.startsWith('sovoids') },
+  ];
+
+  function findHeaderRow(aoa) {
+    for (let i = 0; i < Math.min(aoa.length, 15); i++) {
+      const row = aoa[i] || [];
+      if (row.some((c) => FIELDS[0].exact.includes(nrm(c)))) return i;
+    }
+    return -1;
+  }
+
+  function mapColumns(headers) {
+    const map = {}, res = {};
+    headers.forEach((h, i) => {
+      const n = nrm(h);
+      if (!n) return;
+      const rc = RESULT_COLS.find((r) => r.test(n));
+      if (rc) { if (res[rc.key] == null) res[rc.key] = i; return; }
+      for (const f of FIELDS) {
+        if (map[f.key] != null) continue;
+        if ((f.exact && f.exact.includes(n)) || (f.prefix && f.prefix.some((p) => n.startsWith(p)))) { map[f.key] = i; break; }
+      }
+    });
+    return { map, res };
+  }
+
+  function prepareList(aoa) {
+    const headerIdx = findHeaderRow(aoa);
+    if (headerIdx < 0) return null;
+    const headers = (aoa[headerIdx] || []).map((h) => (h == null ? '' : String(h).trim()));
+    const { map, res } = mapColumns(headers);
+    return { aoa, headerIdx, headers, map, resCols: res };
+  }
+
+  function dataRows(list) {
+    const out = [];
+    const mi = list.map.mssv;
+    if (mi == null) return out;
+    for (let i = list.headerIdx + 1; i < list.aoa.length; i++) {
+      const a = list.aoa[i];
+      if (!a || !str(a[mi])) continue;
+      out.push({ i, a });
+    }
+    return out;
+  }
+
+  // ---------- kỳ học ----------
+  const parseYear = (v) => { const m = String(v == null ? '' : v).match(/(\d{4})/); return m ? parseInt(m[1], 10) : null; };
+  const parseHk = (v) => { const n = toNum(v); if (n != null) return Math.round(n); const m = String(v == null ? '' : v).match(/(\d)/); return m ? parseInt(m[1], 10) : null; };
+  const semLabel = (k) => { const y = Math.floor(k / 10), h = k % 10; return `HK${h} ${y}-${y + 1}`; };
+  const semKey = (y, h) => y * 10 + h;
+
+  function guessKy(list) {
+    const { map } = list;
+    if (map.namHoc == null || map.hocKy == null) return null;
+    const cnt = new Map();
+    for (const r of dataRows(list)) {
+      const y = parseYear(r.a[map.namHoc]), h = parseHk(r.a[map.hocKy]);
+      if (y == null || !h) continue;
+      const k = semKey(y, h);
+      cnt.set(k, (cnt.get(k) || 0) + 1);
+    }
+    let best = null;
+    for (const [k, c] of cnt) if (!best || c > best.c) best = { k, c };
+    return best ? { y: Math.floor(best.k / 10), hk: best.k % 10 } : null;
+  }
+
+  // ---------- lịch sử cảnh báo ----------
+  function prepareHistory(aoa) {
+    const headerIdx = findHeaderRow(aoa);
+    if (headerIdx < 0) return null;
+    const headers = (aoa[headerIdx] || []).map((h) => nrm(h));
+    const ix = (names) => headers.findIndex((h) => names.includes(h));
+    const cM = ix(FIELDS[0].exact), cY = ix(['namhoc']), cH = ix(['hocky']), cK = ix(['kqcuoi', 'ketquacuoi', 'ketqua', 'mucxuly']);
+    if (cM < 0 || cY < 0 || cH < 0) return { error: 'File lịch sử cần có các cột MSSV, Năm học, Học kỳ (và KQ cuối).' };
+    const entries = [];
+    let total = 0;
+    for (let i = headerIdx + 1; i < aoa.length; i++) {
+      const a = aoa[i];
+      if (!a) continue;
+      const mssv = str(a[cM]), y = parseYear(a[cY]), h = parseHk(a[cH]);
+      if (!mssv || y == null || !h) continue;
+      total++;
+      let warned = true, bth = false;
+      if (cK >= 0) {
+        const n = nrm(a[cK]);
+        bth = n.includes('buocthoihoc');
+        warned = bth || (n.includes('canhbao') && !n.startsWith('khong'));
+      }
+      if (warned) entries.push({ mssv, key: semKey(y, h), bth });
+    }
+    let min = Infinity, max = -Infinity;
+    for (const e of entries) { if (e.key < min) min = e.key; if (e.key > max) max = e.key; }
+    return { entries, total, hasKq: cK >= 0, min, max, nSv: new Set(entries.map((e) => e.mssv)).size };
+  }
+
+  // ---------- thông số ----------
+  const PARAMS = {
+    tbhkDau: { label: 'Điểm TB học kỳ (kỳ đầu của khoá)', short: 'ĐTB HK đầu khoá', kind: 'score', cols: ['dtbHk'] },
+    tbhkSau: { label: 'Điểm TB học kỳ (các kỳ tiếp theo)', short: 'ĐTB HK', kind: 'score', cols: ['dtbHk'] },
+    tbtl: { label: 'Điểm TB tích luỹ', short: 'ĐTBTL', kind: 'score', cols: ['dtbTl'] },
+    noDong: { label: 'Số tín chỉ nợ đọng từ đầu khoá', short: 'STC nợ khoá', kind: 'count', cols: ['noKhoa'] },
+    dangKy: { label: 'Số tín chỉ đăng ký trong kỳ', short: 'STC ĐK kỳ', kind: 'count', cols: ['dk'] },
+    tichLuy: { label: 'Số tín chỉ tích luỹ', short: 'STC TL khoá', kind: 'count', cols: ['tlKhoa'] },
+    tiLe: { label: 'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ', short: 'Tỷ lệ TC không đạt', kind: 'score', cols: ['khongDat', 'dk'] },
+    thoiGian: { label: 'Năm đang đào tạo / Số năm đào tạo theo CTĐT', short: 'Năm đang đào tạo', kind: 'score', cols: ['tienDo'] },
+    lienTiep: { label: 'Số lần cảnh báo liên tiếp', short: 'Số lần CB liên tiếp', kind: 'count', cols: [] },
+  };
+  const OPS = { '<': '<', '<=': '≤', '>': '>', '>=': '≥', '==': '=' };
+  const STRICT = { '<': true, '>': true };
+  const cmp = (v, op, t) => {
+    switch (op) {
+      case '<': return v < t - EPS;
+      case '<=': return v <= t + EPS;
+      case '>': return v > t + EPS;
+      case '>=': return v >= t - EPS;
+      default: return Math.abs(v - t) <= EPS;
+    }
+  };
+  const fmt = (kind, v) => (kind === 'score' ? v.toFixed(2) : (Number.isInteger(v) ? String(v) : v.toFixed(2)));
+
+  const PRESETS = {
+    eduone: {
+      name: 'EduOne — Phiên bản 2',
+      rows: [
+        { param: 'tbhkDau', op: '<', value: 0.8, levels: [1], muc: 'CB' },
+        { param: 'tbhkSau', op: '<', value: 1, levels: [], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.2, levels: [1], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.4, levels: [2], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.6, levels: [3], muc: 'CB' },
+        { param: 'noDong', op: '>', value: 24, levels: [], muc: 'CB' },
+        { param: 'lienTiep', op: '>=', value: 2, levels: [], muc: 'BTH' },
+        { param: 'thoiGian', op: '>=', value: 2, levels: [], muc: 'BTH' },
+        { param: 'tiLe', op: '>=', value: 0.5, levels: [], muc: 'CB' },
+      ],
+    },
+    apis: {
+      name: 'APIS — bộ tiêu chí chính',
+      rows: [
+        { param: 'tbhkDau', op: '<', value: 0.8, levels: [], muc: 'CB' },
+        { param: 'tbhkSau', op: '<', value: 1, levels: [], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.2, levels: [1], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.4, levels: [2], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.6, levels: [3], muc: 'CB' },
+        { param: 'tbtl', op: '<', value: 1.8, levels: [4, 5, 6], muc: 'CB' },
+        { param: 'noDong', op: '>', value: 24, levels: [], muc: 'CB' },
+        { param: 'dangKy', op: '==', value: 0, levels: [], muc: 'CB' },
+        { param: 'lienTiep', op: '>=', value: 3, levels: [], muc: 'BTH' },
+      ],
+    },
+  };
+
+  const levelsText = (lv) => (lv && lv.length ? 'Năm ' + lv.join(', ') : 'Mọi trình độ');
+  const criterionText = (c) => `${PARAMS[c.param].label} ${OPS[c.op]} ${fmt(PARAMS[c.param].kind, Number(c.value))} · ${levelsText(c.levels)} · ${c.muc === 'BTH' ? 'Buộc thôi học' : 'Cảnh báo học tập'}`;
+
+  function parseSoNam(nienKhoa, fallback) {
+    const s = String(nienKhoa == null ? '' : nienKhoa);
+    const m = s.match(/_\s*(\d+(?:[.,]\d+)?)\s*n[aă]m/i) || s.match(/(\d+(?:[.,]\d+)?)\s*n[aă]m/i);
+    return m ? parseFloat(m[1].replace(',', '.')) : fallback;
+  }
+
+  // ---------- tính kết quả ----------
+  function evaluate(list, criteria, st, entries) {
+    const map = list.map;
+    const kyKey = semKey(st.kyY, st.kyHk);
+    const warned = new Set(), official = new Map();
+    let minKey = Infinity;
+    for (const e of entries || []) {
+      if (e.key < kyKey) { warned.add(e.mssv + '|' + e.key); if (e.key < minKey) minKey = e.key; }
+      else if (e.key === kyKey) official.set(e.mssv, Math.max(official.get(e.mssv) || 0, e.bth ? 2 : 1));
+    }
+    const dec = (k) => { let y = Math.floor(k / 10), h = (k % 10) - 1; if (h < 1) { y -= 1; h = 3; } return y * 10 + h; };
+    const prev = (k) => { let s = dec(k); if (!st.tinhHe3) while (s % 10 === 3) s = dec(s); return s; };
+    const hasOfficial = official.size > 0;
+
+    const on = criteria.filter((c) => c.on !== false && PARAMS[c.param]);
+    const chainCrit = on.find((c) => c.param === 'lienTiep');
+    const rowCrit = on.filter((c) => c.param !== 'lienTiep');
+
+    const results = [];
+    const counts = { 'Cảnh báo học tập': 0, 'Buộc thôi học': 0, 'Không cảnh báo': 0, 'Không xét': 0 };
+    for (const r of dataRows(list)) {
+      const a = r.a;
+      const g = (k) => (map[k] == null ? undefined : a[map[k]]);
+      const mssv = str(g('mssv'));
+      const rec = {
+        dtbHk: toNum(g('dtbHk')), dtbTl: toNum(g('dtbTl')), noKhoa: toNum(g('noKhoa')), dk: toNum(g('dk')),
+        kd: toNum(g('khongDat')), tl: toNum(g('tlKhoa')), tienDo: toNum(g('tienDo')),
+        hkDau: isYes(g('hkDau')), nienKhoa: g('nienKhoa'),
+      };
+      const td = toNum(g('trinhDo'));
+      rec.trinhDo = st.trinhDoMode === 'compute'
+        ? (rec.tl != null && st.M > 0 ? Math.floor(rec.tl / st.M) + 1 : null)
+        : (td != null ? Math.round(td) : null);
+
+      // chuỗi cảnh báo liền trước
+      let nPrev = 0, chain = [], chainNote = '';
+      if (st.chainSource === 'history') {
+        let s = prev(kyKey);
+        while (s >= minKey && warned.has(mssv + '|' + s)) { chain.push(s); s = prev(s); }
+        chain.reverse();
+        nPrev = chain.length;
+      } else if (st.chainSource === 'column') {
+        nPrev = Math.max(0, Math.round(toNum(g('nPrev')) || 0));
+        if (nPrev) chainNote = `${nPrev} kỳ liền trước (nhập tay)`;
+      }
+
+      const xetRule = st.khongXet;
+      const khongXet = xetRule === 'trinhdo' ? rec.trinhDo == null
+        : xetRule === 'khongsolieuky' ? (rec.dtbHk == null && rec.dk == null) : false;
+
+      const viol = [], edge = [];
+      let bthDirect = false;
+      if (!khongXet) {
+        for (const c of rowCrit) {
+          const P = PARAMS[c.param];
+          if (c.levels && c.levels.length && !(rec.trinhDo != null && c.levels.includes(rec.trinhDo))) continue;
+          const t = toNum(c.value);
+          if (t == null) continue;
+          let v = null, body = null;
+          if (c.param === 'tbhkDau') { if (rec.hkDau) v = rec.dtbHk; }
+          else if (c.param === 'tbhkSau') { if (!rec.hkDau) v = rec.dtbHk; }
+          else if (c.param === 'tbtl') v = rec.dtbTl;
+          else if (c.param === 'noDong') v = rec.noKhoa;
+          else if (c.param === 'dangKy') v = rec.dk;
+          else if (c.param === 'tichLuy') v = rec.tl;
+          else if (c.param === 'tiLe') {
+            if (rec.kd != null && rec.dk != null && rec.dk > 0) { v = rec.kd / rec.dk; body = `${P.short} = ${rec.kd}/${rec.dk} = ${v.toFixed(2)}`; }
+          } else if (c.param === 'thoiGian') {
+            const nam = parseSoNam(rec.nienKhoa, st.soNam);
+            if (rec.tienDo != null && nam > 0) { v = rec.tienDo / nam; body = `${P.short} ${fmt('count', rec.tienDo)} / ${fmt('count', nam)} năm = ${v.toFixed(2)}`; }
+          }
+          if (v == null) continue;
+          if (body == null) body = `${P.short} = ${fmt(P.kind, v)}`;
+          const eq = Math.abs(v - t) <= EPS;
+          const hit = cmp(v, c.op, t);
+          if (hit) {
+            const lv = c.levels && c.levels.length ? `, năm ${rec.trinhDo}` : '';
+            viol.push({ param: c.param, cols: c.param === 'tiLe' ? ['khongDat', 'dk'] : P.cols.slice(), muc: c.muc, text: `${body} (${OPS[c.op]} ${fmt(P.kind, t)}${lv})` });
+            if (eq && !STRICT[c.op] && c.op !== '==') edge.push(`${P.short} đúng ngưỡng ${fmt(P.kind, t)}, tính vi phạm vì phép so sánh ${OPS[c.op]}`);
+          } else if (eq && STRICT[c.op]) {
+            edge.push(`${P.short} = ${fmt(P.kind, v)} sát ngưỡng ${fmt(P.kind, t)} (chưa vi phạm)`);
+          }
+        }
+      }
+      const kho1 = viol.filter((x) => x.muc !== 'BTH');
+      bthDirect = viol.some((x) => x.muc === 'BTH');
+      let ket, nTotal;
+      if (khongXet) { ket = 'Không xét'; nTotal = null; }
+      else {
+        nTotal = kho1.length ? nPrev + 1 : 0;
+        let bthChain = false;
+        if (chainCrit && kho1.length) bthChain = cmp(nTotal, chainCrit.op, Number(chainCrit.value));
+        if (bthDirect || bthChain) {
+          ket = 'Buộc thôi học';
+          if (bthChain) viol.push({ param: 'lienTiep', cols: [], muc: 'BTH', text: `Cảnh báo liên tiếp ${nTotal} kỳ (${OPS[chainCrit.op]} ${chainCrit.value}) → Buộc thôi học`, chainOnly: true });
+        } else if (kho1.length) ket = 'Cảnh báo học tập';
+        else ket = 'Không cảnh báo';
+      }
+      counts[ket]++;
+      const off = official.get(mssv);
+      const offTxt = off === 2 ? 'Buộc thôi học' : off === 1 ? 'Cảnh báo học tập' : null;
+      const isW = ket === 'Cảnh báo học tập' || ket === 'Buộc thôi học';
+      let cmpTxt = null, same = null;
+      if (hasOfficial) {
+        same = (isW && offTxt === ket) || (!isW && !offTxt);
+        cmpTxt = same ? (isW ? 'Khớp' : 'Khớp (cả hai không có cảnh báo)') : `Lệch: công cụ = ${ket}; DS = ${offTxt || 'không có'}`;
+      }
+      results.push({
+        i: r.i, mssv, ket, viol, edge, nPrev, nTotal, chain: chain.map(semLabel), chainNote,
+        official: offTxt, cmp: cmpTxt, same, rec,
+      });
+    }
+    const warnings = [];
+    const missing = (k) => map[k] == null;
+    const need = new Set();
+    for (const c of rowCrit) PARAMS[c.param].cols.forEach((k) => need.add(k));
+    for (const k of need) if (missing(k)) warnings.push(`Không tìm thấy cột "${FIELDS.find((f) => f.key === k).label}": các tiêu chí dùng cột này bị bỏ qua.`);
+    if (rowCrit.some((c) => c.param === 'tbhkDau' || c.param === 'tbhkSau') && missing('hkDau')) warnings.push('Không có cột "HK đầu khoá": mọi dòng được coi là kỳ tiếp theo.');
+    if (rowCrit.some((c) => c.levels && c.levels.length) && st.trinhDoMode === 'file' && missing('trinhDo')) warnings.push('Không có cột "Trình độ năm học": các tiêu chí theo trình độ bị bỏ qua. Chọn "Tự tính" ở bước 1 nếu cần.');
+    if (st.chainSource === 'column' && missing('nPrev')) warnings.push('Chưa có cột "Số kỳ CB liền trước (nhập tay)": số kỳ liền trước coi là 0.');
+    if (st.chainSource === 'history' && !(entries && entries.length)) warnings.push('Chưa có lịch sử cảnh báo: số kỳ liền trước coi là 0.');
+    if (st.chainSource === 'none' && chainCrit) warnings.push('Đang tắt nguồn số kỳ liên tiếp: tiêu chí số lần cảnh báo liên tiếp không tạo ra Buộc thôi học.');
+    const total = results.length;
+    if (st.khongXet === 'trinhdo' && st.trinhDoMode === 'file' && total && counts['Không xét'] / total > 0.5) {
+      warnings.push(`${counts['Không xét']}/${total} dòng thiếu "Trình độ năm học" nên ra Không xét. Chọn "Tự tính từ STC TL khoá" ở bước 1, hoặc đổi quy tắc Không xét.`);
+    }
+    let nOff = 0, nSame = 0, nDiff = 0;
+    if (hasOfficial) {
+      for (const x of results) {
+        if (x.official) { nOff++; if (x.same) nSame++; }
+        if (!x.same) nDiff++;
+      }
+    }
+    return { results, counts, hasOfficial, nOff, nSame, nDiff, warnings };
+  }
+
+  return { FIELDS, RESULT_COLS, PARAMS, OPS, PRESETS, nrm, toNum, fmt, findHeaderRow, mapColumns, prepareList, dataRows,
+    prepareHistory, guessKy, evaluate, criterionText, levelsText, semLabel };
+})();
+
+</script>
+<script id="app">
+(() => {
+  'use strict';
+  const E = Engine;
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const STORE = 'soat-canh-bao-v1';
+  const KET_CLS = { 'Cảnh báo học tập': 'cb', 'Buộc thôi học': 'bth', 'Không cảnh báo': 'ok', 'Không xét': 'skip' };
+  const STUDY_KEYS = ['trinhDo', 'hkDau', 'dk', 'khongDat', 'noKhoa', 'tlKhoa', 'dtbHk', 'dtbTl', 'tienDo'];
+
+  const S = {
+    list: null, hist: null, preset: 'eduone', criteria: [],
+    st: { kyY: 2025, kyHk: 2, tinhHe3: true, soNam: 4, trinhDoMode: 'file', M: 35, khongXet: 'trinhdo', chainSource: 'history' },
+    R: null, filter: 'all', q: '', shown: 150,
+  };
+  let downloads = null;
+
+  // ---------- dữ liệu mẫu (không phải sinh viên thật) ----------
+  function sampleList() {
+    const H = ['STT', 'MSSV', 'Họ và tên', 'Lớp hành chính', 'Niên khoá', 'Trạng thái hiện tại', 'Năm học', 'Học kỳ', 'Trình độ năm học', 'HK đầu khoá',
+      'STC ĐK kỳ', 'STC không đạt', 'STC nợ kỳ', 'STC nợ khoá', 'STC TL kỳ', 'STC TL khoá', 'ĐTB HK hệ 4', 'ĐTBTL hệ 4', 'Tiến độ đào tạo'];
+    const NK = 'Đại học Chính quy Khóa 99_ 4 năm';
+    const mk = (n, td, dk, kd, nokhoa, tl, dtb, dtbtl, st) => [n, 'MAU' + String(n).padStart(3, '0'), 'Sinh viên mẫu ' + String(n).padStart(2, '0'), 'LOP-MAU', NK, st || 'Đang học', '2025-2026', 2, td,
+      td == null ? null : 'không', dk, kd, kd, nokhoa, dk == null ? null : dk - kd, tl, dtb, dtbtl, 3];
+    const rows = [
+      mk(1, 2, 14, 2, 6, 60, 0.74, 2.1),
+      mk(2, 3, 12, 2, 8, 80, 0.55, 2.0),
+      mk(3, 3, 12, 4, 27, 85, 0.9, 1.9),
+      mk(4, 2, 14, 7, 10, 55, 1.4, 2.3),
+      mk(5, 2, 14, 1, 4, 58, 1.0, 2.4),
+      mk(6, 3, 15, 0, 0, 90, 3.1, 3.0),
+      mk(7, 3, 13, 1, 3, 88, 2.2, 2.5),
+      mk(8, 3, 0, 0, 5, 84, null, 2.0),
+      mk(9, 4, 12, 1, 5, 110, 2.0, 1.7),
+      mk(10, 1, 14, 3, 6, 20, 1.5, 1.1),
+      mk(11, null, null, 0, null, 0, null, null, 'Thôi học'),
+      mk(12, 2, 15, 0, 2, 62, 2.8, 2.6),
+    ];
+    return [H, ...rows];
+  }
+  function sampleHist() {
+    const H = ['MSSV', 'Họ và tên', 'Năm học', 'Học kỳ', 'KQ cuối'];
+    const cb = 'Cảnh báo học tập', bth = 'Buộc thôi học';
+    const r = (n, y, h, k) => ['MAU' + String(n).padStart(3, '0'), 'Sinh viên mẫu ' + String(n).padStart(2, '0'), y, String(h), k];
+    return [H,
+      r(2, '2025-2026', 1, cb), r(3, '2024-2025', 3, cb), r(3, '2025-2026', 1, cb), r(7, '2025-2026', 1, cb),
+      r(1, '2025-2026', 2, cb), r(2, '2025-2026', 2, cb), r(3, '2025-2026', 2, bth), r(8, '2025-2026', 2, cb), r(9, '2025-2026', 2, cb), r(10, '2025-2026', 2, cb)];
+  }
+  function loadSamples() {
+    S.list = { name: 'Dữ liệu mẫu', sample: true, buf: null, sheets: [{ name: 'Mẫu', aoa: sampleList(), rowOff: 0, colOff: 0 }], sheetIdx: 0, sheetName: 'Mẫu' };
+    applySheet(S.list, 0);
+    S.hist = Object.assign({ name: 'Lịch sử mẫu', sample: true }, E.prepareHistory(sampleHist()));
+    afterListLoad();
+    S.st.chainSource = 'history';
+  }
+
+  // ---------- đọc file ----------
+  const sheetAoa = (wb, name) => {
+    const ws = wb.Sheets[name];
+    const ref = ws && ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : { s: { r: 0, c: 0 } };
+    const aoa = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, blankrows: true, raw: true }) : [];
+    return { name, aoa, rowOff: ref.s.r, colOff: ref.s.c };
+  };
+  function applySheet(L, idx) {
+    const sh = L.sheets[idx];
+    const p = E.prepareList(sh.aoa);
+    L.sheetIdx = idx; L.sheetName = sh.name; L.rowOff = sh.rowOff; L.colOff = sh.colOff;
+    L.ok = !!p;
+    if (p) Object.assign(L, p);
+    return !!p;
+  }
+  async function readBook(file) {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    return { buf, wb };
+  }
+  async function onListFile(file) {
+    busy('Đang đọc danh sách xét…');
+    await tick();
+    try {
+      const { buf, wb } = await readBook(file);
+      const sheets = wb.SheetNames.map((n) => sheetAoa(wb, n));
+      const L = { name: file.name, sample: false, buf, sheets };
+      let idx = sheets.findIndex((s) => E.findHeaderRow(s.aoa) >= 0);
+      if (idx < 0) { toast('Không thấy dòng tiêu đề có cột MSSV trong file này.', true); return; }
+      applySheet(L, idx);
+      S.list = L;
+      afterListLoad();
+      toast(`Đã đọc ${E.dataRows(L).length} dòng từ ${file.name}`);
+    } catch (e) { toast('Không đọc được file: ' + (e && e.message || e), true); }
+    finally { busy(null); }
+    render();
+  }
+  async function onHistFile(file) {
+    busy('Đang đọc lịch sử cảnh báo…');
+    await tick();
+    try {
+      const { wb } = await readBook(file);
+      let got = null;
+      for (const n of wb.SheetNames) {
+        const p = E.prepareHistory(sheetAoa(wb, n).aoa);
+        if (p && !p.error) { got = p; break; }
+        if (p && p.error && !got) got = p;
+      }
+      if (!got || got.error) { toast((got && got.error) || 'Không thấy dòng tiêu đề có cột MSSV trong file lịch sử.', true); return; }
+      S.hist = Object.assign({ name: file.name, sample: false }, got);
+      S.st.chainSource = 'history';
+      toast(`Đã đọc lịch sử: ${got.entries.length} lượt cảnh báo của ${got.nSv} sinh viên`);
+    } catch (e) { toast('Không đọc được file: ' + (e && e.message || e), true); }
+    finally { busy(null); }
+    render();
+  }
+  function afterListLoad() {
+    const L = S.list;
+    if (!L.ok) return;
+    const ky = E.guessKy(L);
+    if (ky) { S.st.kyY = ky.y; S.st.kyHk = ky.hk; }
+    const hasTd = L.map.trinhDo != null && E.dataRows(L).some((r) => E.toNum(r.a[L.map.trinhDo]) != null);
+    S.st.trinhDoMode = 'file';
+    S.st.khongXet = hasTd ? 'trinhdo' : 'khongsolieuky';
+    if (!L.sample && L.map.nPrev != null && (!S.hist || S.hist.sample)) S.st.chainSource = 'column';
+  }
+
+  // ---------- lưu cấu hình ----------
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify({ preset: S.preset, criteria: S.criteria, tinhHe3: S.st.tinhHe3, soNam: S.st.soNam, M: S.st.M })); } catch (e) { /* bỏ qua */ }
+  }
+  function restore() {
+    let ok = false;
+    try {
+      const d = JSON.parse(localStorage.getItem(STORE) || 'null');
+      if (d && Array.isArray(d.criteria) && d.criteria.length) {
+        S.criteria = d.criteria.filter((c) => E.PARAMS[c.param]).map((c) => ({ on: c.on !== false, param: c.param, op: c.op, value: c.value, levels: c.levels || [], muc: c.muc }));
+        S.preset = d.preset || 'custom';
+        if (typeof d.tinhHe3 === 'boolean') S.st.tinhHe3 = d.tinhHe3;
+        if (d.soNam > 0) S.st.soNam = d.soNam;
+        if (d.M > 0) S.st.M = d.M;
+        ok = S.criteria.length > 0;
+      }
+    } catch (e) { /* bỏ qua */ }
+    if (!ok) setPreset('eduone');
+  }
+  function setPreset(k) {
+    S.preset = k;
+    if (k !== 'custom') S.criteria = E.PRESETS[k].rows.map((r) => ({ on: true, param: r.param, op: r.op, value: r.value, levels: r.levels.slice(), muc: r.muc }));
+  }
+
+  // ---------- giao diện ----------
+  const fieldLabel = (k) => E.FIELDS.find((f) => f.key === k).label;
+  function renderSampleBar() {
+    const bar = $('#sampleBar');
+    const parts = [];
+    if (S.list && S.list.sample) parts.push('danh sách xét');
+    if (S.hist && S.hist.sample) parts.push('lịch sử cảnh báo');
+    if (!parts.length) { bar.hidden = true; return; }
+    bar.hidden = false;
+    bar.innerHTML = `<b>Dữ liệu mẫu:</b> <span>đang hiển thị ${parts.join(' và ')} giả lập (MAU001…). Tải file của bạn ở bước 1 và 2 để thay thế.</span>`;
+  }
+  function renderP1() {
+    const L = S.list, st = S.st;
+    const n = L && L.ok ? E.dataRows(L).length : 0;
+    const total = E.FIELDS.filter((f) => f.key !== 'nPrev').length;
+    const found = L && L.ok ? E.FIELDS.filter((f) => f.key !== 'nPrev' && L.map[f.key] != null).length : 0;
+    const sheetSel = L && L.sheets.length > 1
+      ? `<span>Sheet <select id="sheetSel" aria-label="Chọn sheet">${L.sheets.map((s, i) => `<option value="${i}"${i === L.sheetIdx ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></span>` : '';
+    const mapHtml = L && L.ok ? `<details><summary>Cột đã nhận diện: ${found}/${total}${L.map.mssv == null ? ' · thiếu MSSV' : ''}</summary><div class="mapgrid">${
+      E.FIELDS.map((f) => `<div class="field"><label for="map-${f.key}">${esc(f.label)}${f.req ? ' *' : ''}</label><select id="map-${f.key}" data-map="${f.key}"><option value="">— không có —</option>${
+        L.headers.map((h, i) => (h ? `<option value="${i}"${L.map[f.key] === i ? ' selected' : ''}>${esc(h)}</option>` : '')).join('')}</select></div>`).join('')
+    }</div></details>` : '';
+    $('#p1').innerHTML = `
+      <header><span class="step">1</span><h2 id="h1a">Danh sách xét</h2></header>
+      <label class="drop" data-kind="list" tabindex="-1"><input type="file" id="fList" accept=".xlsx,.xlsm,.xls,.csv"><span class="t">Chọn file Excel danh sách xét</span><span class="s">hoặc kéo thả vào đây. Cần cột MSSV; các cột điểm, tín chỉ nhận diện theo tên.</span></label>
+      ${L ? `<div class="meta"><b>${esc(L.name)}</b>${L.sample ? '<span class="tag">mẫu</span>' : ''}<span>${n} sinh viên</span>${sheetSel}</div>` : ''}
+      ${mapHtml}
+      <div class="row">
+        <div class="field"><label for="kyY">Kỳ xét · Năm học</label><input type="text" id="kyY" class="w-md" value="${st.kyY}-${st.kyY + 1}" inputmode="numeric" aria-label="Năm học của kỳ xét"></div>
+        <div class="field"><label for="kyHk">Học kỳ</label><select id="kyHk" class="w-sm">${[1, 2, 3].map((h) => `<option value="${h}"${h === st.kyHk ? ' selected' : ''}>HK${h}</option>`).join('')}</select></div>
+      </div>
+      <div class="field"><span class="lbl">Trình độ năm học</span>
+        <div class="radio" role="radiogroup" aria-label="Nguồn trình độ năm học">
+          <label><input type="radio" name="tdmode" value="file"${st.trinhDoMode === 'file' ? ' checked' : ''}>Lấy từ file</label>
+          <label><input type="radio" name="tdmode" value="compute"${st.trinhDoMode === 'compute' ? ' checked' : ''}>Tự tính = phần nguyên(STC TL khoá ÷</label>
+          <input type="text" id="tdM" class="w-sm" value="${st.M}" inputmode="decimal" aria-label="M, số tín chỉ chuẩn một năm"><span class="hint">) + 1</span>
+        </div></div>
+      <div class="field"><label for="kx">Sinh viên ra "Không xét" khi</label>
+        <select id="kx"><option value="trinhdo"${st.khongXet === 'trinhdo' ? ' selected' : ''}>thiếu Trình độ năm học</option>
+        <option value="khongsolieuky"${st.khongXet === 'khongsolieuky' ? ' selected' : ''}>thiếu cả ĐTB HK và STC ĐK kỳ</option>
+        <option value="none"${st.khongXet === 'none' ? ' selected' : ''}>không bao giờ (xét mọi dòng có dữ liệu)</option></select></div>`;
+  }
+  function updMapSummary() {
+    const L = S.list, sm = $('#p1 details summary');
+    if (!L || !sm) return;
+    const total = E.FIELDS.filter((f) => f.key !== 'nPrev').length;
+    const found = E.FIELDS.filter((f) => f.key !== 'nPrev' && L.map[f.key] != null).length;
+    sm.textContent = `Cột đã nhận diện: ${found}/${total}${L.map.mssv == null ? ' · thiếu MSSV' : ''}`;
+  }
+  function renderP2() {
+    const H = S.hist, st = S.st, L = S.list;
+    const hasCol = L && L.ok && L.map.nPrev != null;
+    const info = H && !H.error ? `<div class="meta"><b>${esc(H.name)}</b>${H.sample ? '<span class="tag">mẫu</span>' : ''}<span>${H.entries.length} lượt cảnh báo · ${H.nSv} sinh viên${H.entries.length ? ' · từ ' + E.semLabel(H.min) + ' đến ' + E.semLabel(H.max) : ''}</span></div>` : '';
+    $('#p2').innerHTML = `
+      <header><span class="step">2</span><h2 id="h2a">Số kỳ cảnh báo liên tiếp</h2></header>
+      <div class="radio" role="radiogroup" aria-label="Nguồn số kỳ liên tiếp">
+        <label><input type="radio" name="chain" value="history"${st.chainSource === 'history' ? ' checked' : ''}>Từ file lịch sử cảnh báo</label>
+        <label><input type="radio" name="chain" value="column"${st.chainSource === 'column' ? ' checked' : ''}>Từ cột "Số kỳ CB liền trước (nhập tay)" trong danh sách${hasCol ? '' : ' (chưa có cột)'}</label>
+        <label><input type="radio" name="chain" value="none"${st.chainSource === 'none' ? ' checked' : ''}>Không dùng (coi là 0)</label>
+      </div>
+      <label class="drop" data-kind="hist"><input type="file" id="fHist" accept=".xlsx,.xlsm,.xls,.csv"><span class="t">Chọn file lịch sử cảnh báo</span><span class="s">Cần cột MSSV, Năm học, Học kỳ, KQ cuối. Mỗi dòng "Cảnh báo học tập" hoặc "Buộc thôi học" tính là một kỳ bị cảnh báo.</span></label>
+      ${info}
+      <div class="radio"><label><input type="checkbox" id="he3"${st.tinhHe3 ? ' checked' : ''}>Tính học kỳ hè (HK3) vào chuỗi</label></div>
+      <p class="hint">Chuỗi đếm ngược từ kỳ liền trước kỳ xét; gặp kỳ không có cảnh báo thì dừng. Dòng của kỳ xét trong file lịch sử chỉ dùng để đối chiếu.</p>`;
+  }
+  const lvChips = (c, i) => [1, 2, 3, 4, 5, 6].map((n) => `<button type="button" class="chip" data-act="lv" data-lv="${n}" aria-pressed="${c.levels.includes(n)}" aria-label="Năm ${n}">${n}</button>`).join('');
+  function renderP3() {
+    const P = E.PARAMS;
+    const rows = S.criteria.map((c, i) => `
+      <tr data-i="${i}" class="crit">
+        <td><input type="checkbox" data-f="on" aria-label="Bật tiêu chí ${i + 1}"${c.on !== false ? ' checked' : ''}></td>
+        <td class="c-param"><select data-f="param" aria-label="Thông số">${Object.keys(P).map((k) => `<option value="${k}"${k === c.param ? ' selected' : ''}>${esc(P[k].label)}</option>`).join('')}</select></td>
+        <td class="c-muc"><select data-f="muc" aria-label="Mức xử lý"${c.param === 'lienTiep' ? ' disabled' : ''}><option value="CB"${c.muc === 'CB' ? ' selected' : ''}>Cảnh báo học tập</option><option value="BTH"${c.muc === 'BTH' ? ' selected' : ''}>Buộc thôi học</option></select></td>
+        <td style="width:64px"><select data-f="op" aria-label="So sánh">${Object.keys(E.OPS).map((o) => `<option value="${o}"${o === c.op ? ' selected' : ''}>${E.OPS[o]}</option>`).join('')}</select></td>
+        <td style="width:84px"><input type="text" data-f="value" inputmode="decimal" value="${esc(c.value)}" aria-label="Giá trị ngưỡng"></td>
+        <td>${c.param === 'lienTiep' ? '<span class="hint">tính cả kỳ này</span>' : `<div class="chips" aria-label="Áp dụng trình độ năm học">${lvChips(c, i)}</div>`}</td>
+        <td><button type="button" class="btn ghost small" data-act="del" aria-label="Xoá tiêu chí ${i + 1}">Xoá</button></td>
+      </tr>`).join('');
+    $('#p3').innerHTML = `
+      <header><span class="step">3</span><h2 id="h3a">Thông số xét</h2></header>
+      <div class="row">
+        <div class="field"><label for="preset">Bộ thông số</label>
+          <select id="preset" class="w-md" style="width:260px">${Object.keys(E.PRESETS).map((k) => `<option value="${k}"${S.preset === k ? ' selected' : ''}>${esc(E.PRESETS[k].name)}</option>`).join('')}<option value="custom"${S.preset === 'custom' ? ' selected' : ''}>Tuỳ chỉnh</option></select></div>
+        <div class="field"><label for="soNam">Số năm đào tạo mặc định</label><input type="text" id="soNam" class="w-sm" value="${S.st.soNam}" inputmode="decimal"></div>
+        <button type="button" class="btn ghost small" data-act="add">Thêm tiêu chí</button>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>Bật</th><th>Thông số</th><th>Mức xử lý</th><th>So sánh</th><th>Giá trị</th><th>Áp dụng trình độ năm học (không chọn = mọi trình độ)</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="hint">Sinh viên vi phạm bất kỳ tiêu chí Cảnh báo học tập nào thì bị cảnh báo. "Số lần cảnh báo liên tiếp" đếm cả kỳ này và chỉ nâng lên Buộc thôi học khi kỳ này đã bị cảnh báo. Số năm đào tạo lấy từ Niên khoá (vd. "_ 4 năm"), nếu không có thì dùng số mặc định.</p>`;
+  }
+
+  const reasonText = (x) => {
+    if (x.ket === 'Không xét') {
+      const miss = [];
+      if (x.rec.trinhDo == null) miss.push('Trình độ năm học');
+      if (x.rec.dtbHk == null) miss.push('ĐTB HK');
+      if (x.rec.dk == null) miss.push('STC ĐK kỳ');
+      const have = [];
+      if (x.rec.dtbHk != null) have.push('ĐTB HK = ' + x.rec.dtbHk.toFixed(2));
+      if (x.rec.dtbTl != null) have.push('ĐTBTL = ' + x.rec.dtbTl.toFixed(2));
+      return 'Không xét: thiếu ' + (miss.join(', ') || 'số liệu kỳ này') + (have.length ? '. Đang có: ' + have.join('; ') : '');
+    }
+    let t = x.viol.filter((v) => !v.chainOnly).map((v) => v.text).join('; ');
+    const ch = x.viol.find((v) => v.chainOnly);
+    if (ch) t += (t ? '. ' : '') + ch.text;
+    if (x.edge.length) t += (t ? '. ' : '') + 'Lưu ý: ' + x.edge.join('; ');
+    return t;
+  };
+  const isW = (x) => x.ket === 'Cảnh báo học tập' || x.ket === 'Buộc thôi học';
+  const kyLabel = () => E.semLabel(S.st.kyY * 10 + S.st.kyHk);
+  const chainText = (x) => {
+    if (x.chain.length) {
+      if (isW(x)) return x.chain.join(' → ') + ' → ' + kyLabel() + ' (kỳ này)';
+      return x.chain.join(' → ') + (x.ket === 'Không cảnh báo' ? ' (kỳ này không cảnh báo → chuỗi dừng)' : '');
+    }
+    if (isW(x)) return kyLabel() + ' (kỳ này)' + (x.chainNote ? '; ' + x.chainNote : '');
+    return x.chainNote || '';
+  };
+
+  function filtered() {
+    const R = S.R; if (!R) return [];
+    const q = S.q.trim().toLowerCase();
+    return R.results.filter((x) => {
+      if (S.filter === 'bth' && x.ket !== 'Buộc thôi học') return false;
+      if (S.filter === 'cb' && x.ket !== 'Cảnh báo học tập') return false;
+      if (S.filter === 'ok' && x.ket !== 'Không cảnh báo') return false;
+      if (S.filter === 'skip' && x.ket !== 'Không xét') return false;
+      if (S.filter === 'diff' && x.same !== false) return false;
+      if (q) {
+        const name = S.list.map.hoTen != null ? String(S.list.aoa[x.i][S.list.map.hoTen] || '').toLowerCase() : '';
+        if (!x.mssv.toLowerCase().includes(q) && !name.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+  function renderResults() {
+    const R = S.R, L = S.list;
+    const el = $('#results');
+    if (!R || !L || !L.ok) { el.innerHTML = '<header><span class="step">4</span><h2 id="h4a">Kết quả</h2></header><p class="muted">Chưa có kết quả. Chọn file danh sách xét ở bước 1.</p>'; return; }
+    const c = R.counts, total = R.results.length;
+    const rows = filtered();
+    const show = rows.slice(0, S.shown);
+    const hasName = L.map.hoTen != null, hasLop = L.map.lop != null;
+    const warn = R.warnings.map((w) => `<div class="note">${esc(w)}</div>`).join('');
+    const cmpLine = R.hasOfficial ? `<div class="note" style="background:var(--surface-2);border-color:var(--line)">So với danh sách lịch sử ở kỳ ${esc(kyLabel())}: <b>${R.nSame}/${R.nOff}</b> sinh viên có trong danh sách cho cùng kết quả · <b>${R.nDiff}</b> sinh viên lệch.</div>` : '';
+    const chip = (k, t, n) => `<button type="button" class="chip" data-act="flt" data-k="${k}" aria-pressed="${S.filter === k}">${t}${n != null ? ' · ' + n : ''}</button>`;
+    const body = show.map((x) => {
+      const aoaRow = L.aoa[x.i];
+      const cls = KET_CLS[x.ket];
+      const nrow = x.nTotal != null && x.nTotal > 0 ? x.nTotal : '';
+      return `<tr><td class="mono">${esc(x.mssv)}</td>${hasName ? `<td>${esc(aoaRow[L.map.hoTen])}</td>` : ''}${hasLop ? `<td class="mono">${esc(aoaRow[L.map.lop])}</td>` : ''}
+        <td><span class="pill ${cls}">${x.ket}</span></td><td class="detail ${x.ket === 'Không cảnh báo' || x.ket === 'Không xét' ? 'muted' : ''}">${esc(reasonText(x))}</td>
+        <td class="mono">${nrow}</td><td class="detail muted">${esc(chainText(x))}</td>${R.hasOfficial ? `<td class="detail">${x.same === false ? `<span class="cmp-diff">${esc(x.cmp)}</span>` : esc(x.cmp || '')}</td>` : ''}</tr>`;
+    }).join('');
+    el.innerHTML = `
+      <header><span class="step">4</span><h2 id="h4a">Kết quả · kỳ ${esc(kyLabel())} · ${total} sinh viên</h2></header>
+      <div class="stats">
+        <div class="stat bth"><span class="n">${c['Buộc thôi học']}</span><span class="l">Buộc thôi học</span></div>
+        <div class="stat cb"><span class="n">${c['Cảnh báo học tập']}</span><span class="l">Cảnh báo học tập</span></div>
+        <div class="stat ok"><span class="n">${c['Không cảnh báo']}</span><span class="l">Không cảnh báo</span></div>
+        <div class="stat skip"><span class="n">${c['Không xét']}</span><span class="l">Không xét</span></div>
+      </div>
+      <div class="notes">${warn}${cmpLine}</div>
+      <div class="toolbar">
+        <div class="filters">${chip('all', 'Tất cả', total)}${chip('bth', 'Buộc thôi học', c['Buộc thôi học'])}${chip('cb', 'Cảnh báo', c['Cảnh báo học tập'])}${chip('ok', 'Không cảnh báo', c['Không cảnh báo'])}${chip('skip', 'Không xét', c['Không xét'])}${R.hasOfficial ? chip('diff', 'Lệch DS', R.nDiff) : ''}</div>
+        <div class="row" style="align-items:center"><input type="text" id="q" class="w-md" placeholder="Tìm MSSV hoặc tên" value="${esc(S.q)}" aria-label="Tìm sinh viên"><button type="button" class="btn" id="btnExport" data-act="export">Tải file Excel</button></div>
+      </div>
+      <div class="tbl-wrap"><table><thead><tr><th>MSSV</th>${hasName ? '<th>Họ và tên</th>' : ''}${hasLop ? '<th>Lớp</th>' : ''}<th>Kết quả</th><th>Dữ liệu dẫn đến cảnh báo</th><th>Lần liên tiếp</th><th>Các kỳ trong chuỗi</th>${R.hasOfficial ? '<th>So với DS lịch sử</th>' : ''}</tr></thead><tbody>${body || `<tr><td colspan="9" class="muted">Không có dòng nào khớp bộ lọc.</td></tr>`}</tbody></table></div>
+      ${rows.length > show.length ? `<div class="row"><span class="hint">Đang hiện ${show.length}/${rows.length} dòng. File Excel luôn có đủ.</span><button type="button" class="btn ghost small" data-act="more">Hiện thêm</button></div>` : ''}`;
+  }
+
+  function recompute() {
+    const L = S.list;
+    if (!L || !L.ok || L.map.mssv == null) { S.R = null; return; }
+    const entries = S.hist && !S.hist.error ? S.hist.entries : [];
+    S.R = E.evaluate(L, S.criteria, S.st, entries);
+    const part = S.R.results.filter((x) => x.ket === 'Không xét' && x.rec.dtbHk != null);
+    if (part.length) S.R.warnings.push(`${part.length} dòng ra "Không xét" nhưng vẫn có ĐTB HK (vd: ${part.slice(0, 3).map((x) => x.mssv).join(', ')}). Nếu cột Trình độ năm học bị thiếu, thử "Tự tính" ở bước 1 hoặc đổi quy tắc Không xét.`);
+  }
+  function render(all = true) {
+    renderSampleBar();
+    if (all) { renderP1(); renderP2(); renderP3(); }
+    recompute();
+    renderResults();
+  }
+  let timer = null;
+  const refresh = () => { clearTimeout(timer); timer = setTimeout(() => { recompute(); renderResults(); }, 120); };
+
+  // ---------- thông báo ----------
+  let toastT = null;
+  function toast(msg, bad) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, bad ? 7000 : 3500);
+  }
+  let busyMsg = null;
+  function busy(msg) {
+    document.body.classList.toggle('busy', !!msg);
+    if (msg) { busyMsg = msg; toast(msg); }
+    else if (busyMsg) { const t = $('#toast'); if (t.textContent === busyMsg) t.hidden = true; busyMsg = null; }
+  }
+  const tick = () => new Promise((r) => setTimeout(r, 30));
+
+  // ---------- xuất Excel ----------
+  const argb = (h) => 'FF' + h;
+  const FILL = (h) => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: argb(h) } });
+  const outName = () => {
+    const base = S.list && !S.list.sample ? S.list.name.replace(/\.[^.]+$/, '') : 'danh-sach-mau';
+    return (base + ' - kiem tra canh bao.xlsx').replace(/[\\/:*?"<>|]/g, '-');
+  };
+  const own = (cell) => { try { cell.style = JSON.parse(JSON.stringify(cell.style || {})); } catch (e) { /* bỏ qua */ } return cell; };
+  const gc = (sheet, r, c) => own(sheet.getCell(r, c));
+  async function buildWorkbook() {
+    const L = S.list, R = S.R, map = L.map;
+    let wb = new ExcelJS.Workbook(), ws = null, loaded = false;
+    if (L.buf && !L.sample && /\.xlsx$/i.test(L.name)) {
+      try { await wb.xlsx.load(L.buf.slice(0)); ws = wb.getWorksheet(L.sheetName); loaded = !!ws; } catch (e) { loaded = false; }
+      if (!loaded) wb = new ExcelJS.Workbook();
+    }
+    const xr = loaded ? (i) => i + L.rowOff + 1 : (i) => i - L.headerIdx + 1;
+    const xc = loaded ? (j) => j + L.colOff + 1 : (j) => j + 1;
+    if (!loaded) {
+      ws = wb.addWorksheet(String(L.sheetName || 'Danh sách xét').slice(0, 31));
+      for (let i = L.headerIdx; i < L.aoa.length; i++) {
+        const a = L.aoa[i] || [];
+        const row = ws.getRow(xr(i));
+        for (let j = 0; j < a.length; j++) if (a[j] != null) row.getCell(xc(j)).value = a[j];
+      }
+      const hr = ws.getRow(xr(L.headerIdx));
+      L.headers.forEach((h, j) => { const c = own(hr.getCell(xc(j))); c.font = { bold: true }; c.fill = FILL('DDEBF7'); c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
+      L.headers.forEach((h, j) => { ws.getColumn(xc(j)).width = Math.min(30, Math.max(8, String(h).length + 3)); });
+    }
+    // cột kết quả: dùng lại cột cũ nếu file đã từng xuất
+    const reup = L.resCols.kq != null;
+    let next = L.headers.length;
+    const rc = {};
+    for (const c of E.RESULT_COLS) {
+      const optional = c.key === 'off' || c.key === 'cmp';
+      if (optional && !R.hasOfficial && L.resCols[c.key] == null) continue;
+      rc[c.key] = L.resCols[c.key] != null ? L.resCols[c.key] : next++;
+    }
+    const WIDTH = { kq: 18, dl: 70, nPrev: 14, nTotal: 14, chain: 52, off: 20, cmp: 46 };
+    const hrow = xr(L.headerIdx);
+    for (const c of E.RESULT_COLS) {
+      if (rc[c.key] == null) continue;
+      const cell = gc(ws, hrow, xc(rc[c.key]));
+      cell.value = c.label; cell.font = { bold: true }; cell.fill = FILL('E2EFDA');
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      ws.getColumn(xc(rc[c.key])).width = WIDTH[c.key];
+    }
+    const sIdx = STUDY_KEYS.map((k) => map[k]).filter((v) => v != null);
+    const lo = sIdx.length ? Math.min(...sIdx) : -1, hi = sIdx.length ? Math.max(...sIdx) : -2;
+    for (const x of R.results) {
+      const r = xr(x.i);
+      const w = isW(x);
+      const vals = { kq: x.ket, dl: reasonText(x) || null, nPrev: x.nPrev, nTotal: x.nTotal, chain: chainText(x) || null, off: x.official || 'Không có trong DS', cmp: x.cmp };
+      for (const k of Object.keys(rc)) {
+        const cell = gc(ws, r, xc(rc[k]));
+        cell.value = vals[k] == null ? null : vals[k];
+        cell.alignment = { vertical: 'top', wrapText: k === 'dl' || k === 'chain' || k === 'cmp' };
+        if (k === 'kq') {
+          if (x.ket === 'Cảnh báo học tập') { cell.fill = FILL('FFEB9C'); cell.font = { bold: true, color: { argb: argb('9C5700') } }; }
+          else if (x.ket === 'Buộc thôi học') { cell.fill = FILL('C00000'); cell.font = { bold: true, color: { argb: argb('FFFFFF') } }; }
+          else if (x.ket === 'Không xét') { cell.font = { italic: true, color: { argb: argb('7F7F7F') } }; }
+        }
+        if (k === 'cmp' && x.same === false) cell.fill = FILL('FFC000');
+      }
+      if (lo >= 0) {
+        for (let j = lo; j <= hi; j++) {
+          const cell = gc(ws, r, xc(j));
+          if (w) { cell.fill = FILL('FFC7CE'); cell.font = { ...(cell.font || {}), bold: false, color: { argb: argb('9C0006') } }; }
+          else if (reup) { cell.fill = { type: 'pattern', pattern: 'none' }; cell.font = { ...(cell.font || {}), bold: false, color: undefined }; }
+        }
+        if (w) for (const v of x.viol) for (const key of v.cols) {
+          if (map[key] == null) continue;
+          const cell = gc(ws, r, xc(map[key]));
+          cell.fill = FILL('FF0000'); cell.font = { ...(cell.font || {}), bold: true, color: { argb: argb('FFFFFF') } };
+        }
+      }
+    }
+    const lastIdx = Math.max(L.headers.length - 1, ...Object.values(rc));
+    ws.autoFilter = { from: { row: hrow, column: xc(0) }, to: { row: hrow, column: xc(lastIdx) } };
+
+    // sheet danh sách bị cảnh báo
+    for (const n of ['SV bị cảnh báo', 'Ghi chú kiểm tra']) { const old = wb.getWorksheet(n); if (old) wb.removeWorksheet(old.id); }
+    const ls = wb.addWorksheet('SV bị cảnh báo');
+    const dataKeys = ['mssv', 'hoTen', 'lop', 'trangThai', 'trinhDo', 'dk', 'khongDat', 'noKhoa', 'dtbHk', 'dtbTl'].filter((k) => map[k] != null);
+    const heads = [...dataKeys.map(fieldLabel), 'KQ xét (tính lại)', 'Dữ liệu dẫn đến cảnh báo', 'Số lần CB liên tiếp', 'Các kỳ trong chuỗi'];
+    if (R.hasOfficial) heads.push('KQ trong DS lịch sử', 'So với DS lịch sử');
+    heads.forEach((h, j) => { const c = gc(ls, 1, j + 1); c.value = h; c.font = { bold: true }; c.fill = FILL('DDEBF7'); c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; });
+    const widths = [...dataKeys.map((k) => (k === 'hoTen' ? 22 : k === 'mssv' ? 12 : 11)), 18, 64, 12, 50, 20, 44];
+    widths.forEach((w, j) => { ls.getColumn(j + 1).width = w; });
+    const warnedRows = R.results.filter(isW).sort((a, b) => (a.ket === b.ket ? a.i - b.i : a.ket === 'Buộc thôi học' ? -1 : 1));
+    warnedRows.forEach((x, n) => {
+      const a = L.aoa[x.i] || [];
+      const vals = [...dataKeys.map((k) => a[map[k]]), x.ket, reasonText(x), x.nTotal, chainText(x)];
+      if (R.hasOfficial) vals.push(x.official || 'Không có trong DS', x.cmp);
+      vals.forEach((v, j) => {
+        const c = gc(ls, n + 2, j + 1); c.value = v == null ? null : v; c.alignment = { vertical: 'top', wrapText: j >= dataKeys.length + 1 };
+        const dk = dataKeys[j];
+        if (dk && ['trinhDo', 'dk', 'khongDat', 'noKhoa', 'dtbHk', 'dtbTl'].includes(dk)) {
+          const hit = x.viol.some((v2) => v2.cols.includes(dk));
+          c.fill = FILL(hit ? 'FF0000' : 'FFC7CE'); c.font = hit ? { bold: true, color: { argb: argb('FFFFFF') } } : { color: { argb: argb('9C0006') } };
+        }
+      });
+      const kc = gc(ls, n + 2, dataKeys.length + 1);
+      if (x.ket === 'Buộc thôi học') { kc.fill = FILL('C00000'); kc.font = { bold: true, color: { argb: argb('FFFFFF') } }; } else { kc.fill = FILL('FFEB9C'); kc.font = { bold: true, color: { argb: argb('9C5700') } }; }
+    });
+    ls.views = [{ state: 'frozen', xSplit: Math.min(2, dataKeys.length), ySplit: 1 }];
+    if (warnedRows.length) ls.autoFilter = { from: { row: 1, column: 1 }, to: { row: warnedRows.length + 1, column: heads.length } };
+
+    // sheet ghi chú
+    const ns = wb.addWorksheet('Ghi chú kiểm tra');
+    ns.getColumn(1).width = 34; ns.getColumn(2).width = 110;
+    const st = S.st, c = R.counts;
+    const src = st.chainSource === 'history' ? (S.hist ? `File lịch sử: ${S.hist.name}${S.hist.sample ? ' (mẫu)' : ''}` : 'Chưa có file lịch sử') : st.chainSource === 'column' ? 'Cột "Số kỳ CB liền trước (nhập tay)" trong danh sách' : 'Không dùng (coi là 0)';
+    const lines = [
+      ['§', 'Thông tin lần kiểm tra'],
+      ['Ngày tạo', new Date().toLocaleString('vi-VN')],
+      ['Danh sách xét', `${L.name}${L.sample ? ' (dữ liệu mẫu)' : ''} · sheet ${L.sheetName}`],
+      ['Kỳ xét', kyLabel()],
+      ['Nguồn số kỳ liên tiếp', src],
+      ['Tính HK3 vào chuỗi', st.tinhHe3 ? 'Có' : 'Không'],
+      ['Trình độ năm học', st.trinhDoMode === 'file' ? 'Lấy từ file' : `Tự tính = phần nguyên(STC TL khoá ÷ ${st.M}) + 1`],
+      ['Quy tắc Không xét', { trinhdo: 'Thiếu Trình độ năm học', khongsolieuky: 'Thiếu cả ĐTB HK và STC ĐK kỳ', none: 'Không bao giờ' }[st.khongXet]],
+      ['§', 'Bộ thông số: ' + (S.preset === 'custom' ? 'Tuỳ chỉnh' : E.PRESETS[S.preset].name)],
+      ...S.criteria.filter((x) => x.on !== false).map((x, i) => [`Tiêu chí ${i + 1}`, E.criterionText(x)]),
+      ['§', 'Kết quả'],
+      ['Buộc thôi học', c['Buộc thôi học']], ['Cảnh báo học tập', c['Cảnh báo học tập']], ['Không cảnh báo', c['Không cảnh báo']], ['Không xét', c['Không xét']],
+      ['Tổng', R.results.length],
+    ];
+    if (R.hasOfficial) lines.push(['So với DS lịch sử kỳ xét', `${R.nSame}/${R.nOff} sinh viên có trong danh sách cho cùng kết quả; lệch ${R.nDiff} sinh viên`]);
+    lines.push(['§', 'Chú giải màu và giới hạn'],
+      ['Nền đỏ nhạt', 'Dữ liệu học tập của sinh viên bị cảnh báo hoặc buộc thôi học'],
+      ['Nền đỏ đậm, chữ trắng', 'Ô dữ liệu vi phạm tiêu chí'],
+      ['Mẫu số tiêu chí tỷ lệ', 'Dùng cột STC ĐK kỳ (không có số TC đã có điểm)'],
+      ['Kỳ nghỉ học tạm thời', 'Chưa bỏ qua kỳ nghỉ trong chuỗi vì file không có quyết định nghỉ theo kỳ'],
+      ...R.warnings.map((w) => ['Cảnh báo dữ liệu', w]));
+    let r = 1;
+    gc(ns, 1, 1).value = 'Kiểm tra cảnh báo học tập'; gc(ns, 1, 1).font = { bold: true, size: 14 };
+    r = 3;
+    for (const [a, b] of lines) {
+      if (a === '§') { gc(ns, r, 1).value = b; gc(ns, r, 1).font = { bold: true }; gc(ns, r, 1).fill = FILL('DDEBF7'); gc(ns, r, 2).fill = FILL('DDEBF7'); }
+      else { gc(ns, r, 1).value = a; gc(ns, r, 2).value = b; gc(ns, r, 1).alignment = { vertical: 'top', wrapText: true }; gc(ns, r, 2).alignment = { vertical: 'top', wrapText: true, horizontal: 'left' }; }
+      r++;
+    }
+    // mở file ở sheet danh sách bị cảnh báo
+    const idx = wb.worksheets.indexOf(ls);
+    wb.views = [{ x: 0, y: 0, width: 20000, height: 20000, firstSheet: 0, activeTab: idx, visibility: 'visible' }];
+    wb.worksheets.forEach((s) => { const v = (s.views && s.views[0]) || {}; s.views = [{ ...v, tabSelected: s === ls }]; });
+    return wb;
+  }
+  async function saveFile(name, blob) {
+    if (downloads) {
+      try {
+        await downloads.save({ filename: name, data: blob });
+        toast('Đã lưu ' + name);
+        return;
+      } catch (e) {
+        if (e && e.code === 'declined') { toast('Đã huỷ lưu file.'); return; }
+        toast('Không lưu được qua hộp thoại (' + ((e && e.code) || 'lỗi') + ').', true);
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('Đã tạo ' + name);
+  }
+  async function exportXlsx() {
+    if (!S.R) return;
+    busy('Đang tạo file Excel…');
+    await tick();
+    try {
+      const wb = await buildWorkbook();
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      busy(null);
+      await saveFile(outName(), blob);
+    } catch (e) { busy(null); toast('Không tạo được file Excel: ' + (e && e.message || e), true); }
+  }
+
+  // ---------- sự kiện ----------
+  const parseKy = (s) => { const m = String(s).match(/(\d{4})/); return m ? parseInt(m[1], 10) : null; };
+  const num = (v) => E.toNum(v);
+  function markCustom() { if (S.preset !== 'custom') { S.preset = 'custom'; const p = $('#preset'); if (p) p.value = 'custom'; } save(); }
+
+  document.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'fList' && t.files[0]) { onListFile(t.files[0]); t.value = ''; return; }
+    if (t.id === 'fHist' && t.files[0]) { onHistFile(t.files[0]); t.value = ''; return; }
+    if (t.id === 'sheetSel') { applySheet(S.list, +t.value); afterListLoad(); render(); return; }
+    if (t.dataset && t.dataset.map) { const k = t.dataset.map; if (t.value === '') delete S.list.map[k]; else S.list.map[k] = +t.value; updMapSummary(); render(false); return; }
+    if (t.id === 'kyHk') { S.st.kyHk = +t.value; render(false); return; }
+    if (t.id === 'kx') { S.st.khongXet = t.value; render(false); return; }
+    if (t.name === 'tdmode') { S.st.trinhDoMode = t.value; save(); render(false); return; }
+    if (t.name === 'chain') { S.st.chainSource = t.value; render(false); return; }
+    if (t.id === 'he3') { S.st.tinhHe3 = t.checked; save(); render(false); return; }
+    if (t.id === 'preset') { setPreset(t.value); save(); renderP3(); render(false); return; }
+    const tr = t.closest && t.closest('tr.crit');
+    if (tr) {
+      const i = +tr.dataset.i, c = S.criteria[i], f = t.dataset.f;
+      if (!c) return;
+      if (f === 'on') c.on = t.checked;
+      else if (f === 'param') { c.param = t.value; if (t.value === 'lienTiep') { c.muc = 'BTH'; c.levels = []; } else if (t.value === 'thoiGian') c.muc = 'BTH'; markCustom(); renderP3(); render(false); return; }
+      else if (f === 'muc') c.muc = t.value;
+      else if (f === 'op') c.op = t.value;
+      markCustom(); render(false);
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'kyY') { const y = parseKy(t.value); if (y) { S.st.kyY = y; refresh(); } return; }
+    if (t.id === 'tdM') { const v = num(t.value); if (v > 0) { S.st.M = v; save(); refresh(); } return; }
+    if (t.id === 'soNam') { const v = num(t.value); if (v > 0) { S.st.soNam = v; save(); refresh(); } return; }
+    if (t.id === 'q') { S.q = t.value; S.shown = 150; renderResults(); const q = $('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); return; }
+    const tr = t.closest && t.closest('tr.crit');
+    if (tr && t.dataset.f === 'value') { const c = S.criteria[+tr.dataset.i]; if (c) { c.value = t.value.replace(',', '.'); markCustom(); refresh(); } }
+  });
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-act]');
+    if (!b) return;
+    const act = b.dataset.act;
+    if (act === 'flt') { S.filter = b.dataset.k; S.shown = 150; renderResults(); }
+    else if (act === 'more') { S.shown += 300; renderResults(); }
+    else if (act === 'export') exportXlsx();
+    else if (act === 'add') { S.criteria.push({ on: true, param: 'tbhkSau', op: '<', value: 1, levels: [], muc: 'CB' }); markCustom(); renderP3(); render(false); }
+    else {
+      const tr = b.closest('tr.crit'); if (!tr) return;
+      const i = +tr.dataset.i, c = S.criteria[i];
+      if (act === 'del') { S.criteria.splice(i, 1); markCustom(); renderP3(); render(false); }
+      else if (act === 'lv') { const n = +b.dataset.lv; c.levels = c.levels.includes(n) ? c.levels.filter((x) => x !== n) : [...c.levels, n].sort(); markCustom(); renderP3(); render(false); }
+    }
+  });
+  ['dragover', 'dragleave', 'drop'].forEach((ev) => document.addEventListener(ev, (e) => {
+    const z = e.target.closest && e.target.closest('.drop');
+    if (!z) return;
+    e.preventDefault();
+    z.classList.toggle('over', ev === 'dragover');
+    if (ev === 'drop' && e.dataTransfer && e.dataTransfer.files[0]) (z.dataset.kind === 'hist' ? onHistFile : onListFile)(e.dataTransfer.files[0]);
+  }));
+
+  // ---------- khởi động ----------
+  restore();
+  loadSamples();
+  render();
+  try {
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then((d) => { downloads = d || null; }).catch(() => { downloads = null; });
+    }
+  } catch (e) { downloads = null; }
+})();
+
+</script>
+
+</body>
+</html>

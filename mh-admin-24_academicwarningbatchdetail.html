@@ -227,6 +227,15 @@
   .tbl-grid th,.tbl-grid td{border:1px solid var(--border)}
   .tbl-grid thead th{background:#fafafa;font-weight:600}
   .tbl-grid td:first-child,.tbl-grid th:first-child{text-align:center}
+  /* Bổ sung 13/10/2026 — nối VÀ/HOẶC ở popup Thông số xét; điều chỉnh thủ công SV. */
+  .tag-noi-va{background:#e6f4ff;color:#0958d9;border:1px solid #91caff}
+  .tag-noi-hoac{background:#fff7e6;color:#d46b08;border:1px solid #ffd591}
+  .dk-expr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;line-height:1.6}
+  .dk-ve{background:#fafafa;border:1px solid var(--border);border-radius:4px;padding:1px 8px;font-size:13px;white-space:nowrap}
+  .dk-paren{color:var(--text-3);font-weight:700}
+  .dc-radio{display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400}
+  .dc-sub{font-size:12px;color:var(--text-3);margin-left:22px}
+  .stat-pill.c-loai{border-style:dashed}
 </style>
 </head>
 <body>
@@ -551,6 +560,10 @@
             <option value="canhbao">Cảnh báo học tập</option>
             <option value="buocthoihoc">Buộc thôi học</option>
           </select>
+          <!-- Cập nhật 28/10/2026 (BB 24/10/2026): lọc theo quyết định có hiệu lực trong kỳ xét — option sinh từ dữ liệu, kèm số đếm. -->
+          <select class="fc" id="f-qdky" style="width:auto;min-width:220px" onchange="currentPage=1;renderTable()">
+            <option value="">Quyết định trong kỳ: tất cả</option>
+          </select>
           <select class="fc" id="f-ctsv" style="width:auto;min-width:230px" onchange="currentPage=1;renderTable()">
             <option value="">Xác nhận CTSV: tất cả</option>
             <option value="chuaXacNhan">Xác nhận CTSV: Chưa xác nhận</option>
@@ -582,19 +595,24 @@
                trên màn này, không phải quét mắt tìm.
                GIỮ NGUYÊN id của từng nút để logic bật/tắt sẵn có (updateBulkBtns, renderTable) không
                phải sửa gì — chỉ đổi chỗ đặt và lớp CSS. -->
+          <!-- Bổ sung 13/10/2026: lối vào cố định xem / khôi phục SV đã loại khỏi đợt (UC-ADMIN24-015).
+               Đặt ngoài thanh thẻ thống kê vì hàng thẻ đang ẩn; hiện ngay sau khi chạy bước 1, kể cả N = 0. -->
+          <button class="btn btn-default hidden" id="btn-daloai" onclick="openDaLoai()">Đã loại khỏi đợt (0)</button>
           <div class="fn-wrap">
             <button class="btn btn-default" id="btn-chucnang" onclick="event.stopPropagation();toggleFnMenu()">Chức năng <span class="fn-caret">▾</span></button>
             <div class="fn-menu hidden" id="fn-menu">
-              <button class="fn-item" id="btn-rasoat-tt" onclick="chonFn(raSoatTrangThai)">Rà soát trạng thái sinh viên</button>
+              <!-- Cập nhật 28/10/2026 (BB 24/10/2026) HV-11a: bỏ bước 2, gộp vào Rà soát --><button class="fn-item" id="btn-rasoat-tt" style="display:none" onclick="chonFn(raSoatTrangThai)">Rà soát trạng thái sinh viên</button>
               <!-- 2 mục Xác nhận CHỈ bật khi đã tích chọn sinh viên trong bảng. Dòng phụ bên dưới nhãn
                    nói thẳng điều kiện đó: nút nằm trong menu nên người dùng không còn thấy nó sáng lên
                    lúc tick như hồi đặt ngoài thanh công cụ — không viết ra thì thành nút bấm không được
                    mà chẳng hiểu vì sao. -->
               <button class="fn-item" id="btn-xn-ctsv" disabled onclick="chonFn(() => openXacNhanModal(selectedKeys(), 'ctsv'))">Xác nhận CTSV<span class="fn-sub" id="sub-xn-ctsv"></span></button>
               <button class="fn-item" id="btn-xn-khoa" disabled onclick="chonFn(() => openXacNhanModal(selectedKeys(), 'khoa'))">Xác nhận Khoa<span class="fn-sub" id="sub-xn-khoa"></span></button>
+              <!-- Bổ sung 13/10/2026: Ban Đào tạo đổi KQ cuối / loại SV khỏi đợt cho các dòng đã tick. -->
+              <button class="fn-item" id="btn-dieuchinh" disabled onclick="chonFn(() => openDieuChinh(selectedKeys()))">Điều chỉnh sinh viên đã chọn<span class="fn-sub" id="sub-dieuchinh"></span></button>
               <!-- BƯỚC 3: chạy sau khi CTSV/Khoa đã xác nhận và danh sách đã chốt. Đặt cùng menu với
                    2 bước trên để thấy rõ đây là một trình tự, không phải 3 việc rời rạc. -->
-              <button class="fn-item" id="btn-kt-chuoi" onclick="chonFn(kiemTraChuoi)">Kiểm tra số lần cảnh báo liên tiếp<span class="fn-sub" id="sub-kt-chuoi"></span></button>
+              <!-- Cập nhật 28/10/2026 (BB 24/10/2026) HV-11a: bỏ bước 3, gộp vào Rà soát --><button class="fn-item" id="btn-kt-chuoi" style="display:none" onclick="chonFn(kiemTraChuoi)">Kiểm tra số lần cảnh báo liên tiếp<span class="fn-sub" id="sub-kt-chuoi"></span></button>
               <div class="fn-sep"></div>
               <button class="fn-item" onclick="chonFn(exportBM2002)" title="Xuất các sinh viên đang hiện trên bảng theo bộ lọc, mẫu BM.ĐT.20.02">Xuất danh sách sinh viên cảnh báo học vụ (BM.ĐT.20.02)</button>
               <!-- Feedback 08/10/2026: xuất MỌI SV trong phạm vi xét (cả vi phạm lẫn không vi phạm, gồm Không
@@ -626,10 +644,10 @@
               <th style="width:170px" title="Chương trình đào tạo sinh viên đang theo học HIỆN TẠI">Chương trình đào tạo</th>
               <th style="width:110px" title="Khoa đang quản lý sinh viên HIỆN TẠI — không phải khoa tại học kỳ xét">Khoa quản lý</th>
               <th style="width:150px">Niên khoá</th>
-              <!-- 2 cột trạng thái, CỐ Ý để cạnh nhau vì rất dễ lẫn:
+              <!-- Cập nhật 28/10/2026 (BB 24/10/2026): BỎ cột "Trạng thái tại kỳ" — trùng với "Trạng thái SV kỳ" ở cụm đối chiếu.
+                   (Ghi chú gốc:) 2 cột trạng thái, CỐ Ý để cạnh nhau vì rất dễ lẫn:
                    - Trạng thái tại kỳ: dùng để XÉT. Đây là căn cứ của kết quả "Không xét".
                    - Trạng thái hiện tại: chỉ để tham khảo, có thể đã đổi sau khi đợt chạy. -->
-              <th style="width:150px" title="Trạng thái người học TẠI HỌC KỲ ĐANG XÉT — đây là giá trị dùng để xét, đối chiếu với trường 'Không xét trạng thái sinh viên của kỳ' ở khối thông tin đợt">Trạng thái tại kỳ</th>
               <th style="width:150px" title="Trạng thái người học TẠI THỜI ĐIỂM XEM — chỉ để tham khảo, KHÔNG dùng để xét. Có thể đã đổi so với lúc chạy đợt (VD: SV xin bảo lưu sau khi bị cảnh báo)">Trạng thái hiện tại</th>
               <th style="width:100px" title="Xếp theo Điều 17 khoản 4: N = số tín chỉ tích luỹ từ đầu khoá, M = số tín chỉ trung bình 1 năm học theo kế hoạch chuẩn của CTĐT">Trình độ năm học</th>
               <!-- Cột "Cảnh báo học tập" (Có/Không) ẩn theo yêu cầu — bảng đã lọc sẵn nhóm diện cảnh
@@ -675,6 +693,9 @@
                    VÀ ở ô dữ liệu tương ứng trong renderTable() là hiện lại.
               <th style="width:200px" title="Ghi chú khi đánh dấu Cần xem xét lại">Ghi chú</th>
               -->
+              <!-- Cập nhật 28/10/2026 (BB 24/10/2026): Ghi chú BĐT — phần trên do hệ thống tự ghi khi Rà soát (QĐ có hiệu lực trong kỳ
+                   xét), phần dưới do Ban Đào tạo nhập. -->
+              <th style="width:240px" title="Hệ thống tự ghi loại quyết định có hiệu lực trong học kỳ xét khi Rà soát; Ban Đào tạo ghi chú thêm. Rê chuột xem đủ, bấm vào ô để xem chi tiết / ghi chú">Ghi chú BĐT</th>
               <th style="width:120px">Thao tác</th>
             </tr>
           </thead>
@@ -1056,6 +1077,110 @@
   </div>
 </div>
 
+<!-- ═══ MODAL P8: Điều chỉnh sinh viên trong đợt (bổ sung 13/10/2026) ═══
+     Ban Đào tạo sửa tay kết quả của 1 hoặc nhiều SV TRƯỚC KHI CÔNG BỐ: đổi KQ cuối (Cảnh báo ↔ Buộc thôi
+     học) hoặc loại SV khỏi đợt. Lý do bắt buộc. Điều chỉnh được GIỮ khi chạy lại rà soát. -->
+<div class="overlay hidden" id="modal-dieuchinh">
+  <!-- Cập nhật 28/10/2026 (BB 24/10/2026): popup gọn — tên SV ở tiêu đề, 2 thao tác dạng thẻ chọn, chú thích 1 dòng. Giữ nguyên id. -->
+  <div class="modal-box" style="width:520px;max-width:96vw">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title">Điều chỉnh sinh viên</h3>
+        <div id="dc-sv" style="font-size:13px;color:var(--text-3);margin-top:2px"></div>
+      </div>
+      <button class="modal-close" data-close="modal-dieuchinh">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="mb-16 hidden" id="dc-hientai" style="background:#f9f0ff;border:1px solid #d3adf7;padding:8px 12px;border-radius:6px;font-size:12.5px;line-height:1.6"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="dc-tile"><input type="radio" name="dc-loai" value="doiKq" id="dc-radio-doikq" onchange="dcToggle()"><span><b>Đổi kết quả</b><small id="dc-doikq-sub"></small></span></label>
+        <label class="dc-tile"><input type="radio" name="dc-loai" value="loai" onchange="dcToggle()"><span><b>Loại khỏi đợt</b><small>Không công bố, khôi phục được</small></span></label>
+      </div>
+      <div class="fi" id="dc-kqmoi-wrap" style="margin-top:14px">
+        <label for="dc-kqmoi">Kết quả mới<span class="req">*</span></label>
+        <select class="fc" id="dc-kqmoi">
+          <option value="Cảnh báo học tập">Cảnh báo học tập</option>
+          <option value="Buộc thôi học">Buộc thôi học</option>
+        </select>
+      </div>
+      <div class="fi" style="margin-top:14px">
+        <label for="dc-lydo">Lý do<span class="req">*</span></label>
+        <textarea class="fc" id="dc-lydo" rows="2" maxlength="500" placeholder="VD: Đã có QĐ chuyển trường đến, không thuộc diện xét kỳ này"></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default hidden" id="dc-huy" style="margin-right:auto;color:var(--danger,#d4380d)" onclick="huyDieuChinh(dcKeys[0])">Huỷ điều chỉnh</button>
+      <button class="btn btn-default" data-close="modal-dieuchinh">Đóng</button>
+      <button class="btn btn-primary" onclick="saveDieuChinh()">Lưu</button>
+    </div>
+  </div>
+</div>
+<style>
+  .dc-tile{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13.5px}
+  .dc-tile input{margin-top:3px}
+  .dc-tile span{display:flex;flex-direction:column;gap:2px}
+  .dc-tile small{font-size:12px;color:var(--text-3);line-height:1.4}
+  .dc-tile:has(input:checked){border-color:var(--primary);background:#fff7e6}
+  .dc-tile:has(input:disabled){opacity:.55;cursor:not-allowed}
+</style>
+
+
+<!-- ═══ MODAL Cập nhật 28/10/2026 (BB 24/10/2026): Ghi chú Ban Đào tạo ═══
+     Gọn: tên SV ở tiêu đề, mỗi QĐ một thẻ 2 dòng, 1 dòng nhắc ngắn, ô ghi chú. Nút Loại khỏi đợt mở
+     popup Điều chỉnh P8, điền sẵn ghi chú làm lý do. -->
+<div class="overlay hidden" id="modal-ghichubdt">
+  <div class="modal-box" style="width:560px;max-width:96vw">
+    <div class="modal-hd">
+      <div>
+        <h3 class="modal-title" id="gc-ten">Ghi chú BĐT</h3>
+        <div id="gc-sv" style="font-size:13px;color:var(--text-3);margin-top:2px"></div>
+      </div>
+      <button class="modal-close" data-close="modal-ghichubdt">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">Quyết định trong kỳ xét</div>
+      <div id="gc-qd" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="hidden" id="gc-canhbao" style="margin-top:8px;font-size:12.5px;color:#ad6800">⚠ Hệ thống vẫn xét điểm bình thường — nếu sinh viên không thuộc diện xét kỳ này thì loại khỏi đợt.</div>
+      <div class="fi" style="margin-top:16px">
+        <label for="gc-text">Ghi chú</label>
+        <textarea class="fc" id="gc-text" rows="2" maxlength="500" placeholder="VD: Đã đối chiếu với Khoa — giữ trong đợt"></textarea>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-default" id="gc-loai" style="margin-right:auto;color:var(--danger,#d4380d)" onclick="gcLoaiKhoiDot()">Loại khỏi đợt</button>
+      <button class="btn btn-default" data-close="modal-ghichubdt">Đóng</button>
+      <button class="btn btn-primary" id="gc-luu" onclick="saveGhiChuBDT()">Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL P9: Sinh viên đã loại khỏi đợt (bổ sung 13/10/2026) ═══ -->
+<div class="overlay hidden" id="modal-daloai">
+  <div class="modal-box w800" style="width:1200px;max-width:96vw">
+    <div class="modal-hd">
+      <h3 class="modal-title">Sinh viên đã loại khỏi đợt</h3>
+      <button class="modal-close" data-close="modal-daloai">✕</button>
+    </div>
+    <div class="modal-bd">
+      <table class="tbl" style="width:100%">
+        <thead><tr>
+          <th style="width:40px">STT</th>
+          <th style="width:100px">MSSV</th>
+          <th style="width:150px">Họ và tên</th>
+          <th style="width:150px">Kết quả xét</th>
+          <th>Lý do loại</th>
+          <th style="width:230px">Quyết định căn cứ</th>
+          <th style="width:150px">Nguồn</th>
+          <th style="width:130px">Thời điểm</th>
+          <th style="width:90px">Thao tác</th>
+        </tr></thead>
+        <tbody id="dl-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-ft"><button class="btn btn-default" data-close="modal-daloai">Đóng</button></div>
+  </div>
+</div>
+
 <script src="_vendor-xlsx.min.js"></script>
 <!-- ═══ MODAL: Thông số xét của 1 phiên bản bộ tham số (chỉ đọc) ═══ -->
 <div class="overlay hidden" id="modal-pb">
@@ -1068,8 +1193,8 @@
       <div class="tbl-wrap">
         <table class="tbl tbl-grid">
           <thead><tr>
-            <th style="width:50px">STT</th><th>Tên thông số</th><th style="width:140px">Nhóm điều kiện</th>
-            <th style="width:180px">Toán tử so sánh</th><th style="width:90px">Giá trị</th><th style="width:190px">Áp dụng trình độ năm học</th>
+            <th style="width:50px">STT</th><th style="width:150px">Mức xử lý</th><th>Điều kiện áp dụng</th>
+            <th style="width:190px">Áp dụng trình độ năm học</th>
           </tr></thead>
           <tbody id="pb-tbody"></tbody>
         </table>
@@ -1135,7 +1260,11 @@ function trangThaiSVHtml(key){
      không tô tag màu — mức nặng nhẹ đọc theo chữ, không theo màu.
    Số lần cảnh báo KHÔNG nằm ở 2 cột này — tra ở cột riêng "SL cảnh báo LT". Cảnh báo 2 kỳ liên
    tiếp đã rơi vào khoản 2a nên cột KQ cuối tự chuyển thành Buộc thôi học. */
+/* Cập nhật 28/10/2026 (BB 24/10/2026): một nguồn cho "kỳ này không xét" — QĐ bảo lưu / đình chỉ trùm kỳ (theo cấu hình đợt), hoặc SV
+   đã bị loại khỏi đợt (tay): trạng thái kết quả của SV là Không xét. */
+function khongXetKyNay(s){ return !!(kyKhongXet(s) || daLoaiKhoiDot(s)); }
 function ketQuaCanhBaoKy(s){
+  if (khongXetKyNay(s)) return { label:'Không xét', cls:'' };
   if (kyKhongXet(s)) return { label:'Không xét', cls:'' };
   if (duLieuThieu(s)) return { label:'Không đủ dữ liệu', cls:'' };
   return viPhamKyNay(s) ? { label:'Cảnh báo học tập', cls:'' } : { label:'Không cảnh báo', cls:'' };
@@ -1171,7 +1300,7 @@ const DOT_CONDITIONS = [
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => s.tinChiNoDong, status:'active' },
   /* Bổ sung 08/10/2026 — Tỷ lệ TC không đạt / TC đăng ký trong kỳ. Học phần chưa có điểm (I/X) loại
      khỏi cả tử lẫn mẫu nên mẫu = tcCoDiem (không khai = đủ điểm, lấy tcDangKy). Mẫu = 0 → không xét. */
-  { id:'c11', nhom:'khoan1', label:'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ', sosanh:'>', giaTri:0.5, isScore:true,
+  { id:'c11', nhom:'khoan1', label:'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ', sosanh:'>=', giaTri:0.5, isScore:true,
     apDungText:'Mọi trình độ', apDung: () => true,                     get: s => tiLeTcKhongDatKy(s), status:'active' },
   /* Chỉ đem ra xét SAU khi chạy bước 3 — chuỗi chưa kiểm tra thì không được kết luận buộc thôi học. */
   { id:'c8',  nhom:'khoan2', label:'Số lần cảnh báo liên tiếp', sosanh:'>=', giaTri:2, isScore:false,
@@ -1257,6 +1386,11 @@ function qdNghiTrumKyXet(s){
   if (!BATCH.daRaSoatTrangThai) return [];
   const k = semKey(kyXetLabel());
   return (s.qdNghi || []).filter(q => {
+    /* Cập nhật 28/10/2026 (BB 24/10/2026): QĐ quay lại học (thu hồi QĐ nghỉ / tiếp tục học tập) có Học kỳ áp dụng ≤ kỳ xét thì
+       QĐ nghỉ gốc hết hiệu lực từ kỳ đó. */
+    if (s.qdThuHoi && s.qdThuHoi.qdGoc === q.maQD && semKey(s.qdThuHoi.hocKyApDung) <= k) return false;
+    /* QĐ tiếp tục học tập không ghi QĐ nghỉ gốc: có hiệu lực (Học kỳ áp dụng ≤ kỳ xét, sau kỳ bắt đầu nghỉ) là hết nghỉ. */
+    if ((s.qdKhac || []).some(t => t.loai === 'QĐ tiếp tục học tập' && semKey(t.hocKyApDung) <= k && semKey(t.hocKyApDung) >= semKey(q.tuKy))) return false;
     const tu = semKey(q.tuKy);
     const den = q.denKy ? semKey(q.denKy) : Infinity;
     return tu && tu <= k && k <= den;
@@ -1414,12 +1548,57 @@ function thongSoDaXet(s){
 /* 5 giá trị kết quả, xét theo đúng thứ tự ưu tiên dưới đây. "Không xét" và "Không đủ dữ liệu" đều
    KHÔNG phải kết luận có lợi cho SV — chúng chỉ nói là chưa kết luận, vì 2 lý do khác hẳn nhau:
    không xét = SV không học kỳ đó (có quyết định); thiếu dữ liệu = SV có học nhưng chưa chốt điểm. */
-function ketQuaXetCuoiCung(s){
+/* Kết quả HỆ THỐNG xét — không tính điều chỉnh tay. Giữ riêng để đối chiếu khi đã điều chỉnh. */
+/* ═══ Cập nhật 28/10/2026 (BB 24/10/2026) vấn đề 1 — Rà soát quyết định ═══
+   - TỰ LOẠI chỉ khi có QĐ bảo lưu / đình chỉ trùm kỳ xét (học kỳ bắt đầu ≤ kỳ xét ≤ học kỳ kết thúc,
+     chưa bị thu hồi) và trạng thái đó được tick ở cấu hình đợt — xem kyKhongXet().
+   - Các QĐ chuyển ngành, chuyển trường đến, nhập trường, thu hồi QĐ nghỉ / tiếp tục học tập (quay lại học) có
+     Học kỳ áp dụng ≥ kỳ xét: KHÔNG tự loại — vẫn xét điểm bình thường, gắn ⚠ Kiểm tra QĐ để cán bộ
+     xem và loại tay (Chức năng → Điều chỉnh → Loại khỏi đợt). */
+const LOAI_QD_KIEM_TRA = ['QĐ chuyển ngành', 'QĐ chuyển trường đến', 'QĐ nhập trường', 'QĐ thu hồi QĐ nghỉ học tạm thời', 'QĐ tiếp tục học tập'];
+/* Gom mọi QĐ ngoài bảo lưu / đình chỉ của SV về một dạng chung. */
+function dsQdKhacCuaSV(s){
+  const ds = (s.qdKhac || []).map(q => ({ ma:q.maQD, loai:q.loai, ngay:q.ngayQD, hl:q.ngayHieuLuc, hk:q.hocKyApDung,
+    nd:q.noiDung || '' }));
+  if (s.chuyenNganh) ds.push({ ma:s.chuyenNganh.maQD, loai:'QĐ chuyển ngành', ngay:s.chuyenNganh.ngayQD, hl:s.chuyenNganh.ngayHieuLuc, hk:s.chuyenNganh.hocKyApDung,
+    nd:`Ngành cũ: ${s.chuyenNganh.tuCtdt} · Ngành mới: ${s.chuyenNganh.denCtdt}` });
+  if (s.qdThuHoi) ds.push({ ma:s.qdThuHoi.maQD, loai:'QĐ thu hồi QĐ nghỉ học tạm thời', ngay:s.qdThuHoi.ngayQD, hl:s.qdThuHoi.ngayHieuLuc, hk:s.qdThuHoi.hocKyApDung,
+    nd:`Thu hồi QĐ ${s.qdThuHoi.qdGoc} — quay lại học` + (s.tcDangKy ? '' : ', chưa đăng ký tín chỉ') });
+  return ds;
+}
+/* QĐ cần kiểm tra: loại thuộc LOAI_QD_KIEM_TRA và Học kỳ áp dụng ≥ kỳ xét. */
+function laQdCanKiemTra(q){ return LOAI_QD_KIEM_TRA.includes(q.loai) && semKey(q.hk) >= semKey(kyXetLabel()); }
+function qdCanKiemTra(s){ return BATCH.daChayLuc ? dsQdKhacCuaSV(s).filter(laQdCanKiemTra) : []; }
+function lyDoLoaiHeThong(s){
+  if (!BATCH.daChayLuc) return null;
+  const k = kyKhongXet(s);
+  if (k) return {
+    lyDo: `${k.loai === 'dinhchi' ? 'Đình chỉ học tập' : 'Bảo lưu / nghỉ học tạm thời'} trong học kỳ xét`,
+    qd: [{ ma:k.maQD, loai: k.loai === 'dinhchi' ? 'QĐ kỷ luật đình chỉ học tập' : 'QĐ bảo lưu / nghỉ học tạm thời', hk: k.denKy && k.denKy !== k.tuKy ? `${k.tuKy} → ${k.denKy}` : (k.denKy ? k.tuKy : `${k.tuKy} → chưa hẹn kỳ quay lại`) }] };
+  return null;
+}
+/* QĐ bảo lưu / đình chỉ luôn có Học kỳ bắt đầu và Học kỳ kết thúc — không có trường hợp thiếu học kỳ. */
+/* Cập nhật 28/10/2026 (BB 24/10/2026): Trạng thái tại kỳ + số QĐ + ngày hiệu lực ngay trong 1 ô. Ngày hiệu lực lấy trường
+   ngayHieuLuc của QĐ (mockup chưa có thì dùng ngày ký). */
+function trangThaiTaiKyHtml(s){
+  const q = qdNghiKyXet(s);
+  let h = trangThaiSVHtml(trangThaiTaiKy(s));
+  if (q) h += `<div style="font-size:12px;color:var(--text-2);margin-top:2px;white-space:nowrap">Số QĐ <span class="sv-code">${q.maQD}</span> · Hiệu lực ${q.ngayHieuLuc || q.ngayQD}</div>`;
+  return h;
+}
+function ketQuaHeThong(s){
   if (kyKhongXet(s)) return { label:'Không xét', cls:'' };
   if (duLieuThieu(s)) return { label:'Không đủ dữ liệu', cls:'' };
   if (dkXetList(s).length) return { label:'Buộc thôi học', cls:'' };
   if (!viPhamKyNay(s)) return { label:'Không cảnh báo', cls:'' };
   return { label:'Cảnh báo học tập', cls:'' };
+}
+/* Kết quả cuối DÙNG Ở MỌI NƠI (bảng, lọc, thẻ đếm, xuất file, công bố): điều chỉnh tay thắng kết quả
+   hệ thống — kể cả sau khi chạy lại rà soát (chốt 13/10/2026). */
+function ketQuaXetCuoiCung(s){
+  const dc = s.dieuChinh;
+  if (dc && dc.loai === 'doiKq') return { label: dc.kqMoi, cls:'', dieuChinh: true };
+  return ketQuaHeThong(s);
 }
 /* Kết quả cuối chỉ được CÔNG BỐ RA MÀN sau khi đã kiểm tra số lần cảnh báo liên tiếp: điều kiện
    khoản 2a phụ thuộc chuỗi, chưa đếm chuỗi thì chưa biết em nào chuyển thành Buộc thôi học. Hiện
@@ -1427,6 +1606,7 @@ function ketQuaXetCuoiCung(s){
    Bên trong hệ thống vẫn tính bình thường để dựng danh sách — chỉ phần HIỂN THỊ là chờ. */
 function daKetLuanCuoi(){ return !!BATCH.daKiemTraChuoi; }
 function ketQuaCuoiText(s){
+  if (daLoaiKhoiDot(s)) return 'Không xét';
   return daKetLuanCuoi() ? ketQuaXetCuoiCung(s).label : 'Chưa kết luận';
 }
 function ketQuaHtml(kq){ return kq.cls ? `<span class="tag ${kq.cls}">${kq.label}</span>` : kq.label; }
@@ -1479,9 +1659,9 @@ function openChiTietModal(mssv, ctdt){
   const t = ketQuaXetCuoiCung(s);
   document.getElementById('ct-tinhtrang').innerHTML = !daKetLuanCuoi()
     ? '<span class="text-muted">Chưa kết luận — chưa kiểm tra số lần cảnh báo liên tiếp</span>'
-    : dkXetList(s).length
-    ? `<b style="color:var(--error)">${t.label}</b>`
-    : `<b>${t.label}</b>`;
+    : (t.label === 'Buộc thôi học' ? `<b style="color:var(--error)">${t.label}</b>` : `<b>${t.label}</b>`)
+      + dieuChinhTagHtml(s)
+      + (s.dieuChinh ? `<div style="font-size:12px;color:var(--text-3)">Hệ thống xét: ${ketQuaHeThong(s).label} · Lý do điều chỉnh: ${escHtml(s.dieuChinh.lyDo)}</div>` : '');
 
   const rows = nguongRows(s);
   const fmtGiaTri = r => r.isScore ? diem(r.giaTri) : so(r.giaTri);
@@ -1755,6 +1935,9 @@ function capNhatTooltipFn(){
     ? 'Cần chạy rà soát học vụ trước'
     : `${dsTrongDot().length} sinh viên trong phạm vi xét, gồm cả sinh viên không vi phạm`;
   const n = selectedKeys().length;
+  document.getElementById('sub-dieuchinh').textContent = !coTheDieuChinh()
+    ? (BATCH.status === 'congbo' ? 'Đợt đã công bố — kết quả đã chốt' : 'Cần chạy rà soát học vụ trước')
+    : n ? `${n} sinh viên đã chọn` : 'Tích chọn sinh viên trong bảng trước';
   ['ctsv', 'khoa'].forEach(who => {
     const b = document.getElementById(`btn-xn-${who}`);
     b.title = b.disabled ? 'Tích chọn sinh viên trong bảng trước khi xác nhận' : '';
@@ -1810,7 +1993,7 @@ const BATCH = {
   batDau: qval('batDau', ''),
   ketThuc: qval('ketThuc', ''),
   status: qval('status', isNew ? 'nhap' : 'choxacnhan'),
-  daChayLuc: isNew ? '' : qval('daChayLuc', 'đã chạy trước đó'),
+  daChayLuc: isNew ? '' : qval('daChayLuc', '27/10/2026 14:30'),
   xacNhanBatDau: qs.get('xacNhanBatDau') || '',
   xacNhanKetThuc: qs.get('xacNhanKetThuc') || '',
   /* Điều kiện không xét — cấu hình theo TỪNG ĐỢT, lưu mảng mã điều kiện. Mặc định chọn cả 2 mục,
@@ -1840,6 +2023,11 @@ const BATCH = {
   nguoiLap: qs.get('nguoiLap') || '',
 };
 if (!BATCH.thongSoXet.length) BATCH.thongSoXet = MSEL_DEFAULT.thongso.slice();
+/* Cập nhật 28/10/2026 (BB 24/10/2026) vấn đề 1 (HV-07, HV-11a): Rà soát chạy MỘT LẦN cho toàn đợt — loại SV theo quyết định,
+   xét học vụ và đếm số lần cảnh báo liên tiếp cùng lúc. Giữ nguyên 3 mốc cũ để các hàm sẵn có
+   không phải sửa, chỉ gán đồng thời. */
+function dongBoMocMotLan(){ BATCH.daRaSoatTrangThai = BATCH.apDungKhongXet = BATCH.daKiemTraChuoi = BATCH.daChayLuc; }
+if (BATCH.daChayLuc) dongBoMocMotLan();
 /* ═══ BỘ THAM SỐ (chốt 08/10/2026) ═══ — đồng bộ Ý NGHĨA với BO_THAM_SO/DOTS ở mh-admin-21 (2 trang
    tĩnh riêng). Đợt chọn đúng 1 bộ; bộ thay cho việc chọn bớt thông số theo đợt nên thongSoXet luôn
    = mọi thông số (giữ biến để các hàm cũ không phải sửa). Ngưỡng thật của từng bộ chưa nối vào
@@ -1869,25 +2057,42 @@ function boChoNgay(ngay){ return BO_THAM_SO.filter(b => b.status === 'active' &&
 BATCH.boThamSo = qs.get('boThamSo') || BO_THEO_DOT[BATCH.maDot] || '';
 BATCH.phienBanDaChay = PHIEN_BAN_DA_CHAY[BATCH.maDot]
   || (BO_THAM_SO.find(b => b.id === BATCH.boThamSo) || {}).phienBan || null;
-/* Tiêu chí theo PHIÊN BẢN của từng bộ — đồng bộ ý nghĩa với lichSu ở mh-admin-21 (2 trang tĩnh riêng).
-   [tên thông số, nhóm, so sánh, giá trị, số nguyên?, trình độ áp dụng] */
-const TC_GOC = [
-  ['Điểm TB học kỳ (kỳ đầu của khoá)','Khoản 1','<',0.80,false,null], ['Điểm TB học kỳ (các kỳ tiếp theo)','Khoản 1','<',1.00,false,null],
-  ['Điểm TB tích luỹ','Khoản 1','<',1.20,false,[1]], ['Điểm TB tích luỹ','Khoản 1','<',1.40,false,[2]],
-  ['Điểm TB tích luỹ','Khoản 1','<',1.60,false,[3]], ['Điểm TB tích luỹ','Khoản 1','<',1.80,false,[4,5,6]],
-  ['Số tín chỉ nợ đọng từ đầu khoá','Khoản 1','>',24,true,null],
-  ['Số lần cảnh báo liên tiếp','Khoản 2','>=',2,true,null], ['Số kỳ chính liên tiếp không đăng ký học tập','Khoản 2','>=',2,true,null],
-  ['Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT','Khoản 2','>=',2,false,null],
+/* Điều kiện xét theo PHIÊN BẢN của từng bộ — đồng bộ ý nghĩa với lichSu ở mh-admin-21 (2 trang tĩnh
+   riêng). Làm lại 13/10/2026 theo cách APIS cấu hình: mỗi phần tử = 1 ĐIỀU KIỆN
+   [mức xử lý, trình độ áp dụng, [vế…]], mỗi vế = [tên thông số, so sánh, giá trị, số nguyên?, nối].
+   Nối 'va' / 'hoac' với vế ngay trước (vế đầu bỏ trống); VÀ xét trước HOẶC. */
+const V = (ten, ss, gt, isInt, noi) => [ten, ss, gt, isInt, noi || null];
+const DK_GOC = [
+  ['canhbao', null, [V('Điểm TB học kỳ (kỳ đầu của khoá)','<',0.80,false)]], ['canhbao', null, [V('Điểm TB học kỳ (các kỳ tiếp theo)','<',1.00,false)]],
+  ['canhbao', [1], [V('Điểm TB tích luỹ','<',1.20,false)]], ['canhbao', [2], [V('Điểm TB tích luỹ','<',1.40,false)]],
+  ['canhbao', [3], [V('Điểm TB tích luỹ','<',1.60,false)]], ['canhbao', [4,5,6], [V('Điểm TB tích luỹ','<',1.80,false)]],
+  ['canhbao', null, [V('Số tín chỉ nợ đọng từ đầu khoá','>',24,true)]],
+  ['buocthoihoc', null, [V('Số lần cảnh báo liên tiếp','>=',2,true)]], ['buocthoihoc', null, [V('Số kỳ chính liên tiếp không đăng ký học tập','>=',2,true)]],
+  ['buocthoihoc', null, [V('Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT','>=',2,false)]],
 ];
-const TC_TY_LE = ['Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ','Khoản 1','>',0.5,false,null];
+const TEN_TY_LE = 'Tỷ lệ tín chỉ không đạt / tín chỉ đăng ký trong kỳ';
 const TIEU_CHI_THEO_PHIEN_BAN = {
-  bo1: { 1: TC_GOC },
-  bo2: { 1: TC_GOC, 2: [...TC_GOC.slice(0,7), TC_TY_LE, ...TC_GOC.slice(7)] },
-  bo3: { 1: [['Điểm TB học kỳ (kỳ đầu của khoá)','Khoản 1','<',1.00,false,null], ['Điểm TB học kỳ (các kỳ tiếp theo)','Khoản 1','<',1.20,false,null],
-             ['Điểm TB tích luỹ','Khoản 1','<',1.40,false,[1]], ['Số tín chỉ nợ đọng từ đầu khoá','Khoản 1','>',18,true,null],
-             [TC_TY_LE[0],'Khoản 1','>',0.4,false,null], ...TC_GOC.slice(7)] },
-  bo4: { 1: TC_GOC },
+  bo1: { 1: DK_GOC },
+  bo2: { 1: DK_GOC, 2: [...DK_GOC.slice(0,7), ['canhbao', null, [V(TEN_TY_LE,'>=',0.5,false)]], ...DK_GOC.slice(7)] },
+  bo3: { 1: [['canhbao', null, [V('Điểm TB học kỳ (kỳ đầu của khoá)','<',1.00,false)]], ['canhbao', null, [V('Điểm TB học kỳ (các kỳ tiếp theo)','<',1.20,false)]],
+             ['canhbao', [1], [V('Điểm TB tích luỹ','<',1.40,false)]],
+             ['canhbao', null, [V('Số tín chỉ nợ đọng từ đầu khoá','>',18,true), V(TEN_TY_LE,'>=',0.4,false,'va')]],
+             ['buocthoihoc', null, [V('Số lần cảnh báo liên tiếp','>=',2,true)]],
+             ['buocthoihoc', null, [V('Số kỳ chính liên tiếp không đăng ký học tập','>=',2,true), V('Năm đang đào tạo / Số năm đào tạo tối đa theo CTĐT','>=',2,false,'hoac')]]] },
+  bo4: { 1: DK_GOC },
 };
+const SOSANH_KY_HIEU_PB = { '<':'<', '<=':'≤', '=':'=', '>':'>', '>=':'≥' };
+function mucXuLyTagHtml(v){ return v === 'buocthoihoc' ? '<span class="tag tag-error">Buộc thôi học</span>' : '<span class="tag tag-warning">Cảnh báo học tập</span>'; }
+/* Biểu thức các vế — in ngoặc quanh cụm VÀ khi điều kiện trộn VÀ với HOẶC (giống mh-admin-21). */
+function bieuThucPbHtml(ves){
+  const g = []; ves.forEach((v, i) => { if (i === 0 || v[4] !== 'va') g.push([]); g[g.length - 1].push(i); });
+  const tron = g.length > 1 && g.some(x => x.length > 1);
+  const veTxt = ([ten, ss, gt, isInt]) => `<span class="dk-ve">${ten} ${SOSANH_KY_HIEU_PB[ss]} ${isInt ? gt : Number(gt).toFixed(2)}</span>`;
+  return '<div class="dk-expr">' + g.map((grp, k) => {
+    const inner = grp.map((i, j) => (j ? '<span class="tag tag-noi-va">VÀ</span>' : '') + veTxt(ves[i])).join('');
+    return (k ? '<span class="tag tag-noi-hoac">HOẶC</span>' : '') + (tron && grp.length > 1 ? `<span class="dk-paren">(</span>${inner}<span class="dk-paren">)</span>` : inner);
+  }).join('') + '</div>';
+}
 const SOSANH_TEXT = { '<':'Nhỏ hơn (<)', '<=':'Nhỏ hơn hoặc bằng (≤)', '=':'Bằng (=)', '>':'Lớn hơn (>)', '>=':'Lớn hơn hoặc bằng (≥)' };
 function trinhDoTagHtml(nam){
   if (!nam || !nam.length) return '<span class="tag tag-default">Mọi trình độ</span>';
@@ -1899,10 +2104,9 @@ function openPhienBan(boId, pb){
   const bo = BO_THAM_SO.find(b => b.id === boId);
   const rows = (TIEU_CHI_THEO_PHIEN_BAN[boId] || {})[pb] || [];
   document.getElementById('modal-pb-title').textContent = 'Thông số xét đang áp dụng';
-  document.getElementById('pb-tbody').innerHTML = rows.length ? rows.map(([ten, nhom, ss, gt, isInt, nam], i) => `<tr>
-      <td>${i+1}</td><td>${ten}</td><td><span class="tag tag-warning">${nhom}</span></td><td>${SOSANH_TEXT[ss]}</td>
-      <td><b>${isInt ? gt : Number(gt).toFixed(2)}</b></td><td>${trinhDoTagHtml(nam)}</td></tr>`).join('')
-    : '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px">Không có dữ liệu phiên bản này</td></tr>';
+  document.getElementById('pb-tbody').innerHTML = rows.length ? rows.map(([muc, nam, ves], i) => `<tr>
+      <td>${i+1}</td><td>${mucXuLyTagHtml(muc)}</td><td>${bieuThucPbHtml(ves)}</td><td>${trinhDoTagHtml(nam)}</td></tr>`).join('')
+    : '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:16px">Không có dữ liệu phiên bản này</td></tr>';
   openModal('modal-pb');
 }
 function pbLink(boId, pb){ return `<a style="cursor:pointer;color:var(--primary)" title="Xem thông số của phiên bản này" onclick="openPhienBan('${boId}', ${pb})">phiên bản ${pb}</a>`; }
@@ -2318,7 +2522,7 @@ function runBatch(){
     const scopeRieng = STUDENTS.filter(s => selectedKeys.includes(khoaSV(s)));
     const doChayRieng = () => {
       const truoc = new Set(dsCanhBao().map(khoaSV));
-      BATCH.daChayLuc = nowVN();
+      BATCH.daChayLuc = nowVN(); dongBoMocMotLan();
       apDungDemoDoiDuLieu();   /* mockup-only, xem ghi chú ở DEMO_DOI_DU_LIEU */
       scopeRieng.forEach(resetXacNhanSV);
       runHistory.push({ time: BATCH.daChayLuc, detail: `Rà soát riêng ${selectedKeys.length} sinh viên đã chọn` });
@@ -2352,8 +2556,8 @@ function runBatch(){
   const canhBaoGop = [canhBaoLopChuaKhoaDiem(dsTrongDot()), again ? canhBaoResetXacNhan(scopeToanBo) : ''].filter(Boolean).join(' ');
   showConfirm(
     again
-      ? `Rà soát lại đợt "${BATCH.tenDot}"? Hệ thống tính lại điểm và tín chỉ theo dữ liệu hiện tại.`
-      : `Chạy rà soát đợt "${BATCH.tenDot}"? Kết quả được tính theo danh mục Mức cảnh báo đang cấu hình hiện tại — bạn có thể chạy lại nhiều lần trước khi gửi cho Khoa quản lý.`,
+      ? `Rà soát lại đợt "${BATCH.tenDot}"? Hệ thống chạy lại một lần cho toàn đợt: loại sinh viên không thuộc diện xét theo quyết định, tính lại điểm, tín chỉ và số lần cảnh báo liên tiếp. Điều chỉnh tay được giữ nguyên.`
+      : `Chạy rà soát đợt "${BATCH.tenDot}"? Hệ thống chạy một lần cho toàn đợt: loại sinh viên không thuộc diện xét theo quyết định có Học kỳ áp dụng là ${kyXetLabel()}, xét học vụ và đếm số lần cảnh báo liên tiếp. Bạn có thể chạy lại nhiều lần trước khi gửi cho Khoa quản lý.`,
     () => {
       /* ═══ PHẠM VI CỦA "RÀ SOÁT": CHỈ TÍNH LẠI ĐIỂM / TÍN CHỈ / KẾT LUẬN — VÀ RESET XÁC NHẬN CŨ ═══
          Không đụng tới BATCH.daRaSoatTrangThai (kết quả bước rà soát trạng thái của Ban CTSV) — đó là
@@ -2361,17 +2565,18 @@ function runBatch(){
          gian/ghi chú kèm theo) của MỌI SV đang trong danh sách TRƯỚC lần chạy này thì bị đưa về
          "Chưa xác nhận" — xem canhBaoResetXacNhan() và lý do ở đó. Cảnh báo đã hiện SẴN trong popup
          xác nhận phía trên (canhBaoGop), actor bấm nút chạy tức là đã đồng ý với việc này. */
-      BATCH.daChayLuc = nowVN();
+      BATCH.daChayLuc = nowVN(); dongBoMocMotLan();
       if (again) scopeToanBo.forEach(resetXacNhanSV);
       /* ĐÂY là chỗ áp dụng điều kiện không xét: sinh viên có quyết định nghỉ trùm lên kỳ xét mới
          chuyển thành "Không xét" và rơi khỏi danh sách ở lần chạy này. Bước rà soát trạng thái
          trước đó chỉ điền dữ liệu để cán bộ soát, không tự gạt ai ra. */
-      if (BATCH.daRaSoatTrangThai) BATCH.apDungKhongXet = BATCH.daChayLuc;
+      /* Cập nhật 28/10/2026 (BB 24/10/2026): không còn chờ bước 2 — dongBoMocMotLan() đã áp dụng điều kiện không xét. */
       runHistory.push({ time: BATCH.daChayLuc, detail: 'Rà soát toàn bộ đợt' });
       renderBatchInfo();
       renderBatchMode();
       renderTableWithLoading(() => {
-        showToast(again ? 'Đã rà soát lại' : 'Đã chạy rà soát — xem danh sách bên dưới');
+        const nLoaiHt = dsTrongDot().filter(s => !daLoaiKhoiDot(s) && lyDoLoaiHeThong(s)).length;
+        showToast((again ? 'Đã rà soát lại' : 'Đã chạy rà soát') + (nLoaiHt ? ` — ${nLoaiHt} sinh viên loại khỏi đợt theo quyết định, xem ở Đã loại khỏi đợt` : ' — xem danh sách bên dưới'));
         /* Chỉ so sánh khi RÀ SOÁT LẠI. Lần chạy đầu thì danh sách trước vốn rỗng, không có gì để so. */
         if (again) baoRoiKhoiDs(soSanhSauRaSoat(truocToanDot));
       });
@@ -2515,6 +2720,17 @@ function exportToanBo(){
   xuatFileBM2002(rows, 'DANH SÁCH TOÀN BỘ SINH VIÊN XÉT HỌC VỤ', 'danh-sach-toan-bo-sv-xet-hoc-vu',
     `toàn bộ ${rows.length} sinh viên trong phạm vi xét`);
 }
+/* Cập nhật 28/10/2026 (BB 24/10/2026): SV loại khỏi đợt (hệ thống theo QĐ hoặc cán bộ loại tay) vẫn xuất đủ tên, Kết quả xét
+   cuối cùng = "Không xét", cột Số QĐ ghi số QĐ căn cứ (bảo lưu / đình chỉ / thu hồi / chuyển ngành /
+   QĐ cần kiểm tra). Loại tay không gắn QĐ nào thì để trống. */
+function ketQuaXuat(s){ return (daLoaiKhoiDot(s) || lyDoLoaiHeThong(s)) ? 'Không xét' : ketQuaCuoiText(s); }
+function soQdXuat(s, qd){
+  const ht = lyDoLoaiHeThong(s);
+  if (ht) return ht.qd.map(q => q.ma).join('; ');
+  if (qd) return qd.maQD;
+  if (daLoaiKhoiDot(s)) return qdCanKiemTra(s).map(q => q.ma).join('; ');
+  return '';
+}
 function xuatFileBM2002(rows, tieuDe, tenFile, moTaToast){
 
   const SO_COT = BM2002_COT_TRAI.length + BM2002_NHOM_DKXET.length + BM2002_NHOM_CTSV.length; /* 22 */
@@ -2550,7 +2766,7 @@ function xuatFileBM2002(rows, tieuDe, tenFile, moTaToast){
       '',
       ketQuaCanhBaoKy(s).label,
       '',
-      ketQuaCuoiText(s),
+      ketQuaXuat(s),
       /* "Cảnh báo kỳ hiện tại": CỐ Ý để trống như 2 cột ĐK Xét ở trên — cán bộ ghi tay trên bản in. */
       '',
       s.isHocKyDau ? 'Có' : 'Không',
@@ -2561,7 +2777,7 @@ function xuatFileBM2002(rows, tieuDe, tenFile, moTaToast){
       /* 3 cột cuối là phần Phòng CTSV ghi nhận — chưa chạy rà soát trạng thái thì ghi rõ "Chưa rà
          soát" chứ KHÔNG để trống, vì trống trên bản in đọc thành "sinh viên không có quyết định". */
       chuaRa ? 'Chưa rà soát' : nhan(trangThaiTaiKy(s)),
-      chuaRa ? 'Chưa rà soát' : (qd ? qd.maQD : ''),
+      chuaRa ? 'Chưa rà soát' : soQdXuat(s, qd),
       chuaRa ? 'Chưa rà soát' : khoangNghiPlain(s),
     ]);
   });
@@ -2669,7 +2885,12 @@ function publishBatch(){
     ? `<div style="background:#fff7e6;border:1px solid #ffd591;padding:8px 12px;border-radius:6px;margin-top:10px">`
       + `⚠ Còn <b>${kho}</b> sinh viên chưa được Khoa xác nhận và <b>${cts}</b> sinh viên chưa được CTSV xác nhận.</div>`
     : '';
-  showConfirm(`Công bố kết quả đợt xét "${BATCH.tenDot}"? Sau khi công bố, đợt bị khoá — không sửa cấu hình hay chạy lại được nữa.${canhBao}`, () => {
+  const nDoi = STUDENTS.filter(x => x.dieuChinh && x.dieuChinh.loai === 'doiKq').length, nLoai = dsDaLoai().length;
+  const dieuChinhNote = (nDoi || nLoai)
+    ? `<div style="background:#f9f0ff;border:1px solid #d3adf7;padding:8px 12px;border-radius:6px;margin-top:10px">`
+      + `Có <b>${nDoi}</b> sinh viên được điều chỉnh kết quả và <b>${nLoai}</b> sinh viên đã loại khỏi đợt — kết quả công bố theo điều chỉnh.</div>`
+    : '';
+  showConfirm(`Công bố kết quả đợt xét "${BATCH.tenDot}"? Sau khi công bố, đợt bị khoá — không sửa cấu hình hay chạy lại được nữa.${canhBao}${dieuChinhNote}`, () => {
     BATCH.status = 'congbo';
     renderBatchInfo();
     renderBatchMode();
@@ -2695,6 +2916,12 @@ function publishBatch(){
      coi như đã đủ điểm. 24105812 (dòng CTĐT Quản trị kinh doanh) mới có 6/18 TC → rơi vào nhóm
      "Không đủ dữ liệu" thay vì bị kết luận nhầm. */
 let STUDENTS = [
+  /* ═══ Cập nhật 28/10/2026 (BB 24/10/2026) vấn đề 1 — dữ liệu mẫu thêm ═══ */
+  /* A4: bảo lưu từ HK2 2025-2026, có QĐ thu hồi cho quay lại từ HK1 2026-2027 nhưng không đăng ký được tín chỉ. */
+  { mssv:'23109001', hoTen:'Phan Thanh Tùng', ngaySinh:'14/04/2005', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT1.23107.2', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:null, diemTbTichLuy:1.75, tcDangKy:null, tcCoDiem:null, tcTichLuyKy:null, tcTichLuyLuyKe:40, tinChiNoKy:null, tinChiNoDong:6, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, qdNghi:[{ tuKy:'HK2 2025-2026', denKy:'HK2 2026-2027', loai:'baoluu', lyDo:'Thực hiện nghĩa vụ quân sự', tinhVaoTGHoc:false, maQD:'QDSV-000470', ngayQD:'10/01/2026' }], qdThuHoi:{ maQD:'QDSV-000530', ngayQD:'25/09/2026', hocKyApDung:'HK1 2026-2027', qdGoc:'QDSV-000470' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
+  /* A3: chuyển ngành ô tô → CNTT, Học kỳ áp dụng HK1 2026-2027 — có 2 dòng CTĐT, dòng ô tô bị loại. */
+  { mssv:'24107777', hoTen:'Nguyễn Hải Đăng', ngaySinh:'03/12/2006', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ kỹ thuật ô tô', lopHanhChinh:'OTO1.24109.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:1.30, tcDangKy:15, tcTichLuyKy:8, tcTichLuyLuyKe:30, tinChiNoKy:7, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, chuyenNganh:{ maQD:'QDSV-000521', ngayQD:'03/09/2026', tuCtdt:'Công nghệ kỹ thuật ô tô', denCtdt:'Công nghệ thông tin', hocKyApDung:'HK1 2026-2027' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
+  { mssv:'24107777', hoTen:'Nguyễn Hải Đăng', ngaySinh:'03/12/2006', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT2.24107.3', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:1.30, tcDangKy:15, tcTichLuyKy:8, tcTichLuyLuyKe:30, tinChiNoKy:7, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, chuyenNganh:{ maQD:'QDSV-000521', ngayQD:'03/09/2026', tuCtdt:'Công nghệ kỹ thuật ô tô', denCtdt:'Công nghệ thông tin', hocKyApDung:'HK1 2026-2027' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105370', qdSo:'QDSV-000310', qdNgay:'28/08/2026', xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', ngayXacNhanCTSV:'25/08/2026 10:05', hoTen:'Nguyễn Hữu Huy', ngaySinh:'12/03/2006', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Du lịch', lopHanhChinh:'FTS4.24109.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:0.65, diemTbTichLuy:0.65, tcDangKy:14, tcTichLuyKy:11, tcTichLuyLuyKe:10, tinChiNoKy:3, tinChiNoDong:6, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, isHocKyDau:true, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, xacNhanKhoa:'daXacNhan', nguoiXacNhan:'Trần Thị Mai (CB00512)', ngayXacNhanKhoa:'22/08/2026 09:15', trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105604', hoTen:'Phạm Khánh Linh', ngaySinh:'25/07/2006', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.24109.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:0.90, diemTbTichLuy:1.15, tcDangKy:15, tcTichLuyKy:12, tcTichLuyLuyKe:9, tinChiNoKy:3, tinChiNoDong:3, namDangDaoTao:1, namToiDa:4.5, tinChiChuanNam:27, isHocKyDau:true, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105812', hoTen:'Trần Anh Tú', ngaySinh:'08/11/2005', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD1.24108.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.35, diemTbTichLuy:1.25, tcDangKy:18, tcCoDiem:6, tcTichLuyKy:15, tcTichLuyLuyKe:83, tinChiNoKy:2, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:1, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, trangThaiHoTro:'dangHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
@@ -2846,6 +3073,9 @@ function populateFilterOptions(){
    lẽ ra buộc thôi học lại thoát vì gắn nhầm kỳ nghỉ) mới là loại sai nguy hiểm. */
 function viPhamNguongTho(s){ return nguongRows(s).some(r => r.apDung && r.viPham); }
 function dienCanhBao(s){
+  /* Điều chỉnh tay (13/10/2026): SV đã loại không còn thuộc diện; SV đổi KQ luôn thuộc diện. */
+  if (daLoaiKhoiDot(s)) return false;
+  if (s.dieuChinh) return true;
   /* SV thuộc diện "Không xét" LUÔN hiện: số liệu kỳ của họ rỗng nên không thể suy được "đáng lẽ có
      bị cảnh báo không" — mà đây lại đúng là nhóm Khoa cần soát để xác nhận việc loại trừ là đúng. */
   if (kyKhongXet(s)) return true;
@@ -2882,7 +3112,7 @@ function trongPhamViQuet(s){
 }
 function dsTrongDot(){ return STUDENTS.filter(trongPhamViQuet); }
 function dsCanhBao(){
-  return dsTrongDot().filter(s => ['Cảnh báo học tập', 'Buộc thôi học'].includes(ketQuaXetCuoiCung(s).label));
+  return dsTrongDot().filter(s => !daLoaiKhoiDot(s) && ['Cảnh báo học tập', 'Buộc thôi học'].includes(ketQuaXetCuoiCung(s).label));
 }
 /* Mock: các ĐỢT KHÁC đã công bố (maDot khác đợt đang xem) — dùng để chặn Gửi xác nhận khi đợt
    đang mở có SV trùng với 1 đợt đã công bố CÙNG học kỳ/năm học. Xảy ra khi 2 đợt có phạm vi quét
@@ -3042,6 +3272,7 @@ function filteredStudents(){
     if (selectedKhoa && s.khoaQuanLy !== selectedKhoa) return false;
     if (trangThai && s.trangThaiSV !== trangThai) return false;
     if (ketQua && ketQuaXetCuoiCung(s).label !== KETQUA_FILTER_LABEL[ketQua]) return false;
+    if (!quaLocQdKy(s)) return false;
     if (ctsv && (s.xacNhanCTSV || 'chuaXacNhan') !== ctsv) return false;
     if (xnKhoa && (s.xacNhanKhoa || 'chuaXacNhan') !== xnKhoa) return false;
     if (!quaNumFilters(s)) return false;
@@ -3093,6 +3324,7 @@ function pickKetQua(v){
 }
 function renderTable(){
   renderSummary();
+  renderLocQdKy();
   /* Chưa gen danh sách thì chưa có gì để rà; đã công bố thì danh sách đã chốt, không cho đổi nữa —
      quyết định ban hành muộn sau khi công bố phải đi đường quyết định điều chỉnh. */
   updateNumFilterUI();
@@ -3100,6 +3332,8 @@ function renderTable(){
   btnRs.disabled = !BATCH.daChayLuc || BATCH.status === 'congbo';
   btnRs.textContent = BATCH.daRaSoatTrangThai ? 'Rà soát lại trạng thái sinh viên' : 'Rà soát trạng thái sinh viên';
   document.getElementById('cnt-xet').textContent = BATCH.daChayLuc ? `(${dsCanhBao().length})` : '';
+  document.getElementById('btn-daloai').classList.toggle('hidden', !BATCH.daChayLuc);
+  document.getElementById('btn-daloai').textContent = `Đã loại khỏi đợt (${BATCH.daChayLuc ? dsDaLoaiTatCa().length : 0})`;
 
   fillLtKhoa();
   renderTomTat();
@@ -3130,13 +3364,13 @@ function renderTable(){
       <td>${s.ctdt}</td>
       <td>${muted(s.khoaQuanLy)}</td>
       <td>${s.khoaDaoTao}</td>
-      <td>${trangThaiSVHtml(trangThaiTaiKy(s))}</td>
+      <!-- Cập nhật 28/10/2026 (BB 24/10/2026): bỏ cột Trạng thái tại kỳ — xem cột Trạng thái SV kỳ -->
       <td>${trangThaiSVHtml(s.trangThaiSV)}</td>
       <td>${trinhDoNamHocLabel(s.tcTichLuyLuyKe, s.tinChiChuanNam)}</td>
       <!-- cột "Cảnh báo học tập" đang ẩn: <td>${viPhamKyNay(s) ? 'Có' : 'Không'}</td> -->
       <td>${ketQuaHtml(ketQuaCanhBaoKy(s))}</td>
       ${daKetLuanCuoi()
-        ? `<td${lyDoChuaKetLuan(s) ? ` title="${lyDoChuaKetLuan(s)}"` : ''}>${ketQuaHtml(ketQuaXetCuoiCung(s))}</td>`
+        ? `<td${lyDoChuaKetLuan(s) ? ` title="${lyDoChuaKetLuan(s)}"` : ''}>${ketQuaHtml(ketQuaXetCuoiCung(s))}${dieuChinhTagHtml(s)}</td>`
         : '<td><span class="text-muted" title="Chưa chạy Kiểm tra số lần cảnh báo liên tiếp — chưa xét được điều kiện buộc thôi học theo Điều 17 khoản 2a">Chưa kết luận</span></td>'}
       ${BATCH.daKiemTraChuoi
         ? `<td${kyKhongXet(s) ? ' title="Kỳ này không xét nên không cộng vào chuỗi — giữ nguyên số của kỳ có xét liền trước"' : ''}>${soLanCanhBaoLienTiep(s)}</td>`
@@ -3159,6 +3393,7 @@ function renderTable(){
       <td>${xacNhanHtml(s, 'ctsv')}</td>
       <td>${xacNhanHtml(s, 'khoa')}</td>
       <!-- cột Ghi chú đang ẩn: <td style="font-size:12.5px">${s.ghiChuCTSV || s.ghiChuXemXetLai || ""}</td> -->
+      <td class="l" style="font-size:12.5px">${ghiChuBDTHtml(s)}</td>
       <td><div class="tbl-actions">
         ${iconBtn('Xem chi tiết', '', ICO_VIEW, `openChiTietModal('${s.mssv}', '${s.ctdt}')`)}
         ${['ctsv', 'khoa'].map(who => {
@@ -3174,6 +3409,8 @@ function renderTable(){
           return iconBtn(nhan, st === 'daXacNhan' ? 'success-btn' : '', ICO_CHECK,
             `openXacNhanModal('${s.mssv}::${s.ctdt}', '${who}')`);
         }).join('')}
+        ${coTheDieuChinh() ? iconBtn(s.dieuChinh ? 'Đã điều chỉnh — xem / huỷ điều chỉnh' : 'Điều chỉnh kết quả / loại khỏi đợt',
+            s.dieuChinh ? 'success-btn' : '', ICO_ADJ, `openDieuChinh(['${s.mssv}::${s.ctdt}'])`) : ''}
       </div></td>
     </tr>`).join('') : `<tr><td colspan="30"><div class="tbl-empty">Không có dữ liệu</div></td></tr>`;
 
@@ -3213,6 +3450,7 @@ function updateBulkBtns(){
     });
     document.getElementById(`btn-xn-${who}`).disabled = !con;
   });
+  document.getElementById('btn-dieuchinh').disabled = !keys.length || !coTheDieuChinh();
   /* Cập nhật luôn dòng phụ trong menu Chức năng, phòng khi menu đang mở lúc người dùng tick chọn. */
   capNhatTooltipFn();
 }
@@ -3353,7 +3591,7 @@ function lichSuKy(s){
   const kVao = semKey(kyNhapHoc(s));
   return kyBaoCaoList().map((nhanKy, i) => {
     if (semKey(nhanKy) < kVao) return 'cnh';
-    if (i === 0) return kyKhongXet(s) ? 'nx' : (viPhamKyNay(s) ? 'cb' : 'kh');
+    if (i === 0) return khongXetKyNay(s) ? 'nx' : (viPhamKyNay(s) ? 'cb' : 'kh');
     if (coQdNghiTaiKy(s, nhanKy)) return 'nx';
     const dot = dotCuaKy(nhanKy);
     /* Đợt có trong bảng học kỳ mà chưa có bảng kết quả thì coi như không bị cảnh báo, KHÔNG để ném
@@ -3961,7 +4199,262 @@ function iconSvg(svgInner){
 }
 const ICO_VIEW = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 const ICO_CHECK = '<polyline points="20 6 9 17 4 12"/>';
+const ICO_ADJ = '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>';
 
+/* ═══════════════ ĐIỀU CHỈNH THỦ CÔNG SINH VIÊN TRONG ĐỢT (bổ sung 13/10/2026) ═══════════════
+   Tương đương APIS cho phép cán bộ sửa tay danh sách sau khi chạy xét. 2 thao tác, chỉ Ban Đào tạo,
+   chỉ khi đợt đã chạy bước 1 và CHƯA công bố (Nháp / Chờ xác nhận):
+   - doiKq: đổi KQ cuối giữa Cảnh báo học tập ↔ Buộc thôi học. Cần đã chạy bước 3 (KQ cuối đã kết luận).
+   - loai : loại SV khỏi đợt — rời bảng tab 1, không công bố; xem/khôi phục ở popup P9.
+   s.dieuChinh = { loai, kqMoi, kqHeThong, lyDo, nguoi, thoiDiem }. Lý do bắt buộc.
+   ĐIỀU CHỈNH THẮNG KẾT QUẢ HỆ THỐNG và KHÔNG bị chạy lại rà soát ghi đè. Nếu lần rà soát sau hệ
+   thống tính ra kết quả khác lúc điều chỉnh (kqHeThong), tag "Điều chỉnh" chuyển đỏ để cán bộ xem lại.
+   Lưu điều chỉnh / huỷ điều chỉnh đưa xác nhận CTSV + Khoa của dòng đó về "Chưa xác nhận" — họ đã xác
+   nhận một kết quả không còn đúng, cùng lý do với resetXacNhanSV khi rà soát lại. */
+function daLoaiKhoiDot(s){ return !!(s.dieuChinh && s.dieuChinh.loai === 'loai'); }
+function dsDaLoai(){ return dsTrongDot().filter(daLoaiKhoiDot); }
+function coTheDieuChinh(){ return !!BATCH.daChayLuc && BATCH.status !== 'congbo'; }
+function svTheoKey(k){ return STUDENTS.find(s => khoaSV(s) === k); }
+function escHtml(t){ return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function dieuChinhTagHtml(s){
+  const dc = s.dieuChinh;
+  if (!dc || dc.loai !== 'doiKq') return '';
+  const ht = ketQuaHeThong(s).label;
+  const lech = ht !== dc.kqHeThong;
+  const tip = `Điều chỉnh thủ công từ "${dc.kqHeThong}" thành "${dc.kqMoi}". Lý do: ${dc.lyDo} — ${dc.nguoi}, ${dc.thoiDiem}`
+    + (lech ? `. Lần rà soát sau đó hệ thống tính ra "${ht}" — kiểm tra lại điều chỉnh.` : '');
+  return ` <span class="tag ${lech ? 'tag-error' : 'tag-purple'}" title="${escHtml(tip)}">${lech ? '⚠ ' : ''}Điều chỉnh</span>`;
+}
+let dcKeys = [];
+function openDieuChinh(keys){
+  if (!coTheDieuChinh()){ showToast('Yêu cầu không thể được xử lý tại thời điểm này.', 'err'); return; }
+  const ds = keys.map(svTheoKey).filter(Boolean);
+  if (!ds.length) return;
+  dcKeys = ds.map(khoaSV);
+  const mot = ds.length === 1 ? ds[0] : null;
+  const dc = mot && mot.dieuChinh;
+  document.getElementById('dc-sv').innerHTML = mot
+    ? `<b style="color:var(--text-1)">1</b> sinh viên đã chọn`
+    : `<b style="color:var(--text-1)">${ds.length}</b> sinh viên đã chọn`;
+  const hienTai = document.getElementById('dc-hientai');
+  hienTai.classList.toggle('hidden', !dc);
+  if (dc) hienTai.innerHTML = `Đang điều chỉnh: <b>${dc.loai === 'loai' ? 'Loại khỏi đợt' : `Đổi kết quả từ "${dc.kqHeThong}" thành "${dc.kqMoi}"`}</b><br>`
+    + `Lý do: ${escHtml(dc.lyDo)}<br><span style="color:var(--text-3)">${dc.nguoi} · ${dc.thoiDiem}</span>`;
+  document.getElementById('dc-huy').classList.toggle('hidden', !dc);
+  /* Đổi KQ cần KQ cuối đã kết luận (sau bước 3) — trước đó chưa biết em nào Buộc thôi học theo chuỗi. */
+  const choDoiKq = daKetLuanCuoi();
+  document.getElementById('dc-radio-doikq').disabled = !choDoiKq;
+  document.getElementById('dc-doikq-sub').textContent = choDoiKq
+    ? 'Cảnh báo ↔ Buộc thôi học'
+    : 'Chưa kết luận, chưa đổi được';
+  const loai = dc ? dc.loai : (choDoiKq ? 'doiKq' : 'loai');
+  document.querySelectorAll('input[name="dc-loai"]').forEach(r => { r.checked = r.value === loai; });
+  const kqHt = mot ? ketQuaHeThong(mot).label : '';
+  document.getElementById('dc-kqmoi').value = dc && dc.kqMoi ? dc.kqMoi : (kqHt === 'Buộc thôi học' ? 'Cảnh báo học tập' : 'Buộc thôi học');
+  document.getElementById('dc-lydo').value = dc ? dc.lyDo : '';
+  dcToggle();
+  openModal('modal-dieuchinh');
+}
+function dcLoaiChon(){ const r = document.querySelector('input[name="dc-loai"]:checked'); return r ? r.value : ''; }
+function dcToggle(){ document.getElementById('dc-kqmoi-wrap').classList.toggle('hidden', dcLoaiChon() !== 'doiKq'); }
+function saveDieuChinh(){
+  const loai = dcLoaiChon();
+  const lyDo = document.getElementById('dc-lydo').value.trim();
+  if (!loai){ showToast('Vui lòng chọn Thao tác.', 'err'); return; }
+  if (!lyDo){ showToast('Vui lòng nhập Lý do.', 'err'); return; }
+  if (!coTheDieuChinh() || (loai === 'doiKq' && !daKetLuanCuoi())){ showToast('Yêu cầu không thể được xử lý tại thời điểm này.', 'err'); return; }
+  let ds = dcKeys.map(svTheoKey).filter(Boolean);
+  const kqMoi = loai === 'doiKq' ? document.getElementById('dc-kqmoi').value : null;
+  if (loai === 'doiKq'){
+    /* Đổi về đúng kết quả hệ thống thì không phải điều chỉnh — bỏ qua; muốn bỏ điều chỉnh dùng Huỷ. */
+    const truoc = ds.length;
+    ds = ds.filter(s => ketQuaHeThong(s).label !== kqMoi);
+    if (!ds.length){ showToast(truoc === 1 ? 'Kết quả mới trùng với kết quả hệ thống đã xét.' : 'Các sinh viên đã chọn đều đang có kết quả hệ thống trùng với kết quả mới.', 'err'); return; }
+  }
+  const tg = nowVN();
+  ds.forEach(s => {
+    s.dieuChinh = { loai, kqMoi, kqHeThong: ketQuaHeThong(s).label, lyDo, nguoi: CURRENT_USER, thoiDiem: tg };
+    resetXacNhanSV(s);
+  });
+  closeModal('modal-dieuchinh');
+  renderTable();
+  showToast(loai === 'loai' ? `Đã loại ${ds.length} sinh viên khỏi đợt` : `Đã điều chỉnh kết quả ${ds.length} sinh viên`);
+}
+/* Cập nhật 28/10/2026 (BB 24/10/2026): khôi phục SV đã loại = rà soát lại RIÊNG SV đó như một lần Rà soát thu nhỏ — lấy lại điểm,
+   tín chỉ, quyết định mới nhất từ hệ thống rồi tính lại KQ cảnh báo kỳ, SL cảnh báo LT, KQ cuối. Mockup
+   tính trực tiếp từ dữ liệu nên chỉ ghi lại thời điểm rà soát; hệ thống thật gọi lại API lấy dữ liệu SV. */
+function raSoatLaiSV(s){ s.raSoatLaiLuc = nowVN(); }
+function huyDieuChinh(key){
+  const s = svTheoKey(key);
+  if (!s || !s.dieuChinh) return;
+  const laLoai = s.dieuChinh.loai === 'loai';
+  const lam = () => {
+    delete s.dieuChinh;
+    resetXacNhanSV(s);
+    if (!document.getElementById('modal-daloai').classList.contains('hidden')) renderDaLoai();
+    renderTable();
+  };
+  /* Khôi phục SV đã loại: 1 bước, không hỏi xác nhận (chốt 13/10/2026). Không mất gì — xác nhận CTSV/Khoa
+     đã bị reset từ lúc loại, lý do loại vẫn nằm trong log điều chỉnh, khôi phục nhầm thì loại lại được. */
+  if (laLoai){
+    lam();
+    raSoatLaiSV(s);
+    const kqKy = ketQuaCanhBaoKy(s).label, kq = ketQuaXetCuoiCung(s).label, sl = soLanCanhBaoLienTiep(s);
+    const ketQua = `KQ cảnh báo kỳ: ${kqKy} · SL cảnh báo LT: ${sl} · KQ cuối: ${kq}`;
+    showToast(lyDoLoaiHeThong(s)
+      ? `Đã rà soát lại ${s.hoTen} — có quyết định bảo lưu / đình chỉ trùm kỳ xét nên vẫn Không xét`
+      : ['Cảnh báo học tập', 'Buộc thôi học'].includes(kq)
+        ? `Đã khôi phục và rà soát lại ${s.hoTen} — ${ketQua}`
+        : `Đã khôi phục và rà soát lại ${s.hoTen} — ${ketQua}, nên không hiện trên bảng cảnh báo`);
+    return;
+  }
+  closeModal('modal-dieuchinh');
+  showConfirm(`Huỷ điều chỉnh kết quả của sinh viên ${s.hoTen}?`, () => {
+    lam();
+    showToast('Đã huỷ điều chỉnh — sinh viên trở về kết quả hệ thống xét');
+  }, 'Huỷ điều chỉnh', 'btn-danger', `Sinh viên nhận lại kết quả hệ thống xét: "${ketQuaHeThong(s).label}".`);
+}
+function openDaLoai(){ renderDaLoai(); openModal('modal-daloai'); }
+/* Cập nhật 28/10/2026 (BB 24/10/2026) B9: gộp SV HỆ THỐNG loại theo quyết định (khi Rà soát) với SV người xét loại tay.
+   Dòng hệ thống không có nút Khôi phục: muốn xét lại thì bỏ tick ô Không xét hoặc sửa QĐ rồi rà soát lại. */
+function dsDaLoaiTatCa(){ return dsTrongDot().filter(s => daLoaiKhoiDot(s) || lyDoLoaiHeThong(s)); }
+function qdCanCuHtml(ht){
+  if (!ht || !ht.qd.length) return '<span class="text-muted">—</span>';
+  return ht.qd.map(q => `<div><span class="sv-code">${q.ma}</span> · ${q.loai}<div style="font-size:12px;color:var(--text-3)">Học kỳ áp dụng: ${q.hk}</div></div>`).join('<div style="height:4px"></div>');
+}
+function renderDaLoai(){
+  const ds = dsDaLoaiTatCa();
+  document.getElementById('dl-tbody').innerHTML = ds.length ? ds.map((s, i) => {
+    const ht = !daLoaiKhoiDot(s) && lyDoLoaiHeThong(s);
+    return `
+    <tr>
+      <td>${i + 1}</td>
+      <td class="sv-code">${s.mssv}</td>
+      <td class="l">${s.hoTen}<div style="font-size:12px;color:var(--text-3)">${s.ctdt}</div></td>
+      <td>Không xét${ht ? '' : `<div style="font-size:12px;color:var(--text-3)">Trước khi loại: ${ketQuaHeThong(s).label}</div>`}</td>
+      <td class="l"><div style="max-width:260px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word" title="${escHtml(ht ? ht.lyDo : s.dieuChinh.lyDo)}">${ht ? ht.lyDo : escHtml(s.dieuChinh.lyDo)}</div></td>
+      <td class="l">${qdCanCuHtml(ht)}</td>
+      <td>${ht ? '<span class="tag tag-blue">Hệ thống</span>' : `<span class="tag tag-purple">Thủ công</span><div style="font-size:12px;color:var(--text-3)">${s.dieuChinh.nguoi}</div>`}</td>
+      <td>${ht ? BATCH.daChayLuc : s.dieuChinh.thoiDiem}</td>
+      <td>${ht ? '<span class="text-muted" title="Hệ thống loại theo quyết định — bỏ tick ô Không xét hoặc sửa quyết định rồi rà soát lại">—</span>'
+        : coTheDieuChinh() ? `<button class="btn btn-default" style="padding:2px 10px" onclick="huyDieuChinh('${khoaSV(s)}')">Khôi phục</button>` : '<span class="text-muted">—</span>'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="tbl-empty">Chưa có sinh viên nào bị loại khỏi đợt</div></td></tr>';
+}
+
+/* CHỈ DÙNG CHO MOCKUP: 1 SV đã bị loại sẵn để mở popup "Đã loại khỏi đợt" là có dòng thử Khôi phục. */
+(() => {
+  const s = STUDENTS.find(x => x.mssv === '25106210' && x.ctdt === 'Ngôn ngữ Anh');
+  if (s && !isNew) s.dieuChinh = { loai:'loai', kqMoi:null, kqHeThong:'Cảnh báo học tập',
+    lyDo:'Đã có quyết định thôi học theo nguyện vọng, hồ sơ chưa cập nhật trạng thái', nguoi:'Nguyễn Văn Admin', thoiDiem:'12/10/2026 09:30' };
+})();
+/* ═══ Cập nhật 28/10/2026 (BB 24/10/2026) — Ghi chú BĐT ═══
+   Quét MỌI quyết định của SV có hiệu lực trong học kỳ xét (Học kỳ áp dụng = kỳ xét; QĐ nghỉ thì
+   khoảng nghỉ trùm kỳ xét). Không giới hạn loại QĐ — danh mục thêm loại mới cũng tự hiện. */
+function qdTrongKy(s){
+  if (!BATCH.daChayLuc) return [];
+  const k = semKey(kyXetLabel());
+  /* QĐ bảo lưu / đình chỉ KHÔNG ghi ở đây — đã có ở cụm cột Trạng thái SV kỳ / Số QĐ / Thời gian nghỉ theo QĐ. */
+  return dsQdKhacCuaSV(s).filter(q => semKey(q.hk) === k || laQdCanKiemTra(q)).map(q => ({ ...q, ck: laQdCanKiemTra(q) }));
+}
+/* Ô trên bảng ghi ĐỒNG NHẤT một mẫu cho mọi SV: mỗi QĐ một dòng "Loại QĐ · Số QĐ" (bỏ chữ "QĐ" đầu
+   tên loại), ghi chú do BĐT nhập nằm dòng riêng, chữ xám, mở đầu "BĐT:". Không gắn tag riêng — mọi
+   QĐ hiện ở đây đều là QĐ cán bộ cần xem. Bấm vào ô mở popup thông tin chi tiết. */
+function tenQdNgan(loai){ const t = loai.replace(/^QĐ\s+/, ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+function ghiChuBDTHtml(s){
+  const ds = qdTrongKy(s);
+  /* MỘT dòng duy nhất trên bảng; ghi chú BĐT nhập tay chỉ xem trong popup / tooltip. */
+  const ngan = ds.map(q => `${escHtml(tenQdNgan(q.loai))} · <span class="sv-code">${q.ma}</span>`).join('; ');
+  const tip = [...ds.map(q => `${q.loai} ${q.ma} — Hiệu lực ${q.hl || '—'} · Học kỳ áp dụng ${q.hk}`), s.ghiChuBDT && `BĐT: ${s.ghiChuBDT}`].filter(Boolean).join('\n');
+  return `<div style="width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--primary)"
+    title="${escHtml(tip ? tip + '\nBấm để xem chi tiết' : 'Bấm để thêm ghi chú')}" onclick="openGhiChuBDT('${khoaSV(s)}')">${ngan || '<span class="text-muted">—</span>'}</div>`;
+}
+let gcKey = null;
+function openGhiChuBDT(key){
+  const s = svTheoKey(key);
+  if (!s) return;
+  gcKey = key;
+  const sua = coTheDieuChinh();
+  document.getElementById('gc-ten').textContent = s.hoTen;
+  document.getElementById('gc-sv').innerHTML = `<span class="sv-code">${s.mssv}</span> · ${s.ctdt}`;
+  const ds = qdTrongKy(s);
+  document.getElementById('gc-qd').innerHTML = ds.length ? ds.map(q => `
+    <div style="padding:10px 12px;border:1px solid var(--border);border-radius:6px">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <b>${escHtml(tenQdNgan(q.loai))}</b><span class="sv-code">${q.ma}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Ký ${q.ngay || '—'} · Hiệu lực ${q.hl || '—'} · Áp dụng ${q.hk}${q.nd ? ` · ${escHtml(q.nd)}` : ''}</div>
+    </div>`).join('') : '<div class="text-muted" style="font-size:13px">Không có quyết định nào trong học kỳ xét.</div>';
+  document.getElementById('gc-canhbao').classList.toggle('hidden', !qdCanKiemTra(s).length);
+  const ta = document.getElementById('gc-text');
+  ta.value = s.ghiChuBDT || '';
+  ta.disabled = !sua;
+  document.getElementById('gc-luu').classList.toggle('hidden', !sua);
+  document.getElementById('gc-loai').classList.toggle('hidden', !sua || daLoaiKhoiDot(s));
+  openModal('modal-ghichubdt');
+}
+function saveGhiChuBDT(){
+  const s = svTheoKey(gcKey);
+  if (!s) return;
+  s.ghiChuBDT = document.getElementById('gc-text').value.trim();
+  closeModal('modal-ghichubdt');
+  renderTable();
+  showToast('Đã lưu ghi chú Ban Đào tạo');
+}
+function gcLoaiKhoiDot(){
+  const s = svTheoKey(gcKey);
+  const gc = document.getElementById('gc-text').value.trim();
+  if (s) s.ghiChuBDT = gc;
+  closeModal('modal-ghichubdt');
+  openDieuChinh([gcKey]);
+  const r = document.querySelector('input[name="dc-loai"][value="loai"]');
+  if (r) r.checked = true;
+  dcToggle();
+  const lyDo = document.getElementById('dc-lydo');
+  if (!lyDo.value) lyDo.value = gc;
+}
+/* Lọc theo quyết định trong kỳ: '' tất cả · co / khong · ghichu · loai:<tên loại QĐ>. */
+function quaLocQdKy(s){
+  const v = document.getElementById('f-qdky').value;
+  return !v || (v === 'kiemtra' && qdCanKiemTra(s).length > 0);
+}
+/* Lọc cột Ghi chú BĐT: 2 giá trị — Tất cả / Cần kiểm tra (SV có QĐ Học kỳ áp dụng ≥ kỳ xét).
+   Dựng lại option mỗi lần vẽ bảng để số đếm luôn khớp danh sách. */
+function renderLocQdKy(){
+  const sel = document.getElementById('f-qdky');
+  const ds = BATCH.daChayLuc ? dsCanhBao() : [];
+  const nKt = ds.filter(s => qdCanKiemTra(s).length).length;
+  const cur = sel.value === 'kiemtra' ? 'kiemtra' : '';
+  sel.innerHTML = `<option value="">Ghi chú BĐT: Tất cả</option><option value="kiemtra">Ghi chú BĐT: Cần kiểm tra (${nKt})</option>`;
+  sel.value = cur;
+}
+/* CHỈ DÙNG CHO MOCKUP: QĐ mẫu có Học kỳ áp dụng = kỳ xét để xem cột Ghi chú BĐT. */
+(() => {
+  const g = (m, c) => STUDENTS.find(x => x.mssv === m && x.ctdt === c);
+  const a = g('25106101', 'Công nghệ thông tin');
+  if (a) a.qdKhac = [{ maQD:'QDSV-000400', loai:'QĐ nhập trường', ngayQD:'20/08/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Công nhận trúng tuyển, nhập học khoá 2026' }];
+  const b = g('24105733', 'Kỹ thuật cơ khí');
+  if (b){
+    b.qdKhac = [{ maQD:'QDSV-000512', loai:'QĐ chuyển trường đến', ngayQD:'01/09/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Tiếp nhận sinh viên từ trường khác, công nhận 52 tín chỉ' }];
+    b.ghiChuBDT = 'Đã đối chiếu bảng điểm trường cũ — chờ Khoa xác nhận số tín chỉ công nhận';
+  }
+  const c = g('25106102', 'Ngôn ngữ Anh');
+  if (c) c.qdKhac = [{ maQD:'QDSV-000401', loai:'QĐ nhập trường', ngayQD:'02/09/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Công nhận trúng tuyển, nhập học khoá 2026' }];
+  const d = g('23104650', 'Dược học');
+  /* QĐ chuyển ngành ký 25/08/2026, Học kỳ áp dụng HK1 2026-2027 (dòng ngành mới). */
+  const e = g('24105744', 'Kế toán');
+  if (e) e.chuyenNganh = { maQD:'QDSV-000531', ngayQD:'25/08/2026', tuCtdt:'Quản trị kinh doanh', denCtdt:'Kế toán', hocKyApDung:'HK1 2026-2027' };
+  /* QĐ tiếp tục học tập: SV đang bảo lưu QDSV-000502 quay lại học từ HK1 2026-2027 → hết Không xét, xét điểm + ghi chú. */
+  const f = STUDENTS.find(x => x.mssv === '23104880');
+  if (f) Object.assign(f, { trangThaiSV:'danghoc', tcDangKy:15, tcCoDiem:15, tcTichLuyKy:6, tinChiNoKy:9, diemTbKy:0.65 });
+  if (f) f.qdKhac = [{ maQD:'QDSV-000540', loai:'QĐ tiếp tục học tập', ngayQD:'28/08/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Tiếp tục học tập sau bảo lưu' }];
+  if (d) d.qdKhac = [{ maQD:'QDSV-000515', loai:'QĐ chuyển trường đến', ngayQD:'05/09/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Tiếp nhận sinh viên từ trường khác' }];
+  /* Ngày hiệu lực mẫu của các QĐ ngoài bảo lưu / đình chỉ. */
+  const HIEU_LUC = { 'QDSV-000400':'01/09/2026', 'QDSV-000401':'07/09/2026', 'QDSV-000512':'07/09/2026', 'QDSV-000515':'07/09/2026',
+    'QDSV-000521':'07/09/2026', 'QDSV-000531':'01/09/2026', 'QDSV-000530':'07/09/2026', 'QDSV-000540':'01/09/2026' };
+  STUDENTS.forEach(x => [...(x.qdKhac || []), x.chuyenNganh, x.qdThuHoi].filter(Boolean)
+    .forEach(q => { if (!q.ngayHieuLuc && HIEU_LUC[q.maQD]) q.ngayHieuLuc = HIEU_LUC[q.maQD]; }));
+})();
 populateFilterOptions();
 /* Init màn: dựng thông tin đợt trước, rồi mới tới bảng SV. Vào bằng ?mode=new thì mở thẳng chế độ
    form với giá trị mặc định (trạng thái người học = Đang học). */

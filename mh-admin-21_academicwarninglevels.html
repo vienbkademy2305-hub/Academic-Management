@@ -42,6 +42,9 @@
   .bts-note{padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:16px;line-height:1.5}
   .bts-note.warn{background:#fff7e6;border:1px solid #ffd591;color:#874d00}
   .bts-note.info{background:#e6f4ff;border:1px solid #91caff;color:#003a8c}
+  /* Màn XEM chi tiết (chỉ đọc) — tách khỏi màn Sửa 14/10/2026. */
+  .bts-ro .lb{font-size:13px;color:var(--text-2);margin-bottom:4px}
+  .bts-ro .vl{font-size:13px;min-height:20px;word-break:break-word}
   .back-link{font-size:13px;color:var(--primary);cursor:pointer;display:inline-block;margin-bottom:8px}
   .cell-sub{font-size:12px;color:var(--text-3)}
   /* Bảng danh sách bộ: mỗi bộ đúng 1 dòng — không xuống dòng, tên dài cắt "…" (xem đủ ở tooltip). */
@@ -136,7 +139,7 @@
                 <th style="width:190px">Người tạo</th>
                 <th style="width:100px">Ngày tạo</th>
                 <th style="width:95px">Trạng thái</th>
-                <th style="width:150px">Thao tác</th>
+                <th style="width:185px">Thao tác</th>
               </tr>
             </thead>
             <tbody id="bo-tbody"></tbody>
@@ -154,13 +157,78 @@
         <div class="pagination" id="pagination"></div>
       </div>
 
-      <!-- ═══════════ VIEW 2: CHI TIẾT / THÊM BỘ THAM SỐ ═══════════ -->
+      <!-- ═══════════ VIEW 2: XEM CHI TIẾT BỘ THAM SỐ (chỉ đọc) ═══════════
+           Tách 14/10/2026: Xem = Thông tin chung + Tiêu chí cảnh báo + Đợt xét đang sử dụng bộ này.
+           Sửa (VIEW 3) chỉ gồm Thông tin chung + Tiêu chí cảnh báo. -->
+      <div id="view-view" class="hidden">
+        <a class="back-link" onclick="backToList()">‹ Danh sách bộ tham số</a>
+        <div class="flex justify-between items-center mb-16">
+          <h2 style="margin:0;font-size:18px" id="vw-title">Chi tiết bộ tham số</h2>
+          <div class="flex" style="gap:8px">
+            <button class="btn btn-default" onclick="backToList()">Quay lại</button>
+            <button class="btn btn-primary" onclick="openDetail(viewingId, null, 'view')">Sửa</button>
+          </div>
+        </div>
+
+        <div class="bts-card">
+          <h3>Thông tin chung</h3>
+          <div class="bts-grid bts-ro">
+            <div><div class="lb">Mã bộ</div><div class="vl" id="vw-ma"></div></div>
+            <div><div class="lb">Tên bộ tham số</div><div class="vl" id="vw-ten"></div></div>
+            <div><div class="lb">Niên khoá áp dụng</div><div class="vl" id="vw-nienkhoa"></div></div>
+            <div><div class="lb">Ngày có hiệu lực</div><div class="vl" id="vw-tungay"></div></div>
+            <div><div class="lb">Ngày hết hiệu lực</div><div class="vl" id="vw-denngay"></div></div>
+            <div><div class="lb">Căn cứ</div><div class="vl" id="vw-cancu"></div></div>
+            <div><div class="lb">Trạng thái</div><div class="vl" id="vw-status"></div></div>
+            <div class="span3"><div class="lb">Ghi chú</div><div class="vl" id="vw-ghichu" style="white-space:pre-line"></div></div>
+          </div>
+          <div class="bts-audit">
+            <div><div class="lb">Người tạo</div><div class="vl" id="vw-nguoitao">—</div></div>
+            <div><div class="lb">Ngày tạo</div><div class="vl" id="vw-ngaytao">—</div></div>
+            <div><div class="lb">Người cập nhật</div><div class="vl" id="vw-nguoicapnhat">—</div></div>
+            <div><div class="lb">Ngày cập nhật</div><div class="vl" id="vw-ngaycapnhat">—</div></div>
+          </div>
+        </div>
+
+        <div class="bts-card">
+          <h3>Tiêu chí cảnh báo <span id="vw-version" style="font-weight:400;font-size:13px;margin-left:6px"></span></h3>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Thông số cảnh báo</th>
+                  <th style="width:90px">Nhóm</th>
+                  <th style="width:160px">So sánh</th>
+                  <th style="width:90px">Giá trị</th>
+                  <th style="width:200px">Áp dụng trình độ năm học</th>
+                </tr>
+              </thead>
+              <tbody id="vw-cond-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bts-card">
+          <h3>Đợt xét đang sử dụng bộ này</h3>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th style="width:40px">#</th><th style="width:160px">Mã đợt</th><th>Tên đợt</th><th style="width:130px">Học kỳ</th><th style="width:130px">Ngày bắt đầu</th><th style="width:160px">Phiên bản áp dụng</th><th style="width:150px">Tình trạng</th></tr>
+              </thead>
+              <tbody id="dot-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════ VIEW 3: SỬA / THÊM BỘ THAM SỐ (Thông tin chung + Tiêu chí cảnh báo) ═══════════ -->
       <div id="view-detail" class="hidden">
         <a class="back-link" onclick="backToList()">‹ Danh sách bộ tham số</a>
         <div class="flex justify-between items-center mb-16">
           <h2 style="margin:0;font-size:18px" id="dt-title">Thêm bộ tham số</h2>
           <div class="flex" style="gap:8px">
-            <button class="btn btn-default" onclick="backToList()">Huỷ</button>
+            <button class="btn btn-default" onclick="cancelEdit()">Huỷ</button>
             <button class="btn btn-primary" onclick="saveBo()">Lưu</button>
           </div>
         </div>
@@ -215,18 +283,6 @@
                 </tr>
               </thead>
               <tbody id="cond-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="bts-card">
-          <h3>Đợt xét đang sử dụng bộ này</h3>
-          <div class="tbl-wrap">
-            <table class="tbl">
-              <thead>
-                <tr><th style="width:40px">#</th><th style="width:160px">Mã đợt</th><th>Tên đợt</th><th style="width:130px">Học kỳ</th><th style="width:130px">Ngày bắt đầu</th><th style="width:160px">Phiên bản áp dụng</th><th style="width:150px">Tình trạng</th></tr>
-              </thead>
-              <tbody id="dot-tbody"></tbody>
             </table>
           </div>
         </div>
@@ -372,11 +428,11 @@ let BO_THAM_SO = [
     tuNgay:'2025-08-01', denNgay:'2026-07-31', status:'active', tieuChi: boTieuChiGoc(),
     nguoiTao:'Hệ thống', ngayTao:'01/09/2026 00:00', nguoiCapNhat:'Hệ thống', ngayCapNhat:'01/09/2026 00:00' },
   { id:'bo2', ma:'BTS-002', ten:'Bộ tham số 2026-2027 — bổ sung tỷ lệ tín chỉ không đạt', canCu:'QĐ 1234/QĐ-ĐHQT ngày 01/08/2026', ghiChu:'',
-    tuNgay:'2026-08-01', denNgay:'', status:'active', phienBan:2, tieuChi: [...boTieuChiGoc().slice(0,7), c('tiLeTcKhongDatKy','>',0.5), ...boTieuChiGoc().slice(7)],
+    tuNgay:'2026-08-01', denNgay:'', status:'active', phienBan:2, tieuChi: [...boTieuChiGoc().slice(0,7), c('tiLeTcKhongDatKy','>=',0.5), ...boTieuChiGoc().slice(7)],
     nguoiTao:'Trần Thị Mai (CB00512)', ngayTao:'05/08/2026 09:20', nguoiCapNhat:'Trần Thị Mai (CB00512)', ngayCapNhat:'05/10/2026 14:05' },
   { id:'bo3', ma:'BTS-003', ten:'Bộ tham số siết ngưỡng năm 1 — Khoá K50', canCu:'', ghiChu:'Dùng cho các đợt xét riêng khoá K50',
     tuNgay:'2026-08-15', denNgay:'2027-06-30', status:'active',
-    tieuChi: [c('diemTbKyDau','<',1.00), c('diemTbKySau','<',1.20), c('diemTbTichLuy','<',1.40,[1]), c('tinChiNoDong','>',18), c('tiLeTcKhongDatKy','>',0.4),
+    tieuChi: [c('diemTbKyDau','<',1.00), c('diemTbKySau','<',1.20), c('diemTbTichLuy','<',1.40,[1]), c('tinChiNoDong','>',18), c('tiLeTcKhongDatKy','>=',0.4),
               c('soLanCanhBaoLienTiep','>=',2), c('soKyKhongDangKyLienTiep','>=',2), c('heSoThoiGianHoc','>=',2)],
     nguoiTao:'Lê Quốc Hùng (CB00347)', ngayTao:'20/08/2026 10:00', nguoiCapNhat:'Nguyễn Văn Admin (CB00001)', ngayCapNhat:'02/09/2026 16:30' },
   { id:'bo4', ma:'BTS-004', ten:'Dự thảo bộ tham số năm học 2027-2028', canCu:'', ghiChu:'Chờ quy chế mới',
@@ -468,7 +524,7 @@ function renderList(){
     <tr>
       <td>${start+i+1}</td>
       <td>${b.ma}</td>
-      <td title="${tip}"><a style="color:var(--primary);cursor:pointer" onclick="openDetail('${b.id}')">${b.ten}</a></td>
+      <td title="${tip}"><a style="color:var(--primary);cursor:pointer" onclick="openView('${b.id}')">${b.ten}</a></td>
       <td>${fmtNgay(b.tuNgay)}</td>
       <td>${fmtNgay(b.denNgay)}</td>
       <td>${b.tieuChi.length}</td>
@@ -477,6 +533,7 @@ function renderList(){
       <td>${(b.ngayTao || '').slice(0,10)}</td>
       <td><span class="tag ${b.status==='active'?'tag-success':'tag-default'}">${b.status==='active'?'Active':'Inactive'}</span></td>
       <td class="tbl-actions">
+        ${iconBtn('Xem chi tiết', '', ICO_VIEW, `openView('${b.id}')`)}
         ${iconBtn('Sửa', '', ICO_EDIT, `openDetail('${b.id}')`)}
         ${iconBtn('Sao chép', '', ICO_COPY, `copyBo('${b.id}')`)}
         ${statusBtnHtml(b)}
@@ -576,8 +633,56 @@ function ngayDungMuonNhat(boId){
   return dotsOf(boId).filter(d => d.tinhTrang !== 'chuachay').map(d => d.ngay).sort().pop() || '';
 }
 
-/* preset: nội dung điền sẵn khi Sao chép (bộ chưa lưu, id null). */
-function openDetail(id, preset){
+/* ═══════════ VIEW 2: XEM CHI TIẾT (chỉ đọc) ═══════════ */
+let viewingId = null;
+function showView(name){
+  ['view-list','view-view','view-detail'].forEach(v => document.getElementById(v).classList.toggle('hidden', v !== name));
+  window.scrollTo(0,0);
+}
+function openView(id){
+  const b = BO_THAM_SO.find(x => x.id === id);
+  if (!b) return;
+  viewingId = id;
+  document.getElementById('vw-title').textContent = `Chi tiết bộ tham số ${b.ma}`;
+  document.getElementById('breadcrumb').innerHTML = `Cảnh báo học tập / <a href="mh-admin-21_academicwarninglevels.html">Cài đặt thông số</a> / <b style="color:var(--text-1)">${b.ma}</b>`;
+  const txt = (elId, v) => { document.getElementById(elId).textContent = v || '—'; };
+  txt('vw-ma', b.ma); txt('vw-ten', b.ten); txt('vw-tungay', fmtNgay(b.tuNgay));
+  txt('vw-denngay', fmtNgay(b.denNgay)); txt('vw-cancu', b.canCu); txt('vw-ghichu', b.ghiChu);
+  txt('vw-nguoitao', b.nguoiTao); txt('vw-ngaytao', b.ngayTao); txt('vw-nguoicapnhat', b.nguoiCapNhat); txt('vw-ngaycapnhat', b.ngayCapNhat);
+  document.getElementById('vw-nienkhoa').innerHTML = nienKhoaHtml(b);
+  document.getElementById('vw-status').innerHTML = `<span class="tag ${b.status==='active'?'tag-success':'tag-default'}">${b.status==='active'?'Active':'Inactive'}</span>`;
+  document.getElementById('vw-version').innerHTML = `<span class="tag tag-blue">Phiên bản ${b.phienBan || 1} (mới nhất)</span>`;
+  document.getElementById('vw-cond-tbody').innerHTML = b.tieuChi.length ? b.tieuChi.map((x,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td>${chiTieuLabel(x.chiTieu)}</td>
+      <td>${NHOM_LABEL[chiTieuOf(x.chiTieu).nhom] || '—'}</td>
+      <td>${sosanhLabel(x.sosanh)}</td>
+      <td><b>${x.giaTri}</b></td>
+      <td>${apDungNamHtml(x)}</td>
+    </tr>`).join('')
+    : '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px">Chưa có tiêu chí nào</td></tr>';
+
+  const ds = dotsOf(b.id);
+  document.getElementById('dot-tbody').innerHTML = ds.length ? ds.map((d,i) => `
+    <tr><td>${i+1}</td><td><a href="mh-admin-24_academicwarningbatchdetail.html?maDot=${encodeURIComponent(d.maDot)}&tenDot=${encodeURIComponent(d.ten)}&boThamSo=${b.id}">${d.maDot}</a></td>
+    <td>${d.ten}</td><td>${d.ky}</td><td>${fmtNgay(d.ngay)}</td>
+    <td><a style="color:var(--primary);cursor:pointer" title="Xem thông số của phiên bản này" onclick="openVersion('${b.id}', ${d.phienBan})">Phiên bản ${d.phienBan}</a></td>
+    <td><span class="tag ${TINH_TRANG_DOT[d.tinhTrang].cls}">${TINH_TRANG_DOT[d.tinhTrang].label}</span></td></tr>`).join('')
+    : '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px">Chưa có đợt xét nào chọn bộ này</td></tr>';
+  showView('view-view');
+}
+
+/* ═══════════ VIEW 3: SỬA / THÊM ═══════════ */
+/* Màn quay về khi Huỷ / sau khi Lưu: 'view' = màn Xem của bộ đang sửa, 'list' = danh sách. */
+let editReturn = 'list';
+function cancelEdit(){
+  if (editReturn === 'view' && draft && draft.id) openView(draft.id); else backToList();
+}
+
+/* preset: nội dung điền sẵn khi Sao chép (bộ chưa lưu, id null). from: 'view' khi mở từ màn Xem. */
+function openDetail(id, preset, from){
+  editReturn = from === 'view' ? 'view' : 'list';
   const b = id ? BO_THAM_SO.find(x => x.id === id) : null;
   draft = b ? JSON.parse(JSON.stringify(b)) : (preset || { id:null, ma:'', ten:'', canCu:'', ghiChu:'', tuNgay:'', denNgay:'', status:'active', tieuChi: [],
     nguoiTao:'', ngayTao:'', nguoiCapNhat:'', ngayCapNhat:'' });
@@ -617,25 +722,16 @@ function openDetail(id, preset){
   document.getElementById('dt-note').innerHTML = ds.length
     ? `<div class="bts-note info">Sửa tiêu chí sẽ tạo phiên bản mới của bộ. Các đợt đang dùng bộ vẫn áp dụng đúng phiên bản đã chọn; đợt chưa công bố có thể tự cập nhật lên phiên bản mới.</div>`
     : '';
-
-  document.getElementById('dot-tbody').innerHTML = ds.length ? ds.map((d,i) => `
-    <tr><td>${i+1}</td><td><a href="mh-admin-24_academicwarningbatchdetail.html?maDot=${encodeURIComponent(d.maDot)}&tenDot=${encodeURIComponent(d.ten)}&boThamSo=${b.id}">${d.maDot}</a></td>
-    <td>${d.ten}</td><td>${d.ky}</td><td>${fmtNgay(d.ngay)}</td>
-    <td><a style="color:var(--primary);cursor:pointer" title="Xem thông số của phiên bản này" onclick="openVersion('${b.id}', ${d.phienBan})">Phiên bản ${d.phienBan}</a></td>
-    <td><span class="tag ${TINH_TRANG_DOT[d.tinhTrang].cls}">${TINH_TRANG_DOT[d.tinhTrang].label}</span></td></tr>`).join('')
-    : '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px">Chưa có đợt xét nào chọn bộ này</td></tr>';
+  /* Bảng "Đợt xét đang sử dụng bộ này" chỉ hiện ở màn Xem (tách 14/10/2026). */
 
   /* Bảng tiêu chí luôn là PHIÊN BẢN MỚI NHẤT của bộ; các phiên bản cũ xem qua popup ở bảng đợt. */
   document.getElementById('cond-version').innerHTML = b ? `<span class="tag tag-blue">Phiên bản ${b.phienBan || 1} (mới nhất)</span>` : '';
   renderCondTable();
-  document.getElementById('view-list').classList.add('hidden');
-  document.getElementById('view-detail').classList.remove('hidden');
-  window.scrollTo(0,0);
+  showView('view-detail');
 }
 
 function backToList(){
-  document.getElementById('view-detail').classList.add('hidden');
-  document.getElementById('view-list').classList.remove('hidden');
+  showView('view-list');
   document.getElementById('breadcrumb').innerHTML = 'Cảnh báo học tập / <b style="color:var(--text-1)">Cài đặt thông số</b>';
   renderList();
 }
@@ -718,7 +814,7 @@ function saveBo(){
     }
     refreshCreatorFilter();
     showToast(msg);
-    backToList();
+    if (editReturn === 'view') openView(draft.id); else backToList();
   };
 
   /* Trùng thời gian hiệu lực với bộ Active khác: CHO PHÉP (đợt tự chọn bộ), chỉ nhắc để tránh chọn nhầm. */
@@ -864,9 +960,9 @@ function saveCondition(){
 
 initFilters();
 renderList();
-/* Mở thẳng chi tiết 1 bộ khi đi từ link ở mh-admin-24 (?bo=bo2). */
+/* Mở thẳng màn Xem chi tiết 1 bộ khi đi từ link ở mh-admin-24 (?bo=bo2). */
 const qBo = new URLSearchParams(location.search).get('bo');
-if (qBo && BO_THAM_SO.some(b => b.id === qBo)) openDetail(qBo);
+if (qBo && BO_THAM_SO.some(b => b.id === qBo)) openView(qBo);
 </script>
 </body>
 </html>

@@ -1553,8 +1553,9 @@ function thongSoDaXet(s){
    - TỰ LOẠI chỉ khi có QĐ bảo lưu / đình chỉ trùm kỳ xét (học kỳ bắt đầu ≤ kỳ xét ≤ học kỳ kết thúc,
      chưa bị thu hồi) và trạng thái đó được tick ở cấu hình đợt — xem kyKhongXet().
    - Các QĐ chuyển ngành, chuyển trường đến, nhập trường, thu hồi QĐ nghỉ / tiếp tục học tập (quay lại học) có
-     Học kỳ áp dụng ≥ kỳ xét: KHÔNG tự loại — vẫn xét điểm bình thường, gắn ⚠ Kiểm tra QĐ để cán bộ
-     xem và loại tay (Chức năng → Điều chỉnh → Loại khỏi đợt). */
+     Học kỳ áp dụng SAU kỳ xét (chưa tới kỳ hiệu lực): KHÔNG tự loại — vẫn xét điểm bình thường, gắn ⚠ Kiểm tra QĐ để cán bộ
+     xem và loại tay (Chức năng → Điều chỉnh → Loại khỏi đợt).
+     Cập nhật 28/10/2026: Học kỳ áp dụng BẰNG hoặc TRƯỚC kỳ xét → SV coi như đang học ở kỳ xét, xét bình thường, không đánh dấu. */
 const LOAI_QD_KIEM_TRA = ['QĐ chuyển ngành', 'QĐ chuyển trường đến', 'QĐ nhập trường', 'QĐ thu hồi QĐ nghỉ học tạm thời', 'QĐ tiếp tục học tập'];
 /* Gom mọi QĐ ngoài bảo lưu / đình chỉ của SV về một dạng chung. */
 function dsQdKhacCuaSV(s){
@@ -1566,8 +1567,8 @@ function dsQdKhacCuaSV(s){
     nd:`Thu hồi QĐ ${s.qdThuHoi.qdGoc} — quay lại học` + (s.tcDangKy ? '' : ', chưa đăng ký tín chỉ') });
   return ds;
 }
-/* QĐ cần kiểm tra: loại thuộc LOAI_QD_KIEM_TRA và Học kỳ áp dụng ≥ kỳ xét. */
-function laQdCanKiemTra(q){ return LOAI_QD_KIEM_TRA.includes(q.loai) && semKey(q.hk) >= semKey(kyXetLabel()); }
+/* QĐ cần kiểm tra: loại thuộc LOAI_QD_KIEM_TRA và Học kỳ áp dụng SAU kỳ xét (cập nhật 28/10/2026, trước đây ≥). */
+function laQdCanKiemTra(q){ return LOAI_QD_KIEM_TRA.includes(q.loai) && semKey(q.hk) > semKey(kyXetLabel()); }
 function qdCanKiemTra(s){ return BATCH.daChayLuc ? dsQdKhacCuaSV(s).filter(laQdCanKiemTra) : []; }
 function lyDoLoaiHeThong(s){
   if (!BATCH.daChayLuc) return null;
@@ -2919,9 +2920,8 @@ let STUDENTS = [
   /* ═══ Cập nhật 28/10/2026 (BB 24/10/2026) vấn đề 1 — dữ liệu mẫu thêm ═══ */
   /* A4: bảo lưu từ HK2 2025-2026, có QĐ thu hồi cho quay lại từ HK1 2026-2027 nhưng không đăng ký được tín chỉ. */
   { mssv:'23109001', hoTen:'Phan Thanh Tùng', ngaySinh:'14/04/2005', khoaDaoTao:'Đại học Chính quy Khóa 19_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT1.23107.2', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:null, diemTbTichLuy:1.75, tcDangKy:null, tcCoDiem:null, tcTichLuyKy:null, tcTichLuyLuyKe:40, tinChiNoKy:null, tinChiNoDong:6, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, qdNghi:[{ tuKy:'HK2 2025-2026', denKy:'HK2 2026-2027', loai:'baoluu', lyDo:'Thực hiện nghĩa vụ quân sự', tinhVaoTGHoc:false, maQD:'QDSV-000470', ngayQD:'10/01/2026' }], qdThuHoi:{ maQD:'QDSV-000530', ngayQD:'25/09/2026', hocKyApDung:'HK1 2026-2027', qdGoc:'QDSV-000470' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
-  /* A3: chuyển ngành ô tô → CNTT, Học kỳ áp dụng HK1 2026-2027 — có 2 dòng CTĐT, dòng ô tô bị loại. */
-  { mssv:'24107777', hoTen:'Nguyễn Hải Đăng', ngaySinh:'03/12/2006', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ kỹ thuật ô tô', lopHanhChinh:'OTO1.24109.1', khoaQuanLy:'Khoa Cơ khí', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:1.30, tcDangKy:15, tcTichLuyKy:8, tcTichLuyLuyKe:30, tinChiNoKy:7, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, chuyenNganh:{ maQD:'QDSV-000521', ngayQD:'03/09/2026', tuCtdt:'Công nghệ kỹ thuật ô tô', denCtdt:'Công nghệ thông tin', hocKyApDung:'HK1 2026-2027' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
-  { mssv:'24107777', hoTen:'Nguyễn Hải Đăng', ngaySinh:'03/12/2006', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT2.24107.3', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:1.30, tcDangKy:15, tcTichLuyKy:8, tcTichLuyLuyKe:30, tinChiNoKy:7, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, chuyenNganh:{ maQD:'QDSV-000521', ngayQD:'03/09/2026', tuCtdt:'Công nghệ kỹ thuật ô tô', denCtdt:'Công nghệ thông tin', hocKyApDung:'HK1 2026-2027' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
+  /* A3: chuyển ngành ô tô → CNTT, Học kỳ áp dụng HK2 2026-2027 (sau kỳ xét) — hồ sơ đã cập nhật theo ngành mới nên chỉ có 1 dòng CTĐT mới; Cần kiểm tra. */
+  { mssv:'24107777', hoTen:'Nguyễn Hải Đăng', ngaySinh:'03/12/2006', khoaDaoTao:'Đại học Chính quy Khóa 20_4 năm', ctdt:'Công nghệ thông tin', lopHanhChinh:'CNTT2.24107.3', khoaQuanLy:'Khoa CNTT', trangThaiSV:'danghoc', diemTbKy:0.75, diemTbTichLuy:1.30, tcDangKy:15, tcTichLuyKy:8, tcTichLuyLuyKe:30, tinChiNoKy:7, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, chuyenNganh:{ maQD:'QDSV-000521', ngayQD:'03/09/2026', tuCtdt:'Công nghệ kỹ thuật ô tô', denCtdt:'Công nghệ thông tin', hocKyApDung:'HK2 2026-2027' }, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105370', qdSo:'QDSV-000310', qdNgay:'28/08/2026', xacNhanCTSV:'daXacNhan', nguoiXacNhanCTSV:'Cán bộ Ban Công tác Sinh viên', ngayXacNhanCTSV:'25/08/2026 10:05', hoTen:'Nguyễn Hữu Huy', ngaySinh:'12/03/2006', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Du lịch', lopHanhChinh:'FTS4.24109.1', khoaQuanLy:'Khoa Du lịch', trangThaiSV:'danghoc', diemTbKy:0.65, diemTbTichLuy:0.65, tcDangKy:14, tcTichLuyKy:11, tcTichLuyLuyKe:10, tinChiNoKy:3, tinChiNoDong:6, namDangDaoTao:1, namToiDa:4, tinChiChuanNam:30, isHocKyDau:true, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, xacNhanKhoa:'daXacNhan', nguoiXacNhan:'Trần Thị Mai (CB00512)', ngayXacNhanKhoa:'22/08/2026 09:15', trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105604', hoTen:'Phạm Khánh Linh', ngaySinh:'25/07/2006', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Hướng dẫn du lịch quốc tế', lopHanhChinh:'FTS1.24109.1', khoaQuanLy:'Khoa Ngoại ngữ', trangThaiSV:'danghoc', diemTbKy:0.90, diemTbTichLuy:1.15, tcDangKy:15, tcTichLuyKy:12, tcTichLuyLuyKe:9, tinChiNoKy:3, tinChiNoDong:3, namDangDaoTao:1, namToiDa:4.5, tinChiChuanNam:27, isHocKyDau:true, soLanCanhBaoTruoc:0, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, trangThaiHoTro:'chuaHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
   { mssv:'24105812', hoTen:'Trần Anh Tú', ngaySinh:'08/11/2005', khoaDaoTao:'Đại học Chính quy Khóa 18_4 năm', ctdt:'Quản trị kinh doanh', lopHanhChinh:'QTKD1.24108.1', khoaQuanLy:'Khoa Quản trị Kinh doanh', trangThaiSV:'danghoc', diemTbKy:1.35, diemTbTichLuy:1.25, tcDangKy:18, tcCoDiem:6, tcTichLuyKy:15, tcTichLuyLuyKe:83, tinChiNoKy:2, tinChiNoDong:10, namDangDaoTao:2, namToiDa:4, tinChiChuanNam:30, soLanCanhBaoTruoc:1, lienTiepKyTruoc:false, soKyKhongDangKyLienTiep:0, trangThaiHoTro:'dangHoTro', trangThaiGiaiQuyet:'chuaGiaiQuyet' },
@@ -4418,7 +4418,7 @@ function quaLocQdKy(s){
   const v = document.getElementById('f-qdky').value;
   return !v || (v === 'kiemtra' && qdCanKiemTra(s).length > 0);
 }
-/* Lọc cột Ghi chú BĐT: 2 giá trị — Tất cả / Cần kiểm tra (SV có QĐ Học kỳ áp dụng ≥ kỳ xét).
+/* Lọc cột Ghi chú BĐT: 2 giá trị — Tất cả / Cần kiểm tra (SV có QĐ Học kỳ áp dụng sau kỳ xét).
    Dựng lại option mỗi lần vẽ bảng để số đếm luôn khớp danh sách. */
 function renderLocQdKy(){
   const sel = document.getElementById('f-qdky');
@@ -4435,7 +4435,7 @@ function renderLocQdKy(){
   if (a) a.qdKhac = [{ maQD:'QDSV-000400', loai:'QĐ nhập trường', ngayQD:'20/08/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Công nhận trúng tuyển, nhập học khoá 2026' }];
   const b = g('24105733', 'Kỹ thuật cơ khí');
   if (b){
-    b.qdKhac = [{ maQD:'QDSV-000512', loai:'QĐ chuyển trường đến', ngayQD:'01/09/2026', hocKyApDung:'HK1 2026-2027', noiDung:'Tiếp nhận sinh viên từ trường khác, công nhận 52 tín chỉ' }];
+    b.qdKhac = [{ maQD:'QDSV-000512', loai:'QĐ chuyển trường đến', ngayQD:'01/09/2026', hocKyApDung:'HK2 2026-2027', noiDung:'Tiếp nhận sinh viên từ trường khác, công nhận 52 tín chỉ' }];
     b.ghiChuBDT = 'Đã đối chiếu bảng điểm trường cũ — chờ Khoa xác nhận số tín chỉ công nhận';
   }
   const c = g('25106102', 'Ngôn ngữ Anh');

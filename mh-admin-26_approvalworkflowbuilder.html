@@ -1573,5 +1573,714 @@ function renderAll(){
 
 document.addEventListener('DOMContentLoaded', renderAll);
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CR-20261103-005 — Cấu hình yêu cầu Gia hạn / Đổi cơ sở thực tập (TTTN)
+     Khối mở rộng gắn thêm, KHÔNG sửa code gốc phía trên:
+       - Node mới: Kiểm tra thời gian nộp (US-TTTN-23), Cập nhật ngày kết thúc
+         thực tập (US-TTTN-24), Cập nhật cơ sở thực tập (US-TTTN-29)
+       - Node Chờ người duyệt, tab "Ai duyệt" (US-TTTN-27)
+       - 2 quy trình mẫu: ?p=giahan-tttn, ?p=doicoso-tttn
+     CR-20261104-001 — Đổi đề tài / Gia hạn / Bảo vệ sớm ĐA-KLTN:
+       - Node mới: Cập nhật đề tài ĐAKLTN (US-DAKL-14), Cập nhật ngày kết thúc
+         ĐAKLTN (US-DAKL-15), Kiểm tra thời gian bảo vệ sớm (US-DAKL-20)
+       - 3 quy trình mẫu: ?p=doidetai-dakl, ?p=giahan-dakl, ?p=baove-dakl
+     CR-20261105-002 — Node Kiểm tra đơn đã nộp (US-CFG-01, US-CFG-03):
+       - Cổng ra Còn lượt / Hết lượt; quy trình mẫu: ?p=mot-don-hoc-ky
+     ═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  .cr5-type{display:inline-block;margin-left:6px;font-size:10.5px;color:var(--text-3);background:#f5f5f5;border-radius:4px;padding:0 5px}
+  .cr5-cond{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#fcfcfc}
+  .cr5-cond-hd{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;margin-bottom:8px}
+  .cr5-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .cr5-row .fc{width:auto}
+  .cr5-map td{padding:4px 6px;vertical-align:middle;font-size:12.5px}
+  .cr5-map td:first-child{white-space:nowrap;color:var(--text-2);width:150px}
+  .cr5-sample{border:1px dashed #91caff;background:#f0f7ff;border-radius:8px;padding:8px 10px;margin-bottom:12px;font-size:12.5px}
+  .cr5-sample select{margin-left:6px}
+  .cr5-ms{position:relative}
+  .cr5-ms-box{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-height:34px;padding:4px 28px 4px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;position:relative}
+  .cr5-ms-box.disabled{background:#f5f5f5;cursor:default}
+  .cr5-ms-box::after{content:'▾';position:absolute;right:10px;top:7px;color:var(--text-3)}
+  .cr5-ms-tag{display:inline-flex;align-items:center;gap:4px;background:#f0f0f0;border-radius:4px;padding:1px 6px;font-size:12.5px}
+  .cr5-ms-tag b{font-weight:400;cursor:pointer;color:var(--text-3)}
+  .cr5-ms-menu{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 2px);background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+  .cr5-ms-item{display:flex;gap:8px;align-items:center;padding:6px 10px;font-size:13px;cursor:pointer}
+  .cr5-ms-item:hover{background:#f5f5f5}
+  .cr5-summary{border:1px solid #91caff;background:#f0f7ff;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:4px}
+</style>
+<script>
+(function(){
+  // ---------- Kiểu field + biểu mẫu TTTN (US-TTTN-21, danh sách field M04/M05) ----------
+  const FTYPE_LABEL = { dot:'Đợt', date:'Ngày', unit:'Đơn vị', text:'Văn bản', choice:'Lựa chọn', qd:'Quyết định',
+    file:'Tệp', dn:'Danh mục DN đối tác', tinh:'Danh mục Tỉnh/TP', phuong:'Danh mục Phường/Xã', loai_cstt:'Lựa chọn: Loại cơ sở', system:'Hệ thống', hocky:'Học kỳ',
+    text_long:'Văn bản dài', nguon_dt:'Lựa chọn: Nguồn đề tài', linh_vuc:'Danh mục Lĩnh vực' };
+  window.CR5_FTYPE_LABEL = FTYPE_LABEL;
+
+  const NGUOI_NOP = { group:'nguoi_nop', groupLabel:'Người nộp', fields:[
+    { key:'khoa', label:'Khoa', sourceType:'unit' },
+    { key:'ho_ten', label:'Họ và tên', sourceType:'text' },
+    { key:'ma_sv', label:'Mã sinh viên', sourceType:'text' },
+    { key:'ngay_sinh', label:'Ngày sinh', sourceType:'date' },
+    { key:'lop', label:'Lớp', sourceType:'text' },
+    { key:'khoa_hoc', label:'Khóa', sourceType:'text' },
+    { key:'nganh', label:'Ngành', sourceType:'text' },
+    { key:'dien_thoai', label:'Điện thoại', sourceType:'text' },
+    { key:'email', label:'Email', sourceType:'text' },
+  ]};
+  FORM_FIELD_TREE.TTTN_M05 = [
+    { group:'thuc_tap', groupLabel:'Thông tin thực tập', fields:[
+      { key:'dot', label:'Đợt TT/ĐAKL', sourceType:'dot' },
+      { key:'loai_qd', label:'Loại quyết định', sourceType:'choice' },
+      { key:'so_qd', label:'Số quyết định', sourceType:'qd' },
+      { key:'ngay_qd', label:'Ngày quyết định', sourceType:'date' },
+      { key:'co_so_tt', label:'Cơ sở thực tập', sourceType:'text' },
+      { key:'gvhd', label:'Giảng viên hướng dẫn', sourceType:'text' },
+      { key:'ngay_kt_hien_tai', label:'Gia hạn từ (Ngày kết thúc hiện tại)', sourceType:'date' },
+      { key:'ngay_kt_de_nghi', label:'Gia hạn đến', sourceType:'date' },
+      { key:'ly_do', label:'Lý do xin gia hạn', sourceType:'text' },
+      { key:'minh_chung', label:'Minh chứng', sourceType:'file' },
+      { key:'ngay_lam_don', label:'Ngày làm đơn', sourceType:'date' },
+    ]},
+    NGUOI_NOP,
+  ];
+  FORM_FIELD_TREE.TTTN_M04 = [
+    { group:'thuc_tap', groupLabel:'Thông tin thực tập', fields:[
+      { key:'dot', label:'Đợt TT/ĐAKL', sourceType:'dot' },
+      { key:'co_so_hien_tai', label:'Cơ sở thực tập hiện tại', sourceType:'text' },
+      { key:'dia_chi_co_so_hien_tai', label:'Địa chỉ cơ sở hiện tại', sourceType:'text' },
+      { key:'ngay_bat_dau', label:'Thời gian từ ngày (Ngày bắt đầu TT)', sourceType:'date' },
+      { key:'ngay_ket_thuc', label:'đến ngày (Ngày kết thúc TT)', sourceType:'date' },
+      { key:'ly_do', label:'Lý do', sourceType:'text' },
+      { key:'don_da_ky', label:'Đơn đã có xác nhận', sourceType:'file' },
+      { key:'ngay_lam_don', label:'Ngày làm đơn', sourceType:'date' },
+    ]},
+    { group:'co_so_moi', groupLabel:'Nhóm: Cơ sở thực tập mới', fields:[
+      { key:'co_so_moi.loai', label:'.loai — Loại cơ sở', sourceType:'loai_cstt' },
+      { key:'co_so_moi.doanh_nghiep', label:'.doanh_nghiep — DN đối tác', sourceType:'dn' },
+      { key:'co_so_moi.ten', label:'.ten — Tên cơ sở', sourceType:'text' },
+      { key:'co_so_moi.tinh', label:'.tinh — Tỉnh/TP', sourceType:'tinh' },
+      { key:'co_so_moi.phuong', label:'.phuong — Phường/Xã', sourceType:'phuong' },
+      { key:'co_so_moi.dia_chi_chi_tiet', label:'.dia_chi_chi_tiet — Địa chỉ', sourceType:'text' },
+      { key:'co_so_moi.dia_chi', label:'.dia_chi — Địa chỉ đầy đủ', sourceType:'text' },
+      { key:'co_so_moi.nguoi_lien_he', label:'.nguoi_lien_he — Người liên hệ', sourceType:'text' },
+    ]},
+    NGUOI_NOP,
+  ];
+  // Biểu mẫu ĐA/KLTN (CR-20261104-001, danh sách field M05/M06/Biểu mẫu 3)
+  const DAKL_COMMON = [
+    { key:'dot', label:'Đợt ĐA/KLTN', sourceType:'dot' },
+    { key:'loai_qd', label:'Loại quyết định', sourceType:'choice' },
+    { key:'so_qd', label:'Số quyết định', sourceType:'qd' },
+    { key:'ngay_qd', label:'Ngày quyết định', sourceType:'date' },
+    { key:'gvhd', label:'Giảng viên hướng dẫn', sourceType:'text' },
+  ];
+  FORM_FIELD_TREE.DAKL_M05 = [
+    { group:'dakl', groupLabel:'Thông tin đề tài', fields:[...DAKL_COMMON,
+      { key:'ten_de_tai_hien_tai', label:'Tên đề tài theo Quyết định', sourceType:'text' },
+      { key:'ngay_bat_dau', label:'Ngày bắt đầu làm ĐAKLTN', sourceType:'date' },
+      { key:'ly_do', label:'Lý do đề nghị chỉnh sửa/thay đổi', sourceType:'text_long' },
+      { key:'ngay_lam_don', label:'Ngày làm đơn', sourceType:'date' },
+    ]},
+    { group:'de_tai_moi', groupLabel:'Nhóm: Đề tài đề nghị', fields:[
+      { key:'de_tai_moi.nguon', label:'.nguon — Nguồn đề tài', sourceType:'nguon_dt' },
+      { key:'de_tai_moi.ma', label:'.ma — Mã đề tài', sourceType:'text' },
+      { key:'de_tai_moi.ctdt', label:'.ctdt — Chương trình đào tạo', sourceType:'text' },
+      { key:'de_tai_moi.loai', label:'.loai — Loại đề tài', sourceType:'text' },
+      { key:'de_tai_moi.linh_vuc', label:'.linh_vuc — Lĩnh vực', sourceType:'linh_vuc' },
+      { key:'de_tai_moi.ten', label:'.ten — Tên đề tài đề nghị', sourceType:'text' },
+      { key:'de_tai_moi.tom_tat', label:'.tom_tat — Tóm tắt', sourceType:'text_long' },
+      { key:'de_tai_moi.san_pham', label:'.san_pham — Sản phẩm / Kết quả', sourceType:'text_long' },
+      { key:'de_tai_moi.cong_nghe', label:'.cong_nghe — Công nghệ / Công cụ', sourceType:'text' },
+      { key:'de_tai_moi.tai_lieu', label:'.tai_lieu — Tài liệu đính kèm', sourceType:'file' },
+    ]},
+    NGUOI_NOP,
+  ];
+  FORM_FIELD_TREE.DAKL_M06 = [
+    { group:'dakl', groupLabel:'Thông tin đề tài', fields:[...DAKL_COMMON,
+      { key:'ten_de_tai', label:'Tên đề tài', sourceType:'text' },
+      { key:'ngay_kt_hien_tai', label:'Thời gian gia hạn từ (Ngày kết thúc hiện tại)', sourceType:'date' },
+      { key:'ngay_kt_de_nghi', label:'Thời gian gia hạn đến', sourceType:'date' },
+      { key:'ly_do', label:'Lý do xin gia hạn', sourceType:'text_long' },
+      { key:'minh_chung', label:'Minh chứng', sourceType:'file' },
+      { key:'ngay_lam_don', label:'Ngày làm đơn', sourceType:'date' },
+    ]},
+    NGUOI_NOP,
+  ];
+  FORM_FIELD_TREE.DAKL_BM3 = [
+    { group:'dakl', groupLabel:'Thông tin đề tài', fields:[...DAKL_COMMON,
+      { key:'ten_de_tai', label:'Tên đề tài', sourceType:'text' },
+      { key:'ngay_bat_dau', label:'Ngày bắt đầu làm ĐAKLTN', sourceType:'date' },
+      { key:'ngay_ket_thuc', label:'Ngày kết thúc làm ĐAKLTN', sourceType:'date' },
+      { key:'ly_do', label:'Lý do xin bảo vệ sớm', sourceType:'text_long' },
+      { key:'minh_chung', label:'Minh chứng / sản phẩm đã hoàn thành', sourceType:'file' },
+      { key:'ngay_lam_don', label:'Ngày làm đơn', sourceType:'date' },
+    ]},
+    NGUOI_NOP,
+  ];
+  const formSel = document.getElementById('ne-form');
+  [['TTTN_M05','M05 · Đơn xin gia hạn thời gian TTTN'],['TTTN_M04','M04 · Đơn xin thay đổi địa điểm TTTN'],
+   ['DAKL_M05','QT.ĐT.19.M05 · Đơn đề nghị chỉnh sửa, thay đổi đề tài ĐAKLTN'],['DAKL_M06','QT.ĐT.19.M06 · Đơn xin gia hạn thời gian làm ĐAKLTN'],['DAKL_BM3','Đơn xin bảo vệ sớm ĐAKLTN (tạm, chưa có mẫu Word)']].forEach(([v,l]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = l; formSel.appendChild(o);
+  });
+
+  function findField(key){
+    const groups = FORM_FIELD_TREE[getBoundFormId()] || [];
+    for(const g of groups){ const f = g.fields.find(x => x.key === key); if(f) return f; }
+    return null;
+  }
+
+  // ---------- Palette + cổng ra + tab + dữ liệu xuất ra ----------
+  PALETTE.find(g => g.group === 'Luận lý').items.unshift(
+    { type:'check_submit_time', label:'Kiểm tra thời gian nộp', desc:'Kiểm tra ngày nộp đơn so với một mốc ngày trong biểu mẫu, rẽ 2 nhánh Đạt / Không đạt' },
+    { type:'check_early_defense_time', label:'Kiểm tra thời gian bảo vệ sớm', desc:'Chỉ cho đi tiếp khi đã qua tỷ lệ số tuần làm ĐA/KLTN đã cấu hình và trước ngày kết thúc' });
+  PALETTE.find(g => g.group === 'Hành động').items.push(
+    { type:'action_internship_end_date', label:'Cập nhật ngày kết thúc thực tập', desc:'Ghi ngày kết thúc mới từ đơn vào hồ sơ thực tập của sinh viên' },
+    { type:'action_internship_site', label:'Cập nhật cơ sở thực tập', desc:'Ghi cơ sở thực tập mới từ đơn vào hồ sơ thực tập của sinh viên' },
+    { type:'action_thesis_topic', label:'Cập nhật đề tài ĐAKLTN', desc:'Đổi đề tài trong hồ sơ ĐA/KLTN của sinh viên theo đề tài đề nghị trên đơn' },
+    { type:'action_thesis_end_date', label:'Cập nhật ngày kết thúc ĐAKLTN', desc:'Ghi ngày kết thúc mới từ đơn vào hồ sơ ĐA/KLTN của sinh viên' });
+
+  PALETTE.find(g => g.group === 'Luận lý').items.unshift(
+    { type:'check_prior_application', label:'Kiểm tra đơn đã nộp', desc:'Tra các đơn trước đó của sinh viên theo điều kiện cấu hình, rẽ 2 nhánh Còn lượt / Hết lượt' });
+
+  const _getOutputs = getOutputs;
+  getOutputs = function(n){
+    if(n.type === 'check_submit_time' || n.type === 'check_early_defense_time') return [{key:'pass', label:'Đạt'}, {key:'fail', label:'Không đạt'}];
+    if(n.type === 'check_prior_application') return [{key:'con_luot', label:'Còn lượt'}, {key:'het_luot', label:'Hết lượt'}];
+    if(n.type === 'action_thesis_topic') return [{key:'done', label:'Đã cập nhật'}, {key:'fail', label:'Không cập nhật được'}];
+    return _getOutputs(n);
+  };
+
+  // 3 node mới chỉ có 1 nhóm cấu hình → không hiện cột tab (renderNeMainCol tự vẽ panel)
+  NODE_OUTPUT_SCHEMA.check_submit_time = ['Kết quả (dat / khong_dat)', 'Ngày nộp', 'Hạn chót', 'Lý do không đạt', 'Chi tiết từng điều kiện'];
+  NODE_OUTPUT_SCHEMA.check_prior_application = ['Kết quả (het_luot / con_luot)', 'Số đơn tìm thấy', 'Đơn gần nhất (mã, trạng thái, ngày nộp)', 'Ghi chú'];
+  NODE_OUTPUT_SCHEMA.action_internship_end_date = ['Ngày kết thúc cũ', 'Ngày kết thúc mới', 'Thời điểm cập nhật'];
+  NODE_OUTPUT_SCHEMA.action_internship_site = ['Cơ sở cũ (tên, địa chỉ)', 'Cơ sở mới (tên, địa chỉ, loại)', 'Thời điểm cập nhật'];
+  NODE_OUTPUT_SCHEMA.action_thesis_topic = ['Đề tài cũ', 'Đề tài mới', 'Lý do (cổng Không cập nhật được)', 'Thời điểm cập nhật'];
+  NODE_OUTPUT_SCHEMA.action_thesis_end_date = ['Ngày kết thúc cũ', 'Ngày kết thúc mới', 'Thời điểm cập nhật'];
+  NODE_OUTPUT_SCHEMA.check_early_defense_time = ['Kết quả (dat / khong_dat)', 'Ngày được nộp', 'Hạn chót', 'Số tuần / Số tuần phải qua', 'Tỷ lệ', 'Lý do không đạt'];
+
+  // ---------- Danh mục cố định (mô phỏng) ----------
+  const FIXED_UNITS = ['Phòng Đào tạo', 'Khoa Công nghệ Thông tin', 'Khoa Kinh tế', 'Khoa Luật', 'Trường Công nghệ Thông tin', 'Trường Kinh tế', 'Ban Công tác sinh viên và Khởi nghiệp'];
+  const FIXED_STAFF = ['Văn thư — Lê Thị Cẩm', 'TS. Nguyễn Văn A — Trưởng phòng Đào tạo', 'ThS. Trần Thị B — Giáo vụ Khoa CNTT'];
+  const UNIT_TYPES = ['Trường', 'Viện', 'Khoa', 'Phòng'];
+  const TITLES = ['Trưởng khoa', 'Phó trưởng khoa', 'Hiệu trưởng', 'Phó hiệu trưởng', 'Viện trưởng', 'Trưởng phòng', 'Giáo vụ khoa'];
+  const RESOLVERS = [
+    { v:'JOB_TITLE_IN_UNIT', l:'Chức danh trong đơn vị' },
+    { v:'UNIT_MEMBERS', l:'Thành viên đơn vị' },
+    { v:'HEAD_OF_PARENT_UNIT', l:'Trưởng đơn vị cấp trên' },
+    { v:'SCHOOL_OF_FACULTY', l:'Trường quản lý khoa phê duyệt' },
+  ];
+
+  // ---------- Ô thả field dùng chung (chỉ kéo thả; field sai kiểu → báo lỗi) ----------
+  let slotErr = {};
+  function slotHtml(slotKey, accept, ro, opts){
+    opts = opts || {};
+    neWorkingData.slots = neWorkingData.slots || {};
+    const key = neWorkingData.slots[slotKey];
+    const f = key ? findField(key) : null;
+    const fixedKey = opts.fixedProp;
+    const fixedVal = fixedKey ? neWorkingData[fixedKey] : '';
+    let inner;
+    const formHasType = (FORM_FIELD_TREE[getBoundFormId()] || []).some(g => g.fields.some(x => accept.includes(x.sourceType)));
+    if(!f && !fixedVal && !opts.fixedList && !formHasType && accept[0] !== '__none__'){
+      inner = `<span style="color:var(--text-3);font-size:12.5px">Biểu mẫu áp dụng (${esc(getBoundFormId() || 'chưa chọn')}) chưa có field kiểu ${esc(accept.map(a => FTYPE_LABEL[a]).join(' / '))} — chọn biểu mẫu khác ở bước "Nộp biểu mẫu"</span>`;
+    } else if(f){
+      inner = `<span class="fdb-pill">📋 ${esc(f.label)}${ro ? '' : `<button type="button" onclick="CR5.clearSlot('${slotKey}')" title="Bỏ chọn">✕</button>`}</span>`;
+    } else if(fixedVal){
+      inner = `<span class="fdb-pill">${esc(fixedVal)}${ro ? '' : `<button type="button" onclick="CR5.clearFixed('${fixedKey}')" title="Bỏ chọn">✕</button>`}</span>`;
+    } else if(opts.fixedList){
+      const lid = 'cr5-dl-' + slotKey;
+      inner = `<input type="text" list="${lid}" placeholder="${esc(opts.placeholder || 'Kéo field vào đây hoặc gõ tìm')}" ${ro?'disabled':''} onchange="CR5.pickFixed('${fixedKey}', this.value, ${JSON.stringify(opts.fixedList).replace(/"/g,'&quot;')})">
+        <datalist id="${lid}">${opts.fixedList.map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+    } else {
+      inner = `<span style="color:var(--text-3);font-size:12.5px">${esc(opts.placeholder || 'Kéo field từ cột trái vào đây')}</span>`;
+    }
+    return `<div class="field-drop-box" ondragover="event.preventDefault();event.currentTarget.classList.add('drag-over')" ondragleave="event.currentTarget.classList.remove('drag-over')" ondrop="CR5.drop(event,'${slotKey}','${accept.join(',')}')">${inner}</div>
+      ${slotErr[slotKey] ? `<div class="field-tree-error">⚠️ ${esc(slotErr[slotKey])}</div>` : ''}`;
+  }
+
+  function rerender(){
+    const v = getVersion(currentVersionId);
+    const n = content().nodes.find(x => x.id === editingNodeId);
+    renderNeInfoCol(n, readonly(v));
+    renderNeMainCol(n, readonly(v));
+  }
+
+  // ---------- Node Kiểm tra đơn đã nộp (CR-20261105-002) ----------
+  const PRIOR_STATUSES = ['Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Yêu cầu chỉnh sửa'];
+  const PRIOR_SYS_FIELDS = [
+    { key:'sys_hoc_ky_gui', label:'Học kỳ lúc gửi đơn', sourceType:'system' },
+    { key:'sys_nam_hoc_gui', label:'Năm học lúc gửi đơn', sourceType:'system' },
+  ];
+  const PRIOR_NO_MATCH = ['table', 'file', 'bang', 'tep'];
+  const PRIOR_TEMPLATES = {
+    trung: { label:'Chặn nộp trùng khi đang xử lý', st:['Chờ duyệt', 'Yêu cầu chỉnh sửa'], m:'dot' },
+    dot1: { label:'Mỗi đợt một đơn được duyệt', st:['Chờ duyệt', 'Yêu cầu chỉnh sửa', 'Đã duyệt'], m:'dot' },
+    once: { label:'Chỉ nộp một lần', st:['Chờ duyệt', 'Yêu cầu chỉnh sửa', 'Đã duyệt', 'Từ chối'], m:'dot' },
+    hk: { label:'Một đơn mỗi học kỳ', st:['Chờ duyệt', 'Yêu cầu chỉnh sửa', 'Đã duyệt', 'Từ chối'], m:'sys_hoc_ky_gui' },
+  };
+  let priorMenuOpen = false;
+  const priorField = key => PRIOR_SYS_FIELDS.find(f => f.key === key) || findField(key);
+  function priorSummary(d){
+    const st = d.statuses || [], fs = (d.matchFields || []).map(k => (priorField(k) || {}).label).filter(Boolean);
+    if(!st.length) return 'Chọn ít nhất một trạng thái đơn được tính.';
+    return `Nếu sinh viên đã có <b>từ ${d.soDon} đơn</b> ở trạng thái <b>${esc(st.join(', '))}</b>, ${fs.length ? `<b>trong cùng ${esc(fs.join(', '))}</b>` : '<b>tính mọi đơn từ trước đến nay</b>'}, thì đi cổng <b>Hết lượt</b>.`;
+  }
+  function renderPriorPanel(col, ro){
+    const d = neWorkingData, dis = ro ? 'disabled' : '';
+    if(!d.statuses) d.statuses = ['Chờ duyệt', 'Đã duyệt', 'Yêu cầu chỉnh sửa'];
+    if(!d.matchFields) d.matchFields = [];
+    if(d.soDon === undefined) d.soDon = 1;
+    const tags = d.statuses.map(st => `<span class="cr5-ms-tag">${esc(st)}${ro ? '' : `<b onclick="event.stopPropagation();CR5.priorToggle('${st}')">✕</b>`}</span>`).join('');
+    const menu = priorMenuOpen && !ro ? `<div class="cr5-ms-menu">${PRIOR_STATUSES.map(st => `
+        <label class="cr5-ms-item" onclick="event.stopPropagation()"><input type="checkbox" ${d.statuses.includes(st) ? 'checked' : ''} onchange="CR5.priorToggle('${st}')"> ${esc(st)}</label>`).join('')}</div>` : '';
+    const pills = d.matchFields.map(k => {
+      const f = priorField(k);
+      return `<span class="fdb-pill">${f ? '📋 ' + esc(f.label) : '⚠️ Trường không còn trong biểu mẫu'}${ro ? '' : `<button type="button" onclick="CR5.priorDelMatch('${k}')" title="Bỏ chọn">✕</button>`}</span>`;
+    }).join(' ');
+    col.innerHTML = `
+      <div class="fi"><label>Mẫu cấu hình</label>
+        <select class="fc" ${dis} onchange="CR5.priorTemplate(this.value)"><option value="">Chọn mẫu...</option>${Object.entries(PRIOR_TEMPLATES).map(([k, t]) => `<option value="${k}">${esc(t.label)}</option>`).join('')}</select></div>
+      <div class="fi"><label>Trạng thái đơn được tính<span class="req">*</span></label>
+        <div class="cr5-ms"><div class="cr5-ms-box ${ro ? 'disabled' : ''}" onclick="${ro ? '' : 'CR5.priorMenu()'}">${tags || '<span style="color:var(--text-3);font-size:12.5px">Chọn trạng thái...</span>'}</div>${menu}</div>
+        <div class="f-hint">Đơn ở các trạng thái này được tính là đã nộp</div></div>
+      <div class="fi"><label>Chỉ tính đơn có cùng</label>
+        <div class="field-drop-box" ondragover="event.preventDefault();event.currentTarget.classList.add('drag-over')" ondragleave="event.currentTarget.classList.remove('drag-over')" ondrop="CR5.priorDrop(event)">${pills || '<span style="color:var(--text-3);font-size:12.5px">Kéo field từ cột trái vào đây</span>'}</div>
+        ${slotErr.prior ? `<div class="field-tree-error">⚠️ ${esc(slotErr.prior)}</div>` : ''}
+        <div class="f-hint">Ví dụ chọn Học kỳ lúc gửi đơn: chỉ tính đơn trong cùng học kỳ. Để trống: tính mọi đơn từ trước đến nay</div></div>
+      <div class="fi"><label>Số đơn từ<span class="req">*</span></label>
+        <div class="cr5-row"><input class="fc" type="number" min="1" max="20" style="width:80px" value="${d.soDon}" ${dis} onchange="CR5.set('soDon',Math.max(1,Math.min(20,parseInt(this.value)||1)))"> trở lên thì đi cổng <b>Hết lượt</b></div></div>
+      <div class="cr5-summary">${priorSummary(d)}</div>
+      <div class="f-hint" style="margin-top:8px">Cổng ra: <b>Còn lượt</b> / <b>Hết lượt</b>, cả 2 phải nối. Node không gửi thông báo, không đổi trạng thái đơn.</div>`;
+  }
+
+  window.CR5 = {
+    priorMenu(){ priorMenuOpen = !priorMenuOpen; rerender(); },
+    priorToggle(st){
+      const a = neWorkingData.statuses;
+      neWorkingData.statuses = a.includes(st) ? a.filter(x => x !== st) : PRIOR_STATUSES.filter(x => a.includes(x) || x === st);
+      rerender();
+    },
+    priorDrop(ev){
+      ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+      const key = ev.dataTransfer.getData('text/plain'), f = priorField(key);
+      if(!f) return;
+      slotErr.prior = '';
+      if(PRIOR_NO_MATCH.includes(f.sourceType)) slotErr.prior = 'Không nhận trường kiểu Bảng, Tệp';
+      else if(neWorkingData.matchFields.includes(key)) slotErr.prior = 'Trường này đã được chọn';
+      else if(neWorkingData.matchFields.length >= 3) slotErr.prior = 'Chọn tối đa 3 trường';
+      else neWorkingData.matchFields.push(key);
+      rerender();
+    },
+    priorDelMatch(key){ neWorkingData.matchFields = neWorkingData.matchFields.filter(k => k !== key); slotErr.prior = ''; rerender(); },
+    priorTemplate(k){
+      const t = PRIOR_TEMPLATES[k]; if(!t) return;
+      neWorkingData.statuses = [...t.st];
+      neWorkingData.soDon = 1;
+      slotErr.prior = '';
+      if(t.m === 'dot'){
+        const fDot = (FORM_FIELD_TREE[getBoundFormId()] || []).flatMap(g => g.fields).find(f => f.sourceType === 'dot');
+        neWorkingData.matchFields = fDot ? [fDot.key] : [];
+        if(!fDot) slotErr.prior = 'Biểu mẫu chưa có trường Đợt, vui lòng chọn trường phù hợp';
+      } else {
+        neWorkingData.matchFields = [t.m];
+      }
+      rerender();
+    },
+    drop(ev, slotKey, acceptCsv){
+      ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+      const key = ev.dataTransfer.getData('text/plain');
+      const f = findField(key); if(!f) return;
+      const accept = acceptCsv.split(',');
+      if(accept[0] === '__none__'){
+        slotErr[slotKey] = 'Ô này chỉ chọn giá trị cố định (gõ tìm), không nhận field biểu mẫu';
+      } else if(!accept.includes(f.sourceType)){
+        slotErr[slotKey] = `Field này không phải kiểu ${accept.map(a => FTYPE_LABEL[a]).join(' / ')}`;
+      } else {
+        slotErr[slotKey] = '';
+        neWorkingData.slots = neWorkingData.slots || {};
+        neWorkingData.slots[slotKey] = key;
+        if(slotKey === 'unit') neWorkingData.fixedUnit = '';
+        if(slotKey === 'staffSlot') neWorkingData.staff = '';
+      }
+      rerender();
+    },
+    clearSlot(slotKey){ if(neWorkingData.slots) delete neWorkingData.slots[slotKey]; slotErr[slotKey] = ''; rerender(); },
+    clearFixed(prop){ neWorkingData[prop] = ''; rerender(); },
+    pickFixed(prop, val, list){ if(list.includes(val)){ neWorkingData[prop] = val; rerender(); } },
+    set(prop, val){ neWorkingData[prop] = val; rerender(); },
+    setCond(i, prop, val){ neWorkingData.conds[i][prop] = val; rerender(); },
+    addCond(){
+      if(neWorkingData.conds.length >= 5) return;
+      const id = 'c' + Date.now();
+      neWorkingData.conds.push({ slot:id, op:'minus', days:7, cmp:'le' }); rerender();
+    },
+    delCond(i){
+      const c = neWorkingData.conds[i];
+      if(neWorkingData.slots) delete neWorkingData.slots[c.slot];
+      neWorkingData.conds.splice(i, 1); rerender();
+    },
+  };
+
+  // ---------- Cột trái: cây field có ghi kiểu (cho node mới + node Chờ người duyệt) ----------
+  const TREE_TYPES = ['check_prior_application', 'check_submit_time', 'action_internship_end_date', 'action_internship_site', 'action_thesis_topic', 'action_thesis_end_date', 'check_early_defense_time', 'approval'];
+  const _renderNeInfoCol = renderNeInfoCol;
+  renderNeInfoCol = function(n, ro){
+    if(!TREE_TYPES.includes(n.type)) return _renderNeInfoCol(n, ro);
+    let groups = FORM_FIELD_TREE[getBoundFormId()] || [];
+    if(n.type === 'check_prior_application' && groups.length){
+      groups = groups.map(g => ({ ...g, fields:g.fields.filter(f => !PRIOR_NO_MATCH.includes(f.sourceType)) })).concat([{ groupLabel:'THÔNG TIN HỆ THỐNG', fields:PRIOR_SYS_FIELDS }]);
+    }
+    const col = document.getElementById('ne-info-col');
+    if(!groups.length){
+      col.innerHTML = `<div class="ne-placeholder">Biểu mẫu áp dụng chưa có field — chọn biểu mẫu ở bước "Nộp biểu mẫu".</div>`;
+      return;
+    }
+    col.innerHTML = `<div class="field-tree">${groups.map(g => `
+      <div class="field-tree-group">${esc(g.groupLabel)}</div>
+      ${g.fields.map(f => `<div class="field-tree-item" draggable="${ro ? 'false' : 'true'}" ondragstart="onFieldDragStart(event,'${f.key}')">⠿ ${esc(f.label)}<span class="cr5-type">${esc(FTYPE_LABEL[f.sourceType] || f.sourceType)}</span></div>`).join('')}
+    `).join('')}</div>
+    <div class="f-hint" style="margin-top:8px">Kéo field sang ô cấu hình. Field biểu mẫu không gõ tìm được.</div>`;
+  };
+
+  // ---------- Panel cấu hình ----------
+  const _renderNeMainCol = renderNeMainCol;
+  renderNeMainCol = function(n, ro){
+    const col = document.getElementById('ne-main-col');
+    const dis = ro ? 'disabled' : '';
+    neWorkingData.slots = neWorkingData.slots || {};
+
+    if(n.type === 'check_prior_application'){ renderPriorPanel(col, ro); return; }
+
+    if(n.type === 'check_submit_time'){
+      if(!neWorkingData.conds) neWorkingData.conds = [{ slot:'c0', op:'minus', days:7, cmp:'le' }];
+      col.innerHTML = neWorkingData.conds.map((c, i) => `
+        <div class="cr5-cond">
+          <div class="cr5-cond-hd">Điều kiện ${i+1}${(!ro && neWorkingData.conds.length > 1) ? `<span style="cursor:pointer;color:var(--error)" onclick="CR5.delCond(${i})">🗑</span>` : ''}</div>
+          <div class="fi"><label>Mốc<span class="req">*</span></label>${slotHtml(c.slot, ['date'], ro, { placeholder:'Kéo field kiểu Ngày từ cột trái vào đây' })}</div>
+          <div class="fi"><label>Điều chỉnh<span class="req">*</span></label>
+            <div class="cr5-row">
+              <select class="fc" ${dis} onchange="CR5.setCond(${i},'op',this.value)">
+                <option value="minus" ${c.op==='minus'?'selected':''}>trừ</option>
+                <option value="plus" ${c.op==='plus'?'selected':''}>cộng</option>
+              </select>
+              <input class="fc" type="number" min="0" max="365" style="width:80px" value="${c.days}" ${dis} onchange="CR5.setCond(${i},'days',Math.max(0,Math.min(365,parseInt(this.value)||0)))"> ngày
+            </div>
+          </div>
+          <div class="fi" style="margin-bottom:0"><label>Ngày nộp<span class="req">*</span></label>
+            <div class="cr5-row">
+              <select class="fc" ${dis} onchange="CR5.setCond(${i},'cmp',this.value)">
+                <option value="le" ${c.cmp==='le'?'selected':''}>chậm nhất là (≤)</option>
+                <option value="ge" ${c.cmp==='ge'?'selected':''}>sớm nhất là (≥)</option>
+              </select> ngày đã tính
+            </div>
+          </div>
+        </div>`).join('') + (ro ? '' : `<button class="btn btn-default" ${neWorkingData.conds.length >= 5 ? 'disabled' : ''} onclick="CR5.addCond()">+ Thêm điều kiện</button>`) +
+        `<div class="f-hint" style="margin-top:8px">Tất cả điều kiện phải đạt (tối đa 5). Cổng ra: <b>Đạt</b> / <b>Không đạt</b> — cả 2 phải nối. Node không gửi thông báo, không đổi trạng thái đơn.</div>`;
+      return;
+    }
+
+    if(n.type === 'action_internship_end_date'){
+      col.innerHTML = `
+        <div class="fi"><label>Hồ sơ thực tập theo Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}
+          <div class="f-hint">Hồ sơ = sinh viên nộp đơn + đợt đã chọn.</div></div>
+        <div class="fi"><label>Ngày kết thúc mới<span class="req">*</span></label>${slotHtml('newEnd', ['date'], ro, { placeholder:'Kéo field kiểu Ngày vào đây' })}</div>
+        <div class="f-hint">Ngày kết thúc hiệu lực = ngày muộn hơn giữa ngày đã gia hạn và ngày kết thúc LHP. Ghi lịch sử thao tác SV, không ghi bảng Quy trình phê duyệt.</div>`;
+      return;
+    }
+
+    if(n.type === 'action_internship_site'){
+      const rows = [
+        ['loai','Loại cơ sở',true,['loai_cstt','choice']], ['dn','Doanh nghiệp đối tác',false,['dn']],
+        ['ten','Tên cơ sở',true,['text']], ['tinh','Tỉnh/TP',true,['tinh']], ['phuong','Phường/Xã',true,['phuong']],
+        ['diachi','Địa chỉ',false,['text']], ['lienhe','Người liên hệ',false,['text']],
+      ];
+      col.innerHTML = `
+        <div class="fi"><label>Hồ sơ thực tập theo Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}</div>
+        <div class="fi"><label>Ghép dữ liệu cơ sở mới</label>
+          <table class="cr5-map" style="width:100%">${rows.map(r => `<tr><td>${r[1]}${r[2] ? '<span class="req">*</span>' : ''}</td><td>${slotHtml(r[0], r[3], ro, { placeholder:'Kéo field ' + r[3].map(a => FTYPE_LABEL[a]).join(' / ') })}</td></tr>`).join('')}</table>
+        </div>
+        <div class="f-hint">DN đối tác → lưu liên kết danh mục; Khác → lưu nhập tay, không thêm vào danh mục. GVHD, ngày BĐ/KT giữ nguyên.</div>`;
+      return;
+    }
+
+    if(n.type === 'action_thesis_topic'){
+      const rows = [
+        ['nguon','Nguồn đề tài',true,['nguon_dt']], ['ma','Mã đề tài',true,['text']], ['ctdt','Chương trình đào tạo',true,['text']],
+        ['loai','Loại đề tài',true,['text']], ['linh_vuc','Lĩnh vực',true,['linh_vuc']], ['ten','Tên đề tài',true,['text']],
+        ['tom_tat','Tóm tắt',true,['text_long']], ['san_pham','Sản phẩm / Kết quả',true,['text_long']],
+        ['cong_nghe','Công nghệ / Công cụ',false,['text']], ['tai_lieu','Tài liệu đính kèm',false,['file']],
+      ];
+      col.innerHTML = `
+        <div class="fi"><label>Hồ sơ ĐAKLTN theo Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}
+          <div class="f-hint">Hồ sơ = sinh viên nộp đơn + đợt đã chọn.</div></div>
+        <div class="fi"><label>Ghép dữ liệu đề tài mới</label>
+          <table class="cr5-map" style="width:100%">${rows.map(r => `<tr><td>${r[1]}${r[2] ? '<span class="req">*</span>' : ''}</td><td>${slotHtml(r[0], r[3], ro, { placeholder:'Kéo field ' + r[3].map(a => FTYPE_LABEL[a]).join(' / ') })}</td></tr>`).join('')}</table>
+        </div>
+        <div class="f-hint"><b>Đề tài giảng viên:</b> tìm đề tài theo Mã trong danh mục rồi gán, trừ suất đề tài mới, trả suất đề tài cũ; các ô khác không ghi đè danh mục.<br>
+          <b>Sinh viên tự đề xuất:</b> tạo đề tài mới từ các ô đã ghép, giữ nguyên mã SV-ĐT-…, Số SV tối đa = 1.<br>
+          Nhóm GVHD giữ nguyên; Tiến độ về như lúc mới có đề tài. Cổng ra: <b>Đã cập nhật</b> / <b>Không cập nhật được</b> (đề tài đã đủ SV, ngừng hoạt động, không tìm thấy) — cả 2 phải nối.</div>`;
+      return;
+    }
+
+    if(n.type === 'action_thesis_end_date'){
+      col.innerHTML = `
+        <div class="fi"><label>Hồ sơ ĐAKLTN theo Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}
+          <div class="f-hint">Hồ sơ = sinh viên nộp đơn + đợt đã chọn.</div></div>
+        <div class="fi"><label>Ngày kết thúc mới<span class="req">*</span></label>${slotHtml('newEnd', ['date'], ro, { placeholder:'Kéo field kiểu Ngày vào đây' })}</div>
+        <div class="f-hint">Ngày kết thúc hiệu lực = ngày muộn hơn giữa ngày đã gia hạn và ngày kết thúc LHP. Không ghi bảng Quy trình phê duyệt.</div>`;
+      return;
+    }
+
+    if(n.type === 'check_early_defense_time'){
+      if(neWorkingData.tyTu === undefined) neWorkingData.tyTu = 2;
+      if(neWorkingData.tyMau === undefined) neWorkingData.tyMau = 3;
+      const tu = neWorkingData.tyTu, mau = neWorkingData.tyMau, ok = tu > 0 && tu < mau;
+      const qua = ok ? Math.ceil(tu * 15 / mau) : 0;
+      col.innerHTML = `
+        <div class="fi"><label>Ngày bắt đầu<span class="req">*</span></label>${slotHtml('from', ['date'], ro, { placeholder:'Kéo field kiểu Ngày vào đây' })}</div>
+        <div class="fi"><label>Ngày kết thúc<span class="req">*</span></label>${slotHtml('to', ['date'], ro, { placeholder:'Kéo field kiểu Ngày vào đây' })}</div>
+        <div class="fi"><label>Tỷ lệ số tuần<span class="req">*</span></label>
+          <div class="cr5-row">
+            <input class="fc" type="number" min="1" style="width:80px" value="${tu}" ${dis} onchange="CR5.set('tyTu',parseInt(this.value)||0)"> /
+            <input class="fc" type="number" min="1" style="width:80px" value="${mau}" ${dis} onchange="CR5.set('tyMau',parseInt(this.value)||0)">
+          </div>
+          ${ok ? '' : '<div class="field-tree-error">⚠️ Tỷ lệ phải lớn hơn 0 và nhỏ hơn 1</div>'}
+        </div>
+        <div class="f-hint"><b>Hệ thống tự tính:</b> số tuần = tổng số ngày / 7 (làm tròn lên); số tuần phải qua = tỷ lệ × số tuần (làm tròn lên); ngày được nộp = ngày bắt đầu + số tuần phải qua × 7 ngày. Đạt khi ngày được nộp ≤ ngày nộp ≤ ngày kết thúc − 1 ngày.
+          ${ok ? `<br>Ví dụ đợt 15 tuần: phải qua <b>${qua} tuần</b>.` : ''}<br>Đổi tỷ lệ áp dụng cho đơn tạo sau khi xuất bản phiên bản mới; đơn đã tạo không kiểm tra lại. Cổng ra: <b>Đạt</b> / <b>Không đạt</b> — cả 2 phải nối.</div>`;
+      return;
+    }
+
+    if(n.type === 'approval' && neActiveTab === 'ai_duyet'){
+      const a = neWorkingData.assign || 'unit';
+      const res = neWorkingData.resolve || 'JOB_TITLE_IN_UNIT';
+      const usesField = (a === 'gvhd') || (a === 'dynamic' && neWorkingData.slots.unit);
+      let html = `
+        <div class="fi"><label>Giao cho<span class="req">*</span></label>
+          <select class="fc" ${dis} onchange="CR5.set('assign',this.value)">
+            <option value="staff" ${a==='staff'?'selected':''}>Một cán bộ cụ thể</option>
+            <option value="unit" ${a==='unit'?'selected':''}>Một đơn vị, ai nhận trước thì làm</option>
+            <option value="dynamic" ${a==='dynamic'?'selected':''}>Phân giải động theo tổ chức</option>
+            <option value="gvhd" ${a==='gvhd'?'selected':''}>GVHD của sinh viên</option>
+          </select></div>`;
+      if(a === 'staff'){
+        html += `<div class="fi"><label>Cán bộ<span class="req">*</span></label>${slotHtml('staffSlot', ['__none__'], ro, { fixedProp:'staff', fixedList:FIXED_STAFF, placeholder:'Gõ tìm cán bộ cố định' })}</div>`;
+      } else if(a === 'unit'){
+        html += `<div class="fi"><label>Đơn vị<span class="req">*</span></label>${slotHtml('unitFixedOnly', ['__none__'], ro, { fixedProp:'fixedUnit', fixedList:FIXED_UNITS, placeholder:'Gõ tìm đơn vị cố định' })}</div>`;
+      } else if(a === 'gvhd'){
+        html += `<div class="fi"><label>Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}
+          <div class="f-hint">Người duyệt = GVHD trong hồ sơ thực tập của SV nộp đơn ở đợt đã chọn (tại thời điểm đơn tới bước).</div></div>`;
+      } else {
+        html += `<div class="fi"><label>Cách phân giải người duyệt<span class="req">*</span></label>
+            <select class="fc" ${dis} onchange="CR5.set('resolve',this.value)">${RESOLVERS.map(r => `<option value="${r.v}" ${res===r.v?'selected':''}>${r.l}</option>`).join('')}</select></div>
+          <div class="fi"><label>Đơn vị${res==='SCHOOL_OF_FACULTY' ? ' (đơn vị xuất phát)' : ''}<span class="req">*</span></label>
+            ${slotHtml('unit', ['unit'], ro, { fixedProp:'fixedUnit', fixedList:FIXED_UNITS, placeholder:'Kéo field kiểu Đơn vị (vd Khoa) hoặc gõ tìm đơn vị cố định' })}
+            <div class="f-hint">Field biểu mẫu chỉ kéo thả; gõ tìm chỉ ra đơn vị cố định.</div></div>`;
+        if(res === 'SCHOOL_OF_FACULTY'){
+          html += `<div class="f-hint" style="margin:-6px 0 12px">Hệ thống tự lấy đơn vị quản lý trực tiếp của đơn vị xuất phát (vd Khoa CNTT → Trường CNTT).</div>`;
+        }
+        if(res !== 'UNIT_MEMBERS'){
+          html += `<div class="fi"><label>${res==='SCHOOL_OF_FACULTY' ? 'Chức vụ' : 'Chức danh'}<span class="req">*</span></label>
+            <select class="fc" ${dis} onchange="CR5.set('title',this.value)"><option value="">Chọn...</option>${TITLES.map(t => `<option ${neWorkingData.title===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+        }
+        html += `<div class="fi"><label>Phạm vi quan hệ cán bộ–đơn vị</label><div><span class="ms-tag">Chính thức</span> <span class="ms-tag">Kiêm nhiệm</span></div></div>`;
+      }
+      html += `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:10px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px">Ai sẽ nhận việc</div>
+          <div style="font-size:12.5px;color:var(--text-2)">${usesField ? 'Phụ thuộc đơn của sinh viên.' : (a==='staff' && neWorkingData.staff) ? esc(neWorkingData.staff) : ((a==='unit'||a==='dynamic') && neWorkingData.fixedUnit) ? 'Theo đơn vị ' + esc(neWorkingData.fixedUnit) : '—'}</div>
+          <div class="f-hint">Không tìm được người duyệt → đơn dừng và báo lỗi; cán bộ sửa dữ liệu rồi "Chạy lại bước lỗi".</div>
+        </div>`;
+      col.innerHTML = html;
+      return;
+    }
+    return _renderNeMainCol(n, ro);
+  };
+
+  // ---------- Kiểm tra cấu hình (dùng cho Xong + Xuất bản) ----------
+  function nodeIssues(n){
+    const d = n.data || {}, s = d.slots || {}, out = [];
+    if(n.type === 'check_prior_application'){
+      if(d.statuses && !d.statuses.length) out.push('chưa chọn Trạng thái đơn được tính');
+      (d.matchFields || []).forEach(k => { if(!priorField(k)) out.push('Trường không còn trong biểu mẫu'); });
+    } else if(n.type === 'check_submit_time'){
+      const conds = d.conds || [];
+      if(!conds.length) out.push('chưa có điều kiện');
+      conds.forEach((c, i) => { if(!s[c.slot]) out.push(`Điều kiện ${i+1}: chưa chọn Mốc`); });
+    } else if(n.type === 'action_internship_end_date'){
+      if(!s.dot) out.push('chưa chọn Hồ sơ thực tập theo Đợt');
+      if(!s.newEnd) out.push('chưa chọn Ngày kết thúc mới');
+    } else if(n.type === 'action_internship_site'){
+      if(!s.dot) out.push('chưa chọn Hồ sơ thực tập theo Đợt');
+      [['loai','Loại cơ sở'],['ten','Tên cơ sở'],['tinh','Tỉnh/TP'],['phuong','Phường/Xã']].forEach(([k,l]) => { if(!s[k]) out.push('chưa ghép ' + l); });
+    } else if(n.type === 'action_thesis_topic'){
+      if(!s.dot) out.push('chưa chọn Hồ sơ ĐAKLTN theo Đợt');
+      [['nguon','Nguồn đề tài'],['ma','Mã đề tài'],['ctdt','Chương trình đào tạo'],['loai','Loại đề tài'],['linh_vuc','Lĩnh vực'],['ten','Tên đề tài'],['tom_tat','Tóm tắt'],['san_pham','Sản phẩm / Kết quả']].forEach(([k,l]) => { if(!s[k]) out.push('chưa ghép ' + l); });
+    } else if(n.type === 'action_thesis_end_date'){
+      if(!s.dot) out.push('chưa chọn Hồ sơ ĐAKLTN theo Đợt');
+      if(!s.newEnd) out.push('chưa chọn Ngày kết thúc mới');
+    } else if(n.type === 'check_early_defense_time'){
+      if(!s.from) out.push('chưa chọn Ngày bắt đầu');
+      if(!s.to) out.push('chưa chọn Ngày kết thúc');
+      const tu = d.tyTu === undefined ? 2 : d.tyTu, mau = d.tyMau === undefined ? 3 : d.tyMau;
+      if(!(tu > 0 && tu < mau)) out.push('Tỷ lệ phải lớn hơn 0 và nhỏ hơn 1');
+    } else if(n.type === 'approval' && d.assign){
+      if(d.assign === 'gvhd' && !s.dot) out.push('chưa chọn Đợt');
+      if(d.assign === 'staff' && !d.staff) out.push('chưa chọn Cán bộ');
+      if(d.assign === 'unit' && !d.fixedUnit) out.push('chưa chọn Đơn vị');
+      if(d.assign === 'dynamic'){
+        if(!s.unit && !d.fixedUnit) out.push('chưa chọn Đơn vị');
+        if((d.resolve || 'JOB_TITLE_IN_UNIT') !== 'UNIT_MEMBERS' && !d.title) out.push('chưa chọn Chức danh / Chức vụ');
+      }
+    }
+    return out;
+  }
+
+  const _validate = validate;
+  validate = function(v){
+    const issues = _validate(v);
+    v.nodes.forEach(n => nodeIssues(n).forEach(t => issues.push({ kind:'required', nodeId:n.id, title:'Thiếu thông tin bắt buộc: ' + t, subtitle:n.title })));
+    return issues;
+  };
+
+  const _saveNodeEdit = saveNodeEdit;
+  saveNodeEdit = function(){
+    const n0 = content().nodes.find(x => x.id === editingNodeId);
+    if(n0 && TREE_TYPES.includes(n0.type)){
+      const probs = nodeIssues({ type:n0.type, data:neWorkingData });
+      if(probs.length){ showToast('Bước "' + n0.title + '": ' + probs[0], 'err'); return; }
+    }
+    slotErr = {};
+    return _saveNodeEdit();
+  };
+
+  const _openNodeEdit = openNodeEdit;
+  openNodeEdit = function(id){ slotErr = {}; return _openNodeEdit(id); };
+
+  // ---------- 2 quy trình mẫu CR-005 (mở bằng ?p=...) ----------
+  function mk(id, type, typeLabel, title, code, x, y, data){ return { id, type, typeLabel, title, code, x, y, data: data || {} }; }
+  function sample(formId, checkSlot, checkTitle, updateNode){
+    return {
+      id:'v1', label:'v1', status:'nhap', basedOn:null,
+      createdBy:'Viên Thị Phương Thảo', createdAt:'04/11/2026',
+      publishedBy:null, publishedAt:null, archivedAt:null, runningInstances:0,
+      nodes:[
+        mk('n1','submit','Nộp biểu mẫu','Nộp đơn','form_trigger',40,240,{ formId }),
+        mk('n2','check_submit_time','Kiểm tra thời gian nộp',checkTitle,'check_time_1',360,240,{ conds:[{ slot:'c0', op:'minus', days:7, cmp:'le' }], slots:{ c0:checkSlot } }),
+        mk('n3','approval','Chờ người duyệt','GVHD duyệt','gvhd',680,160,{ allowRevise:false, assign:'gvhd', slots:{ dot:'dot' } }),
+        mk('n4','approval','Chờ người duyệt','Khoa duyệt','khoa',1000,160,{ allowRevise:false, assign:'dynamic', resolve:'JOB_TITLE_IN_UNIT', title:'Trưởng khoa', slots:{ unit:'khoa' } }),
+        updateNode,
+        mk('n6','notify','Gửi thông báo','Báo kết quả cho SV','notify_ok',1640,80),
+        mk('n7','end-success','Kết thúc','Đã duyệt','end_ok',1960,80),
+        mk('n8','notify','Gửi thông báo','Báo không đạt hạn gửi','notify_fail',680,460),
+        mk('n9','end-reject','Kết thúc','Từ chối (quá hạn — SV thấy "Không thành công")','end_fail',1000,460),
+        mk('n10','end-reject','Kết thúc','Từ chối','end_reject',1320,380),
+      ],
+      edges:[
+        { from:'n1', fromPort:'default', to:'n2' },
+        { from:'n2', fromPort:'pass', to:'n3' },
+        { from:'n2', fromPort:'fail', to:'n8' },
+        { from:'n8', fromPort:'default', to:'n9' },
+        { from:'n3', fromPort:'approve', to:'n4' },
+        { from:'n3', fromPort:'reject', to:'n10' },
+        { from:'n4', fromPort:'approve', to:'n5' },
+        { from:'n4', fromPort:'reject', to:'n10' },
+        { from:'n5', fromPort:'default', to:'n6' },
+        { from:'n6', fromPort:'default', to:'n7' },
+      ],
+    };
+  }
+  const SAMPLES = {
+    'mot-don-hoc-ky': { name:'Mẫu: Một đơn mỗi học kỳ',
+      desc:'Quy trình mẫu CR-20261105-002: kiểm tra mỗi học kỳ một đơn → GVHD duyệt → Khoa duyệt → Đã duyệt.',
+      ver:{ id:'v1', label:'v1', status:'nhap', basedOn:null, createdBy:'Viên Thị Phương Thảo', createdAt:'05/11/2026', publishedBy:null, publishedAt:null, archivedAt:null, runningInstances:0,
+        nodes:[
+          mk('n1','submit','Nộp biểu mẫu','Nộp đơn','form_trigger',40,240,{ formId:'TTTN_M05' }),
+          mk('n2','check_prior_application','Kiểm tra đơn đã nộp','Một đơn mỗi học kỳ','check_prior_1',360,240,{ statuses:['Chờ duyệt','Đã duyệt','Từ chối','Yêu cầu chỉnh sửa'], matchFields:['sys_hoc_ky_gui'], soDon:1 }),
+          mk('n3','approval','Chờ người duyệt','GVHD duyệt','gvhd',680,160,{ allowRevise:false, assign:'gvhd', slots:{ dot:'dot' } }),
+          mk('n4','approval','Chờ người duyệt','Khoa duyệt','khoa',1000,160,{ allowRevise:false, assign:'dynamic', resolve:'JOB_TITLE_IN_UNIT', title:'Trưởng khoa', slots:{ unit:'khoa' } }),
+          mk('n7','end-success','Kết thúc','Đã duyệt','end_ok',1320,80),
+          mk('n8','notify','Gửi thông báo','Báo đã hết lượt nộp','notify_fail',680,460),
+          mk('n9','end-reject','Kết thúc','Từ chối (SV thấy "Không thành công")','end_fail',1000,460),
+          mk('n10','end-reject','Kết thúc','Từ chối','end_reject',1320,380),
+        ],
+        edges:[
+          { from:'n1', fromPort:'default', to:'n2' },
+          { from:'n2', fromPort:'con_luot', to:'n3' },
+          { from:'n2', fromPort:'het_luot', to:'n8' },
+          { from:'n8', fromPort:'default', to:'n9' },
+          { from:'n3', fromPort:'approve', to:'n4' },
+          { from:'n3', fromPort:'reject', to:'n10' },
+          { from:'n4', fromPort:'approve', to:'n7' },
+          { from:'n4', fromPort:'reject', to:'n10' },
+        ] } },
+    'giahan-tttn': { name:'Gia hạn thời gian TTTN',
+      ver: sample('TTTN_M05', 'ngay_kt_hien_tai', 'Kiểm tra hạn gửi gia hạn',
+        mk('n5','action_internship_end_date','Cập nhật ngày kết thúc thực tập','Cập nhật ngày kết thúc','update_end_1',1320,160,{ slots:{ dot:'dot', newEnd:'ngay_kt_de_nghi' } })) },
+    'doicoso-tttn': { name:'Đổi cơ sở thực tập TTTN',
+      ver: sample('TTTN_M04', 'ngay_bat_dau', 'Kiểm tra hạn gửi đổi cơ sở',
+        mk('n5','action_internship_site','Cập nhật cơ sở thực tập','Cập nhật cơ sở thực tập','update_site_1',1320,160,{ slots:{ dot:'dot',
+          loai:'co_so_moi.loai', dn:'co_so_moi.doanh_nghiep', ten:'co_so_moi.ten', tinh:'co_so_moi.tinh', phuong:'co_so_moi.phuong',
+          diachi:'co_so_moi.dia_chi_chi_tiet', lienhe:'co_so_moi.nguoi_lien_he' } })) },
+  };
+  // 3 quy trình mẫu CR-20261104-001: dựng từ khung trên, đổi node kiểm tra + phần sau bước Khoa duyệt
+  function sampleDakl(formId, checkNode, updateNode){
+    const ver = sample(formId, '', '', updateNode || mk('n5','notify','Gửi thông báo','','x',1320,160));
+    ver.nodes = ver.nodes.map(n => n.id === 'n2' ? checkNode : n);
+    if(!updateNode){
+      ver.nodes = ver.nodes.filter(n => n.id !== 'n5');
+      ver.edges = ver.edges.filter(e => e.from !== 'n5').map(e => e.to === 'n5' ? { ...e, to:'n6' } : e);
+    }
+    return ver;
+  }
+  const checkTime = (title, conds, slots) => mk('n2','check_submit_time','Kiểm tra thời gian nộp',title,'check_time_1',360,240,{ conds, slots });
+  const verDoiDeTai = sampleDakl('DAKL_M05',
+    checkTime('Kiểm tra 2 tuần đầu', [{ slot:'c0', op:'plus', days:0, cmp:'ge' }, { slot:'c1', op:'plus', days:14, cmp:'le' }], { c0:'ngay_bat_dau', c1:'ngay_bat_dau' }),
+    mk('n5','action_thesis_topic','Cập nhật đề tài ĐAKLTN','Cập nhật đề tài','update_topic_1',1320,160,{ slots:{ dot:'dot', nguon:'de_tai_moi.nguon', ma:'de_tai_moi.ma', ctdt:'de_tai_moi.ctdt', loai:'de_tai_moi.loai',
+      linh_vuc:'de_tai_moi.linh_vuc', ten:'de_tai_moi.ten', tom_tat:'de_tai_moi.tom_tat', san_pham:'de_tai_moi.san_pham', cong_nghe:'de_tai_moi.cong_nghe', tai_lieu:'de_tai_moi.tai_lieu' } }));
+  verDoiDeTai.nodes.push(
+    mk('n11','notify','Gửi thông báo','Báo không cập nhật được','notify_topic_fail',1640,300),
+    mk('n12','end-reject','Kết thúc','Từ chối (đề tài không còn suất)','end_topic_fail',1960,300));
+  verDoiDeTai.edges = verDoiDeTai.edges.map(e => e.from === 'n5' ? { ...e, fromPort:'done' } : e);
+  verDoiDeTai.edges.push({ from:'n5', fromPort:'fail', to:'n11' }, { from:'n11', fromPort:'default', to:'n12' });
+  Object.assign(SAMPLES, {
+    'doidetai-dakl': { name:'Đổi đề tài ĐA/KLTN', ver:verDoiDeTai,
+      desc:'Quy trình mẫu CR-20261104-001: kiểm tra trong 2 tuần đầu → GVHD duyệt → Khoa duyệt → cập nhật đề tài (2 cổng).' },
+    'giahan-dakl': { name:'Gia hạn thời gian làm ĐA/KLTN',
+      ver: sampleDakl('DAKL_M06',
+        checkTime('Kiểm tra hạn gửi gia hạn', [{ slot:'c0', op:'minus', days:7, cmp:'le' }], { c0:'ngay_kt_hien_tai' }),
+        mk('n5','action_thesis_end_date','Cập nhật ngày kết thúc ĐAKLTN','Cập nhật ngày kết thúc','update_end_1',1320,160,{ slots:{ dot:'dot', newEnd:'ngay_kt_de_nghi' } })),
+      desc:'Quy trình mẫu CR-20261104-001: kiểm tra chậm nhất 7 ngày trước ngày kết thúc → GVHD duyệt → Khoa duyệt → cập nhật ngày kết thúc ĐAKLTN.' },
+    'baove-dakl': { name:'Bảo vệ sớm ĐA/KLTN',
+      ver: sampleDakl('DAKL_BM3',
+        mk('n2','check_early_defense_time','Kiểm tra thời gian bảo vệ sớm','Kiểm tra thời gian bảo vệ sớm','check_early_1',360,240,{ tyTu:2, tyMau:3, slots:{ from:'ngay_bat_dau', to:'ngay_ket_thuc' } }), null),
+      desc:'Quy trình mẫu CR-20261104-001: kiểm tra đã qua tỷ lệ số tuần → GVHD duyệt → Khoa duyệt → kết thúc Đã duyệt (không có node cập nhật hồ sơ).' },
+  });
+  const p = new URLSearchParams(location.search).get('p');
+  if(SAMPLES[p]){
+    VERSIONS = [SAMPLES[p].ver];
+    versionSeq = 1; currentVersionId = 'v1'; PROCESS_NAME = SAMPLES[p].name;
+    document.getElementById('proc-name-input').value = PROCESS_NAME;
+    document.getElementById('proc-name-input2').value = PROCESS_NAME;
+    const desc = document.querySelector('.wf-left textarea');
+    if(desc) desc.value = (SAMPLES[p].desc || 'Quy trình mẫu CR-20261103-005: kiểm tra hạn gửi → GVHD duyệt → Khoa duyệt → cập nhật hồ sơ thực tập.') + ' Nhánh Không đạt: báo SV → Kết thúc Từ chối.';
+  }
+  // Chọn nhanh quy trình mẫu (đầu panel "Thông tin chung")
+  const left = document.querySelector('.wf-left');
+  const box = document.createElement('div');
+  box.className = 'cr5-sample';
+  box.innerHTML = `Quy trình mẫu:<select class="fc" style="margin-top:6px" onchange="location.search=this.value?('?p='+this.value):''">
+      <option value="" ${!SAMPLES[p]?'selected':''}>Nghỉ học tạm thời (gốc)</option>
+      <option value="giahan-tttn" ${p==='giahan-tttn'?'selected':''}>Gia hạn thời gian TTTN</option>
+      <option value="doicoso-tttn" ${p==='doicoso-tttn'?'selected':''}>Đổi cơ sở thực tập TTTN</option>
+      <option value="doidetai-dakl" ${p==='doidetai-dakl'?'selected':''}>Đổi đề tài ĐA/KLTN</option>
+      <option value="giahan-dakl" ${p==='giahan-dakl'?'selected':''}>Gia hạn thời gian làm ĐA/KLTN</option>
+      <option value="baove-dakl" ${p==='baove-dakl'?'selected':''}>Bảo vệ sớm ĐA/KLTN</option>
+      <option value="mot-don-hoc-ky" ${p==='mot-don-hoc-ky'?'selected':''}>Mẫu: Một đơn mỗi học kỳ</option>
+    </select>`;
+  left.insertBefore(box, left.querySelector('.wf-panel-title').nextSibling);
+})();
+</script>
 </body>
 </html>

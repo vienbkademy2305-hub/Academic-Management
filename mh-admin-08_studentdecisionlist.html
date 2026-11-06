@@ -319,8 +319,11 @@
           <button type="button" class="status-tab" data-status="Yêu cầu chỉnh sửa" onclick="pickStatusTab('Yêu cầu chỉnh sửa')">
             Yêu cầu chỉnh sửa <span class="status-tab-badge purple" id="badge-Yêu cầu chỉnh sửa">0</span>
           </button>
+          <button type="button" class="status-tab" data-status="Chờ nhập quyết định" onclick="pickStatusTab('Chờ nhập quyết định')">
+            Chờ nhập quyết định <span class="status-tab-badge warn" id="badge-Chờ nhập quyết định">0</span>
+          </button>
           <button type="button" class="status-tab" data-status="Đã duyệt" onclick="pickStatusTab('Đã duyệt')">
-            Đã duyệt <span class="status-tab-badge success" id="badge-Đã duyệt">0</span>
+            Đã duyệt / Đã ban hành <span class="status-tab-badge success" id="badge-Đã duyệt">0</span>
           </button>
           <button type="button" class="status-tab" data-status="Từ chối" onclick="pickStatusTab('Từ chối')">
             Từ chối <span class="status-tab-badge error" id="badge-Từ chối">0</span>
@@ -417,16 +420,16 @@
                 <label>Hình thức khen thưởng</label><div class="adet-field-val" id="ddet-reward-form">—</div>
               </div>
               <div class="adet-field-inline" id="ddet-topic-change-lophocphan-block" style="display:none">
-                <label>Lớp học phần</label><div class="adet-field-val" id="ddet-topic-change-lophocphan">—</div>
+                <label>Lớp học phần đồ án</label><div class="adet-field-val" id="ddet-topic-change-lophocphan">—</div>
               </div>
               <div class="adet-field-inline" id="ddet-topic-change-dothuongdan-block" style="display:none">
-                <label>Đợt hướng dẫn</label><div class="adet-field-val" id="ddet-topic-change-dothuongdan">—</div>
+                <label>Mã đợt TT/ĐA/KL</label><div class="adet-field-val" id="ddet-topic-change-dothuongdan">—</div>
               </div>
               <div class="adet-field-inline" id="ddet-topic-change-oldcode-block" style="display:none">
                 <label>Số quyết định giao đề tài</label><div class="adet-field-val" id="ddet-topic-change-oldcode">—</div>
               </div>
               <div class="adet-field-inline" id="ddet-reviewer-assignment-dothuongdan-block" style="display:none">
-                <label>Đợt hướng dẫn</label><div class="adet-field-val" id="ddet-reviewer-assignment-dothuongdan">—</div>
+                <label>Mã đợt TT/ĐA/KL</label><div class="adet-field-val" id="ddet-reviewer-assignment-dothuongdan">—</div>
               </div>
               <div class="adet-field-inline"><label>Ghi chú</label><div class="adet-field-val" id="ddet-content-view">—</div></div>
               <!-- Tài liệu đính kèm — CHỈ 1 file duy nhất (nhiều tài liệu phải đóng gói .zip trước
@@ -503,6 +506,10 @@
                   <input type="hidden" id="cd-type">
                   <div class="unit-combo-menu" id="cd-type-menu"></div>
                 </div>
+              </div>
+              <div class="fi" id="cd-dot-block" style="display:none">
+                <label>Mã đợt TT/ĐA/KL<span class="req">*</span></label>
+                <select class="fc" id="cd-dot" onchange="onCdDotChange()"></select>
               </div>
               <div class="fi">
                 <label>Năm học<span class="req">*</span></label>
@@ -607,10 +614,10 @@
                    cho Admin gõ tay để tránh lệch với dữ liệu nguồn từ yêu cầu đã duyệt. -->
               <div id="cd-topic-change-fields-block" style="display:none;margin-bottom:16px">
                 <div class="fi" style="margin-bottom:10px">
-                  <label>Lớp học phần</label>
+                  <label>Lớp học phần đồ án</label>
                   <input class="fc readonly" id="cd-topic-change-lophocphan" readonly placeholder="Tự động điền khi thêm SV có yêu cầu đã duyệt…">
                 </div>
-                <div class="fi" style="margin-bottom:10px">
+                <div class="fi" style="margin-bottom:10px;display:none">
                   <label>Đợt hướng dẫn</label>
                   <input class="fc readonly" id="cd-topic-change-dothuongdan" readonly placeholder="Tự động điền khi thêm SV có yêu cầu đã duyệt…">
                 </div>
@@ -1310,7 +1317,7 @@ function todayVnDate(){
   return `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
 }
 
-const STATUS_TAG_CLASS = { 'Nháp':'tag-default', 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Đã nộp':'tag-success', 'Từ chối':'tag-error', 'Yêu cầu chỉnh sửa':'tag-purple' };
+const STATUS_TAG_CLASS = { 'Nháp':'tag-default', 'Chờ duyệt':'tag-warning', 'Đã duyệt':'tag-success', 'Đã nộp':'tag-success', 'Từ chối':'tag-error', 'Yêu cầu chỉnh sửa':'tag-purple', 'Chờ nhập quyết định':'tag-blue' };
 /* Trạng thái cho phép sửa Danh sách sinh viên/nội dung quyết định — khớp đúng điều kiện hiện nút
    "Chỉnh sửa" ở action-bar trang Chi tiết (xem openDecisionDetail()). Dùng cả ở icon "Chỉnh sửa"
    trong cột Thao tác của bảng Danh sách Quyết định (xem renderGrid()). */
@@ -1486,7 +1493,7 @@ const DECISION_CATALOG = [
   { name:'Quyết định chuyển trường đi', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-chuyen-truong-di-dh.docx', fileNameSdh:'mau-qd-chuyen-truong-di-sdh.docx' },
   { name:'Quyết định công nhận điểm từ các cơ sở đào tạo', unit:'u-daotao', processId:null, fileNameDh:'', fileNameSdh:'' },
   { name:'Quyết định công nhận tốt nghiệp', unit:'u-daotao', processId:'p2', fileNameDh:'mau-qd-cong-nhan-tot-nghiep-dh.docx', fileNameSdh:'mau-qd-cong-nhan-tot-nghiep-sdh.docx' },
-  { name:'Quyết định cử đi thực tập tốt nghiệp', unit:'u-daotao', processId:null, fileNameDh:'', fileNameSdh:'' },
+  { name:'Quyết định cử đi thực tập tốt nghiệp', unit:'u-daotao', processId:'p1', fileNameDh:'', fileNameSdh:'' },
   { name:'Quyết định xử lý học vụ (Khiển trách/Cảnh cáo/Đình chỉ thi)', unit:'u-khaothi', processId:'p1', fileNameDh:'mau-qd-xu-ly-hoc-vu-dh.docx', fileNameSdh:'mau-qd-xu-ly-hoc-vu-sdh.docx' },
   { name:'Quyết định nghỉ học tạm thời/bảo lưu', unit:'u-ctsv', processId:'p3', fileNameDh:'mau-qd-bao-luu-dh.docx', fileNameSdh:'mau-qd-bao-luu-sdh.docx' },
   { name:'Quyết định nhập trường/trúng tuyển', unit:'u-tuyensinh', processId:null, fileNameDh:'mau-qd-nhap-truong-trung-tuyen-dh.docx', fileNameSdh:'mau-qd-nhap-truong-trung-tuyen-sdh.docx' },
@@ -1494,8 +1501,8 @@ const DECISION_CATALOG = [
   { name:'Quyết định thôi học', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-thoi-hoc-dh.docx', fileNameSdh:'mau-qd-thoi-hoc-sdh.docx' },
   { name:'Quyết định xoá tên', unit:'u-ctsv', processId:null, fileNameDh:'mau-qd-xoa-ten-dh.docx', fileNameSdh:'mau-qd-xoa-ten-sdh.docx' },
   { name:'Quyết định thay đổi đơn vị đào tạo', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-thay-doi-don-vi-dao-tao-dh.docx', fileNameSdh:'mau-qd-thay-doi-don-vi-dao-tao-sdh.docx' },
-  { name:'Quyết định giao đề tài và phân công GVHD', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-giao-de-tai-phan-cong-gvhd-dh.docx', fileNameSdh:'mau-qd-giao-de-tai-phan-cong-gvhd-sdh.docx' },
-  { name:'Quyết định thay đổi đề tài', unit:'u-daotao', processId:null, fileNameDh:'mau-qd-thay-doi-de-tai-dh.docx', fileNameSdh:'mau-qd-thay-doi-de-tai-sdh.docx' },
+  { name:'Quyết định giao đề tài và phân công GVHD', unit:'u-daotao', processId:'p1', fileNameDh:'mau-qd-giao-de-tai-phan-cong-gvhd-dh.docx', fileNameSdh:'mau-qd-giao-de-tai-phan-cong-gvhd-sdh.docx' },
+  { name:'Quyết định thay đổi đề tài', unit:'u-daotao', processId:'p1', fileNameDh:'mau-qd-thay-doi-de-tai-dh.docx', fileNameSdh:'mau-qd-thay-doi-de-tai-sdh.docx' },
   { name:'Quyết định phân công giảng viên phản biện', unit:'u-daotao', processId:'p1', fileNameDh:'', fileNameSdh:'' },
   { name:'Quyết định phân công giảng viên phản biện (bảo vệ trước thời hạn)', unit:'u-daotao', processId:'p1', fileNameDh:'', fileNameSdh:'' },
 ];
@@ -2171,6 +2178,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:150px">Họ và tên</th>
     <th style="width:100px">Ngày sinh</th>
     <th style="width:80px">Lớp HC</th>
+    <th style="width:150px">Lớp học phần thực tập tốt nghiệp</th>
     <th style="width:150px">CTĐT</th>
     <th style="width:180px">Cơ sở thực tập</th>
     <th style="width:200px">Địa chỉ</th>
@@ -2216,7 +2224,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:110px">MSSV</th>
     <th style="width:150px">Họ và tên</th>
     <th style="width:80px">Lớp HC</th>
-    <th style="width:130px">Lớp học phần</th>
+    <th style="width:130px">Lớp học phần đồ án</th>
     <th style="width:150px">CTĐT</th>
     <th style="width:200px">Tên đề tài</th>
     <th style="width:150px">GVHD</th>
@@ -2225,7 +2233,7 @@ const CD_SV_THEAD_HTML = {
     <th style="width:170px">Ghi chú</th>
     <th style="width:50px"></th>`,
 };
-const CD_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:11, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };
+const CD_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:12, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };
 
 /* 2 cột cuối bảng ("Ghi chú" + nút xoá) giống hệt nhau ở cả 3 mode nên tách riêng để không lặp lại
    3 lần trong 3 nhánh render bên dưới. */
@@ -2283,6 +2291,7 @@ function renderCreateDecisionStudents(){
       <td>${s.name}</td>
       <td class="text-muted">${s.ngaySinh || ''}</td>
       <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.lopHocPhan || ''}</td>
       <td class="text-muted">${s.ctdt}</td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập cơ sở thực tập…" value="${s.cstt || ''}" onchange="setCreateDecisionStudentCstt('${s.id}', this.value)"></td>
       <td><input class="cd-sv-reason-select" type="text" placeholder="Nhập địa chỉ…" value="${s.diaChiCstt || ''}" onchange="setCreateDecisionStudentDiaChiCstt('${s.id}', this.value)"></td>
@@ -3347,7 +3356,7 @@ function pickStatusTab(status){
 
 function updateStatusTabBadges(baseList){
   document.getElementById('badge-all').textContent = baseList.length;
-  ['Nháp','Chờ duyệt','Yêu cầu chỉnh sửa','Đã duyệt','Từ chối'].forEach(s => {
+  ['Nháp','Chờ duyệt','Yêu cầu chỉnh sửa','Chờ nhập quyết định','Đã duyệt','Từ chối'].forEach(s => {
     document.getElementById('badge-' + s).textContent = baseList.filter(d => d.status === s).length;
   });
 }
@@ -3426,7 +3435,7 @@ function renderGrid(){
       <td>${userDisplayHtml(d.createdBy)}</td>
       <td class="text-muted">${d.created}</td>
       <td class="text-muted">${d.students.length}</td>
-      <td><span class="tag ${tagClass}">${d.status}</span></td>
+      <td><span class="tag ${tagClass}">${d.status === 'Đã duyệt' ? 'Đã duyệt / Đã ban hành' : d.status}</span></td>
       <td>${userDisplayHtml(d.approvedBy)}</td>
       <td onclick="event.stopPropagation()">
         <div class="tbl-actions">
@@ -3617,13 +3626,13 @@ const DDET_SV_THEAD_HTML = {
   default: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   leave: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:130px">Học kỳ bắt đầu</th><th style="width:130px">Học kỳ kết thúc</th><th style="width:170px">Phân loại lý do</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   trainingScore: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:120px">Đơn vị</th><th style="width:150px">CTĐT</th><th style="width:110px">Trạng thái hiện tại</th><th style="width:110px">ĐTB niên khoá</th><th style="width:140px">Xếp loại toàn khoá</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
-  internship: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:100px">Ngày sinh</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:180px">Cơ sở thực tập</th><th style="width:200px">Địa chỉ</th><th style="width:150px">GVHD</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  internship: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:100px">Ngày sinh</th><th style="width:80px">Lớp HC</th><th style="width:150px">Lớp học phần thực tập tốt nghiệp</th><th style="width:150px">CTĐT</th><th style="width:180px">Cơ sở thực tập</th><th style="width:200px">Địa chỉ</th><th style="width:150px">GVHD</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   topicChange: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:150px">CTĐT</th><th style="width:220px">Đề tài cũ (theo QĐ)</th><th style="width:200px">Đề tài</th><th style="width:150px">GVHD</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
   discipline: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">CTĐT</th><th style="width:190px">Loại kỷ luật</th><th style="width:110px">Năm học</th><th style="width:120px">Học kỳ bắt đầu</th><th style="width:120px">Học kỳ kết thúc</th><th style="width:170px">Lý do</th><th>Phân loại lý do</th>${DDET_SV_ACTION_TH}`,
-  reviewerAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:130px">Lớp học phần</th><th style="width:150px">CTĐT</th><th style="width:200px">Tên đề tài</th><th style="width:150px">GVHD</th><th style="width:150px">GVPB</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
+  reviewerAssignment: `${DDET_SV_CHECK_TH}<th style="width:110px">MSSV</th><th style="width:150px">Họ và tên</th><th style="width:80px">Lớp HC</th><th style="width:130px">Lớp học phần đồ án</th><th style="width:150px">CTĐT</th><th style="width:200px">Tên đề tài</th><th style="width:150px">GVHD</th><th style="width:150px">GVPB</th><th style="width:170px">Đơn vị công tác</th><th>Ghi chú</th>${DDET_SV_ACTION_TH}`,
 };
-const DDET_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:11, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };
+const DDET_SV_COL_COUNT = { default:10, leave:12, trainingScore:11, internship:12, topicAssignment:10, topicChange:11, discipline:10, reviewerAssignment:12 };
 
 /* Sửa inline 1 dòng SV ở bảng Xem — chỉ áp dụng cho field RIÊNG theo Loại quyết định (Phân loại lý
    do/Ghi chú/ĐTB.../GVHD...), KHÔNG sửa được các cột định danh (MSSV/Họ tên/Lớp/CTĐT...). Key theo
@@ -3731,6 +3740,7 @@ function renderDecisionStudents(d, query){
       <td>${s.name}</td>
       <td class="text-muted">${s.ngaySinh || ''}</td>
       <td class="text-muted">${s.lop || ''}</td>
+      <td class="text-muted">${s.lopHocPhan || ''}</td>
       <td class="text-muted">${s.ctdt || ''}</td>
       ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-cstt-${idx}" value="${s.cstt || ''}"></td>` : `<td class="text-muted">${s.cstt || ''}</td>`}
       ${isEditing ? `<td><input class="cd-sv-reason-select" type="text" id="ddet-sv-edit-diachi-${idx}" value="${s.diaChiCstt || ''}"></td>` : `<td class="text-muted">${s.diaChiCstt || ''}</td>`}
@@ -4267,6 +4277,199 @@ function submitDraftDecision(){
   showToast('Đã nộp quyết định vào quy trình duyệt.', 'ok');
   closeDecisionDetail();
   renderGrid();
+}
+
+/* ════════ CR-20261105-001 — Tạo quyết định từ màn TTTN, ĐA/KLTN ════════
+   Khối mở rộng gắn thêm: Mã đợt TT/ĐA/KL, nhận sinh viên từ màn TTTN/ĐA/KLTN, kiểm tra sinh viên
+   trong đợt và SV đã hủy khi thêm từng sinh viên, import. Danh sách đợt mô phỏng menu
+   Quản lý đợt (TT/ĐA/KL), gồm đợt đang mở và đã kết thúc. */
+const QD_TYPES_CO_MA_DOT = [TYPE_INTERNSHIP, TYPE_TOPIC_ASSIGNMENT, TYPE_TOPIC_CHANGE, TYPE_REVIEWER_ASSIGNMENT_EARLY];
+const QD_DOT_LIST = [
+  { ma:'TTTN-HK1-2526', ten:'Thực tập tốt nghiệp HK1 2025-2026', tinhTrang:'Đang mở', sv:['20120301','20120302','20120303','20120304','20120305','20120306'], huy:['20120306'] },
+  { ma:'TTTN-HK2-2425', ten:'Thực tập tốt nghiệp HK2 2024-2025', tinhTrang:'Đã kết thúc', sv:['20120307','20120308'], huy:[] },
+  { ma:'DA-HK2-2025-2026', ten:'Đồ án tốt nghiệp HK2 2025-2026', tinhTrang:'Đang mở', sv:['20120309','20120310','20120311','20120312','20120313'], huy:['20120313'] },
+  { ma:'DA-HK1-2025-2026', ten:'Đồ án tốt nghiệp HK1 2025-2026', tinhTrang:'Đã kết thúc', sv:['20120314','20120315'], huy:[] },
+  { ma:'KL-HK2-2025-2026', ten:'Khóa luận tốt nghiệp HK2 2025-2026', tinhTrang:'Đang mở', sv:['20120316','20120317','20120318'], huy:[] },
+];
+const qdDot = () => QD_DOT_LIST.find(d => d.ma === document.getElementById('cd-dot').value);
+const qdCoMaDot = type => QD_TYPES_CO_MA_DOT.includes(type);
+let qdTuManHinh = false;   // true: mở từ màn TTTN/ĐA/KLTN, Mã đợt chỉ đọc, ô Loại chỉ liệt kê loại có Mã đợt
+let qdDotTruoc = '';
+let qdChoSinh = null;     // dữ liệu màn TTTN/ĐA/KLTN gửi sang, chỉ sinh Mã đợt và bảng sinh viên sau khi chọn Loại quyết định
+
+function qdRenderDotOptions(){
+  document.getElementById('cd-dot').innerHTML = '<option value="">— Chọn đợt —</option>' + QD_DOT_LIST.map(d => `<option value="${d.ma}">${d.ma} · ${d.ten} (${d.tinhTrang})</option>`).join('');
+}
+function qdResetDot(){
+  qdRenderDotOptions();
+  const el = document.getElementById('cd-dot');
+  el.value = ''; el.disabled = false;
+  qdDotTruoc = '';
+  qdTuManHinh = false;
+  document.getElementById('cd-dot-block').style.display = 'none';
+}
+function onCdDotChange(){
+  const el = document.getElementById('cd-dot');
+  if (createDecisionStudents.length && !window.confirm('Đổi Mã đợt TT/ĐA/KL sẽ xóa các sinh viên trong bảng. Tiếp tục?')){
+    el.value = qdDotTruoc;
+    return;
+  }
+  createDecisionStudents = [];
+  cdSvSelectedIds.clear();
+  cdSvPage = 1;
+  qdDotTruoc = el.value;
+  renderCreateDecisionStudents();
+}
+
+/* Thông tin theo đợt của sinh viên (sinh viên + Mã đợt) — mở từ màn TTTN/ĐA/KLTN thì lấy đúng dữ liệu màn gửi sang */
+function qdHoSoTheoDot(s){
+  const i = parseInt(String(s.mssv).slice(-2), 10) || 0;
+  const coSo = ['FPT Software','Tập đoàn Viettel','VNPT Technology','KMS Technology'];
+  const deTai = ['Xây dựng hệ thống quản lý kho thông minh','Ứng dụng học máy trong phân tích dữ liệu bán hàng','Hệ thống chatbot hỗ trợ tư vấn tuyển sinh'];
+  const gv = ['TS. Nguyễn Minh Tuấn','TS. Lê Thị Mai','PGS.TS. Trần Văn Hùng'];
+  const dot = qdDot();
+  return { lopHocPhan:(dot ? dot.ma.split('-')[0] : '') + '.D22.0' + (i % 3 + 1), cstt:coSo[i % 4], diaChiCstt:'Cầu Giấy, Hà Nội', gvhd:gv[i % 3], tenDeTai:deTai[i % 3], gvhdDeTai:gv[i % 3], donViCongTac:'Khoa CNTT', gvpb:'' };
+}
+function qdFillTheoDot(s){
+  if (!qdCoMaDot(document.getElementById('cd-type').value)) return;
+  const v = s.qdDuLieuManHinh || qdHoSoTheoDot(s);
+  Object.keys(v).forEach(k => { if (!s[k] || k === 'lopHocPhan') s[k] = v[k]; });
+}
+
+const _qdTypeChange = onCreateDecisionTypeChange;
+onCreateDecisionTypeChange = function(){
+  _qdTypeChange();
+  const type = document.getElementById('cd-type').value;
+  document.getElementById('cd-dot-block').style.display = qdCoMaDot(type) ? '' : 'none';
+  document.getElementById('cd-reviewer-assignment-fields-block').style.display = 'none';
+  if (qdChoSinh && qdCoMaDot(type)) qdSinhDuLieuTuManHinh();
+  if (type === TYPE_TOPIC_CHANGE && qdDot()) document.getElementById('cd-topic-change-dothuongdan').value = qdDot().ma;
+  createDecisionStudents.forEach(qdFillTheoDot);
+  renderCreateDecisionStudents();
+};
+
+function qdSinhDuLieuTuManHinh(){
+  const { ma, nguon, ds } = qdChoSinh;
+  qdChoSinh = null;
+  if (!QD_DOT_LIST.some(d => d.ma === ma)) QD_DOT_LIST.push({ ma, ten:'Đợt từ màn ' + nguon, tinhTrang:'Đang mở', sv:[], huy:[] });
+  const dot = QD_DOT_LIST.find(d => d.ma === ma);
+  qdRenderDotOptions();
+  const el = document.getElementById('cd-dot');
+  el.value = ma; el.disabled = true;
+  qdDotTruoc = ma;
+  // Thêm sinh viên khi ô Loại tạm trống để không chạy nhánh riêng theo loại, thông tin đợt lấy từ dữ liệu màn gửi sang
+  const typeEl = document.getElementById('cd-type');
+  const type = typeEl.value;
+  typeEl.value = '';
+  ds.forEach(x => {
+    const id = 'qd-' + x.mssv;
+    if (!dot.sv.includes(x.mssv)) dot.sv.push(x.mssv);
+    const base = STUDENT_DIRECTORY.find(d => d.mssv === x.mssv) || { id, mssv:x.mssv, name:x.name, ctdt:x.ctdt, ctdtCode:x.ctdt, lop:'', ngaySinh:'', donViQuanLy:'', nganh:x.ctdt, status:'danghoc' };
+    if (!STUDENT_DIRECTORY.includes(base)) STUDENT_DIRECTORY.push(base);
+    _qdAdd(base.id);
+    const row = createDecisionStudents.find(r => r.id === base.id);
+    if (row) row.qdDuLieuManHinh = x;
+  });
+  typeEl.value = type;
+}
+
+const _qdTypeMenu = renderCdTypeMenu;
+renderCdTypeMenu = function(query){
+  if (!qdTuManHinh) return _qdTypeMenu(query);
+  const q = (query || '').trim();
+  const matches = QD_TYPES_CO_MA_DOT.filter(n => n.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('cd-type-menu').innerHTML = matches.length
+    ? matches.map(n => `<div class="unit-combo-item" onclick="pickCdType('${n}')">${highlightMatch(n, q)}</div>`).join('')
+    : `<div class="unit-combo-empty">Không tìm thấy loại quyết định nào khớp "${q}"</div>`;
+};
+
+const _qdOpenNew = openCreateDecisionNew;
+openCreateDecisionNew = function(){
+  _qdOpenNew();
+  qdResetDot();
+};
+
+function qdLoiSinhVien(mssv){
+  const dot = qdDot();
+  if (!dot) return 'Vui lòng chọn Mã đợt TT/ĐA/KL trước khi thêm sinh viên';
+  if (!dot.sv.includes(mssv)) return `Sinh viên ${mssv} không có trong đợt ${dot.ma}`;
+  if (dot.huy.includes(mssv)) return `Sinh viên ${mssv} đã hủy, không được vào quyết định`;
+  return '';
+}
+const _qdAdd = addCreateDecisionStudent;
+addCreateDecisionStudent = function(id){
+  const type = document.getElementById('cd-type').value;
+  if (qdChoSinh){ showToast('Vui lòng chọn Loại quyết định trước', 'err'); return; }
+  const found = STUDENT_DIRECTORY.find(x => x.id === id);
+  if (found && qdCoMaDot(type)){
+    const loi = qdLoiSinhVien(found.mssv);
+    if (loi){ showToast(loi, 'err'); return; }
+  }
+  _qdAdd(id);
+  const added = createDecisionStudents.find(x => x.id === id);
+  if (added){ qdFillTheoDot(added); renderCreateDecisionStudents(); }
+};
+
+/* Import: dòng sinh viên ngoài đợt hoặc đã hủy là dòng lỗi, không import được */
+IMPORT_STATUS_LABEL.notInDot = 'Không có trong đợt';
+IMPORT_STATUS_LABEL.svHuy = 'SV đã hủy';
+const _qdPreviewFile = previewImportFile;
+previewImportFile = function(file){
+  if (qdChoSinh){
+    showToast('Vui lòng chọn Loại quyết định trước', 'err');
+    document.getElementById('cd-sv-import-file').value = '';
+    document.getElementById('cd-import-filepick').classList.remove('has-file');
+    return;
+  }
+  if (qdCoMaDot(document.getElementById('cd-type').value) && !qdDot()){
+    showToast('Vui lòng chọn Mã đợt TT/ĐA/KL trước khi import', 'err');
+    document.getElementById('cd-sv-import-file').value = '';
+    document.getElementById('cd-import-filepick').classList.remove('has-file');
+    return;
+  }
+  return _qdPreviewFile(file);
+};
+const _qdRenderPreview = renderImportPreview;
+renderImportPreview = function(){
+  if (qdCoMaDot(document.getElementById('cd-type').value) && qdDot()){
+    importPreviewRows.forEach(r => {
+      if (r.status !== 'valid') return;
+      if (!qdDot().sv.includes(r.mssv)){ r.status = 'notInDot'; r.selected = false; }
+      else if (qdDot().huy.includes(r.mssv)){ r.status = 'svHuy'; r.selected = false; }
+    });
+  }
+  _qdRenderPreview();
+};
+
+/* Bắt buộc có Mã đợt và quy trình duyệt khi nộp */
+const _qdSubmit = submitCreateDecision;
+submitCreateDecision = function(isDraft){
+  const type = document.getElementById('cd-type').value;
+  if (!isDraft && qdCoMaDot(type)){
+    if (!qdDot()){ showToast('Vui lòng chọn Mã đợt TT/ĐA/KL', 'err'); return; }
+    const cat = decisionCatalogByName(type);
+    if (!cat || !cat.processId){ showToast('Loại quyết định chưa cấu hình quy trình duyệt', 'err'); return; }
+  }
+  return _qdSubmit(isDraft);
+};
+
+qdRenderDotOptions();
+
+/* Mở từ màn TTTN, ĐA/KLTN: ?qd_nguon=&qd_dot=&qd_sv=[...] */
+(function(){
+  const p = new URLSearchParams(location.search);
+  if (!p.get('qd_sv')) return;
+  let ds = [];
+  try { ds = JSON.parse(p.get('qd_sv')); } catch(e) { showToast('Không đọc được danh sách sinh viên gửi sang', 'err'); return; }
+  openCreateDecisionNew();
+  qdTuManHinh = true;
+  qdChoSinh = { ma:p.get('qd_dot') || '', nguon:p.get('qd_nguon') || '', ds };
+})();
+
+/* Dữ liệu mẫu tab Chờ nhập quyết định */
+if (!DECISION_INSTANCES.some(d => d.status === 'Chờ nhập quyết định')){
+  const mau = DECISION_INSTANCES.find(d => d.id === 'i18');
+  if (mau){ DECISION_INSTANCES.push({ ...mau, id:'i-qd-cho-nhap', code:'', status:'Chờ nhập quyết định', effectiveDate:'' }); renderGrid(); }
 }
 </script>
 </body>

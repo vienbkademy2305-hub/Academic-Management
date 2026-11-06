@@ -1432,5 +1432,218 @@ function filterSourcePreview(q){
 
 renderAll();
 </script>
+<!-- CRDAKL-START -->
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CR-20261104-001 — Trường ĐA/KLTN cho biểu mẫu M05 / M06 / Bảo vệ sớm (US-DAKL-11, 12)
+     Khối mở rộng gắn thêm, KHÔNG sửa code gốc phía trên:
+       - Menu + Thêm field: cán bộ chọn từng trường ĐA/KLTN, cấu hình như field thường
+       - Trường de_tai_moi.*: tự điền hay để sinh viên nhập theo Nguồn đề tài
+     ═══════════════════════════════════════════════════════════════════════ -->
+<style>
+  .dk-sub{border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12.5px;background:#fff}
+  .dk-sub-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:500}
+  .dk-sub code{font-size:11.5px;color:var(--primary)}
+  .dk-sub-row{color:var(--text-2);margin-top:3px;line-height:1.45}
+  .dk-sub-row b{font-weight:500;color:var(--text-3)}
+  .dk-req{display:inline-flex;align-items:center;gap:4px;font-weight:400;font-size:12px;white-space:nowrap}
+  .dk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dk-grid .wide{grid-column:1/-1}
+  .dk-grid label{display:block;font-size:12.5px;margin-bottom:4px;color:var(--text-2)}
+  .dk-ro{background:#fafafa !important;cursor:default}
+  .dk-radio{display:flex;gap:16px;margin-bottom:10px;font-size:13px}
+  .dk-radio label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .dk-pick{cursor:pointer}
+  .dk-pick.off{opacity:.55;cursor:not-allowed}
+  .dk-note{background:#f0f7ff;border:1px dashed #91caff;border-radius:6px;padding:8px 10px;font-size:12.5px;margin-bottom:12px;line-height:1.5}
+</style>
+<script>
+(function(){
+  TYPE_META.file = { label:'Tệp đính kèm', ico:'📎' };
+  // Nguồn danh sách dùng cho các trường chọn (mô phỏng danh mục hệ thống)
+  Object.assign(SYSTEM_SOURCES, {
+    dot_dakl:{ label:'Đợt ĐA/KLTN của sinh viên', fieldCode:'dropdotdakl', options:[{ code:'DA-HK2-2025-2026', vi:'Đồ án tốt nghiệp HK2 2025-2026' }, { code:'KL-HK2-2025-2026', vi:'Khóa luận tốt nghiệp HK2 2025-2026' }] },
+    so_qd_dakl:{ label:'Quyết định của sinh viên (theo Đợt + Loại)', fieldCode:'dropsoqd', options:[{ code:'1402/QĐ-ĐHP-ĐT', vi:'1402/QĐ-ĐHP-ĐT · 05/03/2026' }, { code:'1235/QĐ-ĐHP-ĐT', vi:'1235/QĐ-ĐHP-ĐT · 20/02/2026' }] },
+    dot_tttn:{ label:'Đợt TT/ĐAKL của sinh viên', fieldCode:'dropdottttn', options:[{ code:'TTTN_2526_K1', vi:'TTTN HK1 2025-2026' }, { code:'TTTN_2425_K2', vi:'TTTN HK2 2024-2025' }] },
+    so_qd_tttn:{ label:'Quyết định cử đi thực tập của sinh viên', fieldCode:'dropsoqdtt', options:[{ code:'1015/QĐ-ĐHP-ĐT', vi:'1015/QĐ-ĐHP-ĐT · 25/08/2025 · FPT Software' }] },
+    loai_qd_tttn:{ label:'Loại quyết định TTTN', fieldCode:'droploaiqdtt', options:[{ code:'CDTT', vi:'Cử đi thực tập' }] },
+    dn_doi_tac:{ label:'Doanh nghiệp đối tác', fieldCode:'dropdn', options:[{ code:'DN01', vi:'Tập đoàn FPT Telecom' }, { code:'DN02', vi:'Viettel IDC' }, { code:'DN03', vi:'Samsung SDS Việt Nam' }] },
+    tinh_tp:{ label:'Tỉnh/Thành phố', fieldCode:'droptinh', options:[{ code:'HN', vi:'Hà Nội' }, { code:'HCM', vi:'TP. Hồ Chí Minh' }, { code:'DN', vi:'Đà Nẵng' }] },
+    phuong_xa:{ label:'Phường/Xã (lọc theo Tỉnh/TP)', fieldCode:'dropphuong', options:[{ code:'MD', vi:'Mỹ Đình' }, { code:'DVH', vi:'Dịch Vọng Hậu' }, { code:'CG', vi:'Cầu Giấy' }] },
+    linh_vuc:{ label:'Lĩnh vực đề tài', fieldCode:'droplinhvuc', options:['Phát triển phần mềm','Trí tuệ nhân tạo & Dữ liệu','Hệ thống thông tin & IoT','An toàn thông tin','Mạng & Hạ tầng'].map((vi, i) => ({ code:'LV0' + (i + 1), vi })) },
+  });
+  const TOPICS = [
+    { ma:'DT-2026-0004', ten:'Xây dựng hệ thống phân tích log và phát hiện xâm nhập mạng bằng AI', gv:'TS. Nguyễn Minh Tuấn', sl:'0/1', ctdt:'KTPM – Kỹ thuật phần mềm', loai:'Đồ án tốt nghiệp', linh_vuc:'An toàn thông tin', tom_tat:'Thu thập, phân tích log hệ thống và dùng mô hình AI phát hiện hành vi xâm nhập bất thường.', san_pham:'Hệ thống phân tích log + mô hình phát hiện xâm nhập + báo cáo đánh giá.', cong_nghe:'Python, ELK Stack, Scikit-learn', tai_lieu:'DeCuong_PhanTichLog.pdf' },
+    { ma:'DT-2026-0011', ten:'Xây dựng chatbot hỗ trợ tư vấn tuyển sinh bằng mô hình ngôn ngữ', gv:'ThS. Lê Thu Hoa', sl:'0/1', ctdt:'KTPM – Kỹ thuật phần mềm', loai:'Đồ án tốt nghiệp', linh_vuc:'Trí tuệ nhân tạo & Dữ liệu', tom_tat:'Xây dựng chatbot trả lời câu hỏi tuyển sinh dựa trên tài liệu của trường.', san_pham:'Chatbot trên web + bộ dữ liệu hỏi đáp + báo cáo đánh giá.', cong_nghe:'Python, LangChain, React', tai_lieu:'DeCuong_Chatbot.pdf' },
+    { ma:'DT-2026-0012', ten:'Phân tích cảm xúc phản hồi sinh viên trên mạng xã hội', gv:'TS. Nguyễn Minh Tuấn', sl:'2/2', full:true },
+  ];
+  const ch = (mode, sourceKey, manual) => ({ mode, sourceKey, manualOptions:manual || [], sourceOverrides:sourceKey ? buildDefaultOverrides(sourceKey) : {} });
+  // Mỗi trường là 1 mục riêng trong menu: cán bộ tự chọn thêm từng trường, cấu hình như field thường
+  const GROUPS = [
+    { pre:'Chung', ten:'Thông tin sinh viên', items:[
+      { key:'khoa', code:'khoa', label:'Khoa', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'Khoa Công nghệ Thông tin' },
+      { key:'ho_ten', code:'ho_ten', label:'Họ và tên', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'Nguyễn Văn An' },
+      { key:'ngay_sinh', code:'ngay_sinh', label:'Ngày sinh', type:'date', ref:'Tham chiếu: hồ sơ sinh viên', mau:'15/03/2004' },
+      { key:'ma_sv', code:'ma_sv', label:'Mã sinh viên', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'B22DCCN001' },
+      { key:'lop', code:'lop', label:'Lớp', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'D22CQCN01-B' },
+      { key:'khoa_hoc', code:'khoa_hoc', label:'Khóa', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'2022-2026' },
+      { key:'nganh', code:'nganh', label:'Ngành học', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'Kỹ thuật phần mềm' },
+      { key:'dien_thoai', code:'dien_thoai', label:'Điện thoại', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'0912 000 001' },
+      { key:'email', code:'email', label:'Email', type:'text', ref:'Tham chiếu: hồ sơ sinh viên', mau:'an.nv@stu.phenikaa-uni.edu.vn' },
+    ]},
+    { pre:'Chung', ten:'Nội dung đơn', items:[
+      { key:'ly_do', code:'ly_do', label:'Lý do', type:'textarea', note:'Sinh viên nhập. Cán bộ đặt lại nhãn theo từng đơn (vd Lý do xin gia hạn, Lý do xin bảo vệ sớm).' },
+      { key:'ngay_lam_don', code:'ngay_lam_don', label:'Ngày làm đơn', type:'date', ref:'Hệ thống: ngày nộp đơn', mau:'04/11/2026' },
+    ]},
+    { pre:'ĐA/KLTN', ten:'Đợt và quyết định', items:[
+      { key:'dot', code:'dot', label:'Đợt ĐA/KLTN', type:'select1', ...ch('system', 'dot_dakl'), note:'Sinh viên chọn; tự điền nếu bấm từ dòng đợt. Node cập nhật hồ sơ và "GVHD của sinh viên" dùng trường này.' },
+      { key:'loai_qd', code:'loai_qd', label:'Loại quyết định', type:'select1', ...ch('system', 'loaiqd'), note:'Chỉ hiện loại sinh viên đã có quyết định trong đợt; chọn sẵn loại của quyết định mới nhất.' },
+      { key:'so_qd', code:'so_qd', label:'Số quyết định (chọn theo đợt)', type:'select1', ...ch('system', 'so_qd_dakl'), note:'Lọc theo Đợt + Loại quyết định; chọn sẵn quyết định mới nhất.' },
+      { key:'ngay_qd', code:'ngay_qd', label:'Ngày quyết định (tự điền)', type:'date', ref:'Tham chiếu: so_qd › Ngày', mau:'05/03/2026' },
+    ]},
+    { pre:'ĐA/KLTN', ten:'Thông tin đề tài hiện tại', items:[
+      { key:'ten_de_tai', code:'ten_de_tai', label:'Tên đề tài', type:'text', ref:'Tham chiếu: dot › Đề tài hiện tại › Tên (dùng cho đơn gia hạn, bảo vệ sớm)', mau:'DT-2026-0009 — Xây dựng hệ thống chatbot hỗ trợ tư vấn tuyển sinh bằng NLP' },
+      { key:'ten_de_tai_hien_tai', code:'ten_de_tai_hien_tai', label:'Tên đề tài theo Quyết định', type:'text', ref:'Tham chiếu: dot › Đề tài hiện tại › Tên', mau:'DT-2026-0009 — Xây dựng hệ thống chatbot hỗ trợ tư vấn tuyển sinh bằng NLP' },
+      { key:'gvhd', code:'gvhd', label:'Giảng viên hướng dẫn', type:'text', ref:'Tham chiếu: dot › GVHD (liệt kê tất cả GV, GV chính đứng đầu)', mau:'TS. Nguyễn Minh Tuấn; ThS. Lê Thu Hoa (đồng HD)' },
+      { key:'ngay_bat_dau', code:'ngay_bat_dau', label:'Ngày bắt đầu làm ĐAKLTN', type:'date', ref:'Tham chiếu: dot › Ngày bắt đầu (theo Lớp học phần)', mau:'02/03/2026' },
+      { key:'ngay_ket_thuc', code:'ngay_ket_thuc', label:'Ngày kết thúc làm ĐAKLTN', type:'date', ref:'Tham chiếu: dot › Ngày kết thúc (theo Lớp học phần, đã tính gia hạn)', mau:'14/06/2026' },
+    ]},
+    { pre:'ĐA/KLTN', ten:'Đề tài đề nghị', items:[
+      { key:'nguon', code:'de_tai_moi.nguon', label:'Nguồn đề tài', type:'select1', ...ch('manual', '', [{ value:'gv', vi:'Đề tài giảng viên', en:'' }, { value:'sv', vi:'Sinh viên tự đề xuất', en:'' }]), note:'Hiển thị dạng radio. Quyết định các trường đề tài bên dưới tự điền hay để sinh viên nhập; node Cập nhật đề tài ĐAKLTN rẽ nhánh theo trường này.' },
+      { key:'ma', code:'de_tai_moi.ma', label:'Mã đề tài', type:'text', dt:true, note:'Đề tài giảng viên: bảng chọn đề tài của các GVHD của sinh viên. Sinh viên tự đề xuất: hệ thống sinh SV-ĐT-…, giữ nguyên khi duyệt.' },
+      { key:'ctdt', code:'de_tai_moi.ctdt', label:'Chương trình đào tạo', type:'text', dt:true, note:'Đề tài giảng viên: tự điền theo đề tài đã chọn. Sinh viên tự đề xuất: tự điền theo sinh viên. Chỉ đọc.' },
+      { key:'loai', code:'de_tai_moi.loai', label:'Loại đề tài', type:'text', dt:true, note:'Loại hình (Đồ án / Khóa luận…). Đề tài giảng viên: tự điền theo đề tài đã chọn. Sinh viên tự đề xuất: tự điền theo đợt. Chỉ đọc.' },
+      { key:'linh_vuc', code:'de_tai_moi.linh_vuc', label:'Lĩnh vực', type:'select1', dt:true, ...ch('system', 'linh_vuc'), note:'Đề tài giảng viên: tự điền, chỉ đọc. Sinh viên tự đề xuất: sinh viên chọn.' },
+      { key:'ten', code:'de_tai_moi.ten', label:'Tên đề tài đề nghị', type:'text', dt:true, note:'Biến dùng trong đơn M05. Đề tài giảng viên: tên đề tài đã chọn, chỉ đọc. Sinh viên tự đề xuất: sinh viên nhập.' },
+      { key:'tom_tat', code:'de_tai_moi.tom_tat', label:'Tóm tắt đề tài', type:'textarea', dt:true, note:'Đề tài giảng viên: tự điền, chỉ đọc. Sinh viên tự đề xuất: sinh viên nhập.' },
+      { key:'san_pham', code:'de_tai_moi.san_pham', label:'Sản phẩm / Kết quả dự kiến', type:'textarea', dt:true, note:'Đề tài giảng viên: tự điền, chỉ đọc. Sinh viên tự đề xuất: sinh viên nhập.' },
+      { key:'cong_nghe', code:'de_tai_moi.cong_nghe', label:'Công nghệ / Công cụ dự kiến', type:'text', dt:true, required:false, note:'Đề tài giảng viên: tự điền, chỉ đọc. Sinh viên tự đề xuất: sinh viên nhập.' },
+      { key:'tai_lieu', code:'de_tai_moi.tai_lieu', label:'Tài liệu đính kèm', type:'file', dt:true, required:false, note:'PDF/Word ≤ 5MB. Đề tài giảng viên: tự điền, chỉ xem / tải. Sinh viên tự đề xuất: sinh viên đính kèm.' },
+    ]},
+    { pre:'ĐA/KLTN', ten:'Gia hạn / Bảo vệ sớm', items:[
+      { key:'ngay_kt_hien_tai', code:'ngay_kt_hien_tai', label:'Thời gian gia hạn từ (Ngày kết thúc hiện tại)', type:'date', ref:'Tham chiếu: dot › Ngày kết thúc (theo Lớp học phần, đã tính gia hạn)', mau:'14/06/2026' },
+      { key:'ngay_kt_de_nghi', code:'ngay_kt_de_nghi', label:'Thời gian gia hạn đến', type:'date', note:'Sinh viên chọn: sau ngày kết thúc hiện tại và không quá 28 ngày. Node Cập nhật ngày kết thúc ĐAKLTN dùng trường này.' },
+      { key:'minh_chung', code:'minh_chung', label:'Minh chứng', type:'file', note:'PDF/Word ≤ 5MB. Bắt buộc hay không do cán bộ bật ở bên dưới.' },
+    ]},
+    { pre:'TTTN', ten:'Đợt và quyết định', items:[
+      { key:'tt_dot', code:'dot', label:'Đợt TT/ĐAKL', type:'select1', ...ch('system', 'dot_tttn'), note:'Sinh viên chọn; tự điền nếu bấm ⏰ / 🔄 từ dòng đợt. Node cập nhật hồ sơ thực tập và "GVHD của sinh viên" dùng trường này.' },
+      { key:'tt_loai_qd', code:'loai_qd', label:'Loại quyết định', type:'select1', ...ch('system', 'loai_qd_tttn'), note:'Chỉ hiện loại PĐT cho phép mà sinh viên có quyết định trong đợt; chọn sẵn loại của quyết định mới nhất.' },
+      { key:'tt_so_qd', code:'so_qd', label:'Số quyết định', type:'select1', ...ch('system', 'so_qd_tttn'), note:'Lọc theo Đợt + Loại quyết định; mỗi dòng ghi số · ngày · cơ sở; chọn sẵn quyết định mới nhất.' },
+      { key:'tt_ngay_qd', code:'ngay_qd', label:'Ngày quyết định', type:'date', ref:'Tham chiếu: so_qd › Ngày', mau:'25/08/2025' },
+    ]},
+    { pre:'TTTN', ten:'Hồ sơ thực tập', items:[
+      { key:'tt_co_so_tt', code:'co_so_tt', label:'Cơ sở thực tập', type:'text', ref:'Tham chiếu: dot › Cơ sở thực tập hiện tại', mau:'FPT Software' },
+      { key:'tt_gvhd', code:'gvhd', label:'Giảng viên hướng dẫn', type:'text', ref:'Tham chiếu: dot › GVHD', mau:'TS. Nguyễn Minh Tuấn' },
+      { key:'tt_co_so_hien_tai', code:'co_so_hien_tai', label:'Cơ sở thực tập hiện tại', type:'text', ref:'Tham chiếu: dot › Cơ sở thực tập hiện tại', mau:'FPT Software' },
+      { key:'tt_dia_chi_hien_tai', code:'dia_chi_co_so_hien_tai', label:'Địa chỉ cơ sở hiện tại', type:'text', ref:'Tham chiếu: dot › Cơ sở thực tập hiện tại › Địa chỉ', mau:'Tòa nhà FPT, Phố Duy Tân, Dịch Vọng Hậu, Hà Nội' },
+      { key:'tt_ngay_bat_dau', code:'ngay_bat_dau', label:'Thời gian từ ngày (Ngày bắt đầu thực tập)', type:'date', ref:'Tham chiếu: dot › Ngày bắt đầu. Node Kiểm tra thời gian nộp dùng trường này (đổi cơ sở)', mau:'01/09/2025' },
+      { key:'tt_ngay_ket_thuc', code:'ngay_ket_thuc', label:'đến ngày (Ngày kết thúc thực tập)', type:'date', ref:'Tham chiếu: dot › Ngày kết thúc (đã tính gia hạn)', mau:'31/12/2025' },
+    ]},
+    { pre:'TTTN', ten:'Gia hạn', items:[
+      { key:'tt_ngay_kt_hien_tai', code:'ngay_kt_hien_tai', label:'Gia hạn từ (Ngày kết thúc hiện tại)', type:'date', ref:'Tham chiếu: dot › Ngày kết thúc (đã tính gia hạn). Node Kiểm tra thời gian nộp dùng trường này', mau:'31/12/2025' },
+      { key:'tt_ngay_kt_de_nghi', code:'ngay_kt_de_nghi', label:'Gia hạn đến', type:'date', note:'Sinh viên chọn: sau ngày kết thúc hiện tại và không quá 28 ngày. Node Cập nhật ngày kết thúc thực tập dùng trường này.' },
+      { key:'tt_minh_chung', code:'minh_chung', label:'Minh chứng', type:'file', note:'PDF/Word ≤ 5MB. Bắt buộc hay không do cán bộ bật ở bên dưới.' },
+    ]},
+    { pre:'TTTN', ten:'Cơ sở thực tập mới', items:[
+      { key:'cs_loai', code:'co_so_moi.loai', label:'Loại cơ sở thực tập', type:'select1', ...ch('manual', '', [{ value:'dn', vi:'Doanh nghiệp đối tác', en:'' }, { value:'khac', vi:'Khác', en:'' }]), note:'Hiển thị dạng radio. Quyết định các trường cơ sở mới tự điền theo danh mục hay để sinh viên nhập; đổi loại thì xóa trắng.' },
+      { key:'cs_dn', code:'co_so_moi.doanh_nghiep', label:'Doanh nghiệp đối tác', type:'select1', cs:true, ...ch('system', 'dn_doi_tac'), note:'Doanh nghiệp đối tác: sinh viên chọn. Khác: ẩn.' },
+      { key:'cs_ten', code:'co_so_moi.ten', label:'Tên cơ sở thực tập', type:'text', cs:true, mau:'Tập đoàn FPT Telecom', note:'Biến dùng trong đơn M04. Doanh nghiệp đối tác: tự điền, chỉ đọc. Khác: sinh viên nhập; phải khác cơ sở hiện tại.' },
+      { key:'cs_tinh', code:'co_so_moi.tinh', label:'Tỉnh/Thành phố', type:'select1', cs:true, mau:'Hà Nội', ...ch('system', 'tinh_tp'), note:'Doanh nghiệp đối tác: tự điền, chỉ đọc. Khác: sinh viên chọn.' },
+      { key:'cs_phuong', code:'co_so_moi.phuong', label:'Phường/Xã', type:'select1', cs:true, mau:'Mỹ Đình', ...ch('system', 'phuong_xa'), note:'Lọc theo Tỉnh/TP. Doanh nghiệp đối tác: tự điền, chỉ đọc. Khác: sinh viên chọn.' },
+      { key:'cs_dia_chi_ct', code:'co_so_moi.dia_chi_chi_tiet', label:'Địa chỉ', type:'text', cs:true, required:false, mau:'Số 89 Phạm Hùng', note:'Doanh nghiệp đối tác: tự điền, chỉ đọc. Khác: sinh viên nhập.' },
+      { key:'cs_dia_chi', code:'co_so_moi.dia_chi', label:'Địa chỉ đầy đủ', type:'text', required:false, ref:'Hệ thống ghép Địa chỉ, Phường/Xã, Tỉnh/TP; biến dùng trong đơn M04', mau:'Số 89 Phạm Hùng, Mỹ Đình, Hà Nội' },
+      { key:'cs_lien_he', code:'co_so_moi.nguoi_lien_he', label:'Người liên hệ', type:'text', cs:true, required:false, mau:'Nguyễn Thị Lan (HR)', note:'Doanh nghiệp đối tác: tự điền, chỉ đọc. Khác: sinh viên nhập.' },
+      { key:'don_da_ky', code:'don_da_ky', label:'Đơn đã có xác nhận của cơ sở cũ / cơ sở mới', type:'file', note:'Sinh viên tải đơn đã điền, xin chữ ký, scan rồi đính kèm.' },
+    ]},
+  ];
+  const ITEMS = Object.fromEntries(GROUPS.flatMap(g => g.items.map(i => ({ ...i, pre:g.pre }))).map(i => [i.key, i]));
+
+  let nguon = 'gv', pick = null, csLoai = 'dn';
+  // Trường cùng mã (vd dot, so_qd của TTTN và ĐA/KLTN) chỉ thêm được 1 lần trên 1 biểu mẫu
+  const has = key => fields.some(f => f.code === ITEMS[key].code);
+  const curNguon = () => has('nguon') ? nguon : 'gv';
+
+  // ---------- Menu + Thêm field: từng trường một, thêm rồi thì ẩn ----------
+  const _menu = renderAddFieldMenuSystem;
+  renderAddFieldMenuSystem = function(){
+    _menu();
+    document.getElementById('add-field-menu-system').insertAdjacentHTML('beforeend', GROUPS.map(g => {
+      const left = g.items.filter(i => !has(i.key));
+      return left.length ? `<div class="add-field-menu-group">${esc(g.pre)} · ${esc(g.ten)}</div>${left.map(i => `<div class="add-field-menu-item" onclick="CRD25.add('${i.key}')">${esc(i.label)}</div>`).join('')}` : '';
+    }).join(''));
+  };
+
+  // ---------- Mặt biểu mẫu ----------
+  const ro = v => `<input class="fc dk-ro" readonly value="${esc(v == null || v === '' ? '—' : v)}">`;
+  const roTa = v => `<textarea class="fc dk-ro" readonly style="height:60px;resize:none">${esc(v || '—')}</textarea>`;
+  function topicTable(){
+    return `<div class="tbl-wrap" style="margin-bottom:6px"><table class="tbl"><thead><tr><th></th><th>Mã đề tài</th><th>Tên đề tài</th><th>GVHD</th><th>SL</th></tr></thead><tbody>
+      ${TOPICS.map(x => `<tr class="dk-pick ${x.full ? 'off' : ''}" onclick="${x.full ? '' : `CRD25.pick('${x.ma}')`}"><td><input type="radio" ${pick === x.ma ? 'checked' : ''} ${x.full ? 'disabled' : ''}></td><td>${esc(x.ma)}</td><td>${esc(x.ten)}${x.full ? ' <span class="tag tag-error" style="font-size:11px">Đã đủ SV</span>' : ''}</td><td>${esc(x.gv)}</td><td>${x.sl}</td></tr>`).join('')}
+    </tbody></table></div><div class="f-hint">Chỉ gồm đề tài của các GVHD của sinh viên.</div>`;
+  }
+  function bodyOf(f){
+    const it = ITEMS[f.dakl];
+    if(it.key === 'nguon') return `<div class="dk-radio">
+      <label><input type="radio" name="dk-nguon" ${curNguon() === 'gv' ? 'checked' : ''} onclick="CRD25.setNguon('gv')"> ${esc((f.manualOptions[0] || {}).vi || NGUON_MAC_DINH[0])}</label>
+      <label><input type="radio" name="dk-nguon" ${curNguon() === 'sv' ? 'checked' : ''} onclick="CRD25.setNguon('sv')"> ${esc((f.manualOptions[1] || {}).vi || NGUON_MAC_DINH[1])}</label></div>`;
+    if(it.key === 'cs_loai') return `<div class="dk-radio">
+      <label><input type="radio" name="dk-csloai" ${csLoai === 'dn' ? 'checked' : ''} onclick="CRD25.setCs('dn')"> ${esc((f.manualOptions[0] || {}).vi || 'Doanh nghiệp đối tác')}</label>
+      <label><input type="radio" name="dk-csloai" ${csLoai === 'khac' ? 'checked' : ''} onclick="CRD25.setCs('khac')"> ${esc((f.manualOptions[1] || {}).vi || 'Khác')}</label></div>`;
+    if(it.cs){
+      const dn = !fields.some(x => x.dakl === 'cs_loai') || csLoai === 'dn';
+      if(it.key === 'cs_dn') return dn ? null : `<div class="text-muted text-sm">Ẩn khi Loại cơ sở = Khác.</div>`;
+      if(dn) return ro(it.mau);
+    }
+    if(it.ref) return ro(it.mau) + `<div class="f-hint" style="margin-top:6px">Tự điền, chỉ đọc · ${esc(it.ref)}</div>`;
+    if(it.dt){
+      const gv = curNguon() === 'gv', t = TOPICS.find(x => x.ma === pick) || {};
+      if(it.key === 'ma') return gv ? topicTable() : ro('SV-ĐT-2026-867');
+      if(it.key === 'ctdt') return ro(gv ? t.ctdt : 'KTPM – Kỹ thuật phần mềm');
+      if(it.key === 'loai') return ro(gv ? t.loai : 'Đồ án tốt nghiệp');
+      if(gv) return it.type === 'textarea' ? roTa(t[it.key]) : ro(t[it.key]);
+    }
+    if(f.type === 'file') return `<input class="fc" type="file" style="padding:5px 10px">`;
+    return null;   // còn lại: dùng control mặc định theo kiểu field
+  }
+  const NGUON_MAC_DINH = ['Đề tài giảng viên', 'Sinh viên tự đề xuất'];
+  const _preview = renderPreview;
+  renderPreview = function(){
+    _preview();
+    const nodes = document.querySelectorAll('#fb-preview-list .fb-preview-field');
+    fields.forEach((f, i) => {
+      if(!f.dakl) return;
+      nodes[i].querySelectorAll('input:disabled,textarea:disabled').forEach(e => { e.disabled = false; });
+      const body = bodyOf(f);
+      if(body !== null) nodes[i].innerHTML = nodes[i].querySelector('.fb-preview-label').outerHTML + body;
+    });
+  };
+
+  // ---------- Cột cấu hình: cấu hình chuẩn của field + ghi chú nguồn dữ liệu ----------
+  const _content = renderContentTab;
+  renderContentTab = function(f){
+    if(!f.dakl) return _content(f);
+    const it = ITEMS[f.dakl];
+    return `<div class="dk-note"><b>Trường ${esc(it.pre)}</b> · mã biến <code>{${esc(f.code)}}</code>.<br>${esc(it.ref || it.note || '')}</div>` + _content(f);
+  };
+
+  window.CRD25 = {
+    add(key){
+      if(has(key)) return;
+      const it = ITEMS[key], id = ++uid;
+      fields.push({ id, type:it.type, label:it.label.replace(/ \((chọn theo đợt|tự điền)\)$/, ''), labelEn:'', placeholderVi:'', placeholderEn:'', required:it.required !== false,
+        mode:it.mode || '', sourceKey:it.sourceKey || '', manualOptions:(it.manualOptions || []).map(o => ({ ...o })), sourceOverrides:it.sourceOverrides || {},
+        code:it.code, dakl:key, format:it.type === 'date' ? 'dmy' : '' });
+      selectedId = id; panelTab = 'content';
+      document.getElementById('add-field-menu').classList.remove('open');
+      renderAll();
+    },
+    setNguon(v){ nguon = v; pick = null; renderPreview(); },   // đổi nguồn → xóa trắng trường đề tài
+    pick(ma){ pick = ma; renderPreview(); },
+    setCs(v){ csLoai = v; renderPreview(); },
+  };
+
+  renderAll();
+})();
+</script>
+<!-- CRDAKL-END -->
 </body>
 </html>

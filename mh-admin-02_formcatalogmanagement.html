@@ -501,6 +501,18 @@
           <input class="fc" id="new-form-name" placeholder="VD: Đơn xin bảo lưu kết quả học tập">
         </div>
 
+        <!-- CR-20261109-002: Nhóm đơn. 2 nhóm hệ thống 🔒 dùng cho phiếu nhận xét ĐA/KLTN:
+             không có quy trình duyệt, không hiện ở cổng một cửa, Đơn từ cán bộ, Quản lý Đơn từ -->
+        <div class="fi">
+          <label>Nhóm đơn</label>
+          <select class="fc" id="new-form-group" onchange="onFormGroupChange()">
+            <option value="">— Không chọn (không bắt buộc) —</option>
+            <option value="pnx-gvhd">🔒 Phiếu nhận xét GVHD</option>
+            <option value="pnx-gvpb">🔒 Phiếu nhận xét GVPB</option>
+          </select>
+          <div class="f-hint" id="new-form-group-hint" style="display:none">Nhóm hệ thống, không đổi tên, không xóa được. Biểu mẫu trong nhóm này là phiếu giảng viên điền ở màn Quản lý ĐATN &amp; KLTN: không có quy trình duyệt, không hiện ở cổng một cửa. Thêm trường Kết luận kiểu Select, mã <b>ketLuanBaoVe</b>, lựa chọn "Đồng ý cho bảo vệ; Không đồng ý cho bảo vệ" để hệ thống nhận ra kết luận.</div>
+        </div>
+
         <div class="fi">
           <div class="flex justify-between items-center" style="margin-bottom:6px">
             <label style="margin:0">Mô tả / Hướng dẫn nộp đơn</label>
@@ -1033,6 +1045,74 @@ const STATUS_TAG = {
    giữ tham chiếu tới biểu mẫu gốc đã sao chép (không tự đồng bộ).
    ============================================================ */
 const FORMS = [
+  /* CR-20261109-002: mẫu phiếu nhận xét ĐA/KLTN, nhóm đơn hệ thống — không có quy trình duyệt */
+  { id:'f-pnx-m08', itemId:17, code:'QT.ĐT.19.M08', name:'Nhận xét ĐA/KLTN của giảng viên hướng dẫn', group:'pnx-gvhd',
+    desc:'Phiếu GVHD điền ở màn Quản lý ĐATN & KLTN', ownerUnit:'u-pdt', scopes:['chinhquy'], status:'active', updated:'09/11/2026',
+    file:'QT.DT.19.M08.docx', originId:null, guide:'', studentStatuses:[],
+    content:`
+      <p style="text-align:right"><i>Mẫu QT.ĐT.19.M08</i></p>
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center"><b>NHẬN XÉT ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP<br>CỦA GIẢNG VIÊN HƯỚNG DẪN</b></p>
+      <p>Giảng viên hướng dẫn: <mark class="fedit-token">#gv_ho_ten</mark>&nbsp;&nbsp;Bộ môn: <mark class="fedit-token">#gv_bo_mon</mark></p>
+      <p>Tên đề tài: <mark class="fedit-token">#ten_de_tai</mark></p>
+      <p>Sinh viên thực hiện: <mark class="fedit-token">#ho_ten</mark>&nbsp;&nbsp;Lớp: <mark class="fedit-token">#lop</mark></p>
+      <p style="text-align:center">NỘI DUNG NHẬN XÉT</p>
+      <p><b>I. Nhận xét ĐAKLTN:</b></p>
+      <p>- Nhận xét về hình thức: <mark class="fedit-token">#hinhThuc</mark></p>
+      <p>- Tính cấp thiết của đề tài: <mark class="fedit-token">#tinhCapThiet</mark></p>
+      <p>- Mục tiêu của đề tài: <mark class="fedit-token">#mucTieu</mark></p>
+      <p>- Nội dung của đề tài: <mark class="fedit-token">#noiDung</mark></p>
+      <p>- Tài liệu tham khảo: <mark class="fedit-token">#taiLieu</mark></p>
+      <p>- Phương pháp nghiên cứu: <mark class="fedit-token">#phuongPhap</mark></p>
+      <p>- Tính sáng tạo và ứng dụng: <mark class="fedit-token">#sangTao</mark></p>
+      <p><b>II. Nhận xét tinh thần và thái độ làm việc của sinh viên:</b> <mark class="fedit-token">#tinhThan</mark></p>
+      <p><b>III. Kết quả đạt được:</b> <mark class="fedit-token">#ketQua</mark></p>
+      <p><b>IV. Kết luận:</b> <mark class="fedit-token">#ketLuanBaoVe</mark></p>
+      <p style="text-align:right"><i>Hà Nội, <mark class="fedit-token">#ngayHienTai</mark></i><br><b>GIẢNG VIÊN HƯỚNG DẪN</b><br><i>(Ký, ghi rõ họ tên)</i></p>
+    `,
+    extraFields:[ { code:'hinhThuc', label:'Nhận xét về hình thức', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'tinhCapThiet', label:'Tính cấp thiết của đề tài', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'mucTieu', label:'Mục tiêu của đề tài', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'noiDung', label:'Nội dung của đề tài', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'taiLieu', label:'Tài liệu tham khảo', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'phuongPhap', label:'Phương pháp nghiên cứu', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'sangTao', label:'Tính sáng tạo và ứng dụng', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'tinhThan', label:'Nhận xét tinh thần và thái độ làm việc của sinh viên', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'ketQua', label:'Kết quả đạt được', placeholder:'', type:'Textarea', required:true, options:[] },
+      { code:'ketLuanBaoVe', label:'Kết luận', placeholder:'', type:'Select', required:true, options:['Đồng ý cho bảo vệ','Không đồng ý cho bảo vệ'] },
+      { code:'phieuDaKy', label:'Phiếu đã ký (nếu có)', placeholder:'', type:'File upload', required:false, options:[] } ],
+  },
+  { id:'f-pnx-m09', itemId:18, code:'QT.ĐT.19.M09', name:'Nhận xét ĐA/KLTN của giảng viên phản biện', group:'pnx-gvpb',
+    desc:'Phiếu GVPB điền ở màn Quản lý ĐATN & KLTN', ownerUnit:'u-pdt', scopes:['chinhquy'], status:'active', updated:'09/11/2026',
+    file:'QT.DT.19.M09.docx', originId:null, guide:'', studentStatuses:[],
+    content:`
+      <p style="text-align:right"><i>Mẫu QT.ĐT.19.M09</i></p>
+      <p style="text-align:center"><b>CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br><b>Độc lập - Tự do - Hạnh phúc</b></p>
+      <p style="text-align:center"><b>NHẬN XÉT ĐỒ ÁN/KHÓA LUẬN TỐT NGHIỆP<br>CỦA GIẢNG VIÊN PHẢN BIỆN</b></p>
+      <p>Giảng viên phản biện: <mark class="fedit-token">#gv_ho_ten</mark>&nbsp;&nbsp;Bộ môn: <mark class="fedit-token">#gv_bo_mon</mark></p>
+      <p>Tên đề tài: <mark class="fedit-token">#ten_de_tai</mark></p>
+      <p>Sinh viên thực hiện: <mark class="fedit-token">#ho_ten</mark>&nbsp;&nbsp;Lớp: <mark class="fedit-token">#lop</mark></p>
+      <p>Giảng viên hướng dẫn: <mark class="fedit-token">#gvhd</mark></p>
+      <p style="text-align:center">NỘI DUNG NHẬN XÉT</p>
+      <p><b>I. Nhận xét ĐAKLTN:</b></p>
+      <p>- Bố cục, hình thức trình bày: <mark class="fedit-token">#boCuc</mark></p>
+      <p>- Đảm bảo tính cấp thiết, hiện đại, không trùng lặp: <mark class="fedit-token">#tinhCapThiet</mark></p>
+      <p>- Nội dung: <mark class="fedit-token">#noiDung</mark></p>
+      <p>- Mức độ thực hiện: <mark class="fedit-token">#mucDo</mark></p>
+      <p><b>II. Kết quả đạt được:</b> <mark class="fedit-token">#ketQua</mark></p>
+      <p><b>III. Ưu nhược điểm:</b> <mark class="fedit-token">#uuNhuoc</mark></p>
+      <p><b>IV. Kết luận:</b> <mark class="fedit-token">#ketLuanBaoVe</mark></p>
+      <p style="text-align:right"><i>Hà Nội, <mark class="fedit-token">#ngayHienTai</mark></i><br><b>GIẢNG VIÊN PHẢN BIỆN</b><br><i>(Ký, ghi rõ họ tên)</i></p>
+    `,
+    extraFields:[ { code:'boCuc', label:'Bố cục, hình thức trình bày', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'tinhCapThiet', label:'Đảm bảo tính cấp thiết, hiện đại, không trùng lặp', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'noiDung', label:'Nội dung', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'mucDo', label:'Mức độ thực hiện', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'ketQua', label:'Kết quả đạt được', placeholder:'', type:'Textarea', required:true, options:[] },
+      { code:'uuNhuoc', label:'Ưu nhược điểm', placeholder:'', type:'Textarea', required:false, options:[] },
+      { code:'ketLuanBaoVe', label:'Kết luận', placeholder:'', type:'Select', required:true, options:['Đồng ý cho bảo vệ','Không đồng ý cho bảo vệ'] },
+      { code:'phieuDaKy', label:'Phiếu đã ký (nếu có)', placeholder:'', type:'File upload', required:false, options:[] } ],
+  },
   /* Dữ liệu demo đầy đủ — content soạn sẵn dùng mã trường dữ liệu có sẵn
      trong FIELD_CATALOG, đặt đầu danh sách để dễ thấy khi mở màn hình. */
   { id:'f15', itemId:15, code:'BM15', name:'Đơn xin xác nhận sinh viên',
@@ -1178,6 +1258,8 @@ FORMS.forEach(f => {
    không gắn riêng 1 form nào — vì vậy đặt tách khỏi FORMS.
    ============================================================ */
 const FIELD_CATALOG = [
+  { code:'gv_ho_ten',       label:'Họ tên giảng viên (theo tài khoản đang nhận xét)' },
+  { code:'gv_bo_mon',       label:'Bộ môn giảng viên (theo tài khoản đang nhận xét)' },
   { code:'hoTen',           label:'Họ tên' },
   { code:'hoTenTA',         label:'Họ và tên tiếng anh' },
   { code:'maSinhVien',      label:'Mã sinh viên' },
@@ -1418,14 +1500,15 @@ function renderFormGrid() {
           <td class="form-code">${f.code}</td>
           <td>
             <div class="form-name-cell">${f.name}</div>
+            ${isPhieuNhanXet(f) ? `<span class="tag" style="margin-top:4px;font-size:11px">🔒 ${FORM_GROUPS[f.group]}</span>` : ''}
           </td>
           ${deptTd}
           <td><span class="tag ${st.cls}">${st.label}</span></td>
           <td class="text-muted text-sm">${f.updated}</td>
           <td class="tbl-actions">
-            <button class="icon-btn" title="Cấu hình quy trình" onclick="openFormBuilder('${f.id}')">
+            ${isPhieuNhanXet(f) ? '' : `<button class="icon-btn" title="Cấu hình quy trình" onclick="openFormBuilder('${f.id}')">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-            </button>
+            </button>`}
             <button class="icon-btn" title="Chỉnh sửa" onclick="openFormEdit('${f.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
@@ -1966,6 +2049,13 @@ function renderExtraFields(){
   }).join('');
 }
 
+/* CR-20261109-002: Nhóm đơn hệ thống cho phiếu nhận xét ĐA/KLTN */
+const FORM_GROUPS = { 'pnx-gvhd':'Phiếu nhận xét GVHD', 'pnx-gvpb':'Phiếu nhận xét GVPB' };
+function isPhieuNhanXet(f){ return !!(f && FORM_GROUPS[f.group]); }
+function onFormGroupChange(){
+  document.getElementById('new-form-group-hint').style.display = FORM_GROUPS[document.getElementById('new-form-group').value] ? '' : 'none';
+}
+
 function addExtraField(){
   newFormExtraFields.push({ code:'', label:'', placeholder:'', type:'Text', required:false, options:[] });
   renderExtraFields();
@@ -2095,6 +2185,8 @@ function resetNewFormWizard(){
   document.getElementById('new-form-submit-btn').textContent = 'Thêm biểu mẫu';
   document.getElementById('new-form-code').value = generateNextFormCode();
   document.getElementById('new-form-name').value = '';
+  document.getElementById('new-form-group').value = '';
+  onFormGroupChange();
   document.getElementById('new-form-guide').innerHTML = '';
   document.getElementById('new-form-allow-copy').checked = true;
   document.querySelectorAll('.new-form-studentstatus-check').forEach(cb => cb.checked = false);
@@ -2232,6 +2324,8 @@ function openFormEdit(id){
   document.getElementById('new-form-code').value = f.code;
   document.getElementById('new-form-dept').value = f.ownerUnit;
   document.getElementById('new-form-name').value = f.name;
+  document.getElementById('new-form-group').value = f.group || '';
+  onFormGroupChange();
   document.getElementById('new-form-guide').innerHTML = f.guide || '';
   document.getElementById('new-form-allow-copy').checked = f.allowCopy;
   document.querySelectorAll('.new-form-studentstatus-check').forEach(cb => {
@@ -2303,7 +2397,8 @@ function doCreateForm() {
   if (!willForkAsCopy && isCodeTaken(code, editId)) { showToast(`Mã ${code} đã được dùng cho biểu mẫu khác.`, 'err'); return; }
   if (!ownerUnit) { showToast('Vui lòng chọn đơn vị ban hành.', 'err'); return; }
   if (!name) { showToast('Vui lòng nhập tên biểu mẫu.', 'err'); return; }
-  if (!studentStatuses.length) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
+  const group = document.getElementById('new-form-group').value;
+  if (!studentStatuses.length && !FORM_GROUPS[group]) { showToast('Vui lòng chọn ít nhất 1 trạng thái sinh viên được đăng ký.', 'err'); return; }
   if (!hasFile) { showToast('Vui lòng upload file mẫu (.docx).', 'err'); return; }
   if (!content) { showToast('Vui lòng soạn nội dung biểu mẫu.', 'err'); return; }
 
@@ -2332,7 +2427,7 @@ function doCreateForm() {
 
   if (forkTargetForm){
     Object.assign(forkTargetForm, {
-      name, guide, scopes, programs, applyUnits, cohorts,
+      name, group, guide, scopes, programs, applyUnits, cohorts,
       studentStatuses, allowCopy, content, extraFields, status, updated, file, needsReturn,
     });
   } else if (willForkAsCopy){
@@ -2342,13 +2437,13 @@ function doCreateForm() {
       itemId: maxItemId + 1,
       code: editingForm.code + '-' + ownerUnit.replace('u-', '').toUpperCase(),
       name: name + ' (' + unitById(ownerUnit).name + ')',
-      desc: editingForm.desc, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      desc: editingForm.desc, group, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
       status, updated, file, needsReturn, originId: editingForm.id,
     });
   } else if (editingForm){
     Object.assign(editingForm, {
-      code, name, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      code, name, group, guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, allowCopy, content, extraFields, status, updated, file, needsReturn,
     });
   } else {
@@ -2356,7 +2451,7 @@ function doCreateForm() {
     FORMS.unshift({
       id: 'f-new-' + Date.now(),
       itemId: maxItemId + 1,
-      code, name, desc: '', guide, ownerUnit, scopes, programs, applyUnits, cohorts,
+      code, name, group, desc: '', guide, ownerUnit, scopes, programs, applyUnits, cohorts,
       studentStatuses, mssvWhitelist: [], allowCopy, content, extraFields,
       status, updated, file, needsReturn, originId: null,
     });

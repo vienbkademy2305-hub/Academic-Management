@@ -1524,6 +1524,16 @@ renderAll();
       { key:'ngay_kt_de_nghi', code:'ngay_kt_de_nghi', label:'Thời gian gia hạn đến', type:'date', note:'Sinh viên chọn: sau ngày kết thúc hiện tại và không quá 28 ngày. Node Cập nhật ngày kết thúc ĐAKLTN dùng trường này.' },
       { key:'minh_chung', code:'minh_chung', label:'Minh chứng', type:'file', note:'PDF/Word ≤ 5MB. Bắt buộc hay không do cán bộ bật ở bên dưới.' },
     ]},
+    { pre:'ĐA/KLTN', ten:'Hội đồng và nộp lại báo cáo', items:[
+      { key:'ngay_bao_ve', code:'ngay_bao_ve', label:'Đã bảo vệ ngày', type:'date', moi:true, ref:'Tham chiếu: dot › Hội đồng › Ngày họp. Node Kiểm tra thời gian nộp dùng được trường này làm mốc', mau:'15/06/2026' },
+      { key:'ma_hoi_dong', code:'ma_hoi_dong', label:'Mã hội đồng', type:'text', moi:true, ref:'Tham chiếu: dot › Hội đồng › Mã (đổi đợt thì điền lại). Nguồn người duyệt "Thành viên hội đồng của sinh viên" và node Cập nhật kết luận hội đồng dùng trường này', mau:'HD-2025-198' },
+      { key:'ten_hoi_dong', code:'ten_hoi_dong', label:'Tên hội đồng', type:'text', moi:true, required:false, ref:'Tham chiếu: dot › Hội đồng › Tên', mau:'Hội đồng chấm ĐATN & KLTN HK1 2025-2026' },
+      { key:'chu_tich_hoi_dong', code:'chu_tich_hoi_dong', label:'Chủ tịch hội đồng', type:'text', moi:true, ref:'Tham chiếu: dot › Hội đồng › Thành viên vai trò Chủ tịch (ô ký trên Bản giải trình)', mau:'TS. Trần Văn Bình' },
+      { key:'ket_luan', code:'ket_luan', label:'Kết luận hội đồng', type:'text', moi:true, ref:'Tham chiếu: dot › Hội đồng › Kết luận của sinh viên, lấy giá trị lúc gửi đơn. Node Kiểm tra kết luận dùng trường này', mau:'Đạt nhưng cần chỉnh sửa' },
+      { key:'yeu_cau_chinh_sua', code:'yeu_cau_chinh_sua', label:'Yêu cầu chỉnh sửa của hội đồng', type:'textarea', moi:true, required:false, ref:'Tham chiếu: dot › Hội đồng › Ghi chú kết luận của sinh viên', mau:'Bổ sung đánh giá độ chính xác của mô hình ở Chương 4; sửa lỗi trình bày hình 3.2, 3.5.' },
+      { key:'ngay_hoan_thanh_hd', code:'ngay_hoan_thanh_hd', label:'Ngày hội đồng hoàn thành', type:'date', moi:true, ref:'Tham chiếu: dot › Hội đồng › Ngày hoàn tất. Node Kiểm tra thời gian nộp dùng được trường này làm mốc', mau:'16/06/2026' },
+      { key:'file_bao_cao', code:'file_bao_cao', label:'File báo cáo sau chỉnh sửa', type:'file', note:'Sinh viên tải lên (PDF/Word). Node Cập nhật báo cáo ĐAKLTN dùng trường này để ghi đè file báo cáo đã nộp.' },
+    ]},
     { pre:'TTTN', ten:'Đợt và quyết định', items:[
       { key:'tt_dot', code:'dot', label:'Đợt TT/ĐAKL', type:'select1', ...ch('system', 'dot_tttn'), note:'Sinh viên chọn; tự điền nếu bấm ⏰ / 🔄 từ dòng đợt. Node cập nhật hồ sơ thực tập và "GVHD của sinh viên" dùng trường này.' },
       { key:'tt_loai_qd', code:'loai_qd', label:'Loại quyết định', type:'select1', ...ch('system', 'loai_qd_tttn'), note:'Chỉ hiện loại PĐT cho phép mà sinh viên có quyết định trong đợt; chọn sẵn loại của quyết định mới nhất.' },
@@ -1568,7 +1578,7 @@ renderAll();
     _menu();
     document.getElementById('add-field-menu-system').insertAdjacentHTML('beforeend', GROUPS.map(g => {
       const left = g.items.filter(i => !has(i.key));
-      return left.length ? `<div class="add-field-menu-group">${esc(g.pre)} · ${esc(g.ten)}</div>${left.map(i => `<div class="add-field-menu-item" onclick="CRD25.add('${i.key}')">${esc(i.label)}</div>`).join('')}` : '';
+      return left.length ? `<div class="add-field-menu-group">${esc(g.pre)} · ${esc(g.ten)}</div>${left.map(i => `<div class="add-field-menu-item" onclick="CRD25.add('${i.key}')"><span>${esc(i.label)}</span>${i.moi ? '<span class="badge-new">Mới</span>' : ''}</div>`).join('')}` : '';
     }).join(''));
   };
 
@@ -1645,5 +1655,93 @@ renderAll();
 })();
 </script>
 <!-- CRDAKL-END -->
+<!-- CRNBC-START -->
+<!-- CR-20261113-002 — Mở rộng kiểu trường Bảng: người nộp tự thêm / xóa dòng, số dòng tối thiểu / tối đa, xuất Word nhiều dòng;
+     2 bảng mẫu của "Bản giải trình sửa chữa ĐA/KLTN" -->
+<style>
+  .nbc-tbl td .fc{padding:4px 6px;font-size:12.5px}
+  .nbc-tbl td{vertical-align:top}
+  .nbc-rowbtn{border:none;background:none;cursor:pointer;font-size:14px;padding:2px 4px}
+  .nbc-rowbtn:disabled{opacity:.3;cursor:not-allowed}
+  .nbc-num{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
+<script>
+(function(){
+  const manual = (label, code, required, dataType) => ({ id:++colUid, label, code, sourceType:'manual', sourceKey:'', dataType:dataType || 'text', format:'', required });
+  const PRESET = {
+    chinh_sua_bo_sung:{ label:'1. Tác giả chỉnh sửa và bổ sung đồ án/khóa luận theo góp ý của Hội đồng', min:1,
+      cols:() => [manual('Nội dung', 'noi_dung', true), manual('Trang cũ', 'trang_cu', false), manual('Sửa thành', 'sua_thanh', true), manual('Trang mới', 'trang_moi', false)] },
+    giu_quan_diem:{ label:'2. Tác giả xin được giữ quan điểm của mình ở một số nội dung đồ án/khoá luận', min:0,
+      cols:() => [manual('Nội dung', 'noi_dung', true), manual('Lý do giữ quan điểm của mình', 'ly_do', true), manual('Trang', 'trang', false)] },
+  };
+  const hasCode = c => fields.some(f => f.code === c);
+
+  // Menu + Thêm field: 2 bảng mẫu
+  const _menu = renderAddFieldMenuSystem;
+  renderAddFieldMenuSystem = function(){
+    _menu();
+    const left = Object.keys(PRESET).filter(k => !hasCode(k));
+    if(left.length) document.getElementById('add-field-menu-system').insertAdjacentHTML('beforeend',
+      `<div class="add-field-menu-group">ĐA/KLTN · Bảng của Bản giải trình</div>` + left.map(k => `<div class="add-field-menu-item" onclick="CRNBC25.addTable('${k}')"><span>${esc(PRESET[k].label.replace(/ (đồ án\/khóa luận|của mình ở).*/, '…'))}</span><span class="badge-new">Mới</span></div>`).join(''));
+  };
+
+  // Cột cấu hình: thêm phần "Dòng của bảng"
+  const _content = renderContentTab;
+  renderContentTab = function(f){
+    let html = _content(f);
+    if(!isTableType(f.type)) return html;
+    const min = f.minRows == null ? 0 : f.minRows, max = f.maxRows == null ? '' : f.maxRows, bad = max !== '' && +max < +min;
+    html += `<div class="divider"></div>
+      <div class="fi"><label class="switch-row"><span>Người nộp tự thêm / xóa dòng</span>
+        <span class="switch"><input type="checkbox" ${f.addRows ? 'checked' : ''} onchange="CRNBC25.set('addRows', this.checked)"><span class="switch-track"></span></span></label>
+        <div class="f-hint">Dùng cho bảng có cột Tự nhập (vd bảng giải trình). Tắt: các dòng do hệ thống / người soạn đưa vào.</div></div>
+      ${f.addRows ? `<div class="nbc-num">
+        <div class="fi"><label>Số dòng tối thiểu</label><input class="fc" type="number" min="0" value="${min}" onchange="CRNBC25.set('minRows', Math.max(0, parseInt(this.value) || 0))"></div>
+        <div class="fi"><label>Số dòng tối đa</label><input class="fc" type="number" min="1" value="${max}" placeholder="Không giới hạn" onchange="CRNBC25.set('maxRows', this.value === '' ? null : Math.max(1, parseInt(this.value) || 1))"></div></div>
+        ${bad ? '<div class="f-hint" style="color:var(--error)">⚠️ Số dòng tối đa phải lớn hơn hoặc bằng số dòng tối thiểu</div>' : ''}
+        <div class="f-hint">Bảng bắt buộc phải có đủ số dòng tối thiểu; mỗi dòng phải điền đủ các cột bật "Bắt buộc nhập". Xuất Word: mỗi dòng người nộp nhập là một hàng trong vùng lặp <code>#${esc(f.code)}</code>. Xem đơn và popup duyệt hiện bảng chỉ đọc.</div>` : ''}`;
+    return html;
+  };
+
+  // Mặt biểu mẫu: bảng có thêm / xóa dòng
+  const demoRows = {};
+  const _preview = renderPreview;
+  renderPreview = function(){
+    _preview();
+    const nodes = document.querySelectorAll('#fb-preview-list .fb-preview-field');
+    fields.forEach((f, i) => {
+      if(!isTableType(f.type) || !f.addRows) return;
+      const cols = getEffectiveTableColumns(f), min = f.minRows || 0, max = f.maxRows == null ? Infinity : f.maxRows;
+      if(demoRows[f.id] == null) demoRows[f.id] = Math.max(min, 1);
+      demoRows[f.id] = Math.min(Math.max(demoRows[f.id], min), max);
+      const n = demoRows[f.id];
+      const body = `<div class="tbl-wrap"><table class="tbl nbc-tbl"><thead><tr><th style="width:44px">STT</th>${cols.map(c => `<th>${esc(c.label)}${c.required ? '<span class="req"> *</span>' : ''}</th>`).join('')}<th style="width:36px"></th></tr></thead><tbody>
+        ${n ? Array.from({ length:n }, (_, r) => `<tr><td style="text-align:center">${r + 1}</td>${cols.map(c => `<td>${c.sourceType === 'manual' ? '<input class="fc">' : '<span class="text-muted text-sm">Tự điền</span>'}</td>`).join('')}
+          <td><button type="button" class="nbc-rowbtn" title="Xóa dòng" ${n <= min ? 'disabled' : ''} onclick="event.stopPropagation();CRNBC25.row(${f.id},-1)">🗑</button></td></tr>`).join('')
+          : `<tr><td colspan="${cols.length + 2}" class="tbl-preview-note">Chưa có dòng nào — bấm "＋ Thêm dòng"</td></tr>`}
+        </tbody></table></div>
+        <button type="button" class="btn btn-default btn-sm" style="margin-top:6px" ${n >= max ? 'disabled' : ''} onclick="event.stopPropagation();CRNBC25.row(${f.id},1)">＋ Thêm dòng</button>
+        <div class="f-hint" style="margin-top:6px">Tối thiểu ${min} dòng${max === Infinity ? '' : ', tối đa ' + max + ' dòng'}. Xuất Word: mỗi dòng một hàng (vùng lặp #${esc(f.code)}).</div>`;
+      nodes[i].innerHTML = nodes[i].querySelector('.fb-preview-label').outerHTML + body;
+    });
+  };
+
+  window.CRNBC25 = {
+    set(k, v){ const f = currentField(); if(!f) return; f[k] = v; renderAll(); },
+    row(id, d){ demoRows[id] = (demoRows[id] || 0) + d; renderPreview(); },
+    addTable(k){
+      if(hasCode(k)) return;
+      const p = PRESET[k], id = ++uid;
+      fields.push({ id, type:'table', label:p.label, labelEn:'', placeholderVi:'', placeholderEn:'', required:p.min > 0, mode:'', sourceKey:'', manualOptions:[], sourceOverrides:{},
+        code:k, columns:p.cols(), addRows:true, minRows:p.min, maxRows:null });
+      selectedId = id; panelTab = 'content';
+      document.getElementById('add-field-menu').classList.remove('open');
+      renderAll();
+    },
+  };
+  renderAll();
+})();
+</script>
+<!-- CRNBC-END -->
 </body>
 </html>

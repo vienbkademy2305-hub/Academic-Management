@@ -1763,7 +1763,7 @@ document.addEventListener('DOMContentLoaded', renderAll);
     { type:'action_thesis_topic', label:'Cập nhật đề tài ĐAKLTN', desc:'Đổi đề tài trong hồ sơ ĐA/KLTN của sinh viên theo đề tài đề nghị trên đơn' },
     { type:'action_thesis_end_date', label:'Cập nhật ngày kết thúc ĐAKLTN', desc:'Ghi ngày kết thúc mới từ đơn vào hồ sơ ĐA/KLTN của sinh viên' },
     { type:'action_thesis_report', label:'Cập nhật báo cáo ĐAKLTN', desc:'Thay file báo cáo trong hồ sơ ĐA/KLTN của sinh viên bằng file trên đơn' },
-    { type:'action_council_conclusion', label:'Cập nhật kết luận hội đồng', desc:'Đổi kết luận hội đồng của sinh viên theo cấu hình (vd Đạt nhưng cần chỉnh sửa → Đạt)' });
+    { type:'action_council_conclusion', label:'Cập nhật kết luận hội đồng', desc:'Đổi kết luận hội đồng của sinh viên theo cấu hình (vd sang Đạt)' });
   PALETTE.find(g => g.group === 'Luận lý').items.push(
     { type:'check_thesis_conclusion', label:'Kiểm tra kết luận', desc:'Cho đơn đi tiếp khi kết luận hội đồng của sinh viên đúng kết luận được phép, rẽ 2 nhánh Đạt / Không đạt' });
 
@@ -2108,15 +2108,12 @@ document.addEventListener('DOMContentLoaded', renderAll);
     }
 
     if(n.type === 'action_council_conclusion'){
-      const tu = neWorkingData.tuKL || 'Đạt nhưng cần chỉnh sửa', sang = neWorkingData.sangKL || 'Đạt';
+      const sang = neWorkingData.sangKL || 'Đạt';
       const opt = cur => KET_LUAN.map(k => `<option ${cur===k?'selected':''}>${esc(k)}</option>`).join('');
       col.innerHTML = `
         <div class="fi"><label>Hồ sơ ĐAKLTN theo Đợt<span class="req">*</span></label>${slotHtml('dot', ['dot'], ro, { placeholder:'Kéo field kiểu Đợt vào đây' })}</div>
-        <div class="fi"><label>Hội đồng<span class="req">*</span></label>${slotHtml('hd', ['hoi_dong'], ro, { placeholder:'Kéo field kiểu Hội đồng vào đây' })}</div>
-        <div class="fi"><label>Từ kết luận<span class="req">*</span></label><select class="fc" ${dis} onchange="CR5.set('tuKL',this.value)">${opt(tu)}</select></div>
-        <div class="fi"><label>Sang kết luận<span class="req">*</span></label><select class="fc" ${dis} onchange="CR5.set('sangKL',this.value)">${opt(sang)}</select>
-          ${tu === sang ? '<div class="field-tree-error">⚠️ Hai kết luận phải khác nhau</div>' : ''}</div>
-        <div class="f-hint">Kết luận hiện tại của sinh viên ở hội đồng khác "Từ kết luận" (vd đã bị đổi trong lúc chờ duyệt) → không đổi, cổng <b>Không thành công</b> kèm lý do. Không đổi điểm, không đẩy lại điểm về lớp học phần. Cả 2 cổng phải nối.</div>`;
+        <div class="fi"><label>Sang kết luận<span class="req">*</span></label><select class="fc" ${dis} onchange="CR5.set('sangKL',this.value)">${opt(sang)}</select></div>
+        <div class="f-hint">Đổi kết luận hiện tại của sinh viên ở hội đồng sang kết luận đã chọn. Không tìm thấy hồ sơ hoặc sinh viên đã hủy → cổng <b>Không thành công</b> kèm lý do. Không đổi điểm, không đẩy lại điểm về lớp học phần. Cả 2 cổng phải nối.</div>`;
       return;
     }
 
@@ -2221,8 +2218,6 @@ document.addEventListener('DOMContentLoaded', renderAll);
       if(!s.file) out.push('chưa chọn File báo cáo mới');
     } else if(n.type === 'action_council_conclusion'){
       if(!s.dot) out.push('chưa chọn Hồ sơ ĐAKLTN theo Đợt');
-      if(!s.hd) out.push('chưa chọn Hội đồng');
-      if((d.tuKL || 'Đạt nhưng cần chỉnh sửa') === (d.sangKL || 'Đạt')) out.push('Từ kết luận và Sang kết luận phải khác nhau');
     } else if(n.type === 'approval' && d.assign === 'council'){
       if(!s.hd) out.push('chưa chọn Hội đồng');
       if(d.roles && !d.roles.length) out.push('chưa chọn Vai trò');
@@ -2370,7 +2365,7 @@ document.addEventListener('DOMContentLoaded', renderAll);
           mk('n4','approval','Chờ người duyệt','GVHD xác nhận','gvhd',940,160,{ allowRevise:false, assign:'gvhd', slots:{ dot:'dot' } }),
           mk('n5','approval','Chờ người duyệt','Hội đồng xác nhận','hoi_dong',1240,160,{ allowRevise:false, assign:'council', roles:['Chủ tịch','Thư ký'], slots:{ hd:'ma_hoi_dong' } }),
           mk('n6','action_thesis_report','Cập nhật báo cáo ĐAKLTN','Cập nhật báo cáo','update_report_1',1540,160,{ slots:{ dot:'dot', file:'file_bao_cao' } }),
-          mk('n7','action_council_conclusion','Cập nhật kết luận hội đồng','Cập nhật kết luận','update_conclusion_1',1840,160,{ tuKL:'Đạt nhưng cần chỉnh sửa', sangKL:'Đạt', slots:{ dot:'dot', hd:'ma_hoi_dong' } }),
+          mk('n7','action_council_conclusion','Cập nhật kết luận hội đồng','Cập nhật kết luận','update_conclusion_1',1840,160,{ sangKL:'Đạt', slots:{ dot:'dot' } }),
           mk('n8','notify','Gửi thông báo','Báo đã xác nhận (TB-05)','notify_ok',2140,80),
           mk('n9','end-success','Kết thúc','Đã duyệt','end_ok',2440,80),
           mk('n10','notify','Gửi thông báo','Báo sai kết luận (TB-02)','notify_kl',340,480),
@@ -2420,5 +2415,261 @@ document.addEventListener('DOMContentLoaded', renderAll);
   left.insertBefore(box, left.querySelector('.wf-panel-title').nextSibling);
 })();
 </script>
+<!-- CRBDSV-START -->
+<!-- CR-20261116-001 — Node "Sinh DS biến động sinh viên" (action.create_student_change):
+     chỉ sinh danh sách biến động, không cập nhật hồ sơ; kéo trường nguồn cho từng thông tin;
+     Trạng thái sinh viên: tự lấy theo kết quả các bước "Cập nhật trạng thái sinh viên" trong quy trình (không cấu hình).
+     QĐ kỷ luật tạm thời chưa xử lý. Quy trình mẫu: ?p=qd-baoluu, ?p=qd-chuyennganh -->
+<style>
+  .bd-cfg{width:100%;border-collapse:collapse;font-size:13px}
+  .bd-cfg th{background:#fafafa;padding:7px 8px;text-align:left;font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap}
+  .bd-cfg td{padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+  .bd-cfg td.bd-lbl{width:150px;white-space:nowrap}
+  .bd-cfg .field-drop-box{min-height:32px;margin:0}
+  .bd-cfg tr.off td.bd-lbl{color:var(--text-3)}
+  .bd-cfg select.fc{width:100%}
+  .bd-sec{font-size:13px;font-weight:600;margin:14px 0 6px}
+  .bd-ex{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12.5px;background:#fcfcfc;margin-top:10px}
+  .bd-ex table{width:100%;border-collapse:collapse;margin-top:4px}
+  .bd-ex th,.bd-ex td{padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:left;font-weight:400}
+  .bd-ex th{color:var(--text-3)}
+  .bd-auto{font-size:12.5px}
+  .bd-auto ul{margin:4px 0 0 18px;padding:0}
+  .bd-warn{color:#d48806;font-size:12.5px;margin-top:4px}
+</style>
+<script>
+(function(){
+  const TYPE = 'action_create_student_change';
+  const FT = window.CR5_FTYPE_LABEL || {};
+  // Danh mục trạng thái sinh viên — đúng danh sách của node "Cập nhật trạng thái sinh viên"
+  const ST_OPTS = [
+    { value:'active', label:'Đang học' }, { value:'on_leave', label:'Bảo lưu' }, { value:'withdrawn', label:'Thôi học' },
+    { value:'expelled', label:'Buộc thôi học' }, { value:'warning', label:'Cảnh báo học vụ' }, { value:'transferred_out', label:'Chuyển trường đi' },
+    { value:'graduated', label:'Đã tốt nghiệp' }, { value:'inactive', label:'Ngừng hoạt động' }, { value:'removed', label:'Đã xoá tên' },
+    { value:'suspension', label:'Bị đình chỉ' },
+  ];
+  const stLabel = v => (ST_OPTS.find(o => o.value === v) || {}).label || '';
+  const SKIP = 'skip';
+  const INFO = [
+    { k:'trang_thai', l:'Trạng thái sinh viên', auto:true },
+    { k:'nien_khoa', l:'Niên khoá', accept:['text', 'choice'] },
+    { k:'ctdt', l:'Ngành/CTĐT', accept:['text', 'choice'] },
+    { k:'lop_hc', l:'Lớp HC', accept:['text', 'choice'] },
+    { k:'don_vi', l:'Đơn vị đào tạo', accept:['unit', 'text', 'choice'] },
+    { k:'hk_bd', l:'Học kỳ bắt đầu', accept:['hocky'] },
+    { k:'hk_kt', l:'Học kỳ kết thúc', accept:['hocky'] },
+  ];
+
+  // ---------- Biểu mẫu quyết định (mô phỏng, cấu hình ở mh-admin-25) ----------
+  const QD_INFO = { group:'qd', groupLabel:'Thông tin quyết định', fields:[
+    { key:'so_qd', label:'Số quyết định', sourceType:'system' },
+    { key:'ngay_qd', label:'Ngày quyết định', sourceType:'date' },
+    { key:'loai_qd', label:'Loại quyết định', sourceType:'system' },
+  ]};
+  const SV = extra => ({ group:'sv', groupLabel:'Danh sách sinh viên (theo từng sinh viên)', fields:[
+    { key:'mssv', label:'MSSV', sourceType:'system' },
+    { key:'ho_ten', label:'Họ và tên', sourceType:'system' },
+    ...extra,
+  ]});
+  FORM_FIELD_TREE.QD_BAOLUU = [QD_INFO, SV([
+    { key:'hk_bat_dau', label:'Học kỳ bắt đầu', sourceType:'hocky' },
+    { key:'hk_ket_thuc', label:'Học kỳ kết thúc', sourceType:'hocky' },
+    { key:'ly_do', label:'Phân loại lý do', sourceType:'text' },
+  ])];
+  FORM_FIELD_TREE.QD_CHUYEN = [QD_INFO, SV([
+    { key:'nien_khoa_moi', label:'Niên khoá mới', sourceType:'choice', options:['K65', 'K66', 'K67', 'K68'] },
+    { key:'ctdt_moi', label:'CTĐT mới', sourceType:'text' },
+    { key:'lop_hc_moi', label:'Lớp hành chính mới', sourceType:'text' },
+  ])];
+  FORM_FIELD_TREE.QD_NHAPTRUONG = [QD_INFO, SV([
+    { key:'nien_khoa_moi', label:'Niên khoá', sourceType:'choice', options:['K66', 'K67', 'K68'] },
+    { key:'ctdt_moi', label:'CTĐT', sourceType:'text' },
+    { key:'lop_hc_moi', label:'Lớp hành chính', sourceType:'text' },
+    { key:'don_vi_moi', label:'Đơn vị đào tạo', sourceType:'unit' },
+  ])];
+  const formSel = document.getElementById('ne-form');
+  if(formSel) [['QD_BAOLUU', 'Biểu mẫu QĐ nghỉ học tạm thời/bảo lưu'],
+    ['QD_CHUYEN', 'Biểu mẫu QĐ chuyển khoá, ngành, lớp'], ['QD_NHAPTRUONG', 'Biểu mẫu QĐ nhập trường/trúng tuyển']].forEach(([v, l]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = l; formSel.appendChild(o);
+  });
+
+  const fieldOf = key => { for(const g of (FORM_FIELD_TREE[getBoundFormId()] || [])){ const f = g.fields.find(x => x.key === key); if(f) return f; } return null; };
+  const ancestors = (v, id) => {
+    const seen = new Set(), q = [id];
+    while(q.length){ const x = q.shift(); v.edges.filter(e => e.to === x).forEach(e => { if(!seen.has(e.from)){ seen.add(e.from); q.push(e.from); } }); }
+    return seen;
+  };
+  const statusDesc = d => stLabel((d || {}).studentStatus) || 'chưa chọn trạng thái';
+  // Các bước "Cập nhật trạng thái sinh viên" chạy trước node (cùng nhánh) / nằm sau node
+  const stSteps = (v, id) => {
+    const anc = ancestors(v, id), all = v.nodes.filter(x => x.type === 'action_student');
+    return { before: all.filter(x => anc.has(x.id)), after: all.filter(x => !anc.has(x.id) && ancestors(v, x.id).has(id)) };
+  };
+
+  // ---------- Palette + dữ liệu xuất ra ----------
+  PALETTE.find(g => g.group === 'Hành động').items.push(
+    { type:TYPE, label:'Sinh DS biến động sinh viên', desc:'Sinh mỗi sinh viên trong quyết định 1 dòng sang màn Biến động sinh viên theo thông tin đã cấu hình — không cập nhật hồ sơ' });
+  NODE_OUTPUT_SCHEMA[TYPE] = ['Danh sách dòng biến động (MSSV, Loại QĐ, Số QĐ, Ngày QĐ, các cặp cũ / mới đã cấu hình)', 'Số dòng đã sinh', 'Số sinh viên không sinh dòng (không có thay đổi)'];
+
+  // ---------- Cột trái: cây field có ghi kiểu ----------
+  const treeHtml = (ro, hint) => {
+    const groups = FORM_FIELD_TREE[getBoundFormId()] || [];
+    if(!groups.length) return '<div class="ne-placeholder">Biểu mẫu áp dụng chưa có field — chọn biểu mẫu quyết định ở bước "Nộp biểu mẫu".</div>';
+    return `<div class="field-tree">${groups.map(g => `
+      <div class="field-tree-group">${esc(g.groupLabel)}</div>
+      ${g.fields.map(f => `<div class="field-tree-item" draggable="${ro ? 'false' : 'true'}" ondragstart="onFieldDragStart(event,'${f.key}')">⠿ ${esc(f.label)}<span class="cr5-type">${esc(FT[f.sourceType] || f.sourceType)}</span></div>`).join('')}`).join('')}</div>
+      <div class="f-hint" style="margin-top:8px">${hint}</div>`;
+  };
+  const _info = renderNeInfoCol;
+  renderNeInfoCol = function(n, ro){
+    if(n.type === TYPE){ document.getElementById('ne-info-col').innerHTML = treeHtml(ro, 'Kéo field sang cột "Trường nguồn".'); return; }
+    return _info(n, ro);
+  };
+
+  let err = {};
+  function rerender(){ const v = getVersion(currentVersionId), n = content().nodes.find(x => x.id === editingNodeId); renderNeInfoCol(n, readonly(v)); renderNeMainCol(n, readonly(v)); }
+  const dropBox = (handler, inner) => `<div class="field-drop-box" ondragover="event.preventDefault();event.currentTarget.classList.add('drag-over')" ondragleave="event.currentTarget.classList.remove('drag-over')" ondrop="${handler}">${inner}</div>`;
+
+  const _main = renderNeMainCol;
+  renderNeMainCol = function(n, ro){
+    if(n.type !== TYPE) return _main(n, ro);
+
+    const d = neWorkingData, dis = ro ? 'disabled' : '', col = document.getElementById('ne-main-col');
+    d.bd = d.bd || {}; INFO.forEach(i => { d.bd[i.k] = d.bd[i.k] || {}; });
+    const v = content(), ss = stSteps(v, n.id);
+    const rows = INFO.map(i => {
+      const c = d.bd[i.k];
+      let cell;
+      if(i.auto){
+        cell = `<div class="bd-auto">Tự lấy theo kết quả bước "Cập nhật trạng thái sinh viên" trong quy trình — không cần cấu hình.
+          ${ss.before.length ? `<ul>${ss.before.map(x => `<li>Bước "${esc(x.title)}": ${esc(statusDesc(x.data))}</li>`).join('')}</ul>` : ''}
+          ${ss.after.map(x => `<div class="bd-warn">⚠ Bước "${esc(x.title)}" nằm sau bước này nên trạng thái do bước đó đổi sẽ không được ghi.</div>`).join('')}</div>`;
+      } else {
+        const f = c.field ? fieldOf(c.field) : null;
+        cell = dropBox(`BDSV.drop(event,'${i.k}')`,
+            f ? `<span class="fdb-pill">📋 ${esc(f.label)}${ro ? '' : `<button type="button" onclick="BDSV.clear('${i.k}')" title="Bỏ chọn">✕</button>`}</span>`
+            : c.field ? `<span class="fdb-pill">⚠️ Trường không còn trong biểu mẫu${ro ? '' : `<button type="button" onclick="BDSV.clear('${i.k}')">✕</button>`}</span>`
+            : `<span style="color:var(--text-3);font-size:12.5px">Kéo field kiểu ${esc(i.accept.map(a => FT[a] || a).join(' / '))} vào đây</span>`)
+          + (err[i.k] ? `<div class="field-tree-error">⚠️ ${esc(err[i.k])}</div>` : '');
+      }
+      return `<tr class="${(c.field || (i.auto && ss.before.length)) ? '' : 'off'}"><td class="bd-lbl">${esc(i.l)}</td><td>${cell}</td></tr>`;
+    }).join('');
+
+    const on = INFO.filter(i => i.auto ? ss.before.length : d.bd[i.k].field);
+    const exVal = i => {
+      if(i.auto){ const s = ss.before[ss.before.length - 1]; return 'Đang học → ' + statusDesc(s.data); }
+      const f = fieldOf(d.bd[i.k].field); if(!f) return '…';
+      if(i.k === 'hk_bd' || i.k === 'hk_kt') return 'HK2 2026-2027';
+      return '(cũ) → ' + (f.options ? f.options[f.options.length - 1] : 'theo ' + f.label);
+    };
+    const ex = on.length ? `<div class="bd-ex"><b>Ví dụ dòng sinh ra</b> — mỗi sinh viên 1 dòng; cột cũ = kết quả lần biến động trước của sinh viên, cột mới = theo quyết định
+        <table><thead><tr><th>MSSV</th>${on.map(i => `<th>${esc(i.l)}</th>`).join('')}</tr></thead>
+        <tbody><tr><td>20120201</td>${on.map(i => `<td>${esc(exVal(i))}</td>`).join('')}</tr></tbody></table></div>` : '';
+
+    col.innerHTML = `
+      <div class="fi"><label>Thông tin ghi sang Biến động sinh viên<span class="req">*</span></label>
+        <table class="bd-cfg"><thead><tr><th>Thông tin</th><th>Nguồn giá trị mới</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="f-hint">Trạng thái sinh viên: hệ thống tự ghi trạng thái mà bước "Cập nhật trạng thái sinh viên" đã đổi cho từng sinh viên. Các thông tin khác: kéo field vào dòng nào thì ghi thông tin đó, dòng để trống thì không ghi.</div>
+        ${on.length ? '' : '<div class="field-tree-error">⚠️ Chưa có thông tin nào để ghi: kéo field vào ít nhất 1 dòng, hoặc thêm bước "Cập nhật trạng thái sinh viên" trước bước này</div>'}</div>
+      <div class="bd-sec">Thông tin tự động (không cấu hình)</div>
+      <table class="bd-cfg"><thead><tr><th>Cột trên màn Biến động</th><th>Lấy từ</th></tr></thead><tbody>
+        <tr><td class="bd-lbl">MSSV, Họ và tên</td><td>Danh sách sinh viên trong quyết định</td></tr>
+        <tr><td class="bd-lbl">Loại quyết định</td><td>Loại của quyết định đang chạy quy trình</td></tr>
+        <tr><td class="bd-lbl">Số QĐ, Ngày QĐ</td><td>Bản ghi quyết định</td></tr>
+        <tr><td class="bd-lbl">Học kỳ quyết định</td><td>Học kỳ đang mở tại Ngày QĐ</td></tr>
+        <tr><td class="bd-lbl">Các cột cũ</td><td>Giá trị mới của dòng biến động gần nhất của sinh viên cho cùng thông tin; chưa có dòng nào thì lấy thông tin sinh viên lưu trong quyết định</td></tr>
+      </tbody></table>
+      <div class="f-hint" style="margin-top:10px">Node <b>chỉ sinh danh sách biến động</b>, không cập nhật hồ sơ sinh viên. Mỗi nhánh 1 bước.<br>
+        Cặp cột cũ / mới để trống khi: thông tin không có nguồn, trường nguồn của sinh viên trống, hoặc giá trị mới giống giá trị cũ. Sinh viên không có thông tin nào thay đổi thì không sinh dòng. Quyết định đầu vào (nhập trường, chuyển trường đến) để trống cột cũ.</div>
+      ${ex}`;
+  };
+
+  window.BDSV = {
+    clear(k){ neWorkingData.bd[k].field = ''; err[k] = ''; rerender(); },
+    drop(ev, k){
+      ev.preventDefault(); ev.currentTarget.classList.remove('drag-over');
+      const key = ev.dataTransfer.getData('text/plain'), f = fieldOf(key), i = INFO.find(x => x.k === k);
+      if(!f) return;
+      if(!i.accept.includes(f.sourceType)) err[k] = `Field này không phải kiểu ${i.accept.map(a => FT[a] || a).join(' / ')}`;
+      else { err[k] = ''; neWorkingData.bd[k].field = key; }
+      rerender();
+    },
+  };
+
+  // ---------- Kiểm tra cấu hình ----------
+  function cfgIssues(d, v, id){
+    const out = [], bd = (d && d.bd) || {};
+    const on = INFO.filter(i => !i.auto && bd[i.k] && bd[i.k].field);
+    if(!on.length && !stSteps(v, id).before.length) out.push('Chưa có thông tin nào để ghi sang Biến động sinh viên (kéo field vào ít nhất 1 dòng, hoặc thêm bước "Cập nhật trạng thái sinh viên" trước bước này)');
+    on.forEach(i => { if(bd[i.k].field && !fieldOf(bd[i.k].field)) out.push(`Trường nguồn của "${i.l}" không còn trong biểu mẫu`); });
+    return out;
+  }
+  function graphIssues(v, n){
+    const out = [], anc = ancestors(v, n.id);
+    if([...anc].some(id => (v.nodes.find(x => x.id === id) || {}).type === TYPE)) out.push('Mỗi nhánh chỉ được có 1 bước "Sinh DS biến động sinh viên"');
+    return out;
+  }
+  const _validate = validate;
+  validate = function(v){
+    const issues = _validate(v);
+    v.nodes.forEach(n => {
+      if(n.type === TYPE){
+        cfgIssues(n.data, v, n.id).forEach(t => issues.push({ kind:'required', nodeId:n.id, title:'Thiếu thông tin bắt buộc: ' + t, subtitle:n.title }));
+        graphIssues(v, n).forEach(t => issues.push({ kind:'required', nodeId:n.id, title:t, subtitle:n.title }));
+      }
+    });
+    return issues;
+  };
+  const _save = saveNodeEdit;
+  saveNodeEdit = function(){
+    const n0 = content().nodes.find(x => x.id === editingNodeId);
+    const p = n0 && n0.type === TYPE ? cfgIssues(neWorkingData, content(), n0.id) : [];
+    if(p.length){ showToast('Bước "' + n0.title + '": ' + p[0], 'err'); return; }
+    err = {};
+    return _save();
+  };
+  const _open = openNodeEdit;
+  openNodeEdit = function(id){ err = {}; return _open(id); };
+
+  // ---------- Quy trình mẫu ----------
+  const mk = (id, type, typeLabel, title, code, x, y, data) => ({ id, type, typeLabel, title, code, x, y, data:data || {} });
+  const F = f => ({ field:f }), O = {};
+  const flow = (formId, upd, bd) => {
+    const nodes = [
+      mk('n1', 'submit', 'Nộp biểu mẫu', 'Tạo quyết định', 'form_trigger', 40, 220, { formId }),
+      mk('n2', 'approval', 'Chờ người duyệt', 'Phòng CTSV duyệt', 'ctsv', 360, 220, { allowRevise:false }),
+      mk('n3', 'decision_entry', 'Nhập QĐ', 'Văn thư nhập Quyết định', 'decision_entry1', 680, 220, { assigneeType:'staff', staff:'Văn thư — Lê Thị Cẩm', fields:['soQuyetDinh', 'ngayQuyetDinh'] }),
+    ];
+    const edges = [{ from:'n1', fromPort:'default', to:'n2' }, { from:'n2', fromPort:'approve', to:'n3' }, { from:'n2', fromPort:'reject', to:'n9' }];
+    let prev = 'n3', port = 'main', x = 1000;
+    upd.forEach((u, i) => { const id = 'u' + i; nodes.push(mk(id, u[0], u[1], u[1], 'upd_' + i, x, 220, u[2])); edges.push({ from:prev, fromPort:port, to:id }); prev = id; port = 'default'; x += 320; });
+    nodes.push(mk('n6', TYPE, 'Sinh DS biến động sinh viên', 'Sinh DS biến động sinh viên', 'bien_dong_sv', x, 220, { bd }));
+    edges.push({ from:prev, fromPort:port, to:'n6' });
+    nodes.push(mk('n8', 'end-success', 'Kết thúc', 'Hoàn tất', 'end_1', x + 320, 220));
+    nodes.push(mk('n9', 'end-reject', 'Kết thúc', 'Từ chối', 'end_2', 680, 420));
+    edges.push({ from:'n6', fromPort:'default', to:'n8' });
+    return { id:'v1', label:'v1', status:'nhap', basedOn:null, createdBy:'Viên Thị Phương Thảo', createdAt:'16/11/2026',
+      publishedBy:null, publishedAt:null, archivedAt:null, runningInstances:0, nodes, edges };
+  };
+  const BD_SAMPLES = {
+    'qd-baoluu':{ name:'Quyết định nghỉ học tạm thời/bảo lưu', desc:'Mẫu CR-20261116-001: duyệt → Nhập QĐ → Cập nhật trạng thái sinh viên (Bảo lưu) → Sinh DS biến động sinh viên.',
+      ver:flow('QD_BAOLUU', [['action_student', 'Cập nhật trạng thái sinh viên', { studentStatus:'on_leave' }]],
+        { nien_khoa:O, ctdt:O, lop_hc:O, don_vi:O, hk_bd:F('hk_bat_dau'), hk_kt:F('hk_ket_thuc') }) },
+    'qd-chuyennganh':{ name:'Quyết định chuyển khoá, ngành, lớp', desc:'Mẫu CR-20261116-001: duyệt → Nhập QĐ → Cập nhật Niên khoá, CTĐT, Lớp hành chính → Sinh DS biến động sinh viên (không có bước cập nhật trạng thái nên không ghi Trạng thái).',
+      ver:flow('QD_CHUYEN', [['action_academic_year', 'Cập nhật Niên khoá'], ['action_training_program', 'Cập nhật CTĐT'], ['action_admin_class', 'Cập nhật Lớp hành chính']],
+        { nien_khoa:F('nien_khoa_moi'), ctdt:F('ctdt_moi'), lop_hc:F('lop_hc_moi'), don_vi:O, hk_bd:O, hk_kt:O }) },
+  };
+  const p = new URLSearchParams(location.search).get('p');
+  if(BD_SAMPLES[p]){
+    VERSIONS = [BD_SAMPLES[p].ver]; versionSeq = 1; currentVersionId = 'v1'; editBuffer = null; PROCESS_NAME = BD_SAMPLES[p].name;
+    ['proc-name-input', 'proc-name-input2'].forEach(id => { const el = document.getElementById(id); if(el) el.value = PROCESS_NAME; });
+    const desc = document.querySelector('.wf-left textarea'); if(desc) desc.value = BD_SAMPLES[p].desc;
+  }
+  const sel = document.querySelector('.cr5-sample select');
+  if(sel) Object.entries(BD_SAMPLES).forEach(([k, s]) => { const o = new Option('QĐ SV: ' + s.name, k); if(k === p) o.selected = true; sel.add(o); });
+  renderAll();
+})();
+</script>
+<!-- CRBDSV-END -->
 </body>
 </html>
